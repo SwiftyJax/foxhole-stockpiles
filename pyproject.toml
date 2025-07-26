@@ -88,3 +88,9 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
+
+[project.scripts]
+fs-candidate_inspector = "foxhole_stockpiles.commands.candidate_inspector.candidate_inspector:main"
+fs-database_builder = "foxhole_stockpiles.commands.database_builder.database_builder:main"
+fs-generate_templates = "foxhole_stockpiles.commands.generate_templates.generate_templates:main"
+fs-uasset_extractor = "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor:main"

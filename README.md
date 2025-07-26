@@ -128,9 +128,6 @@ This project uses several tools to maintain code quality:
 All code is automatically checked when you commit. To run checks manually:
 
 ```bash
-# Format code
-black foxhole_stockpiles/
-
 # Run linter
 ruff check foxhole_stockpiles/
 
