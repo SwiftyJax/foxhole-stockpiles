@@ -13,17 +13,12 @@ class CatalogItem(BaseModel):
     """Base model for items in the stockpile system."""
 
     code: str = Field(description="Unique identifier for the item")
-    crated: bool = Field(description="Indicates if the item is crated", default=False)
     faction: ItemFaction = Field(
         description="Faction that uses this item", default=ItemFaction.NEUTRAL
     )
     category: ItemCategory = Field(
         description="Category of the item (e.g., Weapon, Ammo, Equipment)"
     )
-
-    mod: str = Field(description="Mod name extracted from the filename", default="vanilla")
-    size: int = Field(description="Icon size in pixels", default=64)
-
     icon_path: str = Field(description="Path to the icon image file", default="")
     subicon_path: str = Field(description="Path to the subicon image file", default="")
 
@@ -32,11 +27,10 @@ class CatalogItem(BaseModel):
         json_schema_extra={
             "example": {
                 "code": "MaintenanceSupplies",
-                "crated": True,
                 "faction": "neutral",
                 "category": "item",
-                "mod": "vanilla",
-                "size": 64,
+                "icon_path": "icons/maintenance_supplies.png",
+                "subicon_path": "icons/maintenance_supplies_sub.png",
             }
         },
     )
@@ -54,16 +48,12 @@ class CatalogItem(BaseModel):
         try:
             return cls(
                 code=item.get("CodeName", ""),
-                crated=False,
                 faction=ItemFaction.from_string(item.get("FactionVariant")),
                 category=cls._determine_item_type(item),
-                mod="",
-                size=0,
                 icon_path=item.get("Icon", ""),
                 subicon_path=item.get("SubTypeIcon", ""),
             )
         except (ValueError, KeyError, TypeError):
-            raise
             return None
 
     @staticmethod
