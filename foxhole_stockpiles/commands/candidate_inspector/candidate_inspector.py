@@ -3,6 +3,7 @@
 import argparse
 import logging
 from pathlib import Path
+from typing import Any
 
 import cv2
 import numpy
@@ -14,7 +15,13 @@ from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.template_manager import TemplateManager
 
 
-def main() -> None:
+def print_message(message: str, quiet: bool = False) -> None:
+    """Print a message to the console if not in quiet mode."""
+    if not quiet:
+        print(message)
+
+
+def main() -> dict[str, Any] | None:
     """Main entry point for test candidates command.
 
     Always uses TemplateManager.match_icon() to get candidates and optionally
@@ -102,15 +109,28 @@ def main() -> None:
         action="store_true",
         help="Print full list of matching candidates. If not specified, only shows count.",
     )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress all output except errors and warnings. "
+        "Only errors will be printed to console.",
+    )
 
     args = parser.parse_args()
+
+    quiet = bool(args.quiet)
 
     # Validate confidence parameter
     if args.confidence < 0.0 or args.confidence > 1.0:
         parser.error("Confidence threshold must be between 0.0 and 1.0")
 
     # Setup logging
-    log_level = logging.DEBUG if args.verbose else logging.INFO
+    if args.quiet:
+        log_level = logging.WARNING
+    elif args.verbose:
+        log_level = logging.DEBUG
+    else:
+        log_level = logging.INFO
     setup_logging(log_level=log_level, log_file=str(args.log_file) if args.log_file else "")
 
     logger = logging.getLogger(__name__)
@@ -216,54 +236,72 @@ def main() -> None:
 
         # Display results
         if not candidate_indices:
-            print("No candidates found matching the specified criteria.")
-            return
+            print_message(
+                quiet=quiet, message="No candidates found matching the specified criteria."
+            )
+            return None
 
         logger.info("Found %d matching candidates", len(candidate_indices))
 
         # Display icon matching results if icon was provided
         if args.icon:
-            print("\nIcon matching results:")
-            print("======================")
+            print_message(quiet=quiet, message="\nIcon matching results:")
+            print_message(quiet=quiet, message="======================")
 
             if icon_match:
                 crated_str = " (crated)" if icon_match.crated else ""
-                print(f"✓ Match found: {icon_match.code}{crated_str}")
-                print(f"  Confidence: {match_result.confidence:.4f}")
-                print(f"  Threshold: {args.confidence}")
-                print(f"  Faction: {icon_match.faction.value}")
-                print(f"  Category: {icon_match.category.value}")
-                print(f"  Mod: {icon_match.mod}")
-                print(f"  Resolution: {icon_match.resolution.value}px")
+                print_message(
+                    quiet=quiet,
+                    message=(
+                        f"✓ Match found: {icon_match.code}{crated_str}"
+                        f"\n  Confidence: {match_result.confidence:.4f}"
+                        f"\n  Threshold: {args.confidence}"
+                        f"\n  Faction: {icon_match.faction.value}"
+                        f"\n  Category: {icon_match.category.value}"
+                        f"\n  Mod: {icon_match.mod}"
+                        f"\n  Resolution: {icon_match.resolution.value}px"
+                    ),
+                )
             else:
-                print(f"✗ No match found above confidence threshold {args.confidence}")
-                print(f"  Searched {len(candidate_indices)} candidates")
+                print_message(
+                    quiet=quiet,
+                    message=(
+                        f"✗ No match found above confidence threshold {args.confidence}"
+                        f"\n  Searched {len(candidate_indices)} candidates"
+                    ),
+                )
         else:
-            print(f"\nTotal: {len(candidate_indices)} candidates")
+            print_message(quiet=quiet, message=f"\nTotal: {len(candidate_indices)} candidates")
         # Show regular candidate listing results when no icon provided
         if args.print and candidate_indices:
-            print("\nFiltered candidates:")
-            print("====================")
-            print(
-                f"{'Code':<25} | {'Faction':<10} | {'Category':<12} | {'Mod':<15} | {'Resolution'}"
+            print_message(
+                quiet=quiet,
+                message=(
+                    "\nFiltered candidates:\n===================="
+                    f"\n{'Code':<25} | {'Faction':<10} | {'Category':<12} |"
+                    f" {'Mod':<15} | Resolution"
+                    "\n-" * 90
+                ),
             )
-            print("-" * 90)
 
             for idx in candidate_indices:
                 template = database.templates[idx]
                 crated_str = " (crated)" if template.crated else ""
-                print(
-                    f"{template.code:<25} | {template.faction.value:<10} | "
+                print_message(
+                    quiet=quiet,
+                    message=f"{template.code:<25} | {template.faction.value:<10} | "
                     f"{template.category.value:<12} | {template.mod:<15} | "
-                    f"{template.resolution.value}px{crated_str}"
+                    f"{template.resolution.value}px{crated_str}",
                 )
         else:
-            print(f"Found {len(candidate_indices)} candidates (use --print to see details)")
+            print_message(
+                quiet=quiet,
+                message=f"Found {len(candidate_indices)} candidates (use --print to see details)",
+            )
 
         # Show statistics breakdown (only for candidate listing, not icon matching)
         if candidate_indices and not args.icon:
-            print("\nStatistics breakdown:")
-            print("=====================")
+            print_message(quiet=quiet, message=("\nStatistics breakdown:\n====================="))
 
             # Count by faction, mod, and category
             faction_counts: dict[str, int] = {}
@@ -293,10 +331,22 @@ def main() -> None:
                 else:
                     crated_counts["normal"] += 1
 
-            print(f"Factions: {dict(sorted(faction_counts.items()))}")
-            print(f"Mods: {dict(sorted(mod_counts.items()))}")
-            print(f"Categories: {dict(sorted(category_counts.items()))}")
-            print(f"Types: {crated_counts}")
+            print_message(
+                quiet=quiet,
+                message=(
+                    f"\nFactions: {dict(sorted(faction_counts.items()))}"
+                    f"\nMods: {dict(sorted(mod_counts.items()))}"
+                    f"\nCategories: {dict(sorted(category_counts.items()))}"
+                    f"\nTypes: {crated_counts}"
+                ),
+            )
+
+        if icon_match:
+            data = icon_match.model_dump(mode="json", exclude={"image"})
+            data["confidence"] = match_result.confidence
+            return data
+
+        return None
 
     except FileNotFoundError:
         logger.error("Database file not found: %s", args.database)
@@ -309,4 +359,9 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    result = main()
+    import json
+    import sys
+
+    print(json.dumps(result) if result is not None else "")
+    sys.exit(0)
