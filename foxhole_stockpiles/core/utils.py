@@ -3,6 +3,11 @@
 import json
 import logging
 from pathlib import Path
+from typing import TypeVar
+
+import cv2
+import numpy as np
+from numpy.typing import NDArray
 
 from foxhole_stockpiles.models.catalog_item import CatalogItem
 
@@ -39,3 +44,56 @@ def load_catalog(path: Path) -> list[CatalogItem]:
         )
 
     return valid_items
+
+
+T = TypeVar("T")
+
+
+def most_frequent[T](items: list[T]) -> T:
+    """Return the most frequently occurring item.
+
+    Args:
+        items (list[T]): List of items to analyze.
+
+    Returns:
+        T: The most frequently occurring item in the list.
+    """
+    return max(set(items), key=items.count)
+
+
+def hamming_distance(hash1: int, hash2: int) -> int:
+    """Calculate Hamming distance between two perceptual hashes.
+
+    Args:
+        hash1 (int): First hash as integer
+        hash2 (int): Second hash as integer
+
+    Returns:
+        int: Number of differing bits
+    """
+    xor = hash1 ^ hash2
+    return bin(xor).count("1")
+
+
+def compute_icon_phash(icon_image: NDArray[np.uint8]) -> int:
+    """Compute perceptual hash for an icon image.
+
+    Args:
+        icon_image (NDArray[np.uint8]): Input icon image (BGR or grayscale)
+
+    Returns:
+        int: Perceptual hash as integer
+    """
+    # Convert to grayscale if needed
+    if len(icon_image.shape) == 3:
+        icon_gray = cv2.cvtColor(icon_image, cv2.COLOR_BGR2GRAY)
+    else:
+        icon_gray = icon_image
+
+    # Resize to 8x8 for standard pHash
+    img_resized = cv2.resize(icon_gray, (8, 8), interpolation=cv2.INTER_AREA)
+    avg = img_resized.mean()
+
+    # Create binary hash based on pixel values above/below average
+    bits = (img_resized > avg).astype(np.uint8)
+    return int("".join(str(b) for b in bits.flatten()), 2)

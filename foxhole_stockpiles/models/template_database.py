@@ -80,7 +80,7 @@ class TemplateDatabase:
             candidates = {i for i in candidates if code in self.templates[i].code}
 
         # Apply category filter if specified
-        if category:
+        if category and category != ItemCategory.Invalid:
             category_candidates = self.category_lookup.get(category.value, [])
             candidates = candidates & set(category_candidates)
 

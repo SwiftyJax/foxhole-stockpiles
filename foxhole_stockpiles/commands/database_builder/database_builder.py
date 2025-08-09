@@ -13,6 +13,7 @@ from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.utils import load_catalog
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.catalog_item import CatalogItem
+from foxhole_stockpiles.models.database_statistics import DatabaseStatistics
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.template_database import TemplateDatabase
 
@@ -179,6 +180,7 @@ class DatabaseBuilder:
                     category=item.category,
                     mod=mod_name,
                 )
+                template.compute_optimization_data()
                 templates.append(template)
             except Exception as e:
                 self._logger.error("Failed to create template for %s: %s", item_code, e)
@@ -390,13 +392,13 @@ class DatabaseBuilder:
                     return False
 
                 # Get detailed statistics from the database
-                stats = database.get_statistics()
+                stats: DatabaseStatistics = database.get_statistics()
                 self._logger.debug(
                     "Resolution %s: %d templates, factions: %s, mods: %s",
                     resolution,
-                    stats["total_templates"],
-                    stats["faction_counts"],
-                    stats["mod_counts"],
+                    stats.total_templates,
+                    stats.faction_counts,
+                    stats.mod_counts,
                 )
 
             self._logger.info("Database validation successful")
