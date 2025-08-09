@@ -12,7 +12,7 @@ from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
-from foxhole_stockpiles.models.template_manager import TemplateManager
+from foxhole_stockpiles.services.template_manager import TemplateManager
 
 
 def print_message(message: str, quiet: bool = False) -> None:

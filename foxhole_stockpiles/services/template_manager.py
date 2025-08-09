@@ -16,7 +16,7 @@ from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.database_statistics import TemplateManagerStatistics
 from foxhole_stockpiles.models.match_result import MatchResult
-from foxhole_stockpiles.models.template_database import TemplateDatabase
+from foxhole_stockpiles.services.template_database import TemplateDatabase
 
 logger = logging.getLogger(__name__)
 

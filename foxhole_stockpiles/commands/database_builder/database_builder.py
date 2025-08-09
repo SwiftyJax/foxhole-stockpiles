@@ -15,7 +15,7 @@ from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.catalog_item import CatalogItem
 from foxhole_stockpiles.models.database_statistics import DatabaseStatistics
 from foxhole_stockpiles.models.icon_template import IconTemplate
-from foxhole_stockpiles.models.template_database import TemplateDatabase
+from foxhole_stockpiles.services.template_database import TemplateDatabase
 
 
 class DatabaseBuilder:
