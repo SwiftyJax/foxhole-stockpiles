@@ -110,7 +110,7 @@ class TemplateManager:
         code: str | None = None,
         confidence_threshold: float = 0.8,
         phash_threshold: int = 12,
-        max_ncc_candidates: int = 10,
+        max_ncc_candidates: int = 25,
     ) -> MatchResult:
         """Get candidates and optionally perform icon matching.
 
@@ -137,13 +137,10 @@ class TemplateManager:
         )
 
         icon_result = None
-        confidence_result = None
+        confidence_result: float = 0.0
 
-        # Perform icon matching if image is provided
         if icon_image is None:
-            return MatchResult(
-                candidates=candidates, icon=icon_result, confidence=confidence_result
-            )
+            return MatchResult(candidates=candidates, icon=None, confidence=0.0)
 
         start_time = time.perf_counter()
 
@@ -160,14 +157,10 @@ class TemplateManager:
 
             for candidate_idx in candidates:
                 template = self.active_database.templates[candidate_idx]
-                if template.phash is not None:
-                    distance = hamming_distance(icon_phash, template.phash)
-                    if distance <= phash_threshold:
-                        phash_filtered.append((candidate_idx, distance))
-                        item_codes_included.add(template.code)
-                else:
-                    # Include templates without pHash in fallback
-                    phash_filtered.append((candidate_idx, phash_threshold + 1))
+                distance = hamming_distance(icon_phash, template.phash)
+                if distance <= phash_threshold:
+                    phash_filtered.append((candidate_idx, distance))
+                    item_codes_included.add(template.code)
 
             # Sort by pHash similarity and take top candidates
             phash_filtered.sort(key=lambda x: x[1])

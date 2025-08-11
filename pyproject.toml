@@ -94,3 +94,4 @@ fs-candidate_inspector = "foxhole_stockpiles.commands.candidate_inspector.candid
 fs-database_builder = "foxhole_stockpiles.commands.database_builder.database_builder:main"
 fs-generate_templates = "foxhole_stockpiles.commands.generate_templates.generate_templates:main"
 fs-uasset_extractor = "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor:main"
+fs-stockpile_scanner = "foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner:main"

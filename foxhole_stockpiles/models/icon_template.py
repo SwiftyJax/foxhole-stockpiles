@@ -83,7 +83,7 @@ class IconTemplate(BaseModel):
         - Memory-efficient float conversion
         """
         # Convert to grayscale once - use optimized weights for better contrast
-        img_gray = cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY)
+        img_gray = np.asarray(cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY), dtype=np.uint8)
 
         # Convert to float32 for statistical computations
         img_float = img_gray.astype(np.float32)

@@ -49,16 +49,26 @@ def load_catalog(path: Path) -> list[CatalogItem]:
 T = TypeVar("T")
 
 
-def most_frequent[T](items: list[T]) -> T:
-    """Return the most frequently occurring item.
+def most_frequent[T](items: list[T]) -> T | None:
+    """Return the most frequently occurring item, or None if there's a tie.
 
     Args:
         items (list[T]): List of items to analyze.
 
     Returns:
-        T: The most frequently occurring item in the list.
+        T | None: The most frequently occurring item, or None if multiple items tie for most
+            frequent.
     """
-    return max(set(items), key=items.count)
+    if not items:
+        return None
+
+    unique_items = set(items)
+    max_count = max(items.count(item) for item in unique_items)
+
+    # Count how many items have the maximum frequency
+    items_with_max_count = sum(1 for item in unique_items if items.count(item) == max_count)
+
+    return None if items_with_max_count > 1 else max(unique_items, key=items.count)
 
 
 def hamming_distance(hash1: int, hash2: int) -> int:
