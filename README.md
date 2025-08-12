@@ -1,40 +1,58 @@
 # Foxhole Stockpiles
 
-A REST API service that processes Foxhole game screenshots to automatically extract stockpile information and return structured data.
+A command-line toolset for processing Foxhole game screenshots to automatically extract stockpile information from game assets.
+
+## Current Implementation Status
+
+This project provides a complete pipeline for extracting game assets and building template databases for stockpile recognition, along with a scanner tool to analyze screenshots.
 
 ## Why This Tool Exists
 
-This project was created to address limitations in existing Foxhole stockpile analysis tools:
+Extracting Foxhole stockpile information by hand is slow, error-prone, and difficult to scale.
+This tool automates that process by converting screenshots into structured, machine-readable data, enabling you to:
 
-- **Foxhole Stockpiler**: Difficult to get working properly due to monolithic single-file architecture
-- **FIR (Foxhole Item Recognition)**: Excellent JavaScript implementation, but didn't provide the JSON output format needed for integration
-- **Need for centralized deployment**: Existing tools required local installation and setup on each client machine
+- Quickly identify and count stockpile items
+- Output results as JSON for automation and tracking
+- Integrate directly into scripts or larger data-processing pipelines
 
-This tool enables a **client-server architecture** where:
-- **Clients** simply take screenshots and send them via HTTP requests
-- **Server** handles all OCR processing and returns structured JSON data
-- **Backend integration** (optional) can receive JSON output to track stockpile status across multiple locations
-
-This approach eliminates the need for clients to install OCR dependencies, manage models, or understand image processing - they just send screenshots.
-
-This tool has been successfully used in production for over a year. This repository represents a complete rewrite with modern Python practices, better architecture, and without heavy dependencies like Keras models.
+The system is designed for flexibility, supporting multiple resolutions and easy database rebuilding when new game content is released.
 
 ## What It Does
 
-This service analyzes screenshots of stockpiles from the game Foxhole and extracts:
-- Stockpile name and type
-- All items with their quantities
-- Whether items are crated or not
-- Structured JSON output for easy integration
+The project consists of five command-line tools that work together:
 
-The system is designed to handle multiple screen resolutions and support both vanilla game content and popular mods.
+1. **Asset Extraction** - Extracts icon assets from Foxhole PAK files
+2. **Template Generation** - Creates resolution-specific templates with crate overlays
+3. **Database Building** - Compiles templates into optimized binary databases
+4. **Scanner Tool** - Analyzes screenshots to detect and identify stockpile items
+5. **Inspector Tool** - Debugs and validates template databases
+
+## Available Command-Line Tools
+
+### fs-uasset-extractor
+Extracts icon assets from Foxhole PAK files and converts them to PNG format.
+
+### fs-generate-templates
+Generates resolution-specific template variants from extracted assets with proper scaling and crate overlays.
+
+### fs-database-builder
+Compiles processed templates into optimized binary databases for fast runtime loading.
+
+### fs-stockpile-scanner
+Analyzes Foxhole stockpile screenshots to detect items and quantities using the compiled database.
+
+### fs-candidate-inspector
+Debugging tool for inspecting database contents and testing icon recognition.
 
 ## Requirements
 
 - Python 3.12 or higher
-- A Foxhole game screenshot containing a stockpile view
+- External tools (Windows-specific):
+  - `repak.exe` - For PAK file extraction
+  - `umodel.exe` - For asset conversion
+- Foxhole game files and `catalog.json`
 
-## Development Setup
+## Installation
 
 ### 1. Clone the Repository
 
@@ -56,76 +74,89 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### 3. Install Dependencies
+### 3. Install the Package
 
 ```bash
-# Install the package in development mode with dev dependencies
+# Install in development mode with dev dependencies
 pip install -e .[dev]
 
-# Set up pre-commit hooks (for code quality)
+# Or install just the base package
+pip install -e .
+```
+
+### 4. Set Up Pre-Commit Hooks (Optional, for Development)
+
+```bash
 pre-commit install
 ```
 
-### 4. Verify Installation
+## Usage Workflow
 
+### Complete Pipeline
+
+1. **Extract assets from game PAK files:**
 ```bash
-# Check that everything is installed correctly
-python -c "import foxhole_stockpiles; print('Installation successful!')"
+fs-uasset-extractor \
+  --catalog catalog.json \
+  --pak "C:/Program Files (x86)/Steam/steamapps/common/Foxhole/War/Content/Paks/War-WindowsNoEditor.pak" \
+  --output raw_assets/
 ```
 
-## Running the Application
-
-### Development Server
-
+2. **Generate resolution-specific templates:**
 ```bash
-# Start the development server
-python -m foxhole_stockpiles
-
-# The API will be available at http://localhost:8000
-# API documentation at http://localhost:8000/docs
+fs-generate-templates \
+  --catalog catalog.json \
+  --assets raw_assets/ \
+  --templates processed_templates/
 ```
 
-### Production Server
-
+3. **Build optimized binary database:**
 ```bash
-# Install production dependencies only
-pip install foxhole-stockpiles
-
-# Run with production server
-uvicorn foxhole_stockpiles.main:app --host 0.0.0.0 --port 8000
+fs-database-builder \
+  --catalog catalog.json \
+  --templates processed_templates/ \
+  --database foxhole_templates.pkl
 ```
 
-## Usage
-
-Send a POST request to `/scan` with a Foxhole stockpile screenshot:
-
+4. **Scan a stockpile screenshot:**
 ```bash
-curl -X POST "http://localhost:8000/scan" \
-     -H "Content-Type: multipart/form-data" \
-     -F "file=@your_stockpile_screenshot.png"
+fs-stockpile-scanner \
+  --database foxhole_templates.pkl \
+  --image your_screenshot.png
 ```
 
-The response will be a JSON object containing the extracted stockpile data.
+## Core Dependencies
 
-## Database Setup
+- **Image Processing**: OpenCV (opencv-python), NumPy
+- **Data Handling**: Pydantic v2 for validation
+- **Development**: Ruff (linting), MyPy (type checking), Pre-commit hooks
 
-The system requires a pre-built template database for image recognition. See [`commands/README.md`](commands/README.md) for detailed instructions on:
+## Project Structure
 
-- Extracting assets from Foxhole PAK files
-- Building the recognition database
-- Supporting mods and custom content
-- Troubleshooting extraction issues
+```
+foxhole_stockpiles/
+├── commands/           # Command-line tools
+│   ├── uasset_extractor/
+│   ├── generate_templates/
+│   ├── database_builder/
+│   ├── stockpile_scanner/
+│   └── candidate_inspector/
+├── core/              # Core utilities
+│   ├── logging.py
+│   └── utils.py
+├── enums/            # Enumeration types
+├── models/           # Data models
+└── services/         # Service layer
+    ├── stockpile_detector.py
+    ├── template_database.py
+    └── template_manager.py
+```
 
 ## Development
 
-### Code Quality
+### Code Quality Tools
 
-This project uses several tools to maintain code quality:
-- **Ruff**: Fast linting and import sorting
-- **MyPy**: Type checking
-- **Pre-commit**: Automated quality checks
-
-All code is automatically checked when you commit. To run checks manually:
+The project uses several tools to maintain code quality:
 
 ```bash
 # Run linter
@@ -138,45 +169,16 @@ mypy foxhole_stockpiles/
 pre-commit run --all-files
 ```
 
-### Testing
+### Note on Testing
 
-```bash
-# Run all tests
-pytest
+No test suite is currently implemented. Tests are planned for future development.
 
-# Run tests with coverage
-pytest --cov=foxhole_stockpiles
-```
-
-## Project Status
-
-🚧 **This project is currently in early development** 🚧
-
-Core features being implemented:
-- [ ] Screenshot processing pipeline
-- [ ] Icon recognition system
-- [ ] Text extraction (quantities, names)
-- [ ] REST API endpoints
-- [ ] Multi-resolution support
-- [ ] Mod compatibility
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Make your changes
-4. Run the quality checks (`pre-commit run --all-files`)
-5. Commit your changes (`git commit -m 'Add amazing feature'`)
-6. Push to the branch (`git push origin feature/amazing-feature`)
-7. Open a Pull Request
 
 ## Credits
 
 This project was heavily influenced by the [FIR (Foxhole Item Recognition)](https://github.com/GICodeWarrior/fir) project:
 - **catalog.json**: Directly copied from FIR project
 - **Conceptual approach**: Image generation from PAK extraction inspired by FIR
-
-This Python implementation represents an independent reimplementation of the core concepts, tailored for REST API deployment and extended functionality.
 
 ## License
 
