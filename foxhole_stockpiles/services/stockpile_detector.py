@@ -78,6 +78,7 @@ class StockpileDetector:
         self.icon_to_quantity_offset: int = 0
 
         self.img: NDArray[np.uint8] = self._load_image()
+        self.composite_image: NDArray[np.uint8] = np.empty((0, 0, 3), dtype=np.uint8)
         self.height, self.width = self.img.shape[:2]
 
         self.valid_x_positions: list[int] = []  # valid column positions
@@ -424,6 +425,8 @@ class StockpileDetector:
         if current_group_count > 0:
             self.groups.append((current_group_count, current_group_start_idx))
 
+        self._build_quantity_composite_image()
+
     def detect_stockpile_regions(self) -> None:
         """Detect stockpile type and name from the quantities detected."""
         if not self.quantities:
@@ -518,26 +521,63 @@ class StockpileDetector:
         output_path = "stockpile_detection_result.png"
         cv2.imwrite(output_path, result_img)
         self._logger.info("Result saved to: %s", output_path)
+
+        output_path = "stockpile_quantities_result.png"
+        cv2.imwrite(output_path, self.composite_image)
+        self._logger.info("Composite quantitites saved to: %s", output_path)
         self._logger.debug("Color legend: Red=Quantity boxes, Blue=Type region, Green=Name region")
 
-    def get_stockpile_images(self) -> StockpileImageRegions:
+    def _build_quantity_composite_image(self) -> None:
+        """Create a composite image with all the quantitites."""
+        quantities = [
+            self.img[y : y + self.box_height, x : x + self.box_width] for x, y in self.quantities
+        ]
+        min_coords_x, min_coords_y = (
+            (self.stockpile_type[0], self.stockpile_type[1])
+            if self.stockpile_type
+            else self.quantities[0]
+        )
+
+        # Build the composite image for the quantities in the same location they where detected
+        quantities_relative_to_stockpile = [
+            (x - min_coords_x, y - min_coords_y) for x, y in self.quantities
+        ]
+
+        # use max width for the stockpile
+        composite_width = self.title_min_width * 2 + self.box_width
+        composite_height = quantities_relative_to_stockpile[-1][1] + self.box_height * 2
+
+        # Black background image with the grey quantities on top. Later it will be normalized
+        composite = np.full((composite_height, composite_width, 3), 0, dtype=np.uint8)
+        for index, (x, y) in enumerate(quantities_relative_to_stockpile):
+            composite[y : y + self.box_height, x : x + self.box_width] = quantities[index]
+
+        gray = cv2.cvtColor(composite, cv2.COLOR_RGB2GRAY)
+        _, binary = cv2.threshold(gray, 120, 255, cv2.THRESH_BINARY_INV)
+        kernel = np.ones((2, 2), np.uint8)
+        cleaned = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+        post_cleaned = cv2.cvtColor(cleaned, cv2.COLOR_GRAY2RGB)
+        upscaled = cv2.resize(post_cleaned, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+
+        self.composite_image = np.asarray(upscaled, dtype=np.uint8)
+
+    def get_stockpile_images(self) -> StockpileImageRegions | None:
         """Get detected stockpile images as a StockpileImages model.
 
         Returns:
-            StockpileImages: Model containing detected stockpile regions
+            StockpileImages: Model containing detected stockpile regions or None if no quantities
         """
+        if not self.quantities:
+            return None
+
         quantities = [
             self.img[y : y + self.box_height, x : x + self.box_width] for x, y in self.quantities
         ]
 
         # icons are shifted to the left of the quantity box by "icon_to_quantity_offset"
+        offset = self.icon_to_quantity_offset
         icons = [
-            self.img[
-                y : y + self.box_height,
-                x - self.icon_to_quantity_offset : x
-                - self.icon_to_quantity_offset
-                + self.box_height,
-            ]
+            self.img[y : y + self.box_height, x - offset : x - offset + self.box_height]
             for x, y in self.quantities
         ]
 
@@ -571,6 +611,7 @@ class StockpileDetector:
 
         return StockpileImageRegions(
             quantities=quantities,
+            composite_quantities_image=self.composite_image,
             icons=icons,
             stockpile_type=stockpile_type,
             stockpile_name=stockpile_name,

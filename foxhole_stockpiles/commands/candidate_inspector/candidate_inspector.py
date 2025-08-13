@@ -27,6 +27,9 @@ def main() -> dict[str, Any] | None:
     Always uses TemplateManager.match_icon() to get candidates and optionally
     perform icon matching. Returns structured results with candidate indices
     and optional icon match details.
+
+    Returns:
+        dict[str, Any] | None: Results or None
     """
     parser = argparse.ArgumentParser(
         description="Test template candidates matching and icon recognition for debugging",
@@ -281,6 +284,7 @@ def main() -> dict[str, Any] | None:
             )
     else:
         logger.info(f"Total: {len(candidate_indices)} candidates")
+
     # Show regular candidate listing results when no icon provided
     if args.print and candidate_indices:
         logger.info(

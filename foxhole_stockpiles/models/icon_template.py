@@ -15,7 +15,7 @@ from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 class IconTemplate(BaseModel):
     """Template data for basic icon matching."""
 
-    image: NDArray[np.uint8] = Field(description="Template image as numpy array")
+    image: NDArray[np.uint8] = Field(description="Template image as numpy array", exclude=True)
     code: str = Field(description="Item code name", min_length=1)
     crated: bool = Field(description="Whether this is a crated variant", default=False)
     category: ItemCategory = Field(description="Category this template belongs to")

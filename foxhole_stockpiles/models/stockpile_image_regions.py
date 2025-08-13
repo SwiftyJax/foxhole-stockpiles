@@ -9,6 +9,7 @@ class StockpileImageRegions(BaseModel):
     """Model representing detected stockpile regions in a screenshot."""
 
     quantities: list[NDArray[np.uint8]] = Field(description="List of detected quantity boxes")
+    composite_quantities_image: NDArray[np.uint8] = Field(description="Composited quantities image")
     icons: list[NDArray[np.uint8]] = Field(description="List of detected stockpile icons")
     stockpile_type: NDArray[np.uint8] | None = Field(
         description="Detected stockpile type region", default=None
@@ -29,6 +30,7 @@ class StockpileImageRegions(BaseModel):
         json_schema_extra={
             "example": {
                 "quantities": [[10, 20, 30]],
+                "composite_quantities_image": [[5, 6, 7]],
                 "icons": [[1, 2, 3]],
                 "stockpile_type": [1],
                 "stockpile_name": [1],

@@ -24,7 +24,7 @@ The project consists of five command-line tools that work together:
 1. **Asset Extraction** - Extracts icon assets from Foxhole PAK files
 2. **Template Generation** - Creates resolution-specific templates with crate overlays
 3. **Database Building** - Compiles templates into optimized binary databases
-4. **Scanner Tool** - Analyzes screenshots to detect and identify stockpile items
+4. **Scanner Tool** - Analyzes screenshots to detect and identify stockpile items with automatic quantity recognition
 5. **Inspector Tool** - Debugs and validates template databases
 
 ## Available Command-Line Tools
@@ -39,7 +39,7 @@ Generates resolution-specific template variants from extracted assets with prope
 Compiles processed templates into optimized binary databases for fast runtime loading.
 
 ### fs-stockpile-scanner
-Analyzes Foxhole stockpile screenshots to detect items and quantities using the compiled database.
+Analyzes Foxhole stockpile screenshots to detect items and quantities using the compiled database. Automatically detects item quantities using OCR with a custom-trained Tesseract model optimized for Foxhole's Renner font.
 
 ### fs-candidate-inspector
 Debugging tool for inspecting database contents and testing icon recognition.
@@ -47,10 +47,12 @@ Debugging tool for inspecting database contents and testing icon recognition.
 ## Requirements
 
 - Python 3.12 or higher
+- **Tesseract OCR** - Required for quantity detection from stockpile screenshots
 - External tools (Windows-specific):
   - `repak.exe` - For PAK file extraction
   - `umodel.exe` - For asset conversion
 - Foxhole game files and `catalog.json`
+- Custom Tesseract model for Renner font recognition (see Installation section)
 
 ## Installation
 
@@ -84,7 +86,43 @@ pip install -e .[dev]
 pip install -e .
 ```
 
-### 4. Set Up Pre-Commit Hooks (Optional, for Development)
+### 4. Install and Configure Tesseract OCR
+
+#### Install Tesseract
+
+**Windows:**
+```bash
+# Download and install from: https://github.com/UB-Mannheim/tesseract/wiki
+# Or using chocolatey:
+choco install tesseract
+```
+
+**macOS:**
+```bash
+brew install tesseract
+```
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update
+sudo apt install tesseract-ocr
+```
+
+#### Set Up Custom Renner Font Model
+
+The stockpile scanner uses a custom-trained Tesseract model optimized for recognizing the Renner font used in Foxhole's UI. **This model is already included in the repository** in the `tessdata/` folder.
+
+The directory structure is:
+```
+foxhole-stockpiles/
+├── tessdata/
+│   └── custom.traineddata  # Already provided
+└── ...
+```
+
+The scanner will automatically detect and use this custom model for improved quantity recognition accuracy.
+
+### 5. Set Up Pre-Commit Hooks (Optional, for Development)
 
 ```bash
 pre-commit install
@@ -125,9 +163,15 @@ fs-stockpile-scanner \
   --image your_screenshot.png
 ```
 
+The scanner will automatically:
+- Detect and identify all items in the stockpile
+- Extract quantities using OCR with the custom Renner font model
+- Output structured JSON data with items, quantities, and metadata
+
 ## Core Dependencies
 
 - **Image Processing**: OpenCV (opencv-python), NumPy
+- **OCR**: Tesseract OCR with pytesseract Python wrapper
 - **Data Handling**: Pydantic v2 for validation
 - **Development**: Ruff (linting), MyPy (type checking), Pre-commit hooks
 
