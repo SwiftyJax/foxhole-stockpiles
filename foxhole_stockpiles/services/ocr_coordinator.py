@@ -1,10 +1,15 @@
 """OCR Coordinator service for orchestrating stockpile detection."""
 
 import logging
-from typing import Any
+from typing import Any, ClassVar
 
-from foxhole_stockpiles.core.utils import most_frequent
+import cv2
+import numpy as np
+from numpy.typing import NDArray
+
+from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
 from foxhole_stockpiles.enums.item_category import ItemCategory
+from foxhole_stockpiles.enums.stockpile_type import StockpileType
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
@@ -17,10 +22,13 @@ from foxhole_stockpiles.services.template_manager import TemplateManager
 class OCRCoordinator:
     """Coordinates the entire stockpile detection and analysis process."""
 
+    TESSERACT_BINARY_THRESHOLD: ClassVar[int] = 127
+
     def __init__(self, config: OCRCoordinatorConfig) -> None:
         """Initialize the model."""
         self.config = config
         self.logger = logging.getLogger(__name__)
+        self.threshold_value: float = 0.0
 
         # Initialize services
         self._text_extractor = StockpileTextExtractor(
@@ -132,6 +140,48 @@ class OCRCoordinator:
 
         return flat_quantities
 
+    def _prepare_image_for_detection(
+        self, image: NDArray[np.uint8], use_inv: bool = True
+    ) -> NDArray[np.uint8]:
+        """Apply preprocessing to the image for better text detection.
+
+        Args:
+            image (NDArray[np.uint8]): Image to preprocess
+            use_inv (bool): Whether to use inverted thresholding
+
+        Return:
+            NDArray[np.uint8]: processed image
+        """
+        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        upscale_factor = 3
+
+        upscaled = cv2.resize(
+            gray, None, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_CUBIC
+        )
+
+        if not self.threshold_value:
+            unique_values, counts = np.unique(upscaled, return_counts=True)
+            most_common_value = unique_values[np.argmax(counts)]
+            self.threshold_value = most_common_value + 120 * (1 - most_common_value / 255)
+
+        threshold_value = self.threshold_value
+        if use_inv:
+            threshold_mode = cv2.THRESH_BINARY_INV
+        else:
+            threshold_mode = cv2.THRESH_BINARY
+            threshold_value -= 30
+
+        upscaled[upscaled < threshold_value] = 0
+
+        _, binary = cv2.threshold(upscaled, self.TESSERACT_BINARY_THRESHOLD, 255, threshold_mode)
+
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+        binary = cv2.dilate(binary, kernel, iterations=1)
+
+        post_cleaned = cv2.cvtColor(binary, cv2.COLOR_GRAY2RGB)
+
+        return np.asarray(post_cleaned, dtype=np.uint8)
+
     def _match_icons_and_build_result(
         self, stockpile_images: StockpileImageRegions, quantities: list[int]
     ) -> Stockpile:
@@ -163,7 +213,7 @@ class OCRCoordinator:
             for icon_index in range(group_start_index, group_start_index + group_amount):
                 try:
                     quantity = quantities[icon_index]
-                    _item = self._process_single_icon(
+                    stockpile_item = self._process_single_icon(
                         stockpile_images=stockpile_images,
                         icon_index=icon_index,
                         quantity=quantity,
@@ -173,11 +223,9 @@ class OCRCoordinator:
                         detected=detected,
                     )
 
-                    if _item is None:
+                    if stockpile_item is None:
                         continue
 
-                    item_code, crated = _item
-                    stockpile_item = StockpileItem(code=item_code, quantity=quantity, crated=crated)
                     stockpile.items.append(stockpile_item)
 
                     # Update detected properties for future icons
@@ -193,6 +241,36 @@ class OCRCoordinator:
                     if self.logger.isEnabledFor(logging.DEBUG):
                         self.logger.exception("Full error details:")
 
+        # detect the stockpile metadata from the other regions
+        name_image = stockpile_images.stockpile_name
+        if name_image is not None:
+            source_image = self._prepare_image_for_detection(image=name_image)
+            text = self._text_extractor._extract_raw_text(image=source_image, numbers_only=False)
+            stockpile.name = text.strip()
+
+        hex_image = stockpile_images.hex_name
+        if hex_image is not None:
+            source_image = self._prepare_image_for_detection(image=hex_image, use_inv=False)
+            text = self._text_extractor._extract_raw_text(image=source_image, numbers_only=False)
+            text = text.strip() + "\n\n"
+            lines = text.splitlines()
+            stockpile.hex_name = lines[0]
+            stockpile.ingame_timestamp = extract_day_and_hour(lines[1])
+            stockpile.shard = lines[2]
+
+        type_image = stockpile_images.stockpile_type
+        if type_image is not None:
+            source_image = self._prepare_image_for_detection(image=type_image)
+            text = self._text_extractor._extract_raw_text(image=source_image, numbers_only=False)
+            try:
+                stockpile.type = StockpileType(text.strip())
+            except ValueError:
+                self.logger.warning(
+                    "Failed to parse stockpile type from text: '%s'. Defaulting to UNDEFINED",
+                    text.strip(),
+                )
+                stockpile.type = StockpileType.UNDEFINED
+
         return stockpile
 
     def _process_single_icon(
@@ -204,7 +282,7 @@ class OCRCoordinator:
         crated: bool | None,
         mod: str | None,
         detected: dict[str, list[Any]],
-    ) -> tuple[str, bool] | None:
+    ) -> StockpileItem | None:
         """Process a single icon and return its code if matched.
 
         Args:
@@ -217,7 +295,7 @@ class OCRCoordinator:
             detected (dict[str, list[Any]]): Accumulator for detected properties
 
         Returns:
-            str | None: Item code if successfully matched, None if no match found
+            StockpileItem | None: Matched item code and crated status, or None if no match found
         """
         category = category or ItemCategory.Invalid
         image = stockpile_images.icons[icon_index]
@@ -244,7 +322,6 @@ class OCRCoordinator:
                 icon_index,
                 self.config.confidence_threshold,
             )
-            self.logger.warning("Candidates: %s", match_result.candidates)
             return None
 
         # Update detected properties for future matching
@@ -261,4 +338,9 @@ class OCRCoordinator:
             match_result.confidence,
         )
 
-        return icon_match.code, icon_match.crated
+        return StockpileItem(
+            code=icon_match.code,
+            crated=icon_match.crated,
+            quantity=quantity,
+            confidence=match_result.confidence,
+        )

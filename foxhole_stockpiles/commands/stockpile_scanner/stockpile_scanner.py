@@ -99,7 +99,12 @@ def main() -> dict[str, Any]:
             code = item.code
             if item.crated:
                 code += "_crated"
-            logger.info("* code: %-35s quantity: %d", code, item.quantity)
+            logger.info(
+                "* code: %-35s quantity: %-3d, confidence: %.3f",
+                code,
+                item.quantity,
+                item.confidence or 0.0,
+            )
 
         return stockpile.model_dump(mode="json")
 

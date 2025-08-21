@@ -17,7 +17,7 @@ class StockpileTextExtractor:
     def __init__(self, tessdata_path: str | None = None, custom_model: str | None = None) -> None:
         """Initialize the OCR extractor.
 
-        Parameters:
+        Args:
             tessdata_path (str | None): Path to tesseract executable (optional)
             custom_model (str | None): Name of the custom trained model to use (default: "custom")
         """
@@ -26,23 +26,27 @@ class StockpileTextExtractor:
         if tessdata_path:
             os.environ["TESSDATA_PREFIX"] = os.path.abspath(tessdata_path)
 
-    def _extract_raw_text(self, image: NDArray[np.uint8]) -> str:
+    def _extract_raw_text(self, image: NDArray[np.uint8], numbers_only: bool = True) -> str:
         """Extract raw text using custom trained model.
 
-        Parameters:
+        Args:
             image (NDArray[np.uint8]): Processed image
+            numbers_only (bool): Limit caracter detection to quantities (True) or all chars (False)
 
         Returns:
             str: Raw OCR text output
         """
         # Use custom trained model for better Renner font recognition
-        config = self.get_tesseract_config()
-        return str(pytesseract.image_to_string(image, config=config) or "")
+        config = self.get_tesseract_config(numbers_only=numbers_only)
+        result = pytesseract.image_to_string(image, config=config)
+        if result is None:
+            return ""
+        return str(result).rstrip()
 
     def extract_quantities(self, composite_image: NDArray[np.uint8]) -> list[list[int]]:
         """Extract all quantities from a composite image maintaining row/column structure.
 
-        Parameters:
+        Args:
             composite_image (NDArray[np.uint8]): Processed composite image (black text on white
                 background)
 
@@ -58,7 +62,7 @@ class StockpileTextExtractor:
     def parse_text_to_lists(self, text: str) -> list[list[int]]:
         r"""Parse text containing space-separated numbers into list of lists of integers.
 
-        Parameters:
+        Args:
             text (str): Text with numbers separated by spaces, lines separated by \n
                 Numbers can have "k+" suffix meaning multiply by 1000
 
@@ -107,11 +111,15 @@ class StockpileTextExtractor:
         self._logger.info("Successfully parsed %d rows from text", len(result))
         return result
 
-    def get_tesseract_config(self) -> str:
+    def get_tesseract_config(self, numbers_only: bool = True) -> str:
         """Get the Tesseract configuration string used.
+
+        Args:
+            numbers_only (bool): Detect quantities (numbers, k+)
 
         Returns:
             str: Tesseract configuration string
         """
         model = f"-l {self.custom_model}" if self.custom_model else ""
-        return f"--psm 6 {model} -c tessedit_char_whitelist=0123456789k+ --oem 3"
+        numbers = "-c tessedit_char_whitelist=0123456789k+" if numbers_only else ""
+        return f"--psm 6 {model} {numbers} --oem 3"

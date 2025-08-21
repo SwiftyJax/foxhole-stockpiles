@@ -2,6 +2,7 @@
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import TypeVar
 
@@ -107,3 +108,28 @@ def compute_icon_phash(icon_image: NDArray[np.uint8]) -> int:
     # Create binary hash based on pixel values above/below average
     bits = (img_resized > avg).astype(np.uint8)
     return int("".join(str(b) for b in bits.flatten()), 2)
+
+
+def extract_day_and_hour(text: str) -> str:
+    """Extracts Days and Hours from a formatted string.
+
+    Args:
+        text (str): Input text containing numbers and commas.
+
+    Returns:
+        str: Formatted string with days and hours, e.g. "1234, 15:30".
+    """
+    print(f"Original text: {text}")
+    # Find all digit/comma groups and join
+    result = "".join(re.findall(r"[\d,]+", text))
+    # Remove first comma if exactly two commas
+    if result.count(",") == 2:
+        result = result.replace(",", "", 1)
+    # Try to split into left/right by first comma
+    parts = result.split(",", 1)
+    if len(parts) == 2:
+        left, right = parts
+        digits = re.sub(r"\D", "", right)
+        if len(digits) == 4:
+            return f"{left}, {digits[:2]}:{digits[2:]}"
+    return result
