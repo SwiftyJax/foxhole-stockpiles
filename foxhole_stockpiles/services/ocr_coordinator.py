@@ -194,7 +194,7 @@ class OCRCoordinator:
         Returns:
             dict[str, Any]: Complete stockpile analysis result with items and metadata
         """
-        stockpile = Stockpile()
+        stockpile = Stockpile(resolution=stockpile_images.resolution)
 
         mod: str | None = None
 

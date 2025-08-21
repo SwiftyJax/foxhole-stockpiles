@@ -19,6 +19,9 @@ class StockpileImageRegions(BaseModel):
     )
     hex_name: NDArray[np.uint8] | None = Field(description="Detected hex name region", default=None)
     vertical_resolution: int = Field(description="Vertical resolution of the screenshot", ge=0)
+    resolution: str = Field(
+        description="Resolution of the screenshot, e.g., '1920x1080'", default=""
+    )
     groups: list[tuple[int, int]] = Field(
         description="List of detected icon groups, each represented as (size, start_index)"
     )
@@ -36,6 +39,7 @@ class StockpileImageRegions(BaseModel):
                 "stockpile_name": [1],
                 "hex_name": [1],
                 "vertical_resolution": 1080,
+                "resolution": "1920x1080",
                 "groups": [[3, 0], [2, 3]],
             }
         },

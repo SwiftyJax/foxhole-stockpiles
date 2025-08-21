@@ -616,6 +616,7 @@ class StockpileDetector:
             stockpile_type=stockpile_type,
             stockpile_name=stockpile_name,
             hex_name=hex_name,
+            resolution=f"{self.width}x{self.height}",
             vertical_resolution=self.height,
             groups=self.groups,
         )
