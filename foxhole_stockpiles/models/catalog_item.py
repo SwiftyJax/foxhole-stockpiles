@@ -66,11 +66,11 @@ class CatalogItem(BaseModel):
         Returns:
             ItemCategory: The category of the item based on its properties.
         """
-        if item.get("ShippableInfo"):
-            return ItemCategory.Shippable
-
         if item.get("VehicleProfileType"):
             return ItemCategory.Vehicle
+
+        if item.get("ShippableInfo"):
+            return ItemCategory.Shippable
 
         if item.get("ItemCategory"):
             return ItemCategory.Item
