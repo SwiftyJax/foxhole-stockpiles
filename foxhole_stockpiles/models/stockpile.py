@@ -20,6 +20,9 @@ class Stockpile(BaseModel):
     shard: str = Field(description="Shard name", default="")
     ingame_timestamp: str = Field(description="In game timestamp", default="")
     resolution: str | None = Field(description="Resolution of the screenshot", default=None)
+    errors: list[str] = Field(
+        description="List of errors encountered during processing", default_factory=list
+    )
 
     @field_serializer("type")
     def serialize_type(self, value: StockpileType) -> str:
@@ -48,6 +51,7 @@ class Stockpile(BaseModel):
                 "hex_name": "Terminus",
                 "shard": "ABLE",
                 "ingame_timestamp": "Day 1,293, 1906 Hours",
+                "errors": ["No icon detected in group 1, index 67 with confidence 0.75"],
             }
         },
     )

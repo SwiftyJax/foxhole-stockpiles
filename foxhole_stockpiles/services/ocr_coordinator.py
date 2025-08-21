@@ -225,6 +225,12 @@ class OCRCoordinator:
                     )
 
                     if stockpile_item is None:
+                        mod_text = f", mod: {mod}" if mod else ""
+                        category_text = f", category: {category.value}" if category else ""
+                        stockpile.errors.append(
+                            f"Group {group_index}, index {icon_index}: No match found. "
+                            f"Quantity: {quantity}, crated: {crated}{mod_text}{category_text}"
+                        )
                         continue
 
                     stockpile.items.append(stockpile_item)
