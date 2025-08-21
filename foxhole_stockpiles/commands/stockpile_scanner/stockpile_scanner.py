@@ -29,10 +29,28 @@ def main() -> dict[str, Any]:
     parser.add_argument(
         "--confidence",
         type=float,
-        default=0.8,
-        help="Minimum confidence threshold for icon matching (default: 0.8). "
-        "Only used with --icon parameter.",
+        default=0.85,
+        help="Minimum confidence threshold for icon matching (default: 0.85).",
     )
+    parser.add_argument(
+        "--early_exit",
+        type=float,
+        default=0.95,
+        help="Early exit threshold for icon matching (default: 0.95).",
+    )
+    parser.add_argument(
+        "--max_ncc_candidates",
+        type=int,
+        default=25,
+        help="Maximum number of NCC candidates to consider for matching (default: 25).",
+    )
+    parser.add_argument(
+        "--phash_threshold",
+        type=int,
+        default=12,
+        help="Maximum Hamming distance for pHash filtering (default: 12).",
+    )
+
     parser.add_argument(
         "--faction",
         type=str,
@@ -82,6 +100,9 @@ def main() -> dict[str, Any]:
             confidence_threshold=args.confidence,
             faction_filter=faction_filter,
             debug_mode=args.debug_image,
+            early_exit_threshold=args.early_exit,
+            max_ncc_candidates=args.max_ncc_candidates,
+            phash_threshold=args.phash_threshold,
         )
 
         coordinator = OCRCoordinator(config)

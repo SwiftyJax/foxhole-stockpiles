@@ -19,6 +19,10 @@ class MatchResult(BaseModel):
         description="Confidence score of the icon match, None if no icon matching performed",
         default=None,
     )
+    tested_candidates: int = Field(
+        description="Number of candidates that were tested during icon matching",
+        default=0,
+    )
 
     model_config = ConfigDict(
         str_strip_whitespace=True,
@@ -36,6 +40,7 @@ class MatchResult(BaseModel):
                     "resolution": "1080",
                 },
                 "confidence": 0.8756,
+                "tested_candidates": 50,
             }
         },
     )

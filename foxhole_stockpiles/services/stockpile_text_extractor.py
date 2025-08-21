@@ -98,7 +98,6 @@ class StockpileTextExtractor:
                     try:
                         parsed_number = int(token)
                         numbers.append(parsed_number)
-                        self._logger.debug("Parsed token %s as %d", token, parsed_number)
                     except ValueError:
                         # Skip invalid tokens
                         self._logger.warning("Skipping invalid token: %s", token)

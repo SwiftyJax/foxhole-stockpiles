@@ -46,7 +46,12 @@ python stockpile_scanner.py --database DATABASE --image IMAGE [OPTIONS]
 
 #### Optional Filtering
 - `--faction`: Faction filter (Colonial: 'c'/'colonial', Warden: 'w'/'warden')
-- `--confidence`: Minimum confidence threshold for icon matching (default: 0.8, range: 0.0-1.0)
+- `--confidence`: Minimum confidence threshold for icon matching (default: 0.85, range: 0.0-1.0)
+
+#### Template Matching Parameters
+- `--early_exit`: Early exit threshold for icon matching (default: 0.95)
+- `--max_ncc_candidates`: Maximum number of NCC candidates to consider for matching (default: 25)
+- `--phash_threshold`: Maximum Hamming distance for pHash filtering (default: 12)
 
 #### Output Control
 - `--debug_image`: Save debug image showing detected regions and matches
@@ -82,6 +87,20 @@ python stockpile_scanner.py \
     --log-file scan_results.log
 ```
 
+**Advanced template matching configuration:**
+```bash
+python stockpile_scanner.py \
+    --database database/db.pkl \
+    --image stockpile.png \
+    --confidence 0.8 \
+    --early_exit 0.98 \
+    --max_ncc_candidates 30 \
+    --phash_threshold 10 \
+    --faction warden \
+    --debug_image \
+    --verbose
+```
+
 ## Input Requirements
 
 ### Screenshot Format
@@ -114,7 +133,7 @@ Detection Summary:
 Loaded database for resolution 1080 with 15,247 templates
 
 Group 0: Icon at index 0 matched with template 'BasicMaterials' (confidence: 0.92)
-Group 0: Icon at index 1 matched with template 'RefinedMaterials' (confidence: 0.89)
+Group 0: Icon at index 1 matched with template 'RefinedMaterials' (confidence: 0.99)
 Group 1: Icon at index 2 matched with template 'Rifle' (confidence: 0.95)
 ...
 ```
@@ -160,6 +179,12 @@ When using `--debug_image`, creates a visual debugging image showing:
 - **Efficient Filtering**: Multi-stage candidate reduction (12,000 → 20-30 candidates)
 - **Quick Recognition**: 1-4ms per icon recognition after filtering
 - **Memory Efficient**: Processes large screenshots without excessive memory usage
+- **Configurable Performance**: Tunable parameters for speed vs accuracy trade-offs
+
+### Template Matching Controls
+- **Early Exit Threshold**: Stop searching when a match exceeds this confidence (speeds up processing)
+- **NCC Candidate Limit**: Maximum number of candidates to evaluate (controls processing time)
+- **pHash Filtering**: Pre-filter candidates using perceptual hash distance (improves accuracy)
 
 ## Integration
 
@@ -193,7 +218,9 @@ Screenshot Input → Region Detection → Icon Extraction → Database Lookup �
 - Check that the screenshot shows the full stockpile interface
 
 **Warning: "No match found for icon"**
-- Try lowering confidence threshold (--confidence 0.7)
+- Try lowering confidence threshold (--confidence 0.7 or 0.75)
+- Increase max NCC candidates (--max_ncc_candidates 50)
+- Adjust pHash threshold (--phash_threshold 15)
 - Enable debug output to see what was detected
 - Verify database contains templates for the target resolution
 

@@ -209,6 +209,7 @@ class OCRCoordinator:
             category: ItemCategory | None = None
             crated: bool | None = None
             detected: dict[str, list[Any]] = {"category": [], "crated": [], "mod": []}
+            current_icons = []
 
             for icon_index in range(group_start_index, group_start_index + group_amount):
                 try:
@@ -227,15 +228,33 @@ class OCRCoordinator:
                         continue
 
                     stockpile.items.append(stockpile_item)
+                    current_icons.append(stockpile_item)
 
                     # Update detected properties for future icons
                     expected_length = 2 if group_index == 0 else 5
-                    if len(detected["category"]) >= expected_length:
+                    if category is None and len(detected["category"]) >= expected_length:
                         category = most_frequent(detected["category"])
                         crated = most_frequent(detected["crated"])
                         if mod is None:
                             mod = most_frequent(detected["mod"])
+                        self.logger.debug(
+                            "Detected category: %s, crated: %s, mod: %s",
+                            category,
+                            crated,
+                            mod,
+                        )
 
+                        # Make sure all the icons have the correct crated status
+                        if crated is not None:
+                            for item in current_icons:
+                                if item.crated != crated:
+                                    self.logger.debug(
+                                        "Item %s: changing crated from %s to %s",
+                                        item,
+                                        item.crated,
+                                        crated,
+                                    )
+                                    item.crated = crated
                 except Exception as e:
                     self.logger.error("Error processing icon at index %d: %s", icon_index, e)
                     if self.logger.isEnabledFor(logging.DEBUG):
@@ -309,6 +328,9 @@ class OCRCoordinator:
         match_result = self._template_manager.match_icon(
             icon_image=image,
             confidence_threshold=self.config.confidence_threshold,
+            early_exit_threshold=self.config.early_exit_threshold,
+            max_ncc_candidates=self.config.max_ncc_candidates,
+            phash_threshold=self.config.phash_threshold,
             faction=self.config.faction_filter,
             category=category,
             crated=crated,
@@ -330,12 +352,13 @@ class OCRCoordinator:
         detected["mod"].append(icon_match.mod)
 
         self.logger.info(
-            "[%d] '%s%s', quantity: %d (confidence: %.2f)",
+            "[%d] '%s%s', quantity: %d (confidence: %.2f) after testing %d candidates",
             icon_index,
             icon_match.code,
             " (crated)" if icon_match.crated else "",
             quantity,
             match_result.confidence,
+            match_result.tested_candidates,
         )
 
         return StockpileItem(

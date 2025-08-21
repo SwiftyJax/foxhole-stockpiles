@@ -34,7 +34,7 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector
 ### Icon Matching Arguments
 
 - `--icon`: Path to icon image file for template matching
-- `--confidence`: Minimum confidence threshold for matches (default: 0.8, range: 0.0-1.0)
+- `--confidence`: Minimum confidence threshold for matches (default: 0.85, range: 0.0-1.0)
 
 ### Output Control Arguments
 

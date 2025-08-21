@@ -99,8 +99,8 @@ def main() -> dict[str, Any] | None:
     parser.add_argument(
         "--confidence",
         type=float,
-        default=0.8,
-        help="Minimum confidence threshold for icon matching (default: 0.8). "
+        default=0.85,
+        help="Minimum confidence threshold for icon matching (default: 0.85). "
         "Only used with --icon parameter.",
     )
     parser.add_argument(

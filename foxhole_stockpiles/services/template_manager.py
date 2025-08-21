@@ -108,9 +108,10 @@ class TemplateManager:
         category: ItemCategory | None = None,
         crated: bool | None = None,
         code: str | None = None,
-        confidence_threshold: float = 0.8,
+        confidence_threshold: float = 0.85,
         phash_threshold: int = 12,
         max_ncc_candidates: int = 25,
+        early_exit_threshold: float = 0.95,
     ) -> MatchResult:
         """Get candidates and optionally perform icon matching.
 
@@ -124,6 +125,8 @@ class TemplateManager:
             confidence_threshold (float): Minimum confidence for icon match
             phash_threshold (int): Maximum Hamming distance for pHash filtering
             max_ncc_candidates (int): Maximum candidates for NCC optimization
+            early_exit_threshold (float): Confidence threshold for immediate exit
+                (if >= confidence_threshold)
 
         Returns:
             MatchResult: Candidates list and optional icon match result
@@ -140,7 +143,9 @@ class TemplateManager:
         confidence_result: float = 0.0
 
         if icon_image is None:
-            return MatchResult(candidates=candidates, icon=None, confidence=0.0)
+            return MatchResult(
+                candidates=candidates, icon=None, confidence=0.0, tested_candidates=0
+            )
 
         start_time = time.perf_counter()
 
@@ -172,8 +177,10 @@ class TemplateManager:
         ncc_start = time.perf_counter()
         best_match = None
         best_confidence = 0.0
+        candidates_tested = 0
 
         for candidate_idx in final_candidates:
+            candidates_tested += 1
             template = self.active_database.templates[candidate_idx]
 
             result = cv2.matchTemplate(
@@ -185,16 +192,26 @@ class TemplateManager:
                 best_confidence = confidence
                 best_match = template
 
+            # Early exit if very high confidence found
+            if confidence >= early_exit_threshold and early_exit_threshold >= confidence_threshold:
+                logger.debug(
+                    "Early exit: found %.3f confidence (>= %.3f) after testing %d candidates",
+                    confidence,
+                    early_exit_threshold,
+                    candidates_tested,
+                )
+                break
+
         ncc_time_ms = (time.perf_counter() - ncc_start) * 1000
         end_time = time.perf_counter()
         total_time_ms = (end_time - start_time) * 1000
 
         logger.debug(
-            "Icon matching took %.2f ms total (pHash: %.2f ms, NCC: %.2f ms) for %d→%d candidates.",
+            "Icon matching took %.2f ms total (pHash: %.2f, NCC: %.2f) tested %d of %d candidates.",
             total_time_ms,
             phash_time_ms,
             ncc_time_ms,
-            len(candidates),
+            candidates_tested,
             len(final_candidates),
         )
 
@@ -202,7 +219,12 @@ class TemplateManager:
             icon_result = best_match
             confidence_result = best_confidence
 
-        return MatchResult(candidates=candidates, icon=icon_result, confidence=confidence_result)
+        return MatchResult(
+            candidates=candidates,
+            icon=icon_result,
+            confidence=confidence_result,
+            tested_candidates=candidates_tested,
+        )
 
     def get_statistics(self) -> TemplateManagerStatistics:
         """Get template manager and database statistics.
