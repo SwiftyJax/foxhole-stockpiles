@@ -11,7 +11,9 @@ from foxhole_stockpiles.enums.item_faction import ItemFaction
 class OCRCoordinatorConfig(BaseModel):
     """Configuration for stockpile analysis."""
 
-    database_path: Path = Field(description="Path to the template database file")
+    database_path: Path = Field(
+        description="Path to the template database file", default=Path("database.pkl")
+    )
     confidence_threshold: float = Field(
         description="Minimum confidence threshold for icon matching", default=0.85, ge=0.0, le=1.0
     )

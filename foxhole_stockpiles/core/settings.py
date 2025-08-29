@@ -5,6 +5,8 @@ from functools import lru_cache
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
+
 
 class OCRSettings(BaseModel):
     """Settings for the OCR."""
@@ -260,6 +262,9 @@ class AppSettings(BaseSettings):
     """Application Settings."""
 
     ocr: OCRSettings = Field(description="OCR settings", default_factory=OCRSettings)
+    scanner: OCRCoordinatorConfig = Field(
+        description="Stockpile scanner settings", default_factory=OCRCoordinatorConfig
+    )
     stockpile_types: StockpileTypesSettings = Field(
         description="Stockpile types settings", default_factory=StockpileTypesSettings
     )

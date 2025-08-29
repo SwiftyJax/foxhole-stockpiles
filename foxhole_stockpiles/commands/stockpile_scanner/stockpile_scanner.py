@@ -3,10 +3,12 @@
 import argparse
 import logging
 import sys
+from copy import copy
 from pathlib import Path
 from typing import Any
 
 from foxhole_stockpiles.core.logging import setup_logging
+from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
@@ -38,19 +40,6 @@ def main() -> dict[str, Any]:
         default=0.95,
         help="Early exit threshold for icon matching (default: 0.95).",
     )
-    parser.add_argument(
-        "--max_ncc_candidates",
-        type=int,
-        default=25,
-        help="Maximum number of NCC candidates to consider for matching (default: 25).",
-    )
-    parser.add_argument(
-        "--phash_threshold",
-        type=int,
-        default=12,
-        help="Maximum Hamming distance for pHash filtering (default: 12).",
-    )
-
     parser.add_argument(
         "--faction",
         type=str,
@@ -94,18 +83,14 @@ def main() -> dict[str, Any]:
         faction_filter = ItemFaction.from_string(args.faction)
 
     try:
-        # Create configuration and coordinator
-        config = OCRCoordinatorConfig(
-            database_path=args.database,
-            confidence_threshold=args.confidence,
-            faction_filter=faction_filter,
-            debug_mode=args.debug_image,
-            early_exit_threshold=args.early_exit,
-            max_ncc_candidates=args.max_ncc_candidates,
-            phash_threshold=args.phash_threshold,
-        )
+        scanner_settings: OCRCoordinatorConfig = copy(get_settings().scanner)
+        scanner_settings.database_path = args.database
+        scanner_settings.confidence_threshold = args.confidence
+        scanner_settings.faction_filter = faction_filter
+        scanner_settings.debug_mode = args.debug_image
+        scanner_settings.early_exit_threshold = args.early_exit
 
-        coordinator = OCRCoordinator(config)
+        coordinator = OCRCoordinator(scanner_settings)
 
         # Analyze the stockpile
         stockpile: Stockpile = coordinator.analyze_stockpile(args.image)
