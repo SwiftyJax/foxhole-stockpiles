@@ -29,19 +29,19 @@ The project consists of five command-line tools that work together:
 
 ## Available Command-Line Tools
 
-### fs-uasset-extractor
+### fs extract-assets
 Extracts icon assets from Foxhole PAK files and converts them to PNG format.
 
-### fs-generate-templates
+### fs generate-templates
 Generates resolution-specific template variants from extracted assets with proper scaling and crate overlays.
 
-### fs-database-builder
+### fs database-builder
 Compiles processed templates into optimized binary databases for fast runtime loading.
 
-### fs-stockpile-scanner
+### fs scanner
 Analyzes Foxhole stockpile screenshots to detect items and quantities using the compiled database. Automatically detects item quantities using OCR with a custom-trained Tesseract model optimized for Foxhole's Renner font.
 
-### fs-candidate-inspector
+### fs inspect
 Debugging tool for inspecting database contents and testing icon recognition.
 
 ## Requirements
@@ -134,7 +134,7 @@ pre-commit install
 
 1. **Extract assets from game PAK files:**
 ```bash
-fs-uasset-extractor \
+fs extract-assets \
   --catalog catalog.json \
   --pak "C:/Program Files (x86)/Steam/steamapps/common/Foxhole/War/Content/Paks/War-WindowsNoEditor.pak" \
   --output raw_assets/
@@ -142,7 +142,7 @@ fs-uasset-extractor \
 
 2. **Generate resolution-specific templates:**
 ```bash
-fs-generate-templates \
+fs generate-templates \
   --catalog catalog.json \
   --assets raw_assets/ \
   --templates processed_templates/
@@ -150,7 +150,7 @@ fs-generate-templates \
 
 3. **Build optimized binary database:**
 ```bash
-fs-database-builder \
+fs database-builder \
   --catalog catalog.json \
   --templates processed_templates/ \
   --database foxhole_templates.pkl
@@ -158,7 +158,7 @@ fs-database-builder \
 
 4. **Scan a stockpile screenshot:**
 ```bash
-fs-stockpile-scanner \
+fs scanner \
   --database foxhole_templates.pkl \
   --image your_screenshot.png
 ```
@@ -212,6 +212,28 @@ mypy foxhole_stockpiles/
 # Run all pre-commit hooks
 pre-commit run --all-files
 ```
+
+### Building Windows Executable
+
+For Windows users who want a standalone executable, the project includes a build script:
+
+```bash
+# Ensure PyInstaller is installed
+pip install pyinstaller
+
+# Run the build script
+python build_fs.py
+```
+
+This creates a single `fs.exe` file in the `dist/` directory that contains all dependencies and can be used without Python installation:
+
+```bash
+# Use the executable with the same command syntax
+fs.exe scanner --database templates.pkl --image screenshot.png
+fs.exe extract-assets --catalog catalog.json --pak game.pak --output assets/
+```
+
+The executable is typically 50-80MB and includes all required dependencies except external tools (repak.exe, umodel.exe) which must still be provided separately.
 
 ### Note on Testing
 
