@@ -83,6 +83,23 @@ class OCRSettings(BaseModel):
     )
 
 
+class OutputFormatSettings(BaseModel):
+    """Settings for output formats."""
+
+    file_path: str = Field(
+        description="Path to the output file when using file output format", default="output.json"
+    )
+
+    model_config = ConfigDict(
+        extra="ignore",
+        json_schema_extra={
+            "example": {
+                "file_path": "output.txt",
+            }
+        },
+    )
+
+
 class StockpileTypesSettings(BaseModel):
     """Settings for the stockpile types."""
 
@@ -290,6 +307,9 @@ class AppSettings(BaseSettings):
         description="Logging settings", default_factory=LoggingSettings
     )
     ocr: OCRSettings = Field(description="OCR settings", default_factory=OCRSettings)
+    output_format: OutputFormatSettings = Field(
+        description="Output format settings", default_factory=OutputFormatSettings
+    )
     scanner: OCRCoordinatorConfig = Field(
         description="Stockpile scanner settings", default_factory=OCRCoordinatorConfig
     )

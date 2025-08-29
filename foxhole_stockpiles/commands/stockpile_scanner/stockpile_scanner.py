@@ -1,6 +1,7 @@
 """Foxhole Stockpile Detection Script."""
 
 import argparse
+import datetime
 import logging
 import sys
 from copy import copy
@@ -10,16 +11,17 @@ from typing import Any
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
+from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 
 
-def main() -> dict[str, Any]:
+def main() -> dict[str, Any] | None:
     """Main function to handle command line arguments and execute detection.
 
     Returns:
-        dict: Output of the scanned stockpile.
+        dict[str, Any] | None: Detected stockpile data or None depending on the output format.
     """
     parser = argparse.ArgumentParser(
         description="Detect quantity boxes and title regions in Foxhole game screenshot"
@@ -58,7 +60,15 @@ def main() -> dict[str, Any]:
         help="Suppress all output except errors and warnings. "
         "Only errors will be printed to console.",
     )
+    parser.add_argument(
+        "--output-format",
+        type=str,
+        choices=[fmt.value for fmt in OutputFormat],
+        default=OutputFormat.CONSOLE.value,
+        help="Output format for the results (default: console)",
+    )
     args = parser.parse_args()
+    output_format = OutputFormat(args.output_format)
 
     # Setup logging
     settings = copy(get_settings())
@@ -97,25 +107,39 @@ def main() -> dict[str, Any]:
 
         # Analyze the stockpile
         stockpile: Stockpile = coordinator.analyze_stockpile(args.image)
-        logger = logging.getLogger(__name__)
-        logger.info("Name: %s", stockpile.name)
-        logger.info("Type: %s", stockpile.type.value)
-        logger.info("Hex: %s", stockpile.hex_name)
-        logger.info("Shard: %s", stockpile.shard)
-        logger.info("Ingame timestamp: %s", stockpile.ingame_timestamp)
-        logger.info("Items:")
-        for item in stockpile.items:
-            code = item.code
-            if item.crated:
-                code += "_crated"
-            logger.info(
-                "* code: %-35s quantity: %-3d, confidence: %.3f",
-                code,
-                item.quantity,
-                item.confidence or 0.0,
-            )
+        match output_format:
+            case OutputFormat.CONSOLE:
+                logger = logging.getLogger(__name__)
+                logger.info("Name: %s", stockpile.name)
+                logger.info("Type: %s", stockpile.type.value)
+                logger.info("Hex: %s", stockpile.hex_name)
+                logger.info("Shard: %s", stockpile.shard)
+                logger.info("Ingame timestamp: %s", stockpile.ingame_timestamp)
+                logger.info("Items:")
+                for item in stockpile.items:
+                    code = item.code
+                    if item.crated:
+                        code += "_crated"
+                    logger.info(
+                        "* code: %-35s quantity: %-3d, confidence: %.3f",
+                        code,
+                        item.quantity,
+                        item.confidence or 0.0,
+                    )
+            case OutputFormat.JSON:
+                return stockpile.model_dump(mode="json")
+            case OutputFormat.FILE:
+                file = settings.output_format.file_path
+                if not file:
+                    file = "output.json"
 
-        return stockpile.model_dump(mode="json")
+                if "{timestamp}" in file:
+                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                    file = file.replace("{timestamp}", timestamp)
+                output_path = Path(file)
+                output_path.parent.mkdir(parents=True, exist_ok=True)
+                with output_path.open("w", encoding="utf-8") as f:
+                    f.write(stockpile.model_dump_json())
 
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
@@ -126,6 +150,8 @@ def main() -> dict[str, Any]:
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         sys.exit(1)
+
+    return None
 
 
 if __name__ == "__main__":
