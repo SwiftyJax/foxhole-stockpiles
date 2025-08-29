@@ -1,12 +1,12 @@
 """Foxhole Stockpiles - Stockpile Detector Module."""
 
 import logging
-from typing import ClassVar
 
 import cv2
 import numpy as np
 from numpy.typing import NDArray
 
+from foxhole_stockpiles.core.settings import OCRSettings, get_settings
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
 
 type Coordinates = tuple[int, int]  # (x, y) coordinates of the top-left corner of a quantity box
@@ -17,28 +17,15 @@ type GroupResult = tuple[int, int]  # amount, index
 class StockpileDetector:
     """Detects stockpile components in Foxhole game screenshots with resolution scaling."""
 
-    # Base dimensions for 2160p resolution
-    BASE_HEIGHT: ClassVar[int] = 2160
-    BASE_BOX_WIDTH: ClassVar[int] = 84
-    BASE_BOX_HEIGHT: ClassVar[int] = 64
-    BASE_COLUMN_OFFSET: ClassVar[int] = 112
-    BASE_ROW_OFFSET: ClassVar[int] = 78
-    BASE_GROUP_OFFSET: ClassVar[int] = 98
-    BASE_TITLE_MARGIN: ClassVar[int] = 24
-    BASE_TITLE_MIN_WIDTH: ClassVar[int] = 600
-    BASE_TITLE_HEIGHT: ClassVar[int] = 64
-    BASE_ICON_TO_QUANTITY_OFFSET: ClassVar[int] = 88
-
-    BASE_GRAY_LOWER: ClassVar[int] = 15
-    BASE_GRAY_UPPER: ClassVar[int] = 98
-    PIXEL_DIFF_TOLERANCE: ClassVar[int] = 2
-
-    def __init__(self, image_path: str) -> None:
+    def __init__(self, image_path: str, settings: OCRSettings | None = None) -> None:
         """Initialize detector with image path and calculate scale factor.
 
         Args:
-            image_path: Path to the input image file
+            image_path (str): Path to the input image file
+            settings (OCRSettings | None): OCR settings or None
         """
+        self._settings = settings if settings else get_settings().ocr
+
         self._logger = logging.getLogger(__name__)
         self.image_path = image_path
         self.scale_factor = 1.0
@@ -110,18 +97,18 @@ class StockpileDetector:
         height, width = self.img.shape[:2]
 
         # Calculate scale factor based on image height relative to base resolution
-        self.scale_factor = height / self.BASE_HEIGHT
+        self.scale_factor = height / self._settings.height
 
         # Scale all dimensions
-        self.box_width = int(self.BASE_BOX_WIDTH * self.scale_factor)
-        self.box_height = int(self.BASE_BOX_HEIGHT * self.scale_factor)
-        self.column_offset = int(self.BASE_COLUMN_OFFSET * self.scale_factor) + self.box_width
-        self.row_offset = int(self.BASE_ROW_OFFSET * self.scale_factor)
-        self.group_offset = int(self.BASE_GROUP_OFFSET * self.scale_factor)
+        self.box_width = int(self._settings.box_width * self.scale_factor)
+        self.box_height = int(self._settings.box_height * self.scale_factor)
+        self.column_offset = int(self._settings.column_offset * self.scale_factor) + self.box_width
+        self.row_offset = int(self._settings.row_offset * self.scale_factor)
+        self.group_offset = int(self._settings.group_offset * self.scale_factor)
 
-        self.title_margin = int(self.BASE_TITLE_MARGIN * self.scale_factor)
-        self.title_min_width = int(self.BASE_TITLE_MIN_WIDTH * self.scale_factor)
-        self.title_height = int(self.BASE_TITLE_HEIGHT * self.scale_factor)
+        self.title_margin = int(self._settings.title_margin * self.scale_factor)
+        self.title_min_width = int(self._settings.title_min_width * self.scale_factor)
+        self.title_height = int(self._settings.title_height * self.scale_factor)
         self.stockpile_type_width = int(3 * self.box_width)
         self.stockpile_name_width = int(2 * self.box_width)
 
@@ -132,7 +119,9 @@ class StockpileDetector:
         self.hex_name_width = int(self.box_width * 3.5)
 
         # Icon shift to quantity box
-        self.icon_to_quantity_offset = int(self.BASE_ICON_TO_QUANTITY_OFFSET * self.scale_factor)
+        self.icon_to_quantity_offset = int(
+            self._settings.icon_to_quantity_offset * self.scale_factor
+        )
 
         self._logger.info(
             "Image resolution: %dx%d. Scale factor: %.3f", width, height, self.scale_factor
@@ -151,7 +140,7 @@ class StockpileDetector:
         Returns:
             bool: If the points are in the valid range
         """
-        return abs(second - first) < self.PIXEL_DIFF_TOLERANCE
+        return abs(second - first) < self._settings.pixel_diff_tolerance
 
     def _create_grey_mask(self, image: NDArray[np.uint8]) -> NDArray[np.uint8]:
         """Create binary mask for pixels in grey range.
@@ -167,14 +156,18 @@ class StockpileDetector:
         hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV)
 
         # Create mask for low saturation (grey) pixels. Any hue, low saturation, value in range
-        lower_bound = np.array([0, 0, self.BASE_GRAY_LOWER])
-        upper_bound = np.array([179, 30, self.BASE_GRAY_UPPER])
+        lower_bound = np.array([0, 0, self._settings.gray_lower])
+        upper_bound = np.array([179, 30, self._settings.gray_upper])
 
         hsv_mask = cv2.inRange(hsv, lower_bound, upper_bound)
 
         # Also create RGB mask for more precise control
-        lower_rgb = np.array([self.BASE_GRAY_LOWER, self.BASE_GRAY_LOWER, self.BASE_GRAY_LOWER])
-        upper_rgb = np.array([self.BASE_GRAY_UPPER, self.BASE_GRAY_UPPER, self.BASE_GRAY_UPPER])
+        lower_rgb = np.array(
+            [self._settings.gray_lower, self._settings.gray_lower, self._settings.gray_lower]
+        )
+        upper_rgb = np.array(
+            [self._settings.gray_upper, self._settings.gray_upper, self._settings.gray_upper]
+        )
         rgb_mask = cv2.inRange(image, lower_rgb, upper_rgb)
 
         # Combine both masks (intersection)
