@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+from copy import copy
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +10,7 @@ import cv2
 import numpy
 
 from foxhole_stockpiles.core.logging import setup_logging
+from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
@@ -97,20 +99,6 @@ def main() -> dict[str, Any] | None:
         help="Minimum confidence threshold for icon matching (default: 0.85). "
         "Only used with --icon parameter.",
     )
-    parser.add_argument(
-        "--phash-threshold",
-        type=int,
-        default=12,
-        help="Maximum Hamming distance for pHash filtering (default: 12). "
-        "Lower values are more strict. Only used with --icon.",
-    )
-    parser.add_argument(
-        "--max-ncc-candidates",
-        type=int,
-        default=10,
-        help="Maximum candidates for NCC optimization (default: 10). "
-        "Only used with --icon and optimization enabled.",
-    )
     parser.add_argument("--log-file", type=Path, help="Path to log file (default: console only)")
     parser.add_argument(
         "--verbose", action="store_true", help="Enable verbose logging (debug level)"
@@ -130,19 +118,21 @@ def main() -> dict[str, Any] | None:
     )
 
     args = parser.parse_args()
+    settings = copy(get_settings())
 
     # Validate confidence parameter
     if args.confidence < 0.0 or args.confidence > 1.0:
         parser.error("Confidence threshold must be between 0.0 and 1.0")
 
+    logging_settings = settings.logging
     # Setup logging
     if args.quiet:
-        log_level = logging.WARNING
+        logging_settings.log_level = "WARNING"
     elif args.verbose:
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.INFO
-    setup_logging(log_level=log_level, log_file=str(args.log_file) if args.log_file else "")
+        logging_settings.log_level = "DEBUG"
+
+    logging_settings.log_file = args.log_file
+    setup_logging(logging_settings)
 
     logger = logging.getLogger(__name__)
 
@@ -229,6 +219,7 @@ def main() -> dict[str, Any] | None:
 
     # Always use match_icon to get candidates and optional icon matching
     try:
+        scanner_settings = settings.scanner
         match_result = manager.match_icon(
             icon_image=icon_image,
             faction=faction_filter,
@@ -237,8 +228,8 @@ def main() -> dict[str, Any] | None:
             crated=crated_filter,
             code=code_filter,
             confidence_threshold=args.confidence,
-            phash_threshold=args.phash_threshold,
-            max_ncc_candidates=args.max_ncc_candidates,
+            phash_threshold=scanner_settings.phash_threshold,
+            max_ncc_candidates=scanner_settings.max_ncc_candidates,
         )
 
         candidate_indices = match_result.candidates

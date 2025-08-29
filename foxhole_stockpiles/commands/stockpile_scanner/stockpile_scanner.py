@@ -61,13 +61,16 @@ def main() -> dict[str, Any]:
     args = parser.parse_args()
 
     # Setup logging
+    settings = copy(get_settings())
+    logging_settings = settings.logging
+    # Setup logging
     if args.quiet:
-        log_level = logging.WARNING
+        logging_settings.log_level = "WARNING"
     elif args.verbose:
-        log_level = logging.DEBUG
-    else:
-        log_level = logging.INFO
-    setup_logging(log_level=log_level, log_file=str(args.log_file) if args.log_file else "")
+        logging_settings.log_level = "DEBUG"
+
+    logging_settings.log_file = args.log_file
+    setup_logging(logging_settings)
 
     # Validate inputs
     if args.confidence < 0.0 or args.confidence > 1.0:
@@ -83,7 +86,7 @@ def main() -> dict[str, Any]:
         faction_filter = ItemFaction.from_string(args.faction)
 
     try:
-        scanner_settings: OCRCoordinatorConfig = copy(get_settings().scanner)
+        scanner_settings: OCRCoordinatorConfig = settings.scanner
         scanner_settings.database_path = args.database
         scanner_settings.confidence_threshold = args.confidence
         scanner_settings.faction_filter = faction_filter

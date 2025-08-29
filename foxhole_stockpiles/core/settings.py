@@ -8,6 +8,34 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 
 
+class LoggingSettings(BaseModel):
+    """Settings for logging."""
+
+    loggers: dict[str, str] = Field(description="Loggers and their levels", default={})
+    log_level: str = Field(description="Logging level", default="INFO")
+    log_format: str = Field(
+        description="Logging format",
+        default="[%(asctime)s] %(levelname)s [%(name)s] %(message)s",
+    )
+    date_format: str = Field(description="Logging date format", default="%Y-%m-%d %H:%M:%S")
+    rotate_logs: bool = Field(description="Rotate logs daily", default=False)
+    log_file: str | None = Field(description="Log file to write to", default=None)
+
+    model_config = ConfigDict(
+        extra="ignore",
+        json_schema_extra={
+            "example": {
+                "loggers": {"foxhole_stockpiles": "DEBUG", "uvicorn": "INFO"},
+                "log_level": "INFO",
+                "log_format": "[%(asctime)s] %(levelname)s [%(name)s] %(message)s",
+                "date_format": "%Y-%m-%d %H:%M:%S",
+                "rotate_logs": False,
+                "log_file": None,
+            }
+        },
+    )
+
+
 class OCRSettings(BaseModel):
     """Settings for the OCR."""
 
@@ -255,12 +283,12 @@ class StockpileTypesSettings(BaseModel):
     )
 
 
-# Sections. End
-
-
 class AppSettings(BaseSettings):
     """Application Settings."""
 
+    logging: LoggingSettings = Field(
+        description="Logging settings", default_factory=LoggingSettings
+    )
     ocr: OCRSettings = Field(description="OCR settings", default_factory=OCRSettings)
     scanner: OCRCoordinatorConfig = Field(
         description="Stockpile scanner settings", default_factory=OCRCoordinatorConfig

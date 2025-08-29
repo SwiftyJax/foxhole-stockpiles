@@ -3,33 +3,41 @@
 import logging
 import sys
 from collections.abc import Sequence
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
+from foxhole_stockpiles.core.settings import LoggingSettings
 
-def setup_logging(
-    log_level: int = logging.INFO,
-    log_file: str = "",
-    format_string: str = "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-) -> None:
+
+def setup_logging(settings: LoggingSettings) -> None:
     """Setup logging configuration for the application.
 
     Args:
-        log_level (int): Logging level (default: INFO)
-        log_file (str): Path to log file (default: empty string for no file logging)
-        format_string (str): Custom format string (default: standard format)
+        settings (LoggingSettings): Logging settings to configure logging.
     """
     handlers: Sequence[logging.Handler]
-    if log_file:
-        # Convert to Path and ensure log directory exists
-        log_path = Path(log_file)
+    if settings.log_file:
+        log_path = Path(settings.log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        handlers = [logging.FileHandler(log_path)]
+        if settings.rotate_logs:
+            handlers = [
+                TimedRotatingFileHandler(
+                    filename=log_path,
+                    when="midnight",
+                    encoding="utf-8",
+                )
+            ]
+        else:
+            handlers = [logging.FileHandler(log_path)]
     else:
         handlers = [logging.StreamHandler(sys.stdout)]
 
+    handlers[0].setFormatter(
+        logging.Formatter(fmt=settings.log_format, datefmt=settings.date_format)
+    )
     logging.basicConfig(
-        level=log_level,
-        format=format_string,
+        level=settings.log_level,
+        format=settings.log_format,
         handlers=handlers,
         force=True,
     )

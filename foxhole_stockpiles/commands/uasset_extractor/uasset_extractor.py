@@ -12,9 +12,11 @@ import shutil
 import subprocess
 import tempfile
 from concurrent.futures import ThreadPoolExecutor
+from copy import copy
 from pathlib import Path
 
 from foxhole_stockpiles.core.logging import setup_logging
+from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.core.utils import load_catalog
 from foxhole_stockpiles.models.catalog_item import CatalogItem
 
@@ -43,7 +45,6 @@ class PakExtractor:
         extractor_tool: str = DEFAULT_EXTRACTOR,
         converter_tool: str = DEFAULT_CONVERTER,
         output_dir: str = DEFAULT_OUTPUT,
-        log_file: str = "",
     ) -> None:
         """Initialize the PAK extractor with default paths and tools.
 
@@ -53,7 +54,6 @@ class PakExtractor:
             extractor_tool (str): Path to the repak.exe tool for extraction.
             converter_tool (str): Path to the umodel.exe tool for conversion.
             output_dir (str): Directory where converted PNG files will be saved.
-            log_file (str): Optional path to log file for logging output.
 
         Raises:
             ValueError: If any of the parameters but log_file is empty.
@@ -98,8 +98,6 @@ class PakExtractor:
             if not pak_file.exists():
                 raise FileNotFoundError(f"PAK file not found: {pak_file}")
 
-        # Setup logging
-        setup_logging(log_file=log_file)
         self._logger = logging.getLogger(__name__)
         self._logger.info("Using PAK files: %s", self.pak_files)
 
@@ -389,9 +387,29 @@ def main() -> None:
         default=None,
         help="Number of parallel operations (default: cpu count)",
     )
-    parser.add_argument("--logfile", help="Path to log file (default: console only)")
-
+    parser.add_argument("--log-file", type=Path, help="Path to log file (default: console only)")
+    parser.add_argument(
+        "--verbose", action="store_true", help="Enable verbose logging (debug level)"
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        help="Suppress all output except errors and warnings. "
+        "Only errors will be printed to console.",
+    )
     args = parser.parse_args()
+
+    # Setup logging
+    settings = copy(get_settings())
+    logging_settings = settings.logging
+    # Setup logging
+    if args.quiet:
+        logging_settings.log_level = "WARNING"
+    elif args.verbose:
+        logging_settings.log_level = "DEBUG"
+
+    logging_settings.log_file = args.log_file
+    setup_logging(logging_settings)
 
     try:
         extractor = PakExtractor(
@@ -400,7 +418,6 @@ def main() -> None:
             extractor_tool=args.extractor_tool,
             converter_tool=args.converter_tool,
             output_dir=args.output,
-            log_file=args.logfile,
         )
     except (ValueError, FileNotFoundError) as e:
         print(f"Error: {e}")

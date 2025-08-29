@@ -2,6 +2,7 @@
 
 import argparse
 import logging
+from copy import copy
 from pathlib import Path
 
 import cv2
@@ -9,6 +10,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from foxhole_stockpiles.core.logging import setup_logging
+from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.core.utils import load_catalog
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.catalog_item import CatalogItem
@@ -563,14 +565,31 @@ def main() -> None:
         "--filter",
         help="Filter items by CodeName containing this string (case-insensitive)",
     )
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
-    parser.add_argument("--log-file", type=Path, help="Path to log file")
+    parser.add_argument(
+        "--verbose", action="store_true", help="Enable verbose logging (debug level)"
+    )
+    parser.add_argument(
+        "--quiet",
+        action="store_true",
+        default=False,
+        help="Suppress all output except errors and warnings. "
+        "Only errors will be printed to console.",
+    )
+    parser.add_argument("--log-file", type=Path, help="Path to log file (default: console only)")
 
     args = parser.parse_args()
 
     # Setup logging
-    log_level = logging.DEBUG if args.verbose else logging.INFO
-    setup_logging(log_level=log_level, log_file=args.log_file)
+    settings = get_settings()
+    logging_settings = copy(settings.logging)
+    # Setup logging
+    if args.quiet:
+        logging_settings.log_level = "WARNING"
+    elif args.verbose:
+        logging_settings.log_level = "DEBUG"
+
+    logging_settings.log_file = args.log_file
+    setup_logging(logging_settings)
 
     # Validate input paths
     if not args.catalog.exists():
