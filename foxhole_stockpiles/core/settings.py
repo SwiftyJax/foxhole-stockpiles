@@ -1,8 +1,9 @@
 """Configuration module for the app."""
 
 from functools import lru_cache
+from typing import Self
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
@@ -90,6 +91,22 @@ class OutputFormatSettings(BaseModel):
         description="Path to the output file when using file output format", default="output.json"
     )
 
+    webhook_url: str | None = Field(
+        description="Webhook URL for sending output when using webhook output format", default=None
+    )
+    webhook_username: str | None = Field(
+        description="Username to use when sending to webhook", default=None
+    )
+    webhook_password: str | None = Field(
+        description="Password to use when sending to webhook", default=None
+    )
+    webhook_bearer_token: str | None = Field(
+        description="Bearer token to use when sending to webhook", default=None
+    )
+    webhook_api_token: str | None = Field(
+        description="API token to use when sending to webhook", default=None
+    )
+
     model_config = ConfigDict(
         extra="ignore",
         json_schema_extra={
@@ -98,6 +115,38 @@ class OutputFormatSettings(BaseModel):
             }
         },
     )
+
+    @model_validator(mode="after")
+    def validate_webhook_auth(self) -> Self:
+        """Validate that only one webhook authentication method is provided.
+
+        Returns:
+            Self: The validated instance.
+
+        Raises:
+            ValueError: If more than one authentication method is provided.
+        """
+        if not self.webhook_url:
+            return self
+
+        auth_methods = []
+
+        # Check basic auth (both username and password required)
+        if self.webhook_password and self.webhook_username:
+            auth_methods.append("basic_auth")
+
+        if self.webhook_bearer_token:
+            auth_methods.append("bearer_token")
+
+        if self.webhook_api_token:
+            auth_methods.append("api_token")
+
+        if len(auth_methods) > 1:
+            raise ValueError(
+                f"Only one webhook authentication method allowed. Found: {', '.join(auth_methods)}"
+            )
+
+        return self
 
 
 class StockpileTypesSettings(BaseModel):

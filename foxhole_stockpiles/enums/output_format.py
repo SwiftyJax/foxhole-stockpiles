@@ -9,3 +9,4 @@ class OutputFormat(StrEnum):
     CONSOLE = "console"
     FILE = "file"
     JSON = "json"
+    WEBHOOK = "webhook"

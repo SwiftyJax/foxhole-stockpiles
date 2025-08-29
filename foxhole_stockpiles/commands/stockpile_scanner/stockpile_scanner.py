@@ -8,6 +8,7 @@ from copy import copy
 from pathlib import Path
 from typing import Any
 
+from foxhole_stockpiles.connectors.webhook import WebhookConnector
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
@@ -140,6 +141,18 @@ def main() -> dict[str, Any] | None:
                 output_path.parent.mkdir(parents=True, exist_ok=True)
                 with output_path.open("w", encoding="utf-8") as f:
                     f.write(stockpile.model_dump_json())
+            case OutputFormat.WEBHOOK:
+                if not settings.output_format.webhook_url:
+                    raise ValueError("Webhook URL is not set in the configuration")
+
+                webhook_connector = WebhookConnector(settings.output_format)
+                if not webhook_connector:
+                    raise ValueError("Failed to initialize Webhook connector")
+
+                payload = stockpile.model_dump(mode="json")
+                response = webhook_connector.send_stockpile(payload)
+                logger = logging.getLogger(__name__)
+                logger.info("Webhook response: %s", response)
 
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)
