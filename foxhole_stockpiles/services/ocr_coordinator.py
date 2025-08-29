@@ -9,13 +9,13 @@ from numpy.typing import NDArray
 
 from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
 from foxhole_stockpiles.enums.item_category import ItemCategory
-from foxhole_stockpiles.enums.stockpile_type import StockpileType
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
 from foxhole_stockpiles.services.stockpile_detector import StockpileDetector
 from foxhole_stockpiles.services.stockpile_text_extractor import StockpileTextExtractor
+from foxhole_stockpiles.services.stockpile_type_classifier import StockpileTypeClassifier
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
 
@@ -35,6 +35,7 @@ class OCRCoordinator:
             custom_model=config.custom_model, tessdata_path=config.tessdata_path
         )
         self._template_manager = TemplateManager(database_path=config.database_path)
+        self._stockpile_type_classifier = StockpileTypeClassifier()
 
     def analyze_stockpile(self, image_path: str) -> Stockpile:
         """Analyze a stockpile image and return detected items with quantities.
@@ -287,14 +288,7 @@ class OCRCoordinator:
         if type_image is not None:
             source_image = self._prepare_image_for_detection(image=type_image)
             text = self._text_extractor._extract_raw_text(image=source_image, numbers_only=False)
-            try:
-                stockpile.type = StockpileType(text.strip())
-            except ValueError:
-                self.logger.warning(
-                    "Failed to parse stockpile type from text: '%s'. Defaulting to UNDEFINED",
-                    text.strip(),
-                )
-                stockpile.type = StockpileType.UNDEFINED
+            stockpile.type = self._stockpile_type_classifier.classify_from_text(text)
 
         return stockpile
 
