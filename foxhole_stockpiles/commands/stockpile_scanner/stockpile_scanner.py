@@ -10,12 +10,33 @@ from typing import Any
 
 from foxhole_stockpiles.connectors.webhook import WebhookConnector
 from foxhole_stockpiles.core.logging import setup_logging
-from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
+
+
+def get_app_settings(config_file: str | None = None) -> AppSettings:
+    """Get application settings, optionally from a specified config file.
+
+    Args:
+        config_file (str | None): Path to the configuration file. If None, use default
+            configuration.
+
+    Returns:
+        AppSettings: Application settings
+    """
+    if config_file is None:
+        return get_settings()
+
+    original_json_file = AppSettings.model_config.get("env_file")
+    AppSettings.model_config["env_file"] = config_file
+    settings = AppSettings()
+    AppSettings.model_config["env_file"] = original_json_file
+
+    return settings
 
 
 def main() -> dict[str, Any] | None:
@@ -68,11 +89,17 @@ def main() -> dict[str, Any] | None:
         default=OutputFormat.CONSOLE.value,
         help="Output format for the results (default: console)",
     )
+    parser.add_argument(
+        "--config",
+        type=str,
+        help="Path to configuration file",
+    )
+
     args = parser.parse_args()
     output_format = OutputFormat(args.output_format)
 
     # Setup logging
-    settings = copy(get_settings())
+    settings = copy(get_app_settings(args.config))
     logging_settings = settings.logging
     # Setup logging
     if args.quiet:

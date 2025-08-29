@@ -1,6 +1,7 @@
 """Configuration module for the app."""
 
 from functools import lru_cache
+from pathlib import Path
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -365,7 +366,11 @@ class AppSettings(BaseSettings):
     stockpile_types: StockpileTypesSettings = Field(
         description="Stockpile types settings", default_factory=StockpileTypesSettings
     )
-    model_config = SettingsConfigDict(env_nested_delimiter="__", env_prefix="FS_")
+    model_config = SettingsConfigDict(
+        env_nested_delimiter="__",
+        env_prefix="FS_",
+        env_file=str(Path("~/.fs_config").expanduser()),
+    )
 
 
 @lru_cache
