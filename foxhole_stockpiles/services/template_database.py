@@ -5,7 +5,6 @@ import logging
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
-from foxhole_stockpiles.models.database_statistics import DatabaseStatistics
 from foxhole_stockpiles.models.icon_template import IconTemplate
 
 logger = logging.getLogger(__name__)
@@ -120,53 +119,6 @@ class TemplateDatabase:
         )
 
         return list(candidates)
-
-    def get_statistics(self) -> DatabaseStatistics:
-        """Get database statistics.
-
-        Returns:
-            DatabaseStatistics: Database statistics as Pydantic model
-        """
-        faction_counts: dict[str, int] = {}
-        mod_counts: dict[str, int] = {}
-        crated_count = 0
-
-        for template in self.templates:
-            # Count by faction
-            faction_counts[template.faction.value] = (
-                faction_counts.get(template.faction.value, 0) + 1
-            )
-            # Count by mod
-            mod_counts[template.mod] = mod_counts.get(template.mod, 0) + 1
-            # Count crated items
-            if template.crated:
-                crated_count += 1
-
-        # Sort faction counts with neutral first, then Colonials, then Wardens
-        faction_order = ["neutral", "Colonials", "Wardens"]
-        sorted_faction_counts = {}
-        for faction in faction_order:
-            if faction in faction_counts:
-                sorted_faction_counts[faction] = faction_counts[faction]
-
-        # Sort mod counts with vanilla first, then alphabetical
-        sorted_mod_counts = {}
-        if "vanilla" in mod_counts:
-            sorted_mod_counts["vanilla"] = mod_counts["vanilla"]
-
-        # Add remaining mods in alphabetical order
-        for mod in sorted(mod_counts.keys()):
-            if mod != "vanilla":
-                sorted_mod_counts[mod] = mod_counts[mod]
-
-        return DatabaseStatistics(
-            resolution=int(self.resolution.value),
-            total_templates=len(self.templates),
-            faction_counts=sorted_faction_counts,
-            mod_counts=sorted_mod_counts,
-            crated_templates=crated_count,
-            normal_templates=len(self.templates) - crated_count,
-        )
 
     def __len__(self) -> int:
         """Return number of templates in database."""

@@ -13,7 +13,6 @@ from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.utils import load_catalog
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.catalog_item import CatalogItem
-from foxhole_stockpiles.models.database_statistics import DatabaseStatistics
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.services.template_database import TemplateDatabase
 
@@ -345,69 +344,6 @@ class DatabaseBuilder:
             file_size,
         )
 
-    def validate_database(
-        self, database_path: Path, expected_resolutions: list[SupportedResolution] | None = None
-    ) -> bool:
-        """Validate built database integrity.
-
-        Args:
-            database_path (Path): Path to database file
-            expected_resolutions (list[SupportedResolution] | None): Expected resolutions to
-                validate, or None to validate all supported resolutions
-
-        Returns:
-            bool: True if database is valid
-        """
-        self._logger.info("Validating database: %s", database_path)
-
-        try:
-            with open(database_path, "rb") as f:
-                databases = pickle.load(f)
-
-            # Determine which resolutions to validate
-            resolutions_to_validate = expected_resolutions or list(SupportedResolution)
-
-            # Check expected resolutions are present
-            missing_resolutions = set(resolutions_to_validate) - set(databases.keys())
-            if missing_resolutions:
-                self._logger.error("Missing expected resolutions: %s", missing_resolutions)
-                return False
-
-            # Check for unexpected resolutions (if specific resolutions were expected)
-            if expected_resolutions:
-                unexpected_resolutions = set(databases.keys()) - set(expected_resolutions)
-                if unexpected_resolutions:
-                    self._logger.warning(
-                        "Found unexpected resolutions in database: %s", unexpected_resolutions
-                    )
-
-            # Check template counts and get statistics for expected resolutions
-            for resolution in resolutions_to_validate:
-                if resolution not in databases:
-                    continue  # Already logged as missing
-
-                database = databases[resolution]
-                if len(database.templates) == 0:
-                    self._logger.error("Empty database for resolution %s", resolution)
-                    return False
-
-                # Get detailed statistics from the database
-                stats: DatabaseStatistics = database.get_statistics()
-                self._logger.debug(
-                    "Resolution %s: %d templates, factions: %s, mods: %s",
-                    resolution,
-                    stats.total_templates,
-                    stats.faction_counts,
-                    stats.mod_counts,
-                )
-
-            self._logger.info("Database validation successful")
-            return True
-
-        except Exception as e:
-            self._logger.error("Database validation failed: %s", e)
-            return False
-
 
 def main() -> None:
     """Main entry point for database builder."""
@@ -415,7 +351,6 @@ def main() -> None:
     parser.add_argument("--catalog", type=Path, required=True, help="Path to catalog.json")
     parser.add_argument("--templates", type=Path, required=True, help="Path to extracted templates")
     parser.add_argument("--database", type=Path, required=True, help="Output database path")
-    parser.add_argument("--validate", action="store_true", help="Validate database after building")
     parser.add_argument(
         "--use-scaling",
         action="store_true",
@@ -461,13 +396,6 @@ def main() -> None:
         catalog_path=args.catalog, assets_path=args.templates, use_scaling=args.use_scaling
     )
     builder.build_all_databases(output_path=args.database, target_resolutions=target_resolutions)
-
-    # Validate if requested
-    if args.validate:
-        if not builder.validate_database(
-            database_path=args.database, expected_resolutions=target_resolutions
-        ):
-            exit(1)
 
 
 if __name__ == "__main__":

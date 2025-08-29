@@ -14,7 +14,6 @@ from foxhole_stockpiles.core.utils import compute_icon_phash, hamming_distance
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
-from foxhole_stockpiles.models.database_statistics import TemplateManagerStatistics
 from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.services.template_database import TemplateDatabase
 
@@ -224,28 +223,6 @@ class TemplateManager:
             icon=icon_result,
             confidence=confidence_result,
             tested_candidates=candidates_tested,
-        )
-
-    def get_statistics(self) -> TemplateManagerStatistics:
-        """Get template manager and database statistics.
-
-        Returns:
-            TemplateManagerStatistics: Complete statistics as Pydantic model
-        """
-        loaded_resolutions = len(self.databases)
-        current_resolution = self.current_resolution.value if self.current_resolution else None
-        active_templates = len(self.active_database.templates) if self.active_database else 0
-
-        # Get database statistics if active database exists
-        database_stats = None
-        if self.active_database:
-            database_stats = self.active_database.get_statistics()
-
-        return TemplateManagerStatistics.from_manager_and_database(
-            loaded_resolutions=loaded_resolutions,
-            current_resolution=current_resolution,
-            active_templates=active_templates,
-            database_stats=database_stats,
         )
 
     def __repr__(self) -> str:
