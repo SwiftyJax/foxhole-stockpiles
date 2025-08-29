@@ -32,11 +32,26 @@ This is the **primary recognition tool** in the Foxhole Stockpiles system. It co
 
 ## Usage
 
-### Command Line Interface
+### Primary Interface
+
+The scanner is available through the unified Foxhole Stockpiles CLI:
 
 ```bash
-python stockpile_scanner.py --database DATABASE --image IMAGE [OPTIONS]
+fs scanner --database DATABASE --image IMAGE [OPTIONS]
+fs scan --database DATABASE --image IMAGE [OPTIONS]    # Short alias
 ```
+
+### Development Interface
+
+For development and testing, you can also run the scanner module directly:
+
+```bash
+python -m foxhole_stockpiles.commands.stockpile_scanner --database DATABASE --image IMAGE [OPTIONS]
+```
+
+**Note**: The recommended way to use this tool is through the unified `fs` command.
+
+### Command Line Interface
 
 ### Arguments
 
@@ -63,42 +78,26 @@ python stockpile_scanner.py --database DATABASE --image IMAGE [OPTIONS]
 
 **Basic stockpile scanning:**
 ```bash
-python stockpile_scanner.py \
-    --database database/db.pkl \
-    --image screenshot.png
+fs scanner --database database/db.pkl --image screenshot.png
 ```
 
 **With faction filtering and debug output:**
 ```bash
-python stockpile_scanner.py \
-    --database database/db.pkl \
-    --image stockpile_screenshot.png \
-    --faction colonial \
-    --debug_image \
-    --verbose
+fs scanner --database database/db.pkl --image stockpile_screenshot.png \
+  --faction colonial --debug_image --verbose
 ```
 
 **High confidence matching with logging:**
 ```bash
-python stockpile_scanner.py \
-    --database database/db.pkl \
-    --image stockpile.png \
-    --confidence 0.9 \
-    --log-file scan_results.log
+fs scanner --database database/db.pkl --image stockpile.png \
+  --confidence 0.9 --log-file scan_results.log
 ```
 
 **Advanced template matching configuration:**
 ```bash
-python stockpile_scanner.py \
-    --database database/db.pkl \
-    --image stockpile.png \
-    --confidence 0.8 \
-    --early_exit 0.98 \
-    --max_ncc_candidates 30 \
-    --phash_threshold 10 \
-    --faction warden \
-    --debug_image \
-    --verbose
+fs scanner --database database/db.pkl --image stockpile.png \
+  --confidence 0.8 --early_exit 0.98 --max_ncc_candidates 30 \
+  --phash_threshold 10 --faction warden --debug_image --verbose
 ```
 
 ## Input Requirements
@@ -110,7 +109,7 @@ python stockpile_scanner.py \
 - **Quality**: Clear, unobstructed view of stockpile items
 
 ### Database File
-- **Format**: Binary database file (.pkl) created by `database_builder.py`
+- **Format**: Binary database file (.pkl) created by `fs database-builder`
 - **Content**: Pre-computed templates and lookup tables for target resolution
 - **Size**: Typically 35-75MB for full game item databases
 
@@ -192,7 +191,7 @@ When using `--debug_image`, creates a visual debugging image showing:
 This is the final consumer tool in the processing pipeline:
 
 ```
-PAK Files → uasset_extractor → generate_templates → database_builder → stockpile_scanner
+PAK Files → fs extract-assets → fs generate-templates → fs database-builder → fs scanner
 ```
 
 ### Data Flow
@@ -243,9 +242,33 @@ Screenshot Input → Region Detection → Icon Extraction → Database Lookup �
 
 See `pyproject.toml` for exact version requirements.
 
+## Integration
+
+This command is part of the Foxhole Stockpiles CLI tool suite. For complete pipeline usage:
+
+```bash
+# 1. Extract assets
+fs extract-assets --catalog catalog.json --pak game.pak --output raw_assets/
+
+# 2. Generate templates
+fs generate-templates --catalog catalog.json --assets raw_assets/ --templates processed_templates/
+
+# 3. Build database
+fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.pkl
+
+# 4. Scan stockpiles
+fs scanner --database templates.pkl --image screenshot.png
+```
+
+For more help:
+```bash
+fs scanner --help
+fs --help  # See all available commands
+```
+
 ## Related Tools
 
-- **Database Builder**: Creates the template databases used by this scanner
-- **Template Generator**: Generates the templates from game assets
-- **Candidate Inspector**: Debugging tool for template matching issues
-- **PAK Extractor**: Extracts game assets for template generation
+- [`fs database-builder`](../database_builder/README.md) - Creates the template databases used by this scanner
+- [`fs generate-templates`](../generate_templates/README.md) - Generates the templates from game assets
+- [`fs inspect`](../candidate_inspector/README.md) - Debugging tool for template matching issues
+- [`fs extract-assets`](../uasset_extractor/README.md) - Extracts game assets for template generation

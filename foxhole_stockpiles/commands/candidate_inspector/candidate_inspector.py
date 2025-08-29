@@ -15,12 +15,6 @@ from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
 
-def print_message(message: str, quiet: bool = False) -> None:
-    """Print a message to the console if not in quiet mode."""
-    if not quiet:
-        print(message)
-
-
 def main() -> dict[str, Any] | None:
     """Main entry point for test candidates command.
 

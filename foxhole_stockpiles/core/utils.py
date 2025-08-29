@@ -119,7 +119,6 @@ def extract_day_and_hour(text: str) -> str:
     Returns:
         str: Formatted string with days and hours, e.g. "1234, 15:30".
     """
-    print(f"Original text: {text}")
     # Find all digit/comma groups and join
     result = "".join(re.findall(r"[\d,]+", text))
     # Remove first comma if exactly two commas

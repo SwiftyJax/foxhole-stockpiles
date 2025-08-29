@@ -20,26 +20,44 @@ Extracts item icons and assets from Foxhole PAK files and converts them to PNG f
 - **catalog.json**: Item definitions
 - **Foxhole PAK files**: Game installation or mod files
 
-## Basic Usage
+## Usage
+
+### Primary Interface
+
+The asset extractor is available through the unified Foxhole Stockpiles CLI:
+
+```bash
+fs extract-assets --catalog catalog.json
+fs extract --catalog catalog.json    # Short alias
+```
+
+### Development Interface
+
+For development and testing, you can also run the asset extractor module directly:
+
+```bash
+python -m foxhole_stockpiles.commands.uasset_extractor.uasset_extractor --catalog catalog.json
+```
+
+**Note**: The recommended way to use this tool is through the unified `fs` command.
+
+### Basic Usage
 
 ### Vanilla Game Extraction
 
 ```bash
 # Extract from default Foxhole installation using repak
-python uasset_extractor.py --catalog catalog.json
+fs extract-assets --catalog catalog.json
 
 # Custom PAK file location
-python uasset_extractor.py \
-    --catalog catalog.json \
-    --pak "C:\Games\Foxhole\War\Content\Paks\War-WindowsNoEditor.pak"
+fs extract-assets --catalog catalog.json \
+  --pak "C:\Games\Foxhole\War\Content\Paks\War-WindowsNoEditor.pak"
 ```
 
 ### Custom Output Directory
 
 ```bash
-python uasset_extractor.py \
-    --catalog catalog.json \
-    --output "extracted_assets/"
+fs extract-assets --catalog catalog.json --output "extracted_assets/"
 ```
 
 ## Mod Support
@@ -50,11 +68,10 @@ The extractor handles multiple PAK files for comprehensive mod support:
 
 ```bash
 # Extract from multiple PAK files (vanilla + mods)
-python uasset_extractor.py \
-    --catalog catalog.json \
-    --pak "C:\Path\To\War-WindowsNoEditor.pak" \
-    --pak "C:\Path\To\ModPak1.pak" \
-    --pak "C:\Path\To\ModPak2.pak"
+fs extract-assets --catalog catalog.json \
+  --pak "C:\Path\To\War-WindowsNoEditor.pak" \
+  --pak "C:\Path\To\ModPak1.pak" \
+  --pak "C:\Path\To\ModPak2.pak"
 ```
 
 ### How Multi-PAK Works
@@ -68,26 +85,20 @@ python uasset_extractor.py \
 
 **Single Mod with Split Assets**:
 ```bash
-python uasset_extractor.py \
-    --catalog catalog.json \
-    --pak vanilla.pak \
-    --pak mod_part1.pak \
-    --pak mod_part2.pak
+fs extract-assets --catalog catalog.json \
+  --pak vanilla.pak --pak mod_part1.pak --pak mod_part2.pak
 ```
 
 **Multiple Independent Mods**:
 ```bash
-python uasset_extractor.py \
-    --catalog catalog.json \
-    --pak vanilla.pak \
-    --pak weapon_mod.pak \
-    --pak vehicle_mod.pak
+fs extract-assets --catalog catalog.json \
+  --pak vanilla.pak --pak weapon_mod.pak --pak vehicle_mod.pak
 ```
 
 ## Command-Line Options
 
 ```bash
-python uasset_extractor.py [OPTIONS]
+fs extract-assets [OPTIONS]
 
 Required:
   --catalog PATH              Path to catalog.json file
@@ -107,19 +118,17 @@ Optional:
 
 ```bash
 # Use 8 parallel workers
-python uasset_extractor.py --catalog catalog.json --workers 8
+fs extract-assets --catalog catalog.json --workers 8
 
 # Use all CPU cores (default)
-python uasset_extractor.py --catalog catalog.json
+fs extract-assets --catalog catalog.json
 ```
 
 ### Logging
 
 ```bash
 # Log to file for debugging
-python uasset_extractor.py \
-    --catalog catalog.json \
-    --logfile extraction.log
+fs extract-assets --catalog catalog.json --logfile extraction.log
 ```
 
 ## Output Structure
@@ -141,13 +150,21 @@ output/
 Example extracting vanilla icons with custom tools path
 
 ```bash
-python -m foxhole_stockpiles.commands.uasset_extractor.uasset_extractor --catalog catalog.json --extractor-tool ./repak/repak.exe --converter-tool ./umodel/umodel.exe --pak 'C:\Program Files (x86)\Steam\steamapps\common\Foxhole\War\Content\Paks\War-WindowsNoEditor.pak' --output .\extracted_images\vanilla\
+fs extract-assets --catalog catalog.json --extractor-tool ./repak/repak.exe \
+  --converter-tool ./umodel/umodel.exe \
+  --pak 'C:\Program Files (x86)\Steam\steamapps\common\Foxhole\War\Content\Paks\War-WindowsNoEditor.pak' \
+  --output ./extracted_images/vanilla/
 ```
 
 Example extracting [UI Label Icons mods](https://sentsu.itch.io/foxhole-ui-label-icons)
 
 ```bash
-python -m foxhole_stockpiles.commands.uasset_extractor.uasset_extractor --catalog catalog.json --extractor-tool ./repak/repak.exe --converter-tool ./umodel/umodel.exe --pak 'C:\Program Files (x86)\Steam\steamapps\common\Foxhole\War\Content\Paks\War-WindowsNoEditor_UI_Label_Items_v6.0.pak' --pak 'C:\Program Files (x86)\Steam\steamapps\common\Foxhole\War\Content\Paks\War-WindowsNoEditor_UI_Label_Vehicles_v6.0.pak' --pak 'C:\Program Files (x86)\Steam\steamapps\common\Foxhole\War\Content\Paks\War-WindowsNoEditor_UI_Label_Materials_v5.0.pak' --output .\extracted_images\vanilla\
+fs extract-assets --catalog catalog.json --extractor-tool ./repak/repak.exe \
+  --converter-tool ./umodel/umodel.exe \
+  --pak 'C:\Program Files (x86)\Steam\steamapps\common\Foxhole\War\Content\Paks\War-WindowsNoEditor_UI_Label_Items_v6.0.pak' \
+  --pak 'C:\Program Files (x86)\Steam\steamapps\common\Foxhole\War\Content\Paks\War-WindowsNoEditor_UI_Label_Vehicles_v6.0.pak' \
+  --pak 'C:\Program Files (x86)\Steam\steamapps\common\Foxhole\War\Content\Paks\War-WindowsNoEditor_UI_Label_Materials_v5.0.pak' \
+  --output ./extracted_images/ui-label/
 ```
 
 The output folder should look like:
@@ -158,6 +175,37 @@ extracted_images/
 └── ...
 ```
 
+## Integration
+
+This command is part of the Foxhole Stockpiles CLI tool suite. For complete pipeline usage:
+
+```bash
+# 1. Extract assets (this tool)
+fs extract-assets --catalog catalog.json --pak game.pak --output raw_assets/
+
+# 2. Generate templates
+fs generate-templates --catalog catalog.json --assets raw_assets/ --templates processed_templates/
+
+# 3. Build database
+fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.pkl
+
+# 4. Scan stockpiles
+fs scanner --database templates.pkl --image screenshot.png
+```
+
+For more help:
+```bash
+fs extract-assets --help
+fs --help  # See all available commands
+```
+
 ### Why Some Files May Fail
 - **Missing Assets**: Some catalog entries may reference files not present in your PAK collection like subicons.
 - **Subicons from Vanilla**: Other tools need the subicons making it mandatory to extract them from vanilla, even if you plan to use moded icons only the subicons should be extracted from vanilla and then moved to the appropriate location in the mod. This ONLY applies if you plan to remove vanilla icons.
+
+## Related Tools
+
+- [`fs generate-templates`](../generate_templates/README.md) - Uses the assets extracted by this tool
+- [`fs database-builder`](../database_builder/README.md) - Uses templates generated from these assets
+- [`fs scanner`](../stockpile_scanner/README.md) - Final tool that uses the complete pipeline
+- [`fs inspect`](../candidate_inspector/README.md) - Debug tool for inspecting results

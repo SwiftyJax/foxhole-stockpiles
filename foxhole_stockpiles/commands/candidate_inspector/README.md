@@ -8,13 +8,26 @@ This tool provides two main functionalities:
 1. **Candidate Filtering**: Search and filter templates in the database based on various criteria
 2. **Icon Matching**: Test icon recognition against filtered candidates to debug template matching issues
 
-## Installation
+## Usage
 
-The tool is part of the Foxhole Stockpiles package and can be run as a Python module:
+### Primary Interface
+
+The inspector is available through the unified Foxhole Stockpiles CLI:
+
+```bash
+fs inspect --database templates.pkl --resolution 1080
+fs debug --database templates.pkl --resolution 1080    # Short alias
+```
+
+### Development Interface
+
+For development and testing, you can also run the inspector module directly:
 
 ```bash
 python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector
 ```
+
+**Note**: The recommended way to use this tool is through the unified `fs` command.
 
 ## Basic Usage
 
@@ -49,9 +62,7 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector
 List all templates for a specific resolution:
 
 ```bash
-python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
-  --database templates.pkl \
-  --resolution 1080
+fs inspect --database templates.pkl --resolution 1080
 ```
 
 ### 2. Filter by Item Code
@@ -59,11 +70,7 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
 Search for items containing "Rifle" in their code:
 
 ```bash
-python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
-  --database templates.pkl \
-  --code Rifle \
-  --resolution 1080 \
-  --print
+fs inspect --database templates.pkl --code Rifle --resolution 1080 --print
 ```
 
 ### 3. Filter by Faction and Category
@@ -71,12 +78,7 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
 Find all Colonial items:
 
 ```bash
-python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
-  --database templates.pkl \
-  --faction c \
-  --category item \
-  --resolution 1080 \
-  --print
+fs inspect --database templates.pkl --faction c --category item --resolution 1080 --print
 ```
 
 ### 4. Filter Crated Items Only
@@ -84,11 +86,7 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
 Show only crated items for debugging:
 
 ```bash
-python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
-  --database templates.pkl \
-  --crated true \
-  --resolution 1080 \
-  --print
+fs inspect --database templates.pkl --crated true --resolution 1080 --print
 ```
 
 ### 5. Test Icon Matching
@@ -96,11 +94,7 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
 Test icon recognition against all candidates:
 
 ```bash
-python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
-  --database templates.pkl \
-  --resolution 1080 \
-  --icon screenshot_icon.png \
-  --confidence 0.8
+fs inspect --database templates.pkl --resolution 1080 --icon screenshot_icon.png --confidence 0.8
 ```
 
 ### 6. Test Icon Matching with Filters
@@ -108,14 +102,8 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
 Test icon matching against specific faction and category:
 
 ```bash
-python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
-  --database templates.pkl \
-  --faction c \
-  --category item \
-  --resolution 1080 \
-  --icon unknown_item.png \
-  --confidence 0.75 \
-  --verbose
+fs inspect --database templates.pkl --faction c --category item --resolution 1080 \
+  --icon unknown_item.png --confidence 0.75 --verbose
 ```
 
 ### 7. Comprehensive Debugging Session
@@ -123,16 +111,8 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
 Full debugging with all filters and verbose output:
 
 ```bash
-python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector \
-  --database templates.pkl \
-  --code "7.92mm" \
-  --faction w \
-  --crated false \
-  --resolution 2160 \
-  --icon ammo_icon.png \
-  --confidence 0.9 \
-  --verbose \
-  --log-file debug.log
+fs inspect --database templates.pkl --code "7.92mm" --faction w --crated false \
+  --resolution 2160 --icon ammo_icon.png --confidence 0.9 --verbose --log-file debug.log
 ```
 
 ## Available Categories
@@ -165,6 +145,70 @@ The tool supports the following vertical resolutions:
 - `2160` - 2160px height (4K)
 
 Use the numeric value (e.g., '1080', '2160') with the `--resolution` parameter.
+
+## Common Debugging Workflows
+
+### Database Validation
+```bash
+# Check if database loaded correctly
+fs inspect --database templates.pkl --resolution 1080
+
+# Verify specific item exists
+fs inspect --database templates.pkl --code "BasicMaterials" --resolution 1080 --print
+
+# Check faction distribution
+fs inspect --database templates.pkl --faction c --resolution 1080
+fs inspect --database templates.pkl --faction w --resolution 1080
+```
+
+### Icon Recognition Issues
+```bash
+# Test problematic icon
+fs inspect --database templates.pkl --resolution 1080 --icon failing_icon.png --verbose
+
+# Try with lower confidence
+fs inspect --database templates.pkl --resolution 1080 --icon failing_icon.png --confidence 0.6
+
+# Check similar items
+fs inspect --database templates.pkl --code "Rifle" --resolution 1080 --print
+```
+
+### Template Database Analysis
+```bash
+# List all crated variants
+fs inspect --database templates.pkl --crated true --resolution 1080 --print
+
+# Find items in specific mod
+fs inspect --database templates.pkl --mod vanilla --resolution 1080 --print
+
+# Category breakdown
+fs inspect --database templates.pkl --category item --resolution 1080
+fs inspect --database templates.pkl --category vehicle --resolution 1080
+```
+
+## Integration
+
+This command is part of the Foxhole Stockpiles CLI tool suite. It's typically used during database development and troubleshooting:
+
+```bash
+# 1. Build database
+fs database-builder --catalog catalog.json --templates templates/ --database test.pkl
+
+# 2. Inspect database contents
+fs inspect --database test.pkl --resolution 1080 --print
+
+# 3. Test specific icon recognition
+fs inspect --database test.pkl --resolution 1080 --icon problem_icon.png --verbose
+
+# 4. Debug faction-specific issues
+fs inspect --database test.pkl --faction warden --category vehicle --resolution 1080
+```
+
+For more help:
+```bash
+fs inspect --help
+fs --help  # See all available commands
+```
 
 ## Output Explanation
 
@@ -231,23 +275,23 @@ Found 45 matching candidates
 
 ### Common Issues
 
-1. **"Database file not found"**
-   - Verify the database path exists
-   - Ensure you have the correct `.pkl` file
+**Error: "Database not found"**
+- Verify the database file path is correct
+- Ensure the database was built successfully with `fs database-builder`
 
-2. **"Invalid resolution"**
-   - Check available resolutions in your database
-   - Valid values: '664', '720', '768', '800', '864', '900', '960', '992', '1024', '1050', '1080', '1200', '1440', '1536', '1600', '2160'
+**Error: "Invalid resolution"**
+- Check that the resolution exists in the database
+- Use `fs inspect --database db.pkl --resolution 1080` without other args to list available data
 
-3. **"Failed to load icon image"**
-   - Verify image file exists and is readable
-   - Supported formats: PNG, JPG, BMP
-   - Ensure image is not corrupted
+**No candidates found**
+- Try broader search criteria
+- Check if the item code exists in the catalog
+- Verify faction and category filters aren't too restrictive
 
-4. **"No candidates found"**
-   - Try removing some filters to broaden search
-   - Check filter values are correct (e.g., faction: 'c' or 'w')
-   - Verify database contains templates for specified resolution
+**Icon matching returns no results**
+- Lower the confidence threshold with `--confidence 0.5`
+- Enable verbose logging to see matching details
+- Verify the icon file format and quality
 
 ### Debug Tips
 
@@ -265,18 +309,9 @@ Found 45 matching candidates
 - Large databases (>1000 templates) may take longer to load
 - Use specific filters to reduce search space for better performance
 
-## Integration with Development Workflow
-
-This tool is particularly useful for:
-
-1. **Template Database Validation**: Verify database contents and structure
-2. **Icon Recognition Debugging**: Test why certain icons aren't being recognized
-3. **Filter Logic Testing**: Ensure filtering works correctly for different criteria
-4. **Performance Analysis**: Measure matching performance with different candidate sets
-5. **Database Content Exploration**: Understand what templates are available
-
 ## Related Tools
 
-- **Database Builder**: Creates the template databases used by this tool
-- **Stockpile Scanner**: Main application that uses these templates for recognition
-- **Template Manager**: Core component that handles template matching logic
+- [`fs database-builder`](../database_builder/README.md) - Creates the template databases used by this tool
+- [`fs scanner`](../stockpile_scanner/README.md) - Uses these databases for stockpile recognition
+- [`fs generate-templates`](../generate_templates/README.md) - Generates the templates stored in databases
+- [`fs extract-assets`](../uasset_extractor/README.md) - Extracts assets for template generation

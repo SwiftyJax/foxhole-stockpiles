@@ -8,15 +8,16 @@ The Foxhole Stockpiles toolset follows a sequential workflow to build template d
 
 ## Available Commands
 
-### 1. `fs-uasset-extractor` - Asset Extraction
+### 1. `fs extract-assets` - Asset Extraction
 **Purpose**: Extract icon assets from Foxhole PAK files and convert them to PNG format.
 
 **Usage**:
 ```bash
-# As console script
-fs-uasset-extractor --catalog catalog.json --pak "path/to/War-WindowsNoEditor.pak" --output raw_assets/
+# Primary interface
+fs extract-assets --catalog catalog.json --pak "path/to/War-WindowsNoEditor.pak" --output raw_assets/
+fs extract --catalog catalog.json --pak "path/to/War-WindowsNoEditor.pak" --output raw_assets/
 
-# As module
+# Development interface
 python -m foxhole_stockpiles.commands.uasset_extractor
 ```
 
@@ -27,15 +28,16 @@ python -m foxhole_stockpiles.commands.uasset_extractor
 
 ---
 
-### 2. `fs-generate-templates` - Template Generation
+### 2. `fs generate-templates` - Template Generation
 **Purpose**: Generate resolution-specific template variants from extracted assets with proper scaling and crate overlays.
 
 **Usage**:
 ```bash
-# As console script
-fs-generate-templates --catalog catalog.json --assets raw_assets/ --templates processed_templates/
+# Primary interface
+fs generate-templates --catalog catalog.json --assets raw_assets/ --templates processed_templates/
+fs generate --catalog catalog.json --assets raw_assets/ --templates processed_templates/
 
-# As module
+# Development interface
 python -m foxhole_stockpiles.commands.generate_templates
 ```
 
@@ -46,15 +48,16 @@ python -m foxhole_stockpiles.commands.generate_templates
 
 ---
 
-### 3. `fs-database-builder` - Database Compilation
+### 3. `fs database-builder` - Database Compilation
 **Purpose**: Compile processed templates into optimized binary databases for fast runtime loading.
 
 **Usage**:
 ```bash
-# As console script
-fs-database-builder --catalog catalog.json --templates processed_templates/ --database foxhole_templates.pkl
+# Primary interface
+fs database-builder --catalog catalog.json --templates processed_templates/ --database foxhole_templates.pkl
+fs build --catalog catalog.json --templates processed_templates/ --database foxhole_templates.pkl
 
-# As module
+# Development interface
 python -m foxhole_stockpiles.commands.database_builder
 ```
 
@@ -65,15 +68,16 @@ python -m foxhole_stockpiles.commands.database_builder
 
 ---
 
-### 4. `fs-candidate-inspector` - Debugging & Testing
+### 4. `fs inspect` - Debugging & Testing
 **Purpose**: Debug template matching, inspect database contents, and test icon recognition.
 
 **Usage**:
 ```bash
-# As console script
-fs-candidate-inspector --database foxhole_templates.pkl --resolution 1080 --print
+# Primary interface
+fs inspect --database foxhole_templates.pkl --resolution 1080 --print
+fs debug --database foxhole_templates.pkl --resolution 1080 --print
 
-# As module
+# Development interface
 python -m foxhole_stockpiles.commands.candidate_inspector
 ```
 
@@ -81,6 +85,26 @@ python -m foxhole_stockpiles.commands.candidate_inspector
 **Output**: Candidate listings, matching results, and debugging information
 
 [📖 Detailed Documentation](candidate_inspector/README.md)
+
+---
+
+### 5. `fs scanner` - Stockpile Recognition
+**Purpose**: Scan stockpile screenshots to identify items and quantities.
+
+**Usage**:
+```bash
+# Primary interface
+fs scanner --database foxhole_templates.pkl --image screenshot.png
+fs scan --database foxhole_templates.pkl --image screenshot.png
+
+# Development interface
+python -m foxhole_stockpiles.commands.stockpile_scanner
+```
+
+**Input**: Binary database from database-builder, stockpile screenshots
+**Output**: Structured data with identified items and quantities
+
+[📖 Detailed Documentation](stockpile_scanner/README.md)
 
 ## Recommended Workflow
 
@@ -90,29 +114,34 @@ Execute commands in this exact order for building a complete database:
 
 ```bash
 # Step 1: Extract assets from game PAK files
-fs-uasset-extractor \
+fs extract-assets \
   --catalog catalog.json \
   --pak "C:/Program Files (x86)/Steam/steamapps/common/Foxhole/War/Content/Paks/War-WindowsNoEditor.pak" \
   --output raw_assets/
 
 # Step 2: Generate resolution-specific templates
-fs-generate-templates \
+fs generate-templates \
   --catalog catalog.json \
   --assets raw_assets/ \
   --templates processed_templates/
 
 # Step 3: Build optimized binary database
-fs-database-builder \
+fs database-builder \
   --catalog catalog.json \
   --templates processed_templates/ \
   --database foxhole_templates.pkl \
   --validate
 
 # Step 4: Test and validate the database
-fs-candidate-inspector \
+fs inspect \
   --database foxhole_templates.pkl \
   --resolution 1080 \
   --print
+
+# Step 5: Scan stockpiles
+fs scanner \
+  --database foxhole_templates.pkl \
+  --image screenshot.png
 ```
 
 ### Development Workflow (Iterative)
@@ -121,14 +150,14 @@ For development and testing, you can work with subsets:
 
 ```bash
 # Generate templates for specific items only
-fs-generate-templates \
+fs generate-templates \
   --catalog catalog.json \
   --assets raw_assets/ \
   --templates test_templates/ \
   --filter Rifle
 
 # Build database for specific resolutions
-fs-database-builder \
+fs database-builder \
   --catalog catalog.json \
   --templates test_templates/ \
   --database test_db.pkl \
@@ -136,7 +165,7 @@ fs-database-builder \
   --resolution 2160
 
 # Test specific scenarios
-fs-candidate-inspector \
+fs inspect \
   --database test_db.pkl \
   --resolution 1080 \
   --faction c \
@@ -164,10 +193,11 @@ After installation, commands are available in two ways:
 
 **Console Scripts** (recommended):
 ```bash
-fs-uasset-extractor --help
-fs-generate-templates --help
-fs-database-builder --help
-fs-candidate-inspector --help
+fs extract-assets --help
+fs generate-templates --help
+fs database-builder --help
+fs inspect --help
+fs scanner --help
 ```
 
 **Python Modules** (alternative):
@@ -176,6 +206,7 @@ python -m foxhole_stockpiles.commands.uasset_extractor --help
 python -m foxhole_stockpiles.commands.generate_templates --help
 python -m foxhole_stockpiles.commands.database_builder --help
 python -m foxhole_stockpiles.commands.candidate_inspector --help
+python -m foxhole_stockpiles.commands.stockpile_scanner --help
 ```
 
 ## Key Dependencies
@@ -226,7 +257,7 @@ The complete pipeline produces these important files:
 1. **Use `--verbose` flags** for detailed logging
 2. **Check log files** for specific error messages
 3. **Use filters** to process subsets during development
-4. **Validate databases** with `fs-candidate-inspector`
+4. **Validate databases** with `fs inspect`
 5. **Start with small datasets** before full pipeline runs
 
 ## Integration with Main Application
