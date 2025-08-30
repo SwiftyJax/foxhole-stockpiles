@@ -17,17 +17,20 @@ type GroupResult = tuple[int, int]  # amount, index
 class StockpileDetector:
     """Detects stockpile components in Foxhole game screenshots with resolution scaling."""
 
-    def __init__(self, image_path: str, settings: OCRSettings | None = None) -> None:
-        """Initialize detector with image path and calculate scale factor.
+    def __init__(self, image: NDArray[np.uint8], settings: OCRSettings | None = None) -> None:
+        """Initialize detector with image data and calculate scale factor.
 
         Args:
-            image_path (str): Path to the input image file
-            settings (OCRSettings | None): OCR settings or None
+            image: Image data as numpy array (RGB format)
+            settings: OCR settings or None
         """
         self._settings = settings if settings else get_settings().ocr
 
         self._logger = logging.getLogger(__name__)
-        self.image_path = image_path
+
+        # Validate and store image
+        self.img = self._validate_image_array(image)
+
         self.scale_factor = 1.0
 
         # Icon size
@@ -64,7 +67,6 @@ class StockpileDetector:
 
         self.icon_to_quantity_offset: int = 0
 
-        self.img: NDArray[np.uint8] = self._load_image()
         self.composite_image: NDArray[np.uint8] = np.empty((0, 0, 3), dtype=np.uint8)
         self.height, self.width = self.img.shape[:2]
 
@@ -75,22 +77,32 @@ class StockpileDetector:
 
         self._rescale_layout_values()
 
-    def _load_image(self) -> NDArray[np.uint8]:
-        """Load image from the specified path.
+    def _validate_image_array(self, image: NDArray[np.uint8]) -> NDArray[np.uint8]:
+        """Validate and prepare image array for processing.
+
+        Args:
+            image: Input image array
 
         Returns:
-            Loaded image as a numpy array
+            Validated image array in RGB format
 
         Raises:
-            FileNotFoundError: If the image cannot be loaded
+            ValueError: If image format is invalid
         """
-        img = cv2.imread(self.image_path, cv2.IMREAD_COLOR)
-        if img is None:
-            raise FileNotFoundError(f"Could not load image from {self.image_path}")
+        if not isinstance(image, np.ndarray):
+            raise ValueError("Image must be a numpy array")
 
-        # Convert BGR (OpenCV default) to RGB
-        rgb_img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-        return np.asarray(rgb_img, dtype=np.uint8)
+        if image.dtype != np.uint8:
+            raise ValueError("Image must have dtype uint8")
+
+        if len(image.shape) != 3 or image.shape[2] not in [3, 4]:
+            raise ValueError("Image must be 3D array with 3 or 4 channels")
+
+        # Convert RGBA to RGB if necessary
+        if image.shape[2] == 4:
+            return np.asarray(cv2.cvtColor(image, cv2.COLOR_RGBA2RGB), dtype=np.uint8)
+
+        return image
 
     def _rescale_layout_values(self) -> None:
         """Rescale layout values based on the image height."""

@@ -8,6 +8,9 @@ from copy import copy
 from pathlib import Path
 from typing import Any
 
+import cv2
+import numpy as np
+
 from foxhole_stockpiles.connectors.webhook import WebhookConnector
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
@@ -96,6 +99,16 @@ def main() -> dict[str, Any] | None:
     )
 
     args = parser.parse_args()
+
+    # Load and preprocess the image
+    _image = cv2.imread(args.image, cv2.IMREAD_COLOR)
+    if _image is None:
+        print(f"Error: Could not load image from '{args.image}'")
+        sys.exit(1)
+
+    # Convert BGR to RGB for processing
+    image = np.asarray(cv2.cvtColor(_image, cv2.COLOR_BGR2RGB), dtype=np.uint8)
+
     output_format = OutputFormat(args.output_format)
 
     # Setup logging
@@ -132,9 +145,8 @@ def main() -> dict[str, Any] | None:
         scanner_settings.early_exit_threshold = args.early_exit
 
         coordinator = OCRCoordinator(scanner_settings)
+        stockpile: Stockpile = coordinator.analyze_stockpile(image)
 
-        # Analyze the stockpile
-        stockpile: Stockpile = coordinator.analyze_stockpile(args.image)
         match output_format:
             case OutputFormat.CONSOLE:
                 logger = logging.getLogger(__name__)

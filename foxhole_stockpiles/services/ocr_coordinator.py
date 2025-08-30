@@ -37,20 +37,19 @@ class OCRCoordinator:
         self._template_manager = TemplateManager(database_path=config.database_path)
         self._stockpile_type_classifier = StockpileTypeClassifier()
 
-    def analyze_stockpile(self, image_path: str) -> Stockpile:
+    def analyze_stockpile(self, image: NDArray[np.uint8]) -> Stockpile:
         """Analyze a stockpile image and return detected items with quantities.
 
         Args:
-            image_path (str): Path to the stockpile image
+            image (NDArray[np.uint8]): Image data as numpy array (RGB format)
 
         Returns:
             Stockpile: Stockpile with the detected items and metadata
 
         Raises:
-            FileNotFoundError: If image file doesn't exist
             ValueError: If image analysis fails
         """
-        detector = self._detect_regions(image_path)
+        detector = self._detect_regions(image)
         stockpile_images = self._extract_stockpile_images(detector)
         quantities = self._extract_quantities(stockpile_images)
         self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
@@ -60,21 +59,20 @@ class OCRCoordinator:
 
         return scanned_stockpile
 
-    def _detect_regions(self, image_path: str) -> StockpileDetector:
+    def _detect_regions(self, image: NDArray[np.uint8]) -> StockpileDetector:
         """Detect regions in the stockpile image.
 
         Args:
-            image_path (str): Path to the stockpile image
+            image (NDArray[np.uint8]): Image data as numpy array
 
         Returns:
             StockpileDetector: Configured detector with analyzed regions
 
         Raises:
-            FileNotFoundError: If image file doesn't exist
             ValueError: If image analysis fails
         """
         try:
-            detector = StockpileDetector(image_path)
+            detector = StockpileDetector(image)
             detector.analize()
 
             if self.config.debug_mode:
@@ -86,9 +84,6 @@ class OCRCoordinator:
 
             return detector
 
-        except FileNotFoundError as e:
-            self.logger.error("Image file not found: %s", e)
-            raise
         except Exception as e:
             self.logger.error("Error during region detection: %s", e)
             raise ValueError(f"Failed to analyze image: {e}") from e
