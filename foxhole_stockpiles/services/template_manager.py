@@ -4,7 +4,8 @@ import logging
 import pickle
 import time
 from pathlib import Path
-from typing import cast
+from threading import Lock
+from typing import ClassVar, cast
 
 import cv2
 import numpy as np
@@ -23,6 +24,10 @@ logger = logging.getLogger(__name__)
 class TemplateManager:
     """Manages multiple resolution-specific template databases."""
 
+    # Class-level shared cache (shared across all instances)
+    _shared_databases: ClassVar[dict[tuple[Path, SupportedResolution], TemplateDatabase]] = {}
+    _shared_lock: ClassVar[Lock] = Lock()
+
     def __init__(self, database_path: Path) -> None:
         """Initialize template manager.
 
@@ -30,7 +35,6 @@ class TemplateManager:
             database_path (Path): Path to the binary database file
         """
         self.database_path = database_path
-        self.databases: dict[SupportedResolution, TemplateDatabase] = {}
         self.active_database: TemplateDatabase | None = None
         self.current_resolution: SupportedResolution | None = None
 
@@ -43,19 +47,41 @@ class TemplateManager:
         Returns:
             TemplateDatabase: Loaded template database
         """
-        if resolution not in self.databases:
-            logger.info("Loading template database for resolution %s", resolution)
+        # Use shared cache key
+        cache_key = (self.database_path, resolution)
 
-            # Load from binary file
-            with open(self.database_path, "rb") as f:
-                all_databases = pickle.load(f)
+        # Check shared cache (thread-safe)
+        with self._shared_lock:
+            if cache_key in self._shared_databases:
+                return self._shared_databases[cache_key]
 
-            if resolution not in all_databases:
-                raise ValueError(f"Resolution {resolution} not found in database")
+        # Load from file if not in cache
+        logger.info(
+            "Loading template database for resolution %s from %s",
+            resolution,
+            self.database_path,
+        )
 
-            self.databases[resolution] = all_databases[resolution]
+        # Load from binary file
+        with open(self.database_path, "rb") as f:
+            all_databases: dict[SupportedResolution, TemplateDatabase] = pickle.load(f)
 
-        return self.databases[resolution]
+        if resolution not in all_databases:
+            raise ValueError(f"Resolution {resolution} not found in database")
+
+        database = all_databases[resolution]
+
+        # Cache in shared cache
+        with self._shared_lock:
+            self._shared_databases[cache_key] = database
+
+        logger.info(
+            "Loaded database with %d templates for resolution %s",
+            len(database.templates),
+            resolution,
+        )
+
+        return database
 
     def set_active_resolution(self, screenshot_height: int) -> SupportedResolution:
         """Set active resolution based on screenshot dimensions.
@@ -229,6 +255,6 @@ class TemplateManager:
         """String representation of the template manager."""
         return (
             f"TemplateManager(database_path={self.database_path}, "
-            f"loaded_resolutions={len(self.databases)}, "
+            f"loaded_resolutions={len(self._shared_databases)}, "
             f"current_resolution={self.current_resolution})"
         )
