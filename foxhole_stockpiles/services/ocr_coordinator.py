@@ -311,7 +311,9 @@ class OCRCoordinator:
         Returns:
             StockpileItem | None: Matched item code and crated status, or None if no match found
         """
-        category = category or ItemCategory.Invalid
+        if category == ItemCategory.Invalid:
+            category = None
+
         image = stockpile_images.icons[icon_index]
 
         if image is None:

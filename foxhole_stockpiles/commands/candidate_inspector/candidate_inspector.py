@@ -33,20 +33,16 @@ def main() -> dict[str, Any] | None:
         epilog=(
             "Examples:\n"
             "  # Test all candidates for specific resolution\n"
-            "  python -m foxhole_stockpiles.commands.database_builder.test_candidates \\\n"
-            "    --database db.pkl --resolution 1080\n"
+            "  fs inspect --database db.pkl --resolution 1080\n"
             "\n"
             "  # Test candidates for specific item\n"
-            "  python -m foxhole_stockpiles.commands.database_builder.test_candidates \\\n"
-            "    --database db.pkl --filter Rifle --resolution 1080\n"
+            "  fs inspect --database db.pkl --filter Rifle --resolution 1080\n"
             "\n"
             "  # Test candidates with faction, crated, and resolution filters\n"
-            "  python -m foxhole_stockpiles.commands.database_builder.test_candidates \\\n"
-            "    --database db.pkl --faction c --crated true --resolution 1080 --print\n"
+            "  fs inspect --database db.pkl --faction c --crated true --resolution 1080 --print\n"
             "\n"
             "  # Test icon matching against filtered candidates\n"
-            "  python -m foxhole_stockpiles.commands.database_builder.test_candidates \\\n"
-            "    --database db.pkl --resolution 1080 --icon icon.png --faction c\n"
+            "  fs inspect --database db.pkl --resolution 1080 --icon icon.png --faction c\n"
         ),
     )
 

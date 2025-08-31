@@ -89,7 +89,7 @@ class TemplateDatabase:
             candidates = candidates & set(mod_candidates)
 
         # Apply faction filter if specified
-        if faction:
+        if faction and faction != ItemFaction.NEUTRAL:
             faction_candidates = self.faction_lookup.get(faction.value, [])
             # Also include neutral items
             neutral_candidates = self.faction_lookup.get(ItemFaction.NEUTRAL.value, [])

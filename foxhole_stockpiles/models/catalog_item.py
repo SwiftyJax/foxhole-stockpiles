@@ -75,7 +75,7 @@ class CatalogItem(BaseModel):
         if item.get("ItemCategory"):
             return ItemCategory.Item
 
-        # Default fallback
+        # Default fallback - Should not happen if data is correct
         return ItemCategory.Invalid
 
     def model_post_init(self, context: Any) -> None:
