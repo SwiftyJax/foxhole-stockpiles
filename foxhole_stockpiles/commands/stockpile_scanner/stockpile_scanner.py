@@ -87,7 +87,6 @@ def main() -> dict[str, Any] | None:
         "--output-format",
         type=str,
         choices=[fmt.value for fmt in OutputFormat],
-        default=OutputFormat.CONSOLE.value,
         help="Output format for the results (default: console)",
     )
     parser.add_argument(
@@ -107,10 +106,14 @@ def main() -> dict[str, Any] | None:
     # Convert BGR to RGB for processing
     image = np.asarray(cv2.cvtColor(_image, cv2.COLOR_BGR2RGB), dtype=np.uint8)
 
-    output_format = OutputFormat(args.output_format)
-
     # Setup logging
     settings = copy(get_app_settings(args.config))
+    output_format = (
+        OutputFormat(args.output_format)
+        if args.output_format
+        else settings.output_format.output_format
+    )
+
     logging_settings = settings.logging
     # Setup logging
     if args.quiet:
