@@ -1,8 +1,6 @@
 """Foxhole Stockpile Detection Script."""
 
 import argparse
-import datetime
-import logging
 import sys
 from copy import copy
 from pathlib import Path
@@ -11,11 +9,11 @@ from typing import Any
 import cv2
 import numpy as np
 
-from foxhole_stockpiles.connectors.webhook import WebhookConnector
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.output_format import OutputFormat
+from foxhole_stockpiles.handlers.output_handler import OutputHandler
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
@@ -132,9 +130,7 @@ def main() -> dict[str, Any] | None:
         sys.exit(1)
 
     # Parse faction filter
-    faction_filter = None
-    if args.faction:
-        faction_filter = ItemFaction.from_string(args.faction)
+    faction_filter = ItemFaction.from_string(args.faction)
 
     try:
         scanner_settings: OCRCoordinatorConfig = settings.scanner
@@ -146,52 +142,8 @@ def main() -> dict[str, Any] | None:
 
         coordinator = OCRCoordinator(scanner_settings)
         stockpile: Stockpile = coordinator.analyze_stockpile(image)
-
-        match output_format:
-            case OutputFormat.CONSOLE:
-                logger = logging.getLogger(__name__)
-                logger.info("Name: %s", stockpile.name)
-                logger.info("Type: %s", stockpile.type.value)
-                logger.info("Hex: %s", stockpile.hex_name)
-                logger.info("Shard: %s", stockpile.shard)
-                logger.info("Ingame timestamp: %s", stockpile.ingame_timestamp)
-                logger.info("Items:")
-                for item in stockpile.items:
-                    code = item.code
-                    if item.crated:
-                        code += "_crated"
-                    logger.info(
-                        "* code: %-35s quantity: %-3d, confidence: %.3f",
-                        code,
-                        item.quantity,
-                        item.confidence or 0.0,
-                    )
-            case OutputFormat.JSON:
-                return stockpile.model_dump(mode="json")
-            case OutputFormat.FILE:
-                file = settings.output_format.file_path
-                if not file:
-                    file = "output.json"
-
-                if "{timestamp}" in file:
-                    timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-                    file = file.replace("{timestamp}", timestamp)
-                output_path = Path(file)
-                output_path.parent.mkdir(parents=True, exist_ok=True)
-                with output_path.open("w", encoding="utf-8") as f:
-                    f.write(stockpile.model_dump_json())
-            case OutputFormat.WEBHOOK:
-                if not settings.output_format.webhook_url:
-                    raise ValueError("Webhook URL is not set in the configuration")
-
-                webhook_connector = WebhookConnector(settings.output_format)
-                if not webhook_connector:
-                    raise ValueError("Failed to initialize Webhook connector")
-
-                payload = stockpile.model_dump(mode="json")
-                response = webhook_connector.send_stockpile(payload)
-                logger = logging.getLogger(__name__)
-                logger.info("Webhook response: %s", response)
+        output_handler = OutputHandler(settings=settings)
+        return output_handler.handle_output(stockpile=stockpile, output_format=output_format)
 
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)

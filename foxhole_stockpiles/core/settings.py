@@ -7,6 +7,7 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 
 
@@ -88,6 +89,9 @@ class OCRSettings(BaseModel):
 class OutputFormatSettings(BaseModel):
     """Settings for output formats."""
 
+    output_format: OutputFormat = Field(
+        description="Output format to use", default=OutputFormat.JSON
+    )
     file_path: str = Field(
         description="Path to the output file when using file output format", default="output.json"
     )
@@ -113,22 +117,22 @@ class OutputFormatSettings(BaseModel):
         json_schema_extra={
             "example": {
                 "file_path": "output.txt",
+                "output_format": "file",
             }
         },
     )
 
-    @model_validator(mode="after")
-    def validate_webhook_auth(self) -> Self:
-        """Validate that only one webhook authentication method is provided.
-
-        Returns:
-            Self: The validated instance.
+    def _validate_webhook_fields(self) -> None:
+        """Validate the webhook settings.
 
         Raises:
             ValueError: If more than one authentication method is provided.
         """
+        if self.output_format != OutputFormat.WEBHOOK:
+            return
+
         if not self.webhook_url:
-            return self
+            raise ValueError("webhook_url must be provided when output_format is 'webhook'")
 
         auth_methods = []
 
@@ -146,6 +150,28 @@ class OutputFormatSettings(BaseModel):
             raise ValueError(
                 f"Only one webhook authentication method allowed. Found: {', '.join(auth_methods)}"
             )
+
+    def _validate_file_fields(self) -> None:
+        """Validate the file output settings.
+
+        Raises:
+            ValueError: If file_path is not provided when output_format is file.
+        """
+        if self.output_format == OutputFormat.FILE and not self.file_path:
+            raise ValueError("file_path must be provided when output_format is 'file'")
+
+    @model_validator(mode="after")
+    def validate_model(self) -> Self:
+        """Validate the model.
+
+        Returns:
+            Self: The validated instance.
+
+        Raises:
+            ValueError: If any of the fields is invalid
+        """
+        self._validate_webhook_fields()
+        self._validate_file_fields()
 
         return self
 
