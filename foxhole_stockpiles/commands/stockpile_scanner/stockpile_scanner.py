@@ -94,6 +94,9 @@ def main() -> dict[str, Any] | None:
         type=str,
         help="Path to configuration file",
     )
+    parser.add_argument(
+        "--token", type=str, help="Override the webhook token from the configuration file"
+    )
 
     args = parser.parse_args()
 
@@ -146,7 +149,9 @@ def main() -> dict[str, Any] | None:
         coordinator = OCRCoordinator(scanner_settings)
         stockpile: Stockpile = coordinator.analyze_stockpile(image)
         output_handler = OutputHandler(settings=settings)
-        return output_handler.handle_output(stockpile=stockpile, output_format=output_format)
+        return output_handler.handle_output(
+            stockpile=stockpile, output_format=output_format, token=args.token
+        )
 
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)

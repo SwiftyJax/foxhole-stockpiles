@@ -25,13 +25,14 @@ class OutputHandler:
         self.logger = logging.getLogger(__name__)
 
     def handle_output(
-        self, stockpile: Stockpile, output_format: OutputFormat
+        self, stockpile: Stockpile, output_format: OutputFormat, token: str | None = None
     ) -> dict[str, Any] | None:
         """Handle output based on the specified format.
 
         Args:
             stockpile (Stockpile): The stockpile data to output
             output_format (OutputFormat): The desired output format
+            token (str | None): Optional token to override the configured webhook token
 
         Returns:
             dict[str, Any] | None: JSON data if format is JSON, webhook response if webhook,
@@ -47,7 +48,7 @@ class OutputHandler:
                 self._output_file(stockpile=stockpile)
                 return None
             case OutputFormat.WEBHOOK:
-                return self._output_webhook(stockpile=stockpile)
+                return self._output_webhook(stockpile=stockpile, token=token)
 
     def _output_console(self, stockpile: Stockpile) -> None:
         """Output stockpile data to console.
@@ -94,11 +95,12 @@ class OutputHandler:
 
         self.logger.info("Output saved to: %s", output_path)
 
-    def _output_webhook(self, stockpile: Stockpile) -> dict[str, Any]:
+    def _output_webhook(self, stockpile: Stockpile, token: str | None = None) -> dict[str, Any]:
         """Output stockpile data via webhook.
 
         Args:
             stockpile (Stockpile): The stockpile data to output
+            token (str | None): Optional token to override the configured webhook token
 
         Returns:
             dict[str, Any]: Webhook response data
@@ -114,6 +116,6 @@ class OutputHandler:
             raise ValueError("Failed to initialize Webhook connector")
 
         payload = stockpile.model_dump(mode="json")
-        response = asyncio.run(webhook_connector.send_stockpile(payload))
+        response = asyncio.run(webhook_connector.send_stockpile(payload=payload, token=token))
         self.logger.info("Webhook response: %s", response)
         return response

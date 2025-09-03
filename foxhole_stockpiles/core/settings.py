@@ -95,21 +95,26 @@ class OutputFormatSettings(BaseModel):
     file_path: str = Field(
         description="Path to the output file when using file output format", default="output.json"
     )
-
+    webhook_auth_type: str | None = Field(
+        description=(
+            "Authentication type to use when sending to webhook. "
+            "Supported types: 'basic', 'bearer', or custom header name."
+        ),
+        default=None,
+    )
+    webhook_token: str | None = Field(
+        description=(
+            "Token to use for authentication when sending to webhook. "
+            "For 'basic' auth_type, this should be base64 encoded 'username:password'."
+        ),
+        default=None,
+    )
     webhook_url: str | None = Field(
         description="Webhook URL for sending output when using webhook output format", default=None
     )
-    webhook_username: str | None = Field(
-        description="Username to use when sending to webhook", default=None
-    )
-    webhook_password: str | None = Field(
-        description="Password to use when sending to webhook", default=None
-    )
-    webhook_bearer_token: str | None = Field(
-        description="Bearer token to use when sending to webhook", default=None
-    )
-    webhook_api_token: str | None = Field(
-        description="API token to use when sending to webhook", default=None
+    webhook_client_auth_header: str | None = Field(
+        description=("Client header used from client to pass through to the webhook."),
+        default=None,
     )
 
     model_config = ConfigDict(
@@ -126,30 +131,19 @@ class OutputFormatSettings(BaseModel):
         """Validate the webhook settings.
 
         Raises:
-            ValueError: If more than one authentication method is provided.
+            ValueError: If webhook configuration is invalid.
         """
-        if self.output_format != OutputFormat.WEBHOOK:
-            return
-
-        if not self.webhook_url:
+        if self.output_format == OutputFormat.WEBHOOK and not self.webhook_url:
             raise ValueError("webhook_url must be provided when output_format is 'webhook'")
 
-        auth_methods = []
+    def _validate_auth_consistency(self) -> None:
+        """Validate that webhook auth type and token are consistent.
 
-        # Check basic auth (both username and password required)
-        if self.webhook_password and self.webhook_username:
-            auth_methods.append("basic_auth")
-
-        if self.webhook_bearer_token:
-            auth_methods.append("bearer_token")
-
-        if self.webhook_api_token:
-            auth_methods.append("api_token")
-
-        if len(auth_methods) > 1:
-            raise ValueError(
-                f"Only one webhook authentication method allowed. Found: {', '.join(auth_methods)}"
-            )
+        Raises:
+            ValueError: If only one of webhook_auth_type or webhook_token is provided.
+        """
+        if bool(self.webhook_auth_type) != bool(self.webhook_token):
+            raise ValueError("webhook_auth_type and webhook_token must both be set or both be None")
 
     def _validate_file_fields(self) -> None:
         """Validate the file output settings.
@@ -172,6 +166,7 @@ class OutputFormatSettings(BaseModel):
         """
         self._validate_webhook_fields()
         self._validate_file_fields()
+        self._validate_auth_consistency()
 
         return self
 

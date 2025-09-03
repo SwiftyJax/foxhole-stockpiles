@@ -1,6 +1,5 @@
 """Webhook connector."""
 
-import base64
 import functools
 import logging
 from asyncio import sleep
@@ -96,33 +95,41 @@ class WebhookConnector:
         self._output_settings = output_settings
         self._logger = logging.getLogger(__name__)
 
-    def _build_auth_headers(self) -> dict[str, str]:
+    def _build_auth_headers(self, token: str | None = None) -> dict[str, str]:
         """Build authentication headers based on configured auth method.
+
+        Args:
+            token (str | None): Optional token to override the configured webhook token
 
         Returns:
             dict[str, str]: Headers dictionary with appropriate authentication credentials
         """
         headers: dict[str, str] = {}
 
-        if self._output_settings.webhook_api_token:
-            headers["X-API-TOKEN"] = self._output_settings.webhook_api_token
-        elif self._output_settings.webhook_bearer_token:
-            headers["Authorization"] = f"Bearer {self._output_settings.webhook_bearer_token}"
-        elif self._output_settings.webhook_password:
-            credentials = (
-                f"{self._output_settings.webhook_username}:{self._output_settings.webhook_password}"
-            )
-            encoded = base64.b64encode(credentials.encode()).decode()
-            headers["Authorization"] = f"Basic {encoded}"
+        auth_type = self._output_settings.webhook_auth_type
+        token = token or self._output_settings.webhook_token
+        if auth_type is None or token is None:
+            return headers
+
+        match auth_type:
+            case "basic":
+                headers["Authorization"] = f"Basic {token}"
+            case "bearer":
+                headers["Authorization"] = f"Bearer {token}"
+            case _:
+                headers[auth_type] = token
 
         return headers
 
     @async_retry_on_connect_timeout(max_retries=3, delay=2)
-    async def send_stockpile(self, payload: dict[str, Any]) -> dict[str, str]:
+    async def send_stockpile(
+        self, payload: dict[str, Any], token: str | None = None
+    ) -> dict[str, str]:
         """Send stockpile data to the configured webhook endpoint.
 
         Args:
             payload (dict[str, Any]): Stockpile data dictionary to send to the webhook
+            token (str | None): Optional token to override the configured webhook token
 
         Returns:
             dict[str, str]: Response dictionary from the webhook or error message
@@ -137,7 +144,7 @@ class WebhookConnector:
             self._logger.info("Webhook URL is not configured")
             return {"message": self.DEFAULT_MESSAGE_NO_URL}
 
-        headers = self._build_auth_headers()
+        headers = self._build_auth_headers(token)
         return_data: dict[str, str] = {}
 
         try:
