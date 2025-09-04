@@ -1,9 +1,9 @@
 """Database builder for creating resolution-specific template databases."""
 
 import argparse
+import asyncio
 import logging
 import pickle
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import copy
 from pathlib import Path
 
@@ -43,7 +43,7 @@ class DatabaseBuilder:
         if not self.catalog_data:
             raise ValueError(f"Catalog is empty or could not be loaded from {catalog_path}")
 
-    def build_all_databases(
+    async def build_all_databases(
         self, output_path: Path, target_resolutions: list[SupportedResolution] | None = None
     ) -> None:
         """Build template databases for specified or all supported resolutions.
@@ -66,7 +66,7 @@ class DatabaseBuilder:
         databases = {}
         for resolution in resolutions_to_build:
             self._logger.debug("Building database for resolution %s", resolution)
-            database = self._build_resolution_database(resolution=resolution)
+            database = await self._build_resolution_database(resolution=resolution)
 
             if len(database.templates) > 0:
                 databases[resolution] = database
@@ -80,10 +80,10 @@ class DatabaseBuilder:
             raise ValueError("No templates found for any resolution! Check your icon files.")
 
         # Save combined database
-        self._save_databases(databases=databases, output_path=output_path)
+        await self._save_databases(databases=databases, output_path=output_path)
         self._logger.debug("Database build completed successfully")
 
-    def _build_resolution_database(self, resolution: SupportedResolution) -> TemplateDatabase:
+    async def _build_resolution_database(self, resolution: SupportedResolution) -> TemplateDatabase:
         """Build template database for specific resolution.
 
         Args:
@@ -103,23 +103,24 @@ class DatabaseBuilder:
         )
 
         # Process items in parallel
-        with ThreadPoolExecutor(max_workers=8) as executor:
-            futures = []
+        semaphore = asyncio.Semaphore(8)  # Limit concurrent operations
 
-            for item in self.catalog_data:
-                future = executor.submit(
-                    self._process_item_templates,
+        async def process_with_semaphore(item: CatalogItem) -> list[IconTemplate]:
+            async with semaphore:
+                return await self._process_item_templates(
                     item=item,
                     resolution=resolution,
                     icon_size=icon_size,
                 )
-                futures.append(future)
 
-            # Collect results
-            for future in as_completed(futures):
-                templates = future.result()
-                for template in templates:
-                    database.add_template(template=template)
+        # Create tasks for all items
+        tasks = [process_with_semaphore(item) for item in self.catalog_data]
+
+        # Collect results
+        results = await asyncio.gather(*tasks)
+        for templates in results:
+            for template in templates:
+                database.add_template(template=template)
 
         self._logger.debug(
             "Built %d templates for resolution %s", len(database.templates), resolution
@@ -127,7 +128,7 @@ class DatabaseBuilder:
 
         return database
 
-    def _process_item_templates(
+    async def _process_item_templates(
         self, item: CatalogItem, resolution: SupportedResolution, icon_size: int
     ) -> list[IconTemplate]:
         """Process templates for a single item.
@@ -154,8 +155,8 @@ class DatabaseBuilder:
         icon_paths = self._find_icon_files(item_code=item_code, icon_size=icon_size)
 
         for icon_path in icon_paths:
-            # Load and process icon
-            icon_image = cv2.imread(str(icon_path))
+            # Load and process icon (cv2.imread is blocking, but fast enough for individual files)
+            icon_image = await asyncio.to_thread(cv2.imread, str(icon_path))
             if icon_image is None:
                 self._logger.warning("Failed to load icon: %s", icon_path)
                 continue
@@ -317,7 +318,7 @@ class DatabaseBuilder:
 
         return found_paths
 
-    def _save_databases(
+    async def _save_databases(
         self, databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
     ) -> None:
         """Save all databases to binary file.
@@ -332,8 +333,12 @@ class DatabaseBuilder:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Save as pickle file
-        with open(output_path, "wb") as f:
-            pickle.dump(databases, f, protocol=pickle.HIGHEST_PROTOCOL)
+        def write_file() -> None:
+            """Write databases to pickle file synchronously."""
+            with open(output_path, "wb") as f:
+                pickle.dump(databases, f, protocol=pickle.HIGHEST_PROTOCOL)
+
+        await asyncio.to_thread(write_file)
 
         # Log statistics
         total_templates = sum(len(db.templates) for db in databases.values())
@@ -347,7 +352,7 @@ class DatabaseBuilder:
         )
 
 
-def main() -> None:
+async def main() -> None:
     """Main entry point for database builder."""
     parser = argparse.ArgumentParser(description="Build template databases")
     parser.add_argument("--catalog", type=Path, required=True, help="Path to catalog.json")
@@ -412,8 +417,10 @@ def main() -> None:
     builder = DatabaseBuilder(
         catalog_path=args.catalog, assets_path=args.templates, use_scaling=args.use_scaling
     )
-    builder.build_all_databases(output_path=args.database, target_resolutions=target_resolutions)
+    await builder.build_all_databases(
+        output_path=args.database, target_resolutions=target_resolutions
+    )
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

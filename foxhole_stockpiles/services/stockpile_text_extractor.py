@@ -1,5 +1,6 @@
 """Foxhole Stockpiles - Stockpile Text Extractor Module."""
 
+import asyncio
 import logging
 import os
 
@@ -26,7 +27,7 @@ class StockpileTextExtractor:
         if tessdata_path:
             os.environ["TESSDATA_PREFIX"] = os.path.abspath(tessdata_path)
 
-    def _extract_raw_text(self, image: NDArray[np.uint8], numbers_only: bool = True) -> str:
+    async def _extract_raw_text(self, image: NDArray[np.uint8], numbers_only: bool = True) -> str:
         """Extract raw text using custom trained model.
 
         Args:
@@ -38,12 +39,12 @@ class StockpileTextExtractor:
         """
         # Use custom trained model for better Renner font recognition
         config = self.get_tesseract_config(numbers_only=numbers_only)
-        result = pytesseract.image_to_string(image, config=config)
+        result = await asyncio.to_thread(pytesseract.image_to_string, image, config=config)
         if result is None:
             return ""
         return str(result).rstrip()
 
-    def extract_quantities(self, composite_image: NDArray[np.uint8]) -> list[list[int]]:
+    async def extract_quantities(self, composite_image: NDArray[np.uint8]) -> list[list[int]]:
         """Extract all quantities from a composite image maintaining row/column structure.
 
         Args:
@@ -54,7 +55,7 @@ class StockpileTextExtractor:
             list[list[int]]: List of quantities detected by row
         """
         # Extract text with custom trained model
-        raw_text = self._extract_raw_text(composite_image)
+        raw_text = await self._extract_raw_text(composite_image)
         self._logger.debug("Extracted raw text from image: %s", raw_text.strip())
 
         return self.parse_text_to_lists(raw_text)

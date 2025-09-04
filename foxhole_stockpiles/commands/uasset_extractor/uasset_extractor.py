@@ -6,12 +6,11 @@ Uses repak for extraction and UModel.exe for conversion.
 """
 
 import argparse
+import asyncio
 import logging
 import multiprocessing
 import shutil
-import subprocess
 import tempfile
-from concurrent.futures import ThreadPoolExecutor
 from copy import copy
 from pathlib import Path
 
@@ -103,7 +102,7 @@ class PakExtractor:
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
-    def extract_single_file(self, file_path: str, temp_dir: str) -> bool:
+    async def extract_single_file(self, file_path: str, temp_dir: str) -> bool:
         """Extract a single file from the PAK files to temporary directory.
 
         Tries each PAK file in order until the file is found and extracted.
@@ -136,9 +135,13 @@ class PakExtractor:
 
             try:
                 self._logger.debug("Extracting %s from %s", file_path, pak_file)
-                process = subprocess.run(command, capture_output=True, text=True)
+                process = await asyncio.create_subprocess_exec(
+                    *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                )
+                stdout, stderr = await process.communicate()
+                returncode = process.returncode
 
-                if process.returncode == 0:
+                if returncode == 0:
                     # Check if the specific file was extracted
                     extracted_file_path = pak_extract_dir / file_path
                     if extracted_file_path.exists():
@@ -159,7 +162,7 @@ class PakExtractor:
         self._logger.error("Failed to extract %s from any PAK file", file_path)
         return False
 
-    def convert_to_png(self, file_path: str, temp_dir: str) -> bool:
+    async def convert_to_png(self, file_path: str, temp_dir: str) -> bool:
         """Convert extracted file to PNG using UModel.
 
         Args:
@@ -169,14 +172,14 @@ class PakExtractor:
         Returns:
             bool: True if conversion was successful, False otherwise.
         """
-        if self._try_convert_with_version(file_path=file_path, temp_dir=temp_dir):
+        if await self._try_convert_with_version(file_path=file_path, temp_dir=temp_dir):
             return True
 
         # If all versions fail, log the issue
         self._logger.error("Failed to convert %s with any UE version", file_path)
         return False
 
-    def _try_convert_with_version(
+    async def _try_convert_with_version(
         self, file_path: str, temp_dir: str, ue_version: str = "ue4.27"
     ) -> bool:
         """Try to convert file with specific UE version.
@@ -216,9 +219,13 @@ class PakExtractor:
             ]
 
             self._logger.debug("Trying conversion with %s: %s", ue_version, file_path)
-            process = subprocess.run(command, capture_output=True, text=True)
+            process = await asyncio.create_subprocess_exec(
+                *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+            )
+            stdout, stderr = await process.communicate()
+            returncode = process.returncode
 
-            if process.returncode == 0:
+            if returncode == 0:
                 # Handle the output path conversion
                 file_path_obj = Path(file_path)
                 png_name = file_path_obj.with_suffix(".png")
@@ -274,7 +281,7 @@ class PakExtractor:
         self._logger.info("Found %d unique files to process", len(files_to_extract))
         return files_to_extract
 
-    def process_files(self, max_workers: int | None = None) -> bool:
+    async def process_files(self, max_workers: int | None = None) -> bool:
         """Extract and convert all files.
 
         Args:
@@ -301,13 +308,14 @@ class PakExtractor:
 
             # Extract files individually
             self._logger.info("Starting extraction of %d files...", len(files_to_extract))
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                extract_results = list(
-                    executor.map(
-                        lambda f: self.extract_single_file(f, temp_dir),
-                        files_to_extract,
-                    )
-                )
+            semaphore = asyncio.Semaphore(max_workers)
+
+            async def extract_with_semaphore(file_path: str) -> bool:
+                async with semaphore:
+                    return await self.extract_single_file(file_path, temp_dir)
+
+            extract_tasks = [extract_with_semaphore(f) for f in files_to_extract]
+            extract_results = await asyncio.gather(*extract_tasks)
 
             successful_extractions = sum(1 for result in extract_results if result)
             failed_extractions = sum(1 for result in extract_results if not result)
@@ -325,10 +333,12 @@ class PakExtractor:
             # Only convert files that were successfully extracted
             files_to_convert = [f for i, f in enumerate(files_to_extract) if extract_results[i]]
 
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                convert_results = list(
-                    executor.map(lambda f: self.convert_to_png(f, temp_dir), files_to_convert)
-                )
+            async def convert_with_semaphore(file_path: str) -> bool:
+                async with semaphore:
+                    return await self.convert_to_png(file_path, temp_dir)
+
+            convert_tasks = [convert_with_semaphore(f) for f in files_to_convert]
+            convert_results = await asyncio.gather(*convert_tasks)
 
             successful_conversions = sum(1 for result in convert_results if result)
             failed_conversions = sum(1 for result in convert_results if not result)
@@ -345,7 +355,7 @@ class PakExtractor:
             return successful_conversions > 0
 
 
-def main() -> None:
+async def main() -> None:
     """Command-line interface for the PAK extraction tool.
 
     Parses command-line arguments and runs the extraction process.
@@ -423,7 +433,7 @@ def main() -> None:
         print(f"Error: {e}")
         exit(1)
 
-    success = extractor.process_files(max_workers=args.workers)
+    success = await extractor.process_files(max_workers=args.workers)
     if not success:
         print("\nSome operations failed. Check the logs above for details.")
         exit(1)
@@ -432,4 +442,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

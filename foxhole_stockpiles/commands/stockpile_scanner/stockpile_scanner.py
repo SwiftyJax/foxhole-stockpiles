@@ -1,6 +1,7 @@
 """Foxhole Stockpile Detection Script."""
 
 import argparse
+import asyncio
 import sys
 from copy import copy
 from pathlib import Path
@@ -40,7 +41,7 @@ def get_app_settings(config_file: str | None = None) -> AppSettings:
     return settings
 
 
-def main() -> dict[str, Any] | None:
+async def main() -> dict[str, Any] | None:
     """Main function to handle command line arguments and execute detection.
 
     Returns:
@@ -101,7 +102,7 @@ def main() -> dict[str, Any] | None:
     args = parser.parse_args()
 
     # Load and preprocess the image
-    _image = cv2.imread(args.image, cv2.IMREAD_COLOR)
+    _image = await asyncio.to_thread(cv2.imread, args.image, cv2.IMREAD_COLOR)
     if _image is None:
         print(f"Error: Could not load image from '{args.image}'")
         sys.exit(1)
@@ -147,9 +148,9 @@ def main() -> dict[str, Any] | None:
         scanner_settings.early_exit_threshold = args.early_exit
 
         coordinator = OCRCoordinator(scanner_settings)
-        stockpile: Stockpile = coordinator.analyze_stockpile(image)
+        stockpile: Stockpile = await coordinator.analyze_stockpile(image)
         output_handler = OutputHandler(settings=settings)
-        return output_handler.handle_output(
+        return await output_handler.handle_output(
             stockpile=stockpile, output_format=output_format, token=args.token
         )
 
@@ -167,6 +168,6 @@ def main() -> dict[str, Any] | None:
 
 
 if __name__ == "__main__":
-    stockpile = main()
+    stockpile = asyncio.run(main())
     print(stockpile)
     sys.exit(0)

@@ -1,6 +1,7 @@
 """Generate training templates command for Foxhole stockpile recognition system."""
 
 import argparse
+import asyncio
 import logging
 from copy import copy
 from pathlib import Path
@@ -58,7 +59,7 @@ class TemplateGenerator:
 
         self.available_mods = self._discover_mods(path=assets_path)
         self.catalog_data = load_catalog(path=catalog_path)
-        self.crate_icon = self._load_crate_icon()
+        self.crate_icon: NDArray[np.uint8] | None = None
         self.subicon_cache: dict[str, NDArray[np.uint8] | None] = {}
 
         logger.info("Template generator initialized")
@@ -92,7 +93,7 @@ class TemplateGenerator:
         logger.info("Discovered %d mod folders: %s", len(mod_folders), mod_folders)
         return mod_folders
 
-    def _load_crate_icon(self) -> NDArray[np.uint8]:
+    async def _load_crate_icon(self) -> NDArray[np.uint8]:
         """Load the crate overlay icon, preferring vanilla folder.
 
         Returns:
@@ -104,7 +105,7 @@ class TemplateGenerator:
         crate_icon_path = "War/Content/Textures/UI/Menus/IconFilterCrates"
 
         for mod_name in self.available_mods:
-            crate_icon = self._load_icon_image(icon_path=crate_icon_path, mod_name=mod_name)
+            crate_icon = await self._load_icon_image(icon_path=crate_icon_path, mod_name=mod_name)
             if crate_icon is not None:
                 logger.info("Loaded crate icon from %s", mod_name)
                 return crate_icon
@@ -122,7 +123,7 @@ class TemplateGenerator:
         """
         return int(int(resolution.value) * self.ICON_SIZE_RATIO)
 
-    def _load_icon_image(self, icon_path: str, mod_name: str) -> NDArray[np.uint8] | None:
+    async def _load_icon_image(self, icon_path: str, mod_name: str) -> NDArray[np.uint8] | None:
         """Load an icon image from the specified mod folder.
 
         Args:
@@ -142,7 +143,7 @@ class TemplateGenerator:
             return None
 
         try:
-            image = cv2.imread(str(full_path), cv2.IMREAD_UNCHANGED)
+            image = await asyncio.to_thread(cv2.imread, str(full_path), cv2.IMREAD_UNCHANGED)
             if image is None:
                 logger.debug("Failed to load icon from %s: %s", mod_name, full_path)
                 return None
@@ -166,7 +167,9 @@ class TemplateGenerator:
             logger.error("Error loading icon %s from %s: %s", full_path, mod_name, e)
             return None
 
-    def _load_subicon_cached(self, subicon_path: str, mod_name: str) -> NDArray[np.uint8] | None:
+    async def _load_subicon_cached(
+        self, subicon_path: str, mod_name: str
+    ) -> NDArray[np.uint8] | None:
         """Load a subicon with caching to avoid repeated disk access.
 
         Args:
@@ -183,7 +186,7 @@ class TemplateGenerator:
             return self.subicon_cache[cache_key]
 
         # Try to load and cache the subicon
-        subicon = self._load_icon_image(icon_path=subicon_path, mod_name=mod_name)
+        subicon = await self._load_icon_image(icon_path=subicon_path, mod_name=mod_name)
         if subicon is not None:
             self.subicon_cache[cache_key] = subicon
             logger.debug("Cached subicon from %s: %s", mod_name, subicon_path)
@@ -191,7 +194,7 @@ class TemplateGenerator:
 
         # If not found and not vanilla, try vanilla fallback
         if mod_name.lower() != TemplateGenerator.VANILLA_MOD_NAME:
-            subicon = self._load_subicon_cached(
+            subicon = await self._load_subicon_cached(
                 subicon_path=subicon_path,
                 mod_name=TemplateGenerator.VANILLA_MOD_NAME,
             )
@@ -336,7 +339,7 @@ class TemplateGenerator:
 
         return base_icon
 
-    def _generate_templates_for_item_and_mod(self, item: CatalogItem, mod_name: str) -> bool:
+    async def _generate_templates_for_item_and_mod(self, item: CatalogItem, mod_name: str) -> bool:
         """Generate all template variants for a single catalog item from a specific mod.
 
         Args:
@@ -357,7 +360,7 @@ class TemplateGenerator:
         logger.debug("Processing %s from mod %s (icon: %s)", code_name, mod_name, icon_path)
 
         # Load main icon from the specific mod
-        main_icon = self._load_icon_image(icon_path=icon_path, mod_name=mod_name)
+        main_icon = await self._load_icon_image(icon_path=icon_path, mod_name=mod_name)
         if main_icon is None:
             logger.warning(
                 "Failed to load main icon for %s from %s: %s", code_name, mod_name, icon_path
@@ -367,7 +370,9 @@ class TemplateGenerator:
         # Load subicon if present
         subicon = None
         if subtype_icon_path:
-            subicon = self._load_subicon_cached(subicon_path=subtype_icon_path, mod_name=mod_name)
+            subicon = await self._load_subicon_cached(
+                subicon_path=subtype_icon_path, mod_name=mod_name
+            )
             if subicon is None:
                 logger.debug(
                     "Failed to load subicon for %s from %s: %s",
@@ -398,11 +403,13 @@ class TemplateGenerator:
                 # Save normal version
                 normal_filename = f"{mod_name}_{code_name}_{icon_size}.png"
                 normal_path = normal_output_dir / normal_filename
-                cv2.imwrite(str(normal_path), base_icon)
+                await asyncio.to_thread(cv2.imwrite, str(normal_path), base_icon)
                 success_count += 1
                 logger.debug("Saved: %s", normal_path)
 
                 # Create and save crated version
+                if self.crate_icon is None:
+                    raise RuntimeError("Crate icon not loaded")
                 crated_icon = self._add_subicon(
                     main_icon=base_icon,
                     subicon=self.crate_icon,
@@ -411,7 +418,7 @@ class TemplateGenerator:
                 )
                 crated_filename = f"{mod_name}_{code_name}_crated_{icon_size}.png"
                 crated_path = crated_output_dir / crated_filename
-                cv2.imwrite(str(crated_path), crated_icon)
+                await asyncio.to_thread(cv2.imwrite, str(crated_path), crated_icon)
                 success_count += 1
                 logger.debug("Saved: %s", crated_path)
 
@@ -446,7 +453,7 @@ class TemplateGenerator:
         )
         return success_count > 0
 
-    def generate_all_templates(self) -> bool:
+    async def generate_all_templates(self) -> bool:
         """Generate templates for all catalog items across all available mods.
 
         Returns:
@@ -455,6 +462,10 @@ class TemplateGenerator:
         if not self.available_mods:
             logger.error("No mod folders found in assets directory")
             return False
+
+        # Load crate icon async if not already loaded
+        if self.crate_icon is None:
+            self.crate_icon = await self._load_crate_icon()
 
         # Apply filter if specified
         filtered_catalog = self._filter_catalog_items(filter_name=self.filter_name)
@@ -479,19 +490,40 @@ class TemplateGenerator:
             successful_items_in_mod = 0
             failed_items_in_mod = 0
 
-            # Process each item in the current mod
-            for item_index, item in enumerate(filtered_catalog, 1):
+            # Process items in the current mod concurrently
+            semaphore = asyncio.Semaphore(4)  # Limit concurrent operations for I/O
+
+            async def process_item_with_semaphore(
+                item: CatalogItem,
+                item_index: int,
+                mod_name_param: str,
+                semaphore_param: asyncio.Semaphore,
+            ) -> bool:
+                async with semaphore_param:
+                    logger.debug(
+                        "Processing item %d/%d in %s: %s",
+                        item_index,
+                        len(filtered_catalog),
+                        mod_name_param,
+                        item.code,
+                    )
+                    return await self._generate_templates_for_item_and_mod(
+                        item=item, mod_name=mod_name_param
+                    )
+
+            # Create tasks for all items in this mod
+            tasks = [
+                process_item_with_semaphore(item, item_index, mod_name, semaphore)
+                for item_index, item in enumerate(filtered_catalog, 1)
+            ]
+
+            # Wait for all tasks to complete
+            results = await asyncio.gather(*tasks)
+
+            # Count results
+            for success in results:
                 total_processed += 1
-
-                logger.debug(
-                    "Processing item %d/%d in %s: %s",
-                    item_index,
-                    len(filtered_catalog),
-                    mod_name,
-                    item.code,
-                )
-
-                if self._generate_templates_for_item_and_mod(item=item, mod_name=mod_name):
+                if success:
                     successful_items_in_mod += 1
                     total_successful_items += 1
                 else:
@@ -519,7 +551,7 @@ class TemplateGenerator:
         return total_failed_items == 0
 
 
-def main() -> None:
+async def main() -> None:
     """Command-line entry point for template generation."""
     parser = argparse.ArgumentParser(
         description="Generate icon templates from extracted Foxhole game assets",
@@ -609,7 +641,7 @@ def main() -> None:
             filter_name=args.filter,
         )
 
-        success = generator.generate_all_templates()
+        success = await generator.generate_all_templates()
 
         if success:
             logger.info("Template generation completed successfully!")
@@ -626,4 +658,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

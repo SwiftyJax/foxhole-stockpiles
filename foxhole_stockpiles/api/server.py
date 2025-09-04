@@ -144,7 +144,7 @@ async def scan_stockpile(
             config.faction_filter = None
 
         request_coordinator = OCRCoordinator(config)
-        stockpile = request_coordinator.analyze_stockpile(rgb_image)
+        stockpile = await request_coordinator.analyze_stockpile(rgb_image)
 
         # Read the token from the specified header if configured
         if app_settings.output_format.webhook_client_auth_header:
@@ -153,7 +153,7 @@ async def scan_stockpile(
             token = None
 
         output_handler = OutputHandler(settings=app_settings)
-        return output_handler.handle_output(
+        return await output_handler.handle_output(
             stockpile=stockpile, output_format=app_settings.output_format.output_format, token=token
         )
 

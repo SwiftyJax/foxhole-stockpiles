@@ -24,7 +24,7 @@ class OutputHandler:
         self.settings = settings
         self.logger = logging.getLogger(__name__)
 
-    def handle_output(
+    async def handle_output(
         self, stockpile: Stockpile, output_format: OutputFormat, token: str | None = None
     ) -> dict[str, Any] | None:
         """Handle output based on the specified format.
@@ -45,10 +45,10 @@ class OutputHandler:
             case OutputFormat.JSON:
                 return stockpile.model_dump(mode="json")
             case OutputFormat.FILE:
-                self._output_file(stockpile=stockpile)
+                await self._output_file(stockpile=stockpile)
                 return None
             case OutputFormat.WEBHOOK:
-                return self._output_webhook(stockpile=stockpile, token=token)
+                return await self._output_webhook(stockpile=stockpile, token=token)
 
     def _output_console(self, stockpile: Stockpile) -> None:
         """Output stockpile data to console.
@@ -73,7 +73,7 @@ class OutputHandler:
                 item.confidence or 0.0,
             )
 
-    def _output_file(self, stockpile: Stockpile) -> None:
+    async def _output_file(self, stockpile: Stockpile) -> None:
         """Output stockpile data to file.
 
         Args:
@@ -90,12 +90,18 @@ class OutputHandler:
         output_path = Path(file)
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with output_path.open("w", encoding="utf-8") as f:
-            f.write(stockpile.model_dump_json())
+        def write_file() -> None:
+            """Write stockpile data to file synchronously."""
+            with output_path.open("w", encoding="utf-8") as f:
+                f.write(stockpile.model_dump_json())
+
+        await asyncio.to_thread(write_file)
 
         self.logger.info("Output saved to: %s", output_path)
 
-    def _output_webhook(self, stockpile: Stockpile, token: str | None = None) -> dict[str, Any]:
+    async def _output_webhook(
+        self, stockpile: Stockpile, token: str | None = None
+    ) -> dict[str, Any]:
         """Output stockpile data via webhook.
 
         Args:
@@ -116,6 +122,6 @@ class OutputHandler:
             raise ValueError("Failed to initialize Webhook connector")
 
         payload = stockpile.model_dump(mode="json")
-        response = asyncio.run(webhook_connector.send_stockpile(payload=payload, token=token))
+        response = await webhook_connector.send_stockpile(payload=payload, token=token)
         self.logger.info("Webhook response: %s", response)
         return response

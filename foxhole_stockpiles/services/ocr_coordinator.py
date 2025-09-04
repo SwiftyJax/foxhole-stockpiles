@@ -37,7 +37,7 @@ class OCRCoordinator:
         self._template_manager = TemplateManager(database_path=config.database_path)
         self._stockpile_type_classifier = StockpileTypeClassifier()
 
-    def analyze_stockpile(self, image: NDArray[np.uint8]) -> Stockpile:
+    async def analyze_stockpile(self, image: NDArray[np.uint8]) -> Stockpile:
         """Analyze a stockpile image and return detected items with quantities.
 
         Args:
@@ -51,9 +51,9 @@ class OCRCoordinator:
         """
         detector = self._detect_regions(image)
         stockpile_images = self._extract_stockpile_images(detector)
-        quantities = self._extract_quantities(stockpile_images)
-        self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
-        scanned_stockpile = self._match_icons_and_build_result(
+        quantities = await self._extract_quantities(stockpile_images)
+        await self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
+        scanned_stockpile = await self._match_icons_and_build_result(
             stockpile_images=stockpile_images, quantities=quantities
         )
 
@@ -105,7 +105,7 @@ class OCRCoordinator:
             raise ValueError("No icons found in the image")
         return stockpile_images
 
-    def _extract_quantities(self, stockpile_images: StockpileImageRegions) -> list[int]:
+    async def _extract_quantities(self, stockpile_images: StockpileImageRegions) -> list[int]:
         """Extract quantities from the composite quantities image.
 
         Args:
@@ -114,7 +114,7 @@ class OCRCoordinator:
         Returns:
             list[int]: Flattened list of quantities matching icon positions
         """
-        quantities_nested = self._text_extractor.extract_quantities(
+        quantities_nested = await self._text_extractor.extract_quantities(
             stockpile_images.composite_quantities_image
         )
 
@@ -178,7 +178,7 @@ class OCRCoordinator:
 
         return np.asarray(post_cleaned, dtype=np.uint8)
 
-    def _match_icons_and_build_result(
+    async def _match_icons_and_build_result(
         self, stockpile_images: StockpileImageRegions, quantities: list[int]
     ) -> Stockpile:
         """Match icons against templates and build the final result.
@@ -266,13 +266,17 @@ class OCRCoordinator:
         name_image = stockpile_images.stockpile_name
         if name_image is not None:
             source_image = self._prepare_image_for_detection(image=name_image)
-            text = self._text_extractor._extract_raw_text(image=source_image, numbers_only=False)
+            text = await self._text_extractor._extract_raw_text(
+                image=source_image, numbers_only=False
+            )
             stockpile.name = text.strip()
 
         hex_image = stockpile_images.hex_name
         if hex_image is not None:
             source_image = self._prepare_image_for_detection(image=hex_image, use_inv=False)
-            text = self._text_extractor._extract_raw_text(image=source_image, numbers_only=False)
+            text = await self._text_extractor._extract_raw_text(
+                image=source_image, numbers_only=False
+            )
             text = text.strip() + "\n\n"
             lines = text.splitlines()
             stockpile.hex_name = lines[0]
@@ -282,7 +286,9 @@ class OCRCoordinator:
         type_image = stockpile_images.stockpile_type
         if type_image is not None:
             source_image = self._prepare_image_for_detection(image=type_image)
-            text = self._text_extractor._extract_raw_text(image=source_image, numbers_only=False)
+            text = await self._text_extractor._extract_raw_text(
+                image=source_image, numbers_only=False
+            )
             stockpile.type = self._stockpile_type_classifier.classify_from_text(text)
 
         return stockpile

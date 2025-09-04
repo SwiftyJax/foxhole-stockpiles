@@ -1,6 +1,7 @@
 """Test candidates command for debugging template matching."""
 
 import argparse
+import asyncio
 import logging
 from copy import copy
 from pathlib import Path
@@ -17,7 +18,7 @@ from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
 
-def main() -> dict[str, Any] | None:
+async def main() -> dict[str, Any] | None:
     """Main entry point for test candidates command.
 
     Always uses TemplateManager.match_icon() to get candidates and optionally
@@ -147,7 +148,7 @@ def main() -> dict[str, Any] | None:
 
     try:
         # Load the database for the target resolution
-        database = manager.load_database(resolution=target_resolution)
+        database = await manager.load_database(resolution=target_resolution)
         logger.debug(
             "Loaded database for resolution %s with %d templates",
             target_resolution.value,
@@ -158,7 +159,7 @@ def main() -> dict[str, Any] | None:
         exit(1)
 
     # Set active resolution for template manager
-    manager.set_active_resolution(int(target_resolution.value))
+    await manager.set_active_resolution(int(target_resolution.value))
 
     # Apply item code filter if specified
     code_filter = None
@@ -199,7 +200,7 @@ def main() -> dict[str, Any] | None:
                 exit(1)
 
             # Load image in BGR format (OpenCV default)
-            _icon_image = cv2.imread(str(args.icon), cv2.IMREAD_COLOR)
+            _icon_image = await asyncio.to_thread(cv2.imread, str(args.icon), cv2.IMREAD_COLOR)
             if _icon_image is None:
                 logger.error("Failed to load icon image: %s", args.icon)
                 exit(1)
@@ -336,7 +337,7 @@ def main() -> dict[str, Any] | None:
 
 
 if __name__ == "__main__":
-    result = main()
+    result = asyncio.run(main())
     import json
     import sys
 

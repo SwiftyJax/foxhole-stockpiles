@@ -1,5 +1,6 @@
 """Unified CLI tool for Foxhole Stockpiles commands."""
 
+import asyncio
 import importlib
 import sys
 from typing import Any
@@ -155,8 +156,8 @@ class CLIDispatcher:
             # Get the main function
             main_func = getattr(module, cmd_info.function)
 
-            # Call the function (it handles sys.argv internally)
-            return main_func()
+            # All command main functions are async
+            return asyncio.run(main_func())
 
         except ImportError as e:
             print(f"Error: Failed to import {cmd_info.module}: {e}", file=sys.stderr)

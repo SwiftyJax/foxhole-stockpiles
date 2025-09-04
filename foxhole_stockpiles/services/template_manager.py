@@ -1,5 +1,6 @@
 """Template manager for handling multiple resolution databases and icon matching."""
 
+import asyncio
 import logging
 import pickle
 import time
@@ -38,7 +39,7 @@ class TemplateManager:
         self.active_database: TemplateDatabase | None = None
         self.current_resolution: SupportedResolution | None = None
 
-    def load_database(self, resolution: SupportedResolution) -> TemplateDatabase:
+    async def load_database(self, resolution: SupportedResolution) -> TemplateDatabase:
         """Load or get cached database for specific resolution.
 
         Args:
@@ -63,8 +64,13 @@ class TemplateManager:
         )
 
         # Load from binary file
-        with open(self.database_path, "rb") as f:
-            all_databases: dict[SupportedResolution, TemplateDatabase] = pickle.load(f)
+        def load_pickle() -> dict[SupportedResolution, TemplateDatabase]:
+            """Load pickle file synchronously."""
+            with open(self.database_path, "rb") as f:
+                data = pickle.load(f)
+                return cast(dict[SupportedResolution, TemplateDatabase], data)
+
+        all_databases = await asyncio.to_thread(load_pickle)
 
         if resolution not in all_databases:
             raise ValueError(f"Resolution {resolution} not found in database")
@@ -83,7 +89,7 @@ class TemplateManager:
 
         return database
 
-    def set_active_resolution(self, screenshot_height: int) -> SupportedResolution:
+    async def set_active_resolution(self, screenshot_height: int) -> SupportedResolution:
         """Set active resolution based on screenshot dimensions.
 
         Args:
@@ -101,7 +107,7 @@ class TemplateManager:
                 target_resolution,
                 screenshot_height,
             )
-            self.active_database = self.load_database(resolution=target_resolution)
+            self.active_database = await self.load_database(resolution=target_resolution)
             self.current_resolution = target_resolution
 
         return target_resolution
