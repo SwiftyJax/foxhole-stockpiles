@@ -57,7 +57,6 @@ async def main() -> dict[str, Any] | None:
     parser.add_argument(
         "--confidence",
         type=float,
-        default=0.85,
         help="Minimum confidence threshold for icon matching (default: 0.85).",
     )
     parser.add_argument(
@@ -129,7 +128,7 @@ async def main() -> dict[str, Any] | None:
     setup_logging(logging_settings)
 
     # Validate inputs
-    if args.confidence < 0.0 or args.confidence > 1.0:
+    if args.confidence is not None and (args.confidence < 0.0 or args.confidence > 1.0):
         parser.error("Confidence threshold must be between 0.0 and 1.0")
 
     if not Path(args.image).exists():
@@ -142,7 +141,8 @@ async def main() -> dict[str, Any] | None:
     try:
         scanner_settings: OCRCoordinatorConfig = settings.scanner
         scanner_settings.database_path = args.database
-        scanner_settings.confidence_threshold = args.confidence
+        if args.confidence:
+            scanner_settings.confidence_threshold = args.confidence
         scanner_settings.faction_filter = faction_filter
         scanner_settings.debug_mode = args.debug_image
         scanner_settings.early_exit_threshold = args.early_exit
