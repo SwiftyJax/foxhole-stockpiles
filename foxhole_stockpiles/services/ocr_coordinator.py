@@ -229,6 +229,13 @@ class OCRCoordinator:
                             f"Group {group_index}, index {icon_index}: No match found. "
                             f"Quantity: {quantity}, crated: {crated}{mod_text}{category_text}"
                         )
+                        unkown_item = StockpileItem(
+                            code="Unknown",
+                            quantity=quantity,
+                            crated=crated or False,
+                            confidence=0.0,
+                        )
+                        stockpile.items.append(unkown_item)
                         continue
 
                     stockpile.items.append(stockpile_item)
