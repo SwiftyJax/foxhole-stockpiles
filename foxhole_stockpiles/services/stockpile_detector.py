@@ -131,7 +131,7 @@ class StockpileDetector:
 
         # Hex name, shard and ingame timestamp regions
         self.hex_name_x = self.box_height
-        self.hex_name_y = self.height - int(self.box_height * 3.5)
+        self.hex_name_y = self.height - int(self._settings.box_height * self.scale_factor * 3.5)
         self.hex_name_height = int(self.box_height * 1.5)
         self.hex_name_width = int(self.box_width * 3.5)
 
