@@ -39,7 +39,7 @@ class StockpileDetector:
 
         # Distance between boxes
         self.column_offset: int = 0
-        self.row_offset: int = 0
+        self.row_offset: float = 0.0
         self.group_offset: int = 0
 
         # Title region (stockpile type and name)
@@ -120,7 +120,7 @@ class StockpileDetector:
         ) * self.scale_factor
         self.column_offset = int(column_offset)
         self.valid_x_positions_offsets = [int(column_offset * i) for i in range(6)]
-        self.row_offset = int(self._settings.row_offset * self.scale_factor)
+        self.row_offset = self._settings.row_offset * self.scale_factor
         self.group_offset = int(self._settings.group_offset * self.scale_factor)
 
         self.title_margin = int(self._settings.title_margin * self.scale_factor)
@@ -235,7 +235,7 @@ class StockpileDetector:
         """
         y_diff = y - group_start_y
         row_idx = round(y_diff / self.row_offset)
-        expected_y = group_start_y + row_idx * self.row_offset
+        expected_y = int(group_start_y + row_idx * self.row_offset)
         if self._in_valid_range(y, expected_y):
             return row_idx
 
@@ -330,8 +330,9 @@ class StockpileDetector:
 
         # Process remaining groups
         expected_x_idx = 0
-        expected_y = self.first_column_y + self.group_offset  # Next group Y
-        group_start_y = expected_y
+        expected_row_idx = 0
+        group_start_y = self.first_column_y + self.group_offset  # Next group Y
+        expected_y = int(group_start_y + expected_row_idx * self.row_offset)
         current_group_count = 2
         current_group_start_idx = 0
         total_groups = 1
@@ -356,8 +357,10 @@ class StockpileDetector:
                 # Start new group
                 current_group_start_idx = len(self.quantities)
                 current_group_count = 0
-                group_start_y = expected_y = y
+                group_start_y = y
                 expected_x_idx = 0
+                expected_row_idx = 0
+                expected_y = int(group_start_y + expected_row_idx * self.row_offset)
 
             # Check if current box matches expected position
             expected_x = self.valid_x_positions[expected_x_idx]
@@ -372,7 +375,8 @@ class StockpileDetector:
                 # Update expected position for next box
                 if expected_x_idx == 5:  # Last column, move to next row
                     expected_x_idx = 0
-                    expected_y += self.row_offset
+                    expected_row_idx += 1
+                    expected_y = int(group_start_y + expected_row_idx * self.row_offset)
                 else:
                     expected_x_idx += 1
             else:
@@ -382,28 +386,29 @@ class StockpileDetector:
 
                 if col_idx != -1 and row_idx != -1:
                     # Valid position in group - add missing boxes first
-                    target_y = group_start_y + row_idx * self.row_offset
+                    target_y = int(group_start_y + row_idx * self.row_offset)
 
                     # Add missing boxes up to this position
-                    while expected_y < target_y or (
-                        expected_y == target_y and expected_x_idx < col_idx
+                    while expected_row_idx < row_idx or (
+                        expected_row_idx == row_idx and expected_x_idx < col_idx
                     ):
                         miss_x = self.valid_x_positions[expected_x_idx]
-                        self.quantities.append((miss_x, expected_y))
+                        miss_y = int(group_start_y + expected_row_idx * self.row_offset)
+                        self.quantities.append((miss_x, miss_y))
                         self.max_detected_x = max(self.max_detected_x, miss_x)
                         current_group_count += 1
 
                         # Update expected position
                         if expected_x_idx == 5:
                             expected_x_idx = 0
-                            expected_y += self.row_offset
+                            expected_row_idx += 1
                         else:
                             expected_x_idx += 1
 
                         self._logger.debug(
                             "Adding undetected box(%d,%d) to existing group. Total in group: %d",
-                            x,
-                            y,
+                            miss_x,
+                            miss_y,
                             current_group_count,
                         )
 
@@ -416,9 +421,11 @@ class StockpileDetector:
                     # Update expected position after this box
                     if col_idx == 5:
                         expected_x_idx = 0
-                        expected_y = target_y + self.row_offset
+                        expected_row_idx = row_idx + 1
+                        expected_y = int(group_start_y + expected_row_idx * self.row_offset)
                     else:
                         expected_x_idx = col_idx + 1
+                        expected_row_idx = row_idx
                         expected_y = target_y
 
             contour_index += 1
@@ -444,7 +451,7 @@ class StockpileDetector:
         x, y = self.quantities[0]
 
         title_min_x = x - self.column_offset + self.box_width
-        title_y = y - self.row_offset
+        title_y = y - int(self.row_offset)
 
         title_max_x = max(
             self.max_detected_x + self.box_width + self.title_margin, self.title_min_width
