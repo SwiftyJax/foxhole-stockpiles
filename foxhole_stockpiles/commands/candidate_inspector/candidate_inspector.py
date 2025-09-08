@@ -92,7 +92,6 @@ async def main() -> dict[str, Any] | None:
     parser.add_argument(
         "--confidence",
         type=float,
-        default=0.85,
         help="Minimum confidence threshold for icon matching (default: 0.85). "
         "Only used with --icon parameter.",
     )
@@ -217,6 +216,8 @@ async def main() -> dict[str, Any] | None:
     # Always use match_icon to get candidates and optional icon matching
     try:
         scanner_settings = settings.scanner
+        if args.confidence:
+            scanner_settings.confidence_threshold = args.confidence
         match_result = manager.match_icon(
             icon_image=icon_image,
             faction=faction_filter,
@@ -224,7 +225,7 @@ async def main() -> dict[str, Any] | None:
             category=category_filter,
             crated=crated_filter,
             code=code_filter,
-            confidence_threshold=args.confidence,
+            confidence_threshold=scanner_settings.confidence_threshold,
             phash_threshold=scanner_settings.phash_threshold,
             max_ncc_candidates=scanner_settings.max_ncc_candidates,
         )
