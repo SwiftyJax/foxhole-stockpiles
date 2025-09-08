@@ -29,6 +29,7 @@ class OCRCoordinator:
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.threshold_value: float = 0.0
+        self.scale_factor: float = 1.0
 
         # Initialize services
         self._text_extractor = StockpileTextExtractor(
@@ -50,6 +51,7 @@ class OCRCoordinator:
             ValueError: If image analysis fails
         """
         detector = self._detect_regions(image)
+        self.scale_factor = detector.scale_factor
         stockpile_images = self._extract_stockpile_images(detector)
         quantities = await self._extract_quantities(stockpile_images)
         await self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
@@ -149,7 +151,7 @@ class OCRCoordinator:
             NDArray[np.uint8]: processed image
         """
         gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        upscale_factor = 3
+        upscale_factor = 2 / self.scale_factor
 
         upscaled = cv2.resize(
             gray, None, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_CUBIC
