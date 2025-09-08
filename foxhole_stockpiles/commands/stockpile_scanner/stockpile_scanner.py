@@ -106,8 +106,7 @@ async def main() -> dict[str, Any] | None:
         print(f"Error: Could not load image from '{args.image}'")
         sys.exit(1)
 
-    # Convert BGR to RGB for processing
-    image = np.asarray(cv2.cvtColor(_image, cv2.COLOR_BGR2RGB), dtype=np.uint8)
+    image = np.asarray(cv2.cvtColor(_image, cv2.IMREAD_COLOR), dtype=np.uint8)
 
     # Setup logging
     settings = copy(get_app_settings(args.config))
