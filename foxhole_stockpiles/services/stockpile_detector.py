@@ -557,14 +557,14 @@ class StockpileDetector:
         for index, (x, y) in enumerate(quantities_relative_to_stockpile):
             composite[y : y + self.box_height, x : x + self.box_width] = quantities[index]
 
-        gray = cv2.cvtColor(composite, cv2.COLOR_RGB2GRAY)
+        upscaled = cv2.resize(composite, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        gray = cv2.cvtColor(upscaled, cv2.COLOR_RGB2GRAY)
         _, binary = cv2.threshold(gray, 120, 255, cv2.THRESH_BINARY_INV)
         kernel = np.ones((2, 2), np.uint8)
         cleaned = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
         post_cleaned = cv2.cvtColor(cleaned, cv2.COLOR_GRAY2RGB)
-        upscaled = cv2.resize(post_cleaned, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
 
-        self.composite_image = np.asarray(upscaled, dtype=np.uint8)
+        self.composite_image = np.asarray(post_cleaned, dtype=np.uint8)
 
     def get_stockpile_images(self) -> StockpileImageRegions | None:
         """Get detected stockpile images as a StockpileImages model.
