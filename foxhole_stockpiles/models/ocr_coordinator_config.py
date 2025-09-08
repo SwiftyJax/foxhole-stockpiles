@@ -6,6 +6,7 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from foxhole_stockpiles.enums.item_faction import ItemFaction
+from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 
 
 class OCRCoordinatorConfig(BaseModel):
@@ -15,7 +16,14 @@ class OCRCoordinatorConfig(BaseModel):
         description="Path to the template database file", default=Path("database.pkl")
     )
     confidence_threshold: float = Field(
-        description="Minimum confidence threshold for icon matching", default=0.85, ge=0.0, le=1.0
+        description="Default minimum confidence threshold for icon matching",
+        default=0.85,
+        ge=0.0,
+        le=1.0,
+    )
+    confidence_by_resolution: dict[SupportedResolution, float] = Field(
+        description="Resolution-specific confidence thresholds for icon matching",
+        default_factory=dict,
     )
     early_exit_threshold: float = Field(
         description="Early exit threshold for icon matching",
@@ -49,6 +57,7 @@ class OCRCoordinatorConfig(BaseModel):
             "example": {
                 "database_path": "/path/to/templates.db",
                 "confidence_threshold": 0.85,
+                "confidence_by_resolution": {"720": 0.75, "1080": 0.85, "2160": 0.90},
                 "early_exit_threshold": 0.95,
                 "faction_filter": "colonial",
                 "custom_model": "custom",
@@ -70,6 +79,20 @@ class OCRCoordinatorConfig(BaseModel):
             raise ValueError(f"Database path is not a file: {v}")
         return v
 
+    @field_validator("confidence_by_resolution")
+    @classmethod
+    def validate_confidence_by_resolution(
+        cls, v: dict[SupportedResolution, float]
+    ) -> dict[SupportedResolution, float]:
+        """Validate that all confidence values are within valid range."""
+        for resolution, confidence in v.items():
+            if not 0.0 <= confidence <= 1.0:
+                raise ValueError(
+                    f"Confidence for resolution {resolution} must be between 0.0 and 1.0"
+                    f", got {confidence}"
+                )
+        return v
+
     @model_validator(mode="after")
     def validate_model(self) -> Self:
         """Validate the options are valid.
@@ -84,3 +107,14 @@ class OCRCoordinatorConfig(BaseModel):
             raise ValueError("Early exit threshold must be greater than confidence threshold")
 
         return self
+
+    def get_confidence_threshold(self, resolution: SupportedResolution) -> float:
+        """Get the confidence threshold for a specific resolution.
+
+        Args:
+            resolution: The resolution to get confidence threshold for
+
+        Returns:
+            float: The confidence threshold for the resolution, or default if not specified
+        """
+        return self.confidence_by_resolution.get(resolution, self.confidence_threshold)

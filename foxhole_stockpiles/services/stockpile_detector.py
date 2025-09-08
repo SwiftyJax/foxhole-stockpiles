@@ -293,7 +293,6 @@ class StockpileDetector:
 
         # Process remaining boxes
         contour_index = start_index
-        self._logger.info("valid x positions: %s", self.valid_x_positions)
         while contour_index < len(contours):
             current_contour = contours[contour_index]
             contour_index += 1

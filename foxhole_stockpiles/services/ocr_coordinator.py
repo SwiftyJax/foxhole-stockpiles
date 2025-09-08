@@ -9,6 +9,7 @@ from numpy.typing import NDArray
 
 from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
 from foxhole_stockpiles.enums.item_category import ItemCategory
+from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
@@ -346,9 +347,19 @@ class OCRCoordinator:
 
         self.logger.debug("Processing icon at index %d", icon_index)
 
+        # Get resolution-specific confidence threshold
+        resolution = SupportedResolution(str(stockpile_images.vertical_resolution))
+        confidence_threshold = self.config.get_confidence_threshold(resolution)
+
+        self.logger.debug(
+            "Using confidence threshold %.3f for resolution %d",
+            confidence_threshold,
+            stockpile_images.vertical_resolution,
+        )
+
         match_result = self._template_manager.match_icon(
             icon_image=image,
-            confidence_threshold=self.config.confidence_threshold,
+            confidence_threshold=confidence_threshold,
             early_exit_threshold=self.config.early_exit_threshold,
             max_ncc_candidates=self.config.max_ncc_candidates,
             phash_threshold=self.config.phash_threshold,
@@ -363,7 +374,7 @@ class OCRCoordinator:
             self.logger.warning(
                 "[%d] No match found with confidence %.2f",
                 icon_index,
-                self.config.confidence_threshold,
+                confidence_threshold,
             )
             return None
 
