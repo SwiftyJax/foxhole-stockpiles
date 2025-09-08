@@ -40,7 +40,7 @@ class StockpileDetector:
         # Distance between boxes
         self.column_offset: int = 0
         self.row_offset: float = 0.0
-        self.group_offset: int = 0
+        self.group_offset: float = 0
 
         # Title region (stockpile type and name)
         self.title_margin: int = 0
@@ -119,9 +119,9 @@ class StockpileDetector:
             self._settings.column_offset + self._settings.box_width
         ) * self.scale_factor
         self.column_offset = int(column_offset)
-        self.valid_x_positions_offsets = [int(column_offset * i) for i in range(6)]
+        self.valid_x_positions_offsets = [round(column_offset * i) for i in range(6)]
         self.row_offset = self._settings.row_offset * self.scale_factor
-        self.group_offset = int(self._settings.group_offset * self.scale_factor)
+        self.group_offset = self._settings.group_offset * self.scale_factor
 
         self.title_margin = int(self._settings.title_margin * self.scale_factor)
         self.title_min_width = int(self._settings.title_min_width * self.scale_factor)
@@ -209,50 +209,6 @@ class StockpileDetector:
 
         return (x, y)
 
-    def _is_valid_column(self, x: int) -> int:
-        """Check if X matches any valid column.
-
-        Args:
-            x (int): Position to check
-
-        Returns:
-            int column index or -1.
-        """
-        for i, valid_x in enumerate(self.valid_x_positions):
-            if self._in_valid_range(x, valid_x):
-                return i
-        return -1
-
-    def _is_valid_row_in_group(self, y: int, group_start_y: int) -> int:
-        """Check if Y is valid row within group.
-
-        Args:
-            y (int): vertical position
-            group_start_y: Group initial vertical position.
-
-        Returns:
-            int: Row number or -1 if invalid
-        """
-        y_diff = y - group_start_y
-        row_idx = round(y_diff / self.row_offset)
-        expected_y = int(group_start_y + row_idx * self.row_offset)
-        if self._in_valid_range(y, expected_y):
-            return row_idx
-
-        return -1
-
-    def _is_valid_new_group(self, last_y: int, current_y: int) -> bool:
-        """Check if it's a valid new group.
-
-        Args:
-            last_y (int): Last y position.
-            current_y (int): current y position.
-
-        Returns:
-           bool: if it's a valid new group position
-        """
-        return self._in_valid_range(abs(current_y - last_y), self.group_offset)
-
     def _detect_first_group(self, contours: list[cv2.typing.Rect]) -> int:
         """Detect the first group (exactly 2 boxes) and establish grid.
 
@@ -328,113 +284,73 @@ class StockpileDetector:
             self.groups = []
             return
 
-        # Process remaining groups
-        expected_x_idx = 0
-        expected_row_idx = 0
-        group_start_y = self.first_column_y + self.group_offset  # Next group Y
-        expected_y = int(group_start_y + expected_row_idx * self.row_offset)
-        current_group_count = 2
+        # Initialize group tracking
+        current_group_count = 2  # First group has 2 boxes
         current_group_start_idx = 0
-        total_groups = 1
-
         last_y = self.first_column_y
-        self.max_detected_x = self.quantities[1][0]
+        current_x_idx = 2  # After first group (boxes 1,2), next expected is column 2
+        current_group_idx = 0
 
+        # Process remaining boxes
         contour_index = start_index
+        self._logger.info("valid x positions: %s", self.valid_x_positions)
         while contour_index < len(contours):
-            coords = self._filter_contour_by_size(contours[contour_index])
+            current_contour = contours[contour_index]
+            contour_index += 1
+            coords = self._filter_contour_by_size(current_contour)
             if coords is None:
-                contour_index += 1
                 continue
 
             x, y = coords
-            # Check if this starts a new group (Y gap >= group_offset from last box)
-            if self._is_valid_new_group(last_y, y):
-                self._logger.debug("Detected new group (%d) in %d,%d", total_groups, x, y)
-                self.groups.append((current_group_count, current_group_start_idx))
-                total_groups += 1
 
-                # Start new group
+            # Determine expected x positions
+            expected_column_index = current_x_idx % 6
+
+            y_diff_last = abs(y - last_y)
+            # New group: group_offset gap or 2*group_offset gap if first group
+            is_new_group = self._in_valid_range(y_diff_last, int(self.group_offset)) or (
+                current_group_idx == 0
+                and self._in_valid_range(y_diff_last, int(self.group_offset * 2))
+            )
+            is_same_row = self._in_valid_range(y_diff_last, 0)
+            is_next_row = self._in_valid_range(y_diff_last, int(self.row_offset))
+
+            # Check if this box matches expected next column position
+            if not self._in_valid_range(x, self.valid_x_positions[expected_column_index]):
+                if not self._in_valid_range(x, self.valid_x_positions[0]):
+                    self._logger.debug(
+                        "Box at (%d,%d) doesn't match expected column any column %d or %d",
+                        x,
+                        y,
+                        expected_column_index,
+                        0,
+                    )
+                    # Doesn't match expected column - skip
+                    continue
+                expected_column_index = 0
+
+            if is_new_group:
+                self.groups.append((current_group_count, current_group_start_idx))
                 current_group_start_idx = len(self.quantities)
                 current_group_count = 0
-                group_start_y = y
-                expected_x_idx = 0
-                expected_row_idx = 0
-                expected_y = int(group_start_y + expected_row_idx * self.row_offset)
+                current_x_idx = 0
+                current_group_idx += 1
+            elif not is_same_row and not is_next_row:
+                # Invalid row - skip
+                self._logger.debug(
+                    "Box at (%d,%d) doesn't match expected row in group %d",
+                    x,
+                    y,
+                    current_group_idx,
+                )
+                continue
 
-            # Check if current box matches expected position
-            expected_x = self.valid_x_positions[expected_x_idx]
-
-            if self._in_valid_range(x, expected_x) and self._in_valid_range(y, expected_y):
-                # Box at expected position
-                self.quantities.append((x, y))
-                self.max_detected_x = max(self.max_detected_x, x)
-                current_group_count += 1
-                last_y = y
-
-                # Update expected position for next box
-                if expected_x_idx == 5:  # Last column, move to next row
-                    expected_x_idx = 0
-                    expected_row_idx += 1
-                    expected_y = int(group_start_y + expected_row_idx * self.row_offset)
-                else:
-                    expected_x_idx += 1
-            else:
-                # Box not at expected position - check if it's valid elsewhere in group
-                col_idx = self._is_valid_column(x)
-                row_idx = self._is_valid_row_in_group(y, group_start_y)
-
-                if col_idx != -1 and row_idx != -1:
-                    # Valid position in group - add missing boxes first
-                    target_y = int(group_start_y + row_idx * self.row_offset)
-
-                    # Add missing boxes up to this position
-                    while expected_row_idx < row_idx or (
-                        expected_row_idx == row_idx and expected_x_idx < col_idx
-                    ):
-                        miss_x = self.valid_x_positions[expected_x_idx]
-                        miss_y = int(group_start_y + expected_row_idx * self.row_offset)
-                        self.quantities.append((miss_x, miss_y))
-                        self.max_detected_x = max(self.max_detected_x, miss_x)
-                        current_group_count += 1
-
-                        # Update expected position
-                        if expected_x_idx == 5:
-                            expected_x_idx = 0
-                            expected_row_idx += 1
-                        else:
-                            expected_x_idx += 1
-
-                        self._logger.debug(
-                            "Adding undetected box(%d,%d) to existing group. Total in group: %d",
-                            miss_x,
-                            miss_y,
-                            current_group_count,
-                        )
-
-                    # Add the actual found box
-                    self.quantities.append((x, y))
-                    self.max_detected_x = max(self.max_detected_x, x)
-                    current_group_count += 1
-                    last_y = y
-
-                    # Update expected position after this box
-                    if col_idx == 5:
-                        expected_x_idx = 0
-                        expected_row_idx = row_idx + 1
-                        expected_y = int(group_start_y + expected_row_idx * self.row_offset)
-                    else:
-                        expected_x_idx = col_idx + 1
-                        expected_row_idx = row_idx
-                        expected_y = target_y
-
-            contour_index += 1
-            self._logger.debug(
-                "Adding box(%d,%d) to existing group. Total in group: %d",
-                x,
-                y,
-                current_group_count,
-            )
+            # Add current box to group
+            self.quantities.append((x, y))
+            self.max_detected_x = max(self.max_detected_x, x)
+            current_group_count += 1
+            last_y = y
+            current_x_idx += 1
 
         # Add final group if it has boxes
         if current_group_count > 0:
