@@ -567,7 +567,11 @@ class StockpileDetector:
         for index, (x, y) in enumerate(quantities_relative_to_stockpile):
             composite[y : y + self.box_height, x : x + self.box_width] = quantities[index]
 
-        upscaled = cv2.resize(composite, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+        # Apply upscaling adjusted by the current scale factor
+        upscale_factor = 2 / self.scale_factor
+        upscaled = cv2.resize(
+            composite, None, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_CUBIC
+        )
         gray = cv2.cvtColor(upscaled, cv2.COLOR_RGB2GRAY)
         _, binary = cv2.threshold(gray, 120, 255, cv2.THRESH_BINARY_INV)
         kernel = np.ones((2, 2), np.uint8)
