@@ -70,7 +70,8 @@ class StockpileDetector:
         self.composite_image: NDArray[np.uint8] = np.empty((0, 0, 3), dtype=np.uint8)
         self.height, self.width = self.img.shape[:2]
 
-        self.valid_x_positions: list[int] = []  # valid column positions
+        self.valid_x_positions: list[int] = []  # valid column positions (absolute)
+        self.valid_x_positions_offsets: list[int] = []  # valid column positions (offsets)
         self.first_quantity_x: int = -1
         self.first_quantity_y: int = -1
         self.max_detected_x: int = -1
@@ -114,7 +115,11 @@ class StockpileDetector:
         # Scale all dimensions
         self.box_width = int(self._settings.box_width * self.scale_factor)
         self.box_height = int(self._settings.box_height * self.scale_factor)
-        self.column_offset = int(self._settings.column_offset * self.scale_factor) + self.box_width
+        column_offset: float = (
+            self._settings.column_offset + self._settings.box_width
+        ) * self.scale_factor
+        self.column_offset = int(column_offset)
+        self.valid_x_positions_offsets = [int(column_offset * i) for i in range(6)]
         self.row_offset = int(self._settings.row_offset * self.scale_factor)
         self.group_offset = int(self._settings.group_offset * self.scale_factor)
 
@@ -140,7 +145,6 @@ class StockpileDetector:
         )
 
         self._logger.debug("Scaled box size: %dx%d", self.box_width, self.box_height)
-        self._logger.debug("Scaled title offset: %dx%d", self.column_offset, self.row_offset)
 
     def _in_valid_range(self, first: int, second: int) -> bool:
         """Check if two numbers are in the valid range.
@@ -287,8 +291,7 @@ class StockpileDetector:
                     self.first_column_x = min(x1, x2)
                     self.first_column_y = y1
                     self.valid_x_positions = [
-                        self.first_column_x + col_index * self.column_offset
-                        for col_index in range(6)
+                        self.first_column_x + offset for offset in self.valid_x_positions_offsets
                     ]
 
                     # Initialize results with first group
