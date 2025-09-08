@@ -275,6 +275,9 @@ class OCRCoordinator:
         name_image = stockpile_images.stockpile_name
         if name_image is not None:
             source_image = self._prepare_image_for_detection(image=name_image)
+            if self.config.debug_mode:
+                cv2.imwrite("stockpile_name_region.png", source_image)
+
             text = await self._text_extractor._extract_raw_text(
                 image=source_image, numbers_only=False
             )
@@ -283,6 +286,9 @@ class OCRCoordinator:
         hex_image = stockpile_images.hex_name
         if hex_image is not None:
             source_image = self._prepare_image_for_detection(image=hex_image, use_inv=False)
+            if self.config.debug_mode:
+                cv2.imwrite("stockpile_hex_region.png", source_image)
+
             text = await self._text_extractor._extract_raw_text(
                 image=source_image, numbers_only=False
             )
@@ -295,6 +301,9 @@ class OCRCoordinator:
         type_image = stockpile_images.stockpile_type
         if type_image is not None:
             source_image = self._prepare_image_for_detection(image=type_image)
+            if self.config.debug_mode:
+                cv2.imwrite("stockpile_type_region.png", source_image)
+
             text = await self._text_extractor._extract_raw_text(
                 image=source_image, numbers_only=False
             )
