@@ -42,7 +42,11 @@ class StockpileTextExtractor:
         result = await asyncio.to_thread(pytesseract.image_to_string, image, config=config)
         if result is None:
             return ""
-        return str(result).rstrip()
+
+        detected = str(result).rstrip()
+        self._logger.debug("Extracted raw text from image: %s", detected)
+
+        return detected
 
     async def extract_quantities(self, composite_image: NDArray[np.uint8]) -> list[list[int]]:
         """Extract all quantities from a composite image maintaining row/column structure.
@@ -56,8 +60,6 @@ class StockpileTextExtractor:
         """
         # Extract text with custom trained model
         raw_text = await self._extract_raw_text(composite_image)
-        self._logger.debug("Extracted raw text from image: %s", raw_text.strip())
-
         return self.parse_text_to_lists(raw_text)
 
     def parse_text_to_lists(self, text: str) -> list[list[int]]:
