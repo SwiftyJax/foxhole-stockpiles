@@ -138,7 +138,6 @@ class PakExtractor:
                 process = await asyncio.create_subprocess_exec(
                     *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                 )
-                stdout, stderr = await process.communicate()
                 returncode = process.returncode
 
                 if returncode == 0:
@@ -222,7 +221,6 @@ class PakExtractor:
             process = await asyncio.create_subprocess_exec(
                 *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
-            stdout, stderr = await process.communicate()
             returncode = process.returncode
 
             if returncode == 0:
@@ -264,7 +262,7 @@ class PakExtractor:
             return set()
 
         # Issdsad
-        files_to_extract = set()
+        files_to_extract: set[str] = set()
 
         # Add the crate icon file
         files_to_extract.add("War/Content/Textures/UI/Menus/IconFilterCrates.uasset")

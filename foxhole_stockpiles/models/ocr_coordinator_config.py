@@ -9,6 +9,11 @@ from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 
 
+def _default_confidence_dict() -> dict[SupportedResolution, float]:
+    """Create an empty confidence dictionary with proper typing."""
+    return {}
+
+
 class OCRCoordinatorConfig(BaseModel):
     """Configuration for stockpile analysis."""
 
@@ -23,7 +28,7 @@ class OCRCoordinatorConfig(BaseModel):
     )
     confidence_by_resolution: dict[SupportedResolution, float] = Field(
         description="Resolution-specific confidence thresholds for icon matching",
-        default_factory=dict,
+        default_factory=_default_confidence_dict,
     )
     early_exit_threshold: float = Field(
         description="Early exit threshold for icon matching",

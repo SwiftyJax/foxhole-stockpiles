@@ -32,10 +32,8 @@ def async_retry_on_connect_timeout(max_retries: int = 3, delay: int = 1) -> Call
         ValueError: If max_retries is not a positive integer
         TypeError: If delay is not an integer
     """
-    if not isinstance(max_retries, int) or max_retries <= 0:
+    if max_retries <= 0:
         raise ValueError("max_retries must be a positive integer.")
-    if not isinstance(delay, int):
-        raise TypeError("delay must be an integer.")
 
     def decorator(func: F) -> F:
         """Decorator function to retry the decorated function.

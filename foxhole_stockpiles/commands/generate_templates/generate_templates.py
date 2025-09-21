@@ -79,11 +79,11 @@ class TemplateGenerator:
         Returns:
             list[str]: List of available mod folder names, with vanilla prioritized
         """
-        mod_folders = []
+        mod_folders: list[str] = []
 
         for item in path.iterdir():
             if item.is_dir():
-                mod_folders.append(item.name)
+                mod_folders.append(str(item.name))
 
         # Prioritize vanilla if it exists
         if TemplateGenerator.VANILLA_MOD_NAME in mod_folders:

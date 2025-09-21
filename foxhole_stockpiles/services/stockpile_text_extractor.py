@@ -27,7 +27,7 @@ class StockpileTextExtractor:
         if tessdata_path:
             os.environ["TESSDATA_PREFIX"] = os.path.abspath(tessdata_path)
 
-    async def _extract_raw_text(self, image: NDArray[np.uint8], numbers_only: bool = True) -> str:
+    async def extract_raw_text(self, image: NDArray[np.uint8], numbers_only: bool = True) -> str:
         """Extract raw text using custom trained model.
 
         Args:
@@ -59,7 +59,7 @@ class StockpileTextExtractor:
             list[list[int]]: List of quantities detected by row
         """
         # Extract text with custom trained model
-        raw_text = await self._extract_raw_text(composite_image)
+        raw_text = await self.extract_raw_text(composite_image)
         return self.parse_text_to_lists(raw_text)
 
     def parse_text_to_lists(self, text: str) -> list[list[int]]:
@@ -83,7 +83,7 @@ class StockpileTextExtractor:
                 result.append([])
                 continue
 
-            numbers = []
+            numbers: list[int] = []
             tokens = line.strip().split()
             self._logger.debug("Processing line %d with %d tokens", line_idx, len(tokens))
 

@@ -63,7 +63,7 @@ class DatabaseBuilder:
         )
 
         # Build databases for specified resolutions
-        databases = {}
+        databases: dict[SupportedResolution, TemplateDatabase] = {}
         for resolution in resolutions_to_build:
             self._logger.debug("Building database for resolution %s", resolution)
             database = await self._build_resolution_database(resolution=resolution)
@@ -203,7 +203,7 @@ class DatabaseBuilder:
         Returns:
             list[Path]: Paths to icon files with exact or scalable sizes
         """
-        icon_paths = []
+        icon_paths: list[Path] = []
 
         self._logger.debug(
             "Looking for size %d for item %s (scaling=%s)",
@@ -256,7 +256,7 @@ class DatabaseBuilder:
         Returns:
             list[Path]: Found icon file paths
         """
-        found_paths = []
+        found_paths: list[Path] = []
         crated_suffix = "_crated" if is_crated else ""
 
         # First try: exact size match
@@ -386,7 +386,7 @@ async def main() -> None:
     args = parser.parse_args()
 
     # Parse and validate resolutions if specified
-    target_resolutions = None
+    target_resolutions: list[SupportedResolution] | None = None
     if args.resolution:
         target_resolutions = []
 

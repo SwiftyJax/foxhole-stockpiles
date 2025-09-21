@@ -208,7 +208,7 @@ class OCRCoordinator:
             category: ItemCategory | None = None
             crated: bool | None = None
             detected: dict[str, list[Any]] = {"category": [], "crated": [], "mod": []}
-            current_icons = []
+            current_icons: list[StockpileItem] = []
 
             for icon_index in range(group_start_index, group_start_index + group_amount):
                 try:
@@ -279,7 +279,7 @@ class OCRCoordinator:
             if self.config.debug_mode:
                 cv2.imwrite("stockpile_name_region.png", source_image)
 
-            text = await self._text_extractor._extract_raw_text(
+            text = await self._text_extractor.extract_raw_text(
                 image=source_image, numbers_only=False
             )
             stockpile.name = text.strip()
@@ -290,7 +290,7 @@ class OCRCoordinator:
             if self.config.debug_mode:
                 cv2.imwrite("stockpile_hex_region.png", source_image)
 
-            text = await self._text_extractor._extract_raw_text(
+            text = await self._text_extractor.extract_raw_text(
                 image=source_image, numbers_only=False
             )
             text = text.strip() + "\n\n"
@@ -305,7 +305,7 @@ class OCRCoordinator:
             if self.config.debug_mode:
                 cv2.imwrite("stockpile_type_region.png", source_image)
 
-            text = await self._text_extractor._extract_raw_text(
+            text = await self._text_extractor.extract_raw_text(
                 image=source_image, numbers_only=False
             )
             stockpile.type = self._stockpile_type_classifier.classify_from_text(text)
@@ -340,11 +340,6 @@ class OCRCoordinator:
             category = None
 
         image = stockpile_images.icons[icon_index]
-
-        if image is None:
-            self.logger.warning("Icon image at index %d is None, skipping", icon_index)
-            return None
-
         self.logger.debug("Processing icon at index %d", icon_index)
 
         # Get resolution-specific confidence threshold

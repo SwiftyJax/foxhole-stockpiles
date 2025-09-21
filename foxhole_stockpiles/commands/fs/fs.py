@@ -97,7 +97,7 @@ class CLIDispatcher:
         Returns:
             str: Help information string
         """
-        lines = []
+        lines: list[str] = []
         lines.append("Foxhole Stockpiles - Unified CLI Tool")
         lines.append("=" * 40)
         lines.append("")

@@ -1,11 +1,9 @@
 """Icon template model for template matching."""
 
-from typing import Any
-
 import cv2
 import numpy as np
 from numpy.typing import NDArray
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
@@ -53,18 +51,6 @@ class IconTemplate(BaseModel):
             }
         },
     )
-
-    @field_validator("image")
-    @classmethod
-    def validate_image(cls, v: Any) -> NDArray[np.uint8]:
-        """Validate that image is a numpy array."""
-        if not isinstance(v, np.ndarray):
-            raise ValueError("Image must be a numpy array")
-        if v.dtype != np.uint8:
-            raise ValueError("Image must be uint8 type")
-        if len(v.shape) != 3 or v.shape[2] not in [3, 4]:
-            raise ValueError("Image must be 3D array with 3 or 4 channels (BGR or BGRA)")
-        return v
 
     def __post_init__(self) -> None:
         """Automatically compute optimization data after model creation."""

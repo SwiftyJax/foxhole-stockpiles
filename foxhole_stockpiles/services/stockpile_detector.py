@@ -28,8 +28,8 @@ class StockpileDetector:
 
         self._logger = logging.getLogger(__name__)
 
-        # Validate and store image
-        self.img = self._validate_image_array(image)
+        # Prepare and store image
+        self.img = self._prepare_image_array(image)
 
         self.scale_factor = 1.0
 
@@ -78,27 +78,15 @@ class StockpileDetector:
 
         self._rescale_layout_values()
 
-    def _validate_image_array(self, image: NDArray[np.uint8]) -> NDArray[np.uint8]:
-        """Validate and prepare image array for processing.
+    def _prepare_image_array(self, image: NDArray[np.uint8]) -> NDArray[np.uint8]:
+        """Prepare image array for processing by converting RGBA to RGB if needed.
 
         Args:
-            image: Input image array
+            image (NDArray[np.uint8]): Input image array
 
         Returns:
-            Validated image array in RGB format
-
-        Raises:
-            ValueError: If image format is invalid
+            NDArray[np.uint8]: Image array in RGB format
         """
-        if not isinstance(image, np.ndarray):
-            raise ValueError("Image must be a numpy array")
-
-        if image.dtype != np.uint8:
-            raise ValueError("Image must have dtype uint8")
-
-        if len(image.shape) != 3 or image.shape[2] not in [3, 4]:
-            raise ValueError("Image must be 3D array with 3 or 4 channels")
-
         # Convert RGBA to RGB if necessary
         if image.shape[2] == 4:
             return np.asarray(cv2.cvtColor(image, cv2.COLOR_RGBA2RGB), dtype=np.uint8)

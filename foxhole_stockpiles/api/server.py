@@ -90,12 +90,6 @@ async def health_check() -> HealthResponse:
     Raises:
         HTTPException: If application settings not initialized (503 status)
     """
-    if app_settings is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Application settings not initialized",
-        )
-
     return HealthResponse(status="healthy", version="0.1.0")
 
 
@@ -115,12 +109,6 @@ async def scan_stockpile(
     Returns:
         Any: Output from configured output handler
     """
-    if app_settings is None:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Application settings not initialized",
-        )
-
     if not image.content_type or not image.content_type.startswith("image/"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File must be an image")
 
