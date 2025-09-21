@@ -49,6 +49,9 @@ dev = [
     "ruff>=0.3.4",
     "pre-commit>=3.5.0",
     "types-requests",
+
+    # Developer Tools
+    "PyQt5>=5.15.0",
 ]
 
 [project.urls]
