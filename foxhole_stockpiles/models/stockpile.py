@@ -24,11 +24,6 @@ class Stockpile(BaseModel):
         description="List of errors encountered during processing", default_factory=list
     )
 
-    @field_serializer("type")
-    def serialize_type(self, value: StockpileType) -> str:
-        """Serialize the type."""
-        return value.value
-
     @field_serializer("timestamp")
     def serialize_timestamp(self, value: datetime) -> str:
         """Serialize the timestamp."""

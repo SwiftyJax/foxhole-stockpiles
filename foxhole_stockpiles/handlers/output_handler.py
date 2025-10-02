@@ -57,7 +57,7 @@ class OutputHandler:
             stockpile (Stockpile): The stockpile data to output
         """
         self.logger.info("Name: %s", stockpile.name)
-        self.logger.info("Type: %s", stockpile.type.value)
+        self.logger.info("Type: %s", stockpile.type)
         self.logger.info("Hex: %s", stockpile.hex_name)
         self.logger.info("Shard: %s", stockpile.shard)
         self.logger.info("Ingame timestamp: %s", stockpile.ingame_timestamp)

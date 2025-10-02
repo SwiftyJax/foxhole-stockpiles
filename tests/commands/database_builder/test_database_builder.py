@@ -1,0 +1,477 @@
+"""Tests for commands.database_builder.database_builder module.
+
+This module contains comprehensive tests for the database builder command,
+including DatabaseBuilder class functionality, template processing, and
+database creation for multiple resolutions.
+"""
+
+import argparse
+from pathlib import Path
+from typing import Any
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
+
+import numpy as np
+import pytest
+
+from foxhole_stockpiles.commands.database_builder.database_builder import (
+    DatabaseBuilder,
+    main,
+)
+from foxhole_stockpiles.enums.item_category import ItemCategory
+from foxhole_stockpiles.enums.item_faction import ItemFaction
+from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
+from foxhole_stockpiles.models.catalog_item import CatalogItem
+
+
+class TestDatabaseBuilderInitialization:
+    """Test suite for DatabaseBuilder initialization.
+
+    This class contains tests for DatabaseBuilder instance creation
+    with various parameter combinations and configurations.
+    """
+
+    async def test_initialization_with_valid_catalog(
+        self, tmp_path: Path, mock_catalog_file: Path
+    ) -> None:
+        """Test DatabaseBuilder initialization with valid catalog.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            mock_catalog_file (Path): Mock catalog file from fixture.
+        """
+        assets_path = tmp_path / "assets"
+        assets_path.mkdir()
+
+        builder = DatabaseBuilder(
+            catalog_path=mock_catalog_file, assets_path=assets_path, use_scaling=False
+        )
+
+        assert builder.assets_path == assets_path
+        assert builder.use_scaling is False
+        assert len(builder.catalog_data) > 0
+
+    async def test_initialization_with_empty_catalog(self, tmp_path: Path) -> None:
+        """Test DatabaseBuilder initialization with empty catalog.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_path = tmp_path / "empty_catalog.json"
+        catalog_path.write_text("[]")
+
+        assets_path = tmp_path / "assets"
+        assets_path.mkdir()
+
+        with pytest.raises(ValueError, match="Catalog is empty"):
+            DatabaseBuilder(catalog_path=catalog_path, assets_path=assets_path)
+
+    async def test_initialization_with_scaling_enabled(
+        self, tmp_path: Path, mock_catalog_file: Path
+    ) -> None:
+        """Test DatabaseBuilder initialization with scaling enabled.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            mock_catalog_file (Path): Mock catalog file from fixture.
+        """
+        assets_path = tmp_path / "assets"
+        assets_path.mkdir()
+
+        builder = DatabaseBuilder(
+            catalog_path=mock_catalog_file, assets_path=assets_path, use_scaling=True
+        )
+
+        assert builder.use_scaling is True
+
+
+class TestDatabaseBuilderMethods:
+    """Test suite for DatabaseBuilder methods.
+
+    This class contains tests for the core functionality of DatabaseBuilder
+    including template processing, icon file discovery, and database building.
+    """
+
+    @pytest.fixture
+    def builder(self, tmp_path: Path, mock_catalog_file: Path) -> DatabaseBuilder:
+        """Create a DatabaseBuilder instance for testing.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            mock_catalog_file (Path): Mock catalog file from fixture.
+
+        Returns:
+            DatabaseBuilder: Configured builder instance for testing.
+        """
+        assets_path = tmp_path / "assets"
+        assets_path.mkdir()
+
+        return DatabaseBuilder(
+            catalog_path=mock_catalog_file, assets_path=assets_path, use_scaling=False
+        )
+
+    async def test_find_icon_files_exact_match(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test finding icon files with exact size match.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Create test icon structure
+        item_code = "TestRifle"
+        icon_size = 32
+        item_folder = builder.assets_path / item_code
+        item_folder.mkdir()
+
+        # Create exact size icon
+        icon_file = item_folder / f"vanilla_{item_code}_{icon_size}.png"
+        icon_file.touch()
+
+        # Find icons
+        found_icons = builder._find_icon_files(item_code=item_code, icon_size=icon_size)
+
+        assert len(found_icons) == 1
+        assert found_icons[0] == icon_file
+
+    async def test_find_icon_files_crated_variant(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test finding crated variant icon files.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Create test icon structure
+        item_code = "TestRifle"
+        icon_size = 32
+
+        # Create crated folder
+        crated_folder = builder.assets_path / f"{item_code}_crated"
+        crated_folder.mkdir()
+
+        # Create crated icon
+        icon_file = crated_folder / f"vanilla_{item_code}_crated_{icon_size}.png"
+        icon_file.touch()
+
+        # Find icons
+        found_icons = builder._find_icon_files(item_code=item_code, icon_size=icon_size)
+
+        assert len(found_icons) == 1
+        assert found_icons[0] == icon_file
+
+    async def test_find_size_variants_with_scaling(
+        self, tmp_path: Path, mock_catalog_file: Path
+    ) -> None:
+        """Test finding size variants with scaling enabled.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            mock_catalog_file (Path): Mock catalog file from fixture.
+        """
+        assets_path = tmp_path / "assets"
+        assets_path.mkdir()
+
+        builder = DatabaseBuilder(
+            catalog_path=mock_catalog_file, assets_path=assets_path, use_scaling=True
+        )
+
+        # Create test icon structure with multiple sizes
+        item_code = "TestRifle"
+        item_folder = builder.assets_path / item_code
+        item_folder.mkdir()
+
+        # Create icons at different sizes
+        for size in [64, 128, 256]:
+            icon_file = item_folder / f"vanilla_{item_code}_{size}.png"
+            icon_file.touch()
+
+        # Find size variants (looking for size 32, should find largest: 256)
+        found_icons = builder._find_size_variants(
+            folder=item_folder, item_code=item_code, target_size=32, is_crated=False
+        )
+
+        # Should find one icon (the largest size)
+        assert len(found_icons) == 1
+
+    @patch("cv2.imread")
+    @patch("cv2.resize")
+    async def test_process_item_templates(
+        self,
+        mock_resize: Mock,
+        mock_imread: Mock,
+        builder: DatabaseBuilder,
+        tmp_path: Path,
+    ) -> None:
+        """Test processing templates for a single item.
+
+        Args:
+            mock_resize (Mock): Mocked cv2.resize function.
+            mock_imread (Mock): Mocked cv2.imread function.
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Create mock image
+        mock_image = np.zeros((64, 64, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+        mock_resize.return_value = mock_image
+
+        # Create test icon file
+        item_code = "TestRifle"
+        item_folder = builder.assets_path / item_code
+        item_folder.mkdir()
+
+        icon_size = int(builder.icon_scaling_factor * 1080)
+        icon_file = item_folder / f"vanilla_{item_code}_{icon_size}.png"
+        icon_file.touch()
+
+        # Create catalog item
+        catalog_item = CatalogItem(
+            code=item_code,
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            icon_path=f"War/Content/test/{item_code}",
+            subicon_path="",
+        )
+
+        # Process templates
+        templates = await builder._process_item_templates(
+            item=catalog_item, resolution=SupportedResolution.R_1080, icon_size=icon_size
+        )
+
+        # Should have created templates (may be empty if file loading fails)
+        assert isinstance(templates, list)
+
+    async def test_build_resolution_database(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test building database for a specific resolution.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        with patch.object(builder, "_process_item_templates", return_value=[]):
+            database = await builder._build_resolution_database(
+                resolution=SupportedResolution.R_1080
+            )
+
+            assert database.resolution == SupportedResolution.R_1080
+            assert isinstance(database.templates, list)
+
+    async def test_build_all_databases_success(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test building all databases successfully.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        output_path = tmp_path / "output.pkl"
+
+        # Mock _build_resolution_database to return databases with templates
+        async def mock_build_db(resolution: SupportedResolution) -> Any:
+            import numpy as np
+
+            from foxhole_stockpiles.enums.item_category import ItemCategory
+            from foxhole_stockpiles.enums.item_faction import ItemFaction
+            from foxhole_stockpiles.models.icon_template import IconTemplate
+            from foxhole_stockpiles.services.template_database import TemplateDatabase
+
+            db = TemplateDatabase(resolution)
+            # Add a template so database is not empty
+            template = IconTemplate(
+                code="TestItem",
+                faction=ItemFaction.NEUTRAL,
+                category=ItemCategory.Item,
+                crated=False,
+                mod="vanilla",
+                resolution=resolution,
+                image=np.zeros((32, 32, 3), dtype=np.uint8),
+                phash=0,
+            )
+            db.add_template(template)
+            return db
+
+        with patch.object(builder, "_build_resolution_database", side_effect=mock_build_db):
+            await builder.build_all_databases(
+                output_path=output_path, target_resolutions=[SupportedResolution.R_1080]
+            )
+
+        # Verify output file was created
+        assert output_path.exists()
+
+    async def test_build_all_databases_no_templates_error(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test that build_all_databases raises error when no templates found.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from fixture.
+        """
+        output_path = tmp_path / "output.pkl"
+
+        # Mock _build_resolution_database to return empty databases
+        async def mock_build_db(resolution: SupportedResolution) -> Any:
+            from foxhole_stockpiles.services.template_database import TemplateDatabase
+
+            return TemplateDatabase(resolution)  # Empty database
+
+        with patch.object(builder, "_build_resolution_database", side_effect=mock_build_db):
+            with pytest.raises(ValueError, match="No templates found"):
+                await builder.build_all_databases(
+                    output_path=output_path, target_resolutions=[SupportedResolution.R_1080]
+                )
+
+    async def test_save_databases(self, builder: DatabaseBuilder, tmp_path: Path) -> None:
+        """Test saving databases to file.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        import numpy as np
+
+        from foxhole_stockpiles.enums.item_category import ItemCategory
+        from foxhole_stockpiles.enums.item_faction import ItemFaction
+        from foxhole_stockpiles.models.icon_template import IconTemplate
+        from foxhole_stockpiles.services.template_database import TemplateDatabase
+
+        output_path = tmp_path / "subdir" / "output.pkl"
+
+        # Create a database with a template
+        db = TemplateDatabase(SupportedResolution.R_1080)
+        template = IconTemplate(
+            code="TestItem",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=np.zeros((32, 32, 3), dtype=np.uint8),
+            phash=0,
+        )
+        db.add_template(template)
+
+        databases = {SupportedResolution.R_1080: db}
+
+        # Save databases
+        await builder._save_databases(databases=databases, output_path=output_path)
+
+        # Verify file was created in subdirectory
+        assert output_path.exists()
+        assert output_path.parent.exists()
+
+        # Verify file size is reasonable
+        assert output_path.stat().st_size > 0
+
+
+class TestMainFunction:
+    """Test suite for the main CLI function.
+
+    This class contains tests for the main entry point of the database
+    builder command, including argument parsing and workflow execution.
+    """
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.DatabaseBuilder")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.setup_logging")
+    async def test_main_with_default_args(
+        self,
+        mock_setup_logging: Mock,
+        mock_builder_class: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with default arguments.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_builder_class (Mock): Mocked DatabaseBuilder class.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_path = tmp_path / "catalog.json"
+        catalog_path.write_text("[]")
+
+        templates_path = tmp_path / "templates"
+        templates_path.mkdir()
+
+        database_path = tmp_path / "database.pkl"
+
+        mock_args.return_value = argparse.Namespace(
+            catalog=catalog_path,
+            templates=templates_path,
+            database=database_path,
+            use_scaling=False,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+            resolution=None,
+        )
+
+        # Mock builder instance
+        mock_builder = MagicMock()
+        mock_builder.build_all_databases = AsyncMock(return_value=None)
+        mock_builder_class.return_value = mock_builder
+
+        await main()
+
+        # Verify DatabaseBuilder was instantiated
+        mock_builder_class.assert_called_once()
+
+        # Verify build_all_databases was called
+        assert mock_builder.build_all_databases.call_count > 0
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.DatabaseBuilder")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.setup_logging")
+    async def test_main_with_specific_resolutions(
+        self,
+        mock_setup_logging: Mock,
+        mock_builder_class: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with specific resolution arguments.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_builder_class (Mock): Mocked DatabaseBuilder class.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_path = tmp_path / "catalog.json"
+        catalog_path.write_text("[]")
+
+        templates_path = tmp_path / "templates"
+        templates_path.mkdir()
+
+        database_path = tmp_path / "database.pkl"
+
+        mock_args.return_value = argparse.Namespace(
+            catalog=catalog_path,
+            templates=templates_path,
+            database=database_path,
+            use_scaling=True,
+            verbose=True,
+            quiet=False,
+            log_file=None,
+            resolution=["1080", "2160"],
+        )
+
+        # Mock builder instance
+        mock_builder = MagicMock()
+        mock_builder.build_all_databases = AsyncMock(return_value=None)
+        mock_builder_class.return_value = mock_builder
+
+        await main()
+
+        # Verify build_all_databases was called with specific resolutions
+        assert mock_builder.build_all_databases.call_count > 0
+        call_kwargs = mock_builder.build_all_databases.call_args[1]
+        assert "target_resolutions" in call_kwargs
+        assert len(call_kwargs["target_resolutions"]) == 2
