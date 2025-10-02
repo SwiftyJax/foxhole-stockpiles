@@ -11,7 +11,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from foxhole_stockpiles.core.logging import setup_logging
-from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.core.settings import TemplateSettings, get_settings
 from foxhole_stockpiles.core.utils import load_catalog
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.catalog_item import CatalogItem
@@ -37,6 +37,7 @@ class TemplateGenerator:
         assets_path: Path,
         template_path: Path,
         filter_name: str | None = None,
+        template_settings: TemplateSettings | None = None,
     ) -> None:
         """Initialize the template generator.
 
@@ -45,6 +46,7 @@ class TemplateGenerator:
             assets_path (Path): Path to extracted assets directory with mod subfolders
             template_path (Path): Path where generated templates will be saved
             filter_name (str | None): Optional filter to process only items containing this string
+            template_settings (TemplateSettings | None): Template generation settings
         """
         if not catalog_path.exists():
             raise FileNotFoundError(f"Catalog file not found: {catalog_path}")
@@ -54,6 +56,7 @@ class TemplateGenerator:
         self.assets_path = assets_path
         self.template_path = template_path
         self.filter_name = filter_name
+        self.settings = template_settings or TemplateSettings()
 
         self.template_path.mkdir(parents=True, exist_ok=True)
 
@@ -251,9 +254,19 @@ class TemplateGenerator:
         # Only process pixels that have significant alpha (avoid transparent areas)
         alpha_mask = result[:, :, 3] > 10
 
-        result[alpha_mask, 0] = result[alpha_mask, 0] * 145 / 255 + 82  # Blue channel
-        result[alpha_mask, 1] = result[alpha_mask, 1] * 152 / 255 + 87  # Green channel
-        result[alpha_mask, 2] = result[alpha_mask, 2] * 154 / 255 + 89  # Red channel
+        # Apply color tint using settings (multipliers are divided by 255)
+        result[alpha_mask, 0] = (
+            result[alpha_mask, 0] * self.settings.crate_blue_multiplier / 255
+            + self.settings.crate_blue_offset
+        )
+        result[alpha_mask, 1] = (
+            result[alpha_mask, 1] * self.settings.crate_green_multiplier / 255
+            + self.settings.crate_green_offset
+        )
+        result[alpha_mask, 2] = (
+            result[alpha_mask, 2] * self.settings.crate_red_multiplier / 255
+            + self.settings.crate_red_offset
+        )
 
         # Clamp values and convert back to uint8
         result = np.clip(result, 0, 255)
@@ -639,6 +652,7 @@ async def main() -> None:
             assets_path=args.assets,
             template_path=args.templates,
             filter_name=args.filter,
+            template_settings=settings.templates,
         )
 
         success = await generator.generate_all_templates()
