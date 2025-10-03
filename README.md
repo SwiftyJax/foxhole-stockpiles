@@ -276,8 +276,28 @@ Test coverage includes:
 - Command-line tools (asset extraction, template generation, database building, scanner)
 - Core services (template matching, OCR processing, stockpile detection)
 - Data models and validation
+- API server and authentication
 - Webhook connectors and output handlers
 
+## Documentation
+
+### Command-Line Tools
+
+Each CLI tool has detailed documentation in its directory:
+
+- [Asset Extractor](foxhole_stockpiles/commands/uasset_extractor/README.md) - Extract icons from PAK files
+- [Template Generator](foxhole_stockpiles/commands/generate_templates/README.md) - Generate resolution-specific templates
+- [Database Builder](foxhole_stockpiles/commands/database_builder/README.md) - Build optimized template databases
+- [Scanner](foxhole_stockpiles/commands/stockpile_scanner/README.md) - Analyze stockpile screenshots
+- [Inspector](foxhole_stockpiles/commands/candidate_inspector/README.md) - Debug and validate databases
+
+### Guides
+
+- [Configuration Guide](docs/configuration.md) - Environment variables and settings
+- [API Usage](docs/api-usage.md) - HTTP API endpoints and examples
+- [API Authentication](docs/api-authentication.md) - Authentication configuration
+- [Webhook Integration](docs/webhooks.md) - Webhook setup and usage
+- [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
 
 ## Credits
 
