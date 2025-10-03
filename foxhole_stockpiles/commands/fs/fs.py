@@ -47,6 +47,11 @@ class CLIDispatcher:
                 module="foxhole_stockpiles.commands.candidate_inspector.candidate_inspector",
                 aliases=["debug"],
             ),
+            "server": CommandInfo(
+                description="Start the API server",
+                module="foxhole_stockpiles.commands.api_server.api_server",
+                aliases=["api"],
+            ),
         }
 
     def resolve_command_alias(self, command: str) -> str | None:

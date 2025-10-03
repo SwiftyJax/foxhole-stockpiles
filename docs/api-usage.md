@@ -2,29 +2,44 @@
 
 The Foxhole Stockpile Scanner provides a REST API for analyzing stockpile screenshots via HTTP.
 
+## Installation
+
+The API server requires additional dependencies. Install with:
+
+```bash
+pip install -e .[server]
+```
+
 ## Starting the API Server
 
-### Using Python Module
+### Using fs Command (Recommended)
 
+```bash
+# Start server on default port (8000)
+fs server
+
+# Start on custom port
+fs server --port 8080
+
+# Production deployment with multiple workers
+fs server --host 0.0.0.0 --port 8000 --workers 4
+
+# Development mode with auto-reload
+fs server --reload --log-level debug
+```
+
+See [API Server Command Documentation](../foxhole_stockpiles/commands/api_server/README.md) for all options.
+
+### Alternative Methods
+
+**Using Python Module:**
 ```bash
 python -m foxhole_stockpiles.api.server
 ```
 
-### Using Uvicorn Directly
-
+**Using Uvicorn Directly:**
 ```bash
-uvicorn foxhole_stockpiles.api.server:app --host 0.0.0.0 --port 8000
-```
-
-### Production Deployment
-
-```bash
-# With multiple workers for production
-uvicorn foxhole_stockpiles.api.server:app \
-  --host 0.0.0.0 \
-  --port 8000 \
-  --workers 4 \
-  --log-level info
+uvicorn foxhole_stockpiles.api.server:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
 ## Endpoints

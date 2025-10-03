@@ -44,6 +44,9 @@ Analyzes Foxhole stockpile screenshots to detect items and quantities using the 
 ### fs inspect
 Debugging tool for inspecting database contents and testing icon recognition.
 
+### fs server
+Starts the FastAPI server for processing screenshots via HTTP API.
+
 ## Requirements
 
 - Python 3.12 or higher
@@ -79,11 +82,17 @@ source venv/bin/activate
 ### 3. Install the Package
 
 ```bash
-# Install in development mode with dev dependencies
+# Install base package (CLI tools: scanner, database-builder, etc.)
+pip install -e .
+
+# Install with API server support (adds fs server command)
+pip install -e .[server]
+
+# Install with development dependencies
 pip install -e .[dev]
 
-# Or install just the base package
-pip install -e .
+# Install everything (server + dev)
+pip install -e .[server,dev]
 ```
 
 ### 4. Install and Configure Tesseract OCR
@@ -177,21 +186,33 @@ The scanner will automatically:
 
 ## API Server
 
-The project includes a FastAPI server for processing stockpile screenshots via HTTP:
+The project includes a FastAPI server for processing stockpile screenshots via HTTP.
 
+**Installation:** The API server requires additional dependencies. Install with:
 ```bash
-# Start the API server
-python -m foxhole_stockpiles.api.server
+pip install -e .[server]
+```
 
-# Or using uvicorn directly
-uvicorn foxhole_stockpiles.api.server:app --port 8000
+**Usage:**
+```bash
+# Start the API server (recommended)
+fs server
+
+# Start on custom port
+fs server --port 8080
+
+# Start with multiple workers for production
+fs server --host 0.0.0.0 --port 8000 --workers 4
+
+# Development mode with auto-reload
+fs server --reload --log-level debug
 ```
 
 The API exposes endpoints for:
 - `/ocr/scan_image` - Upload and analyze stockpile screenshots
 - `/health` - Health check endpoint
 
-For authentication configuration and usage details, see the [API Authentication Documentation](docs/api-authentication.md).
+For more details, see the [API Server Documentation](foxhole_stockpiles/commands/api_server/README.md) and [API Usage Guide](docs/api-usage.md).
 
 ## Project Structure
 
@@ -290,6 +311,7 @@ Each CLI tool has detailed documentation in its directory:
 - [Database Builder](foxhole_stockpiles/commands/database_builder/README.md) - Build optimized template databases
 - [Scanner](foxhole_stockpiles/commands/stockpile_scanner/README.md) - Analyze stockpile screenshots
 - [Inspector](foxhole_stockpiles/commands/candidate_inspector/README.md) - Debug and validate databases
+- [API Server](foxhole_stockpiles/commands/api_server/README.md) - HTTP API server
 
 ### Guides
 

@@ -8,7 +8,6 @@ from typing import Any
 
 import cv2
 import numpy as np
-import uvicorn
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -161,15 +160,3 @@ async def scan_stockpile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Unexpected error: {str(e)}"
         ) from None
-
-
-def main() -> None:
-    """Run the FastAPI server.
-
-    Starts the FastAPI application using uvicorn on port 8000.
-    """
-    uvicorn.run(app, port=8000, log_level="info")
-
-
-if __name__ == "__main__":
-    main()

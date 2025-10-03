@@ -93,12 +93,40 @@ class APIServerSettings(BaseModel):
         description="List of allowed CORS origins. Use ['*'] to allow all origins.",
         default=["*"],
     )
+    host: str = Field(
+        description="Server bind host",
+        default="127.0.0.1",
+    )
+    port: int = Field(
+        description="Server bind port",
+        default=8000,
+        gt=0,
+        le=65535,
+    )
+    workers: int = Field(
+        description="Number of worker processes",
+        default=1,
+        gt=0,
+    )
+    reload: bool = Field(
+        description="Enable auto-reload on code changes (development only)",
+        default=False,
+    )
+    log_level: str = Field(
+        description="Server log level",
+        default="info",
+    )
 
     model_config = ConfigDict(
         extra="ignore",
         json_schema_extra={
             "example": {
                 "cors_allow_origins": ["https://yourdomain.com", "https://app.yourdomain.com"],
+                "host": "0.0.0.0",
+                "port": 8000,
+                "workers": 4,
+                "reload": False,
+                "log_level": "info",
             }
         },
     )
