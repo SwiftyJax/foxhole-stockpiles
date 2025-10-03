@@ -16,7 +16,7 @@ maintainers = [
 ]
 keywords = ["foxhole", "gaming", "ocr", "image-processing", "fastapi"]
 classifiers = [
-    "Development Status :: 2 - Pre-Alpha",
+    "Development Status :: 4 - Beta",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3 :: Only",

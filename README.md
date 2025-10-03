@@ -58,11 +58,21 @@ Starts the FastAPI server for processing screenshots via HTTP API.
 
 - Python 3.12 or higher
 - **Tesseract OCR** - Required for quantity detection from stockpile screenshots
+- Custom Tesseract model for Renner font recognition (included in repository)
+
+### For Scanner Only
+
+- **Pre-built template database** - Download `foxhole_templates.pkl` from database releases (tags starting with `db-`)
+  - See [Releases](https://github.com/xurxogr/foxhole-stockpiles/releases) and look for database releases matching your Foxhole game version
+- **Item catalog** (`data/catalog.json`) - Included in repository
+
+### For Custom Database Building (Optional)
+
 - External tools (Windows-specific):
   - `repak.exe` - For PAK file extraction
   - `umodel.exe` - For asset conversion
-- Foxhole game files and `catalog.json`
-- Custom Tesseract model for Renner font recognition (see Installation section)
+- Foxhole game PAK files (from your game installation)
+- Mod PAK files (if using custom mods)
 
 ## Installation
 
@@ -146,33 +156,16 @@ pre-commit install
 
 ## Usage Workflow
 
-### Complete Pipeline
+### Quick Start (Using Pre-built Database)
 
-1. **Extract assets from game PAK files:**
-```bash
-fs extract-assets \
-  --catalog catalog.json \
-  --pak "C:/Program Files (x86)/Steam/steamapps/common/Foxhole/War/Content/Paks/War-WindowsNoEditor.pak" \
-  --output raw_assets/
-```
+Download a pre-built template database for vanilla Foxhole items:
 
-2. **Generate resolution-specific templates:**
-```bash
-fs generate-templates \
-  --catalog catalog.json \
-  --assets raw_assets/ \
-  --templates processed_templates/
-```
+1. Go to [Releases](https://github.com/xurxogr/foxhole-stockpiles/releases)
+2. Find a database release (tagged as `db-*`) matching your Foxhole game version
+3. Download `foxhole_templates.pkl` from the release assets
+4. Place it in your working directory or a `data/` folder
+5. Run the scanner:
 
-3. **Build optimized binary database:**
-```bash
-fs database-builder \
-  --catalog catalog.json \
-  --templates processed_templates/ \
-  --database foxhole_templates.pkl
-```
-
-4. **Scan a stockpile screenshot:**
 ```bash
 fs scanner \
   --database foxhole_templates.pkl \
@@ -183,6 +176,41 @@ The scanner will automatically:
 - Detect and identify all items in the stockpile
 - Extract quantities using OCR with the custom Renner font model
 - Output structured JSON data with items, quantities, and metadata
+
+### Building Custom Database (For Mods or Game Updates)
+
+If you need to include custom mods or rebuild the database for a new game version:
+
+1. **Extract assets from game PAK files:**
+```bash
+fs extract-assets \
+  --catalog data/catalog.json \
+  --pak "C:/Program Files (x86)/Steam/steamapps/common/Foxhole/War/Content/Paks/War-WindowsNoEditor.pak" \
+  --output raw_assets/
+```
+
+2. **Generate resolution-specific templates:**
+```bash
+fs generate-templates \
+  --catalog data/catalog.json \
+  --assets raw_assets/ \
+  --templates processed_templates/
+```
+
+3. **Build optimized binary database:**
+```bash
+fs database-builder \
+  --catalog data/catalog.json \
+  --templates processed_templates/ \
+  --database data/foxhole_templates.pkl
+```
+
+4. **Scan with your custom database:**
+```bash
+fs scanner \
+  --database data/foxhole_templates.pkl \
+  --image your_screenshot.png
+```
 
 ## Core Dependencies
 
@@ -369,6 +397,8 @@ This project was heavily influenced by the [FIR (Foxhole Item Recognition)](http
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+**Note**: The included `data/catalog.json` and pre-built template database (available in releases) contain data derived from Foxhole game assets, which are property of [Siege Camp](https://www.siegecamp.com/). These files are made available under Fair Use for personal use. Users are responsible for complying with applicable terms of service.
 
 ## Support
 
