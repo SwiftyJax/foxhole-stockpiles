@@ -32,6 +32,8 @@ The project consists of five command-line tools that work together:
 4. **Scanner Tool** - Analyzes screenshots to detect and identify stockpile items with automatic quantity recognition
 5. **Inspector Tool** - Debugs and validates template databases
 
+For technical details on the system design and implementation decisions, see the [Architecture Documentation](docs/architecture.md).
+
 ## Available Command-Line Tools
 
 ### fs extract-assets
