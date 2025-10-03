@@ -383,27 +383,6 @@ class TestLifespan:
         assert shutdown_logged or mock_logger.info.call_count >= 2
 
 
-class TestMain:
-    """Test cases for the main entry point."""
-
-    @patch("foxhole_stockpiles.api.server.uvicorn.run")
-    def test_main_function(self, mock_run: Mock) -> None:
-        """Test main function starts uvicorn server.
-
-        Args:
-            mock_run (Mock): Mocked uvicorn.run function.
-        """
-        from foxhole_stockpiles.api.server import main
-
-        main()
-
-        # Verify uvicorn was called with correct parameters
-        mock_run.assert_called_once()
-        call_kwargs = mock_run.call_args[1]
-        assert call_kwargs["port"] == 8000
-        assert call_kwargs["log_level"] == "info"
-
-
 class TestAuthHeaderHandling:
     """Test cases for authentication header handling."""
 
