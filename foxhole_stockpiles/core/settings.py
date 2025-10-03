@@ -86,6 +86,59 @@ class OCRSettings(BaseModel):
     )
 
 
+class APIAuthSettings(BaseModel):
+    """Settings for API authentication."""
+
+    auth_type: str | None = Field(
+        description=(
+            "Authentication type to protect API endpoints. "
+            "Supported types: 'basic', 'bearer', or custom header name. "
+            "If None, authentication is disabled."
+        ),
+        default=None,
+    )
+    auth_token: str | None = Field(
+        description=(
+            "Token to use for API authentication. "
+            "For 'basic' auth_type, this should be base64 encoded 'username:password'."
+        ),
+        default=None,
+    )
+
+    model_config = ConfigDict(
+        extra="ignore",
+        json_schema_extra={
+            "example": {
+                "auth_type": "bearer",
+                "auth_token": "your-secret-token",
+            }
+        },
+    )
+
+    def _validate_auth_consistency(self) -> None:
+        """Validate that auth type and token are consistent.
+
+        Raises:
+            ValueError: If only one of auth_type or auth_token is provided.
+        """
+        if bool(self.auth_type) != bool(self.auth_token):
+            raise ValueError("auth_type and auth_token must both be set or both be None")
+
+    @model_validator(mode="after")
+    def validate_model(self) -> Self:
+        """Validate the model.
+
+        Returns:
+            Self: The validated instance.
+
+        Raises:
+            ValueError: If any of the fields is invalid
+        """
+        self._validate_auth_consistency()
+
+        return self
+
+
 class OutputFormatSettings(BaseModel):
     """Settings for output formats."""
 
@@ -438,6 +491,9 @@ class TemplateSettings(BaseModel):
 class AppSettings(BaseSettings):
     """Application Settings."""
 
+    api_auth: APIAuthSettings = Field(
+        description="API authentication settings", default_factory=APIAuthSettings
+    )
     logging: LoggingSettings = Field(
         description="Logging settings", default_factory=LoggingSettings
     )

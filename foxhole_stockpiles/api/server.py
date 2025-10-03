@@ -9,10 +9,11 @@ from typing import Any
 import cv2
 import numpy as np
 import uvicorn
-from fastapi import FastAPI, HTTPException, Query, Request, UploadFile, status
+from fastapi import Depends, FastAPI, HTTPException, Query, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from foxhole_stockpiles.api.auth import create_auth_dependency
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
@@ -69,6 +70,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Create authentication dependency
+auth_dependency = create_auth_dependency(app_settings.api_auth)
+
 
 @app.get("/", response_model=HealthResponse)
 async def root() -> HealthResponse:
@@ -93,7 +97,7 @@ async def health_check() -> HealthResponse:
     return HealthResponse(status="healthy", version="0.1.0")
 
 
-@app.post("/ocr/scan_image")
+@app.post("/ocr/scan_image", dependencies=[Depends(auth_dependency)])
 async def scan_stockpile(
     image: UploadFile,
     request: Request,

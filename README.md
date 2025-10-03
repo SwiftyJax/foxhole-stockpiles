@@ -175,11 +175,32 @@ The scanner will automatically:
 - **Data Handling**: Pydantic v2 for validation
 - **Development**: Ruff (linting), MyPy (type checking), Pre-commit hooks
 
+## API Server
+
+The project includes a FastAPI server for processing stockpile screenshots via HTTP:
+
+```bash
+# Start the API server
+python -m foxhole_stockpiles.api.server
+
+# Or using uvicorn directly
+uvicorn foxhole_stockpiles.api.server:app --port 8000
+```
+
+The API exposes endpoints for:
+- `/ocr/scan_image` - Upload and analyze stockpile screenshots
+- `/health` - Health check endpoint
+
+For authentication configuration and usage details, see the [API Authentication Documentation](docs/api-authentication.md).
+
 ## Project Structure
 
 ```
 foxhole_stockpiles/
-├── commands/           # Command-line tools
+├── api/               # FastAPI server
+│   ├── server.py
+│   └── auth.py
+├── commands/          # Command-line tools
 │   ├── uasset_extractor/
 │   ├── generate_templates/
 │   ├── database_builder/
@@ -188,9 +209,9 @@ foxhole_stockpiles/
 ├── core/              # Core utilities
 │   ├── logging.py
 │   └── utils.py
-├── enums/            # Enumeration types
-├── models/           # Data models
-└── services/         # Service layer
+├── enums/             # Enumeration types
+├── models/            # Data models
+└── services/          # Service layer
     ├── stockpile_detector.py
     ├── template_database.py
     └── template_manager.py

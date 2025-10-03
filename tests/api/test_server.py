@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from foxhole_stockpiles.api.server import app
@@ -454,3 +455,170 @@ class TestAuthHeaderHandling:
         mock_handler_instance.handle_output.assert_called_once()
         call_kwargs = mock_handler_instance.handle_output.call_args[1]
         assert call_kwargs["token"] == "test-token"
+
+
+class TestAPIAuthentication:
+    """Test cases for API endpoint authentication."""
+
+    @patch("foxhole_stockpiles.api.server.app_settings")
+    def test_no_auth_required_when_disabled(self, mock_settings: Mock, client: TestClient) -> None:
+        """Test that requests succeed when authentication is disabled.
+
+        Args:
+            mock_settings (Mock): Mocked app settings.
+            client (TestClient): FastAPI test client from fixture.
+        """
+        import cv2
+
+        from foxhole_stockpiles.core.settings import APIAuthSettings
+
+        # Disable auth
+        mock_settings.api_auth = APIAuthSettings(auth_type=None, auth_token=None)
+
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        _, buffer = cv2.imencode(".png", img)
+        image_bytes = buffer.tobytes()
+
+        with patch("foxhole_stockpiles.api.server.OCRCoordinator") as mock_coordinator:
+            mock_instance = Mock()
+            mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
+            mock_coordinator.return_value = mock_instance
+
+            with patch("foxhole_stockpiles.api.server.OutputHandler") as mock_handler:
+                mock_handler_instance = Mock()
+                mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
+                mock_handler.return_value = mock_handler_instance
+
+                files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+                response = client.post("/ocr/scan_image", files=files)
+
+                assert response.status_code == 200
+
+    @patch("foxhole_stockpiles.api.server.app_settings")
+    def test_bearer_auth_success(self, mock_settings: Mock, client: TestClient) -> None:
+        """Test successful bearer token authentication.
+
+        Args:
+            mock_settings (Mock): Mocked app settings.
+            client (TestClient): FastAPI test client from fixture.
+        """
+        import cv2
+
+        from foxhole_stockpiles.core.settings import APIAuthSettings
+
+        # Enable bearer auth
+        mock_settings.api_auth = APIAuthSettings(auth_type="bearer", auth_token="test-token-123")
+
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        _, buffer = cv2.imencode(".png", img)
+        image_bytes = buffer.tobytes()
+
+        with patch("foxhole_stockpiles.api.server.OCRCoordinator") as mock_coordinator:
+            mock_instance = Mock()
+            mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
+            mock_coordinator.return_value = mock_instance
+
+            with patch("foxhole_stockpiles.api.server.OutputHandler") as mock_handler:
+                mock_handler_instance = Mock()
+                mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
+                mock_handler.return_value = mock_handler_instance
+
+                files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+                headers = {"Authorization": "Bearer test-token-123"}
+                response = client.post("/ocr/scan_image", files=files, headers=headers)
+
+                assert response.status_code == 200
+
+    def test_bearer_auth_failure_wrong_token(self, client: TestClient) -> None:
+        """Test bearer auth fails with wrong token.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        import cv2
+
+        from foxhole_stockpiles.api.server import app, auth_dependency
+
+        # Override auth dependency to raise 401
+        async def failing_auth() -> None:
+            raise HTTPException(status_code=401, detail="Invalid authentication credentials")
+
+        app.dependency_overrides[auth_dependency] = failing_auth
+
+        try:
+            img = np.zeros((100, 100, 3), dtype=np.uint8)
+            _, buffer = cv2.imencode(".png", img)
+            image_bytes = buffer.tobytes()
+
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            headers = {"Authorization": "Bearer wrong-token"}
+            response = client.post("/ocr/scan_image", files=files, headers=headers)
+
+            assert response.status_code == 401
+            assert "Invalid authentication credentials" in response.json()["detail"]
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_bearer_auth_failure_missing_header(self, client: TestClient) -> None:
+        """Test bearer auth fails when header is missing.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        import cv2
+
+        from foxhole_stockpiles.api.server import app, auth_dependency
+
+        # Override auth dependency to raise 401
+        async def failing_auth() -> None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+
+        app.dependency_overrides[auth_dependency] = failing_auth
+
+        try:
+            img = np.zeros((100, 100, 3), dtype=np.uint8)
+            _, buffer = cv2.imencode(".png", img)
+            image_bytes = buffer.tobytes()
+
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            response = client.post("/ocr/scan_image", files=files)
+
+            assert response.status_code == 401
+            assert "Authentication required" in response.json()["detail"]
+        finally:
+            app.dependency_overrides.clear()
+
+    @patch("foxhole_stockpiles.api.server.app_settings")
+    def test_basic_auth_success(self, mock_settings: Mock, client: TestClient) -> None:
+        """Test successful basic authentication.
+
+        Args:
+            mock_settings (Mock): Mocked app settings.
+            client (TestClient): FastAPI test client from fixture.
+        """
+        import cv2
+
+        from foxhole_stockpiles.core.settings import APIAuthSettings
+
+        # Enable basic auth
+        mock_settings.api_auth = APIAuthSettings(auth_type="basic", auth_token="dXNlcjpwYXNz")
+
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        _, buffer = cv2.imencode(".png", img)
+        image_bytes = buffer.tobytes()
+
+        with patch("foxhole_stockpiles.api.server.OCRCoordinator") as mock_coordinator:
+            mock_instance = Mock()
+            mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
+            mock_coordinator.return_value = mock_instance
+
+            with patch("foxhole_stockpiles.api.server.OutputHandler") as mock_handler:
+                mock_handler_instance = Mock()
+                mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
+                mock_handler.return_value = mock_handler_instance
+
+                files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+                headers = {"Authorization": "Basic dXNlcjpwYXNz"}
+                response = client.post("/ocr/scan_image", files=files, headers=headers)
+
+                assert response.status_code == 200
