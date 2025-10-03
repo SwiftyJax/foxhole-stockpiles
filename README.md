@@ -235,9 +235,27 @@ fs.exe extract-assets --catalog catalog.json --pak game.pak --output assets/
 
 The executable is typically 50-80MB and includes all required dependencies except external tools (repak.exe, umodel.exe) which must still be provided separately.
 
-### Note on Testing
+### Testing
 
-No test suite is currently implemented. Tests are planned for future development.
+The project includes a comprehensive test suite covering all major components:
+
+```bash
+# Run all tests
+pytest
+
+# Run tests with coverage report
+pytest --cov=foxhole_stockpiles --cov-report=html
+
+# Run specific test modules
+pytest tests/commands/stockpile_scanner/
+pytest tests/services/
+```
+
+Test coverage includes:
+- Command-line tools (asset extraction, template generation, database building, scanner)
+- Core services (template matching, OCR processing, stockpile detection)
+- Data models and validation
+- Webhook connectors and output handlers
 
 
 ## Credits
