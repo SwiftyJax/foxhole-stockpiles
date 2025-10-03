@@ -219,6 +219,37 @@ The API exposes endpoints for:
 
 For more details, see the [API Server Documentation](foxhole_stockpiles/commands/api_server/README.md) and [API Usage Guide](docs/api-usage.md).
 
+### Docker Deployment
+
+The easiest way to run the API server is using Docker:
+
+```bash
+# Build the image
+docker build -t foxhole-stockpiles .
+
+# Run with docker-compose (recommended)
+docker-compose up -d
+
+# Or run directly
+docker run -d \
+  -p 8000:8000 \
+  -v $(pwd)/data:/data:ro \
+  -e FS_SCANNER__DATABASE_PATH=/data/foxhole_templates.pkl \
+  -e FS_API_AUTH__AUTH_TYPE=bearer \
+  -e FS_API_AUTH__AUTH_TOKEN=your-secret-token \
+  foxhole-stockpiles
+```
+
+The Docker image includes:
+- Python 3.12 runtime
+- All required dependencies
+- Tesseract OCR
+- Non-root user for security
+- Health checks
+- Multi-stage build for smaller image size
+
+See [docker-compose.yml](docker-compose.yml) for configuration examples.
+
 ## Project Structure
 
 ```
@@ -322,6 +353,7 @@ Each CLI tool has detailed documentation in its directory:
 
 - [Configuration Guide](docs/configuration.md) - Environment variables and settings
 - [API Usage](docs/api-usage.md) - HTTP API endpoints and examples
+- [Docker Deployment](docs/docker.md) - Docker and docker-compose setup
 - [API Authentication](docs/api-authentication.md) - Authentication configuration
 - [Webhook Integration](docs/webhooks.md) - Webhook setup and usage
 - [Troubleshooting](docs/troubleshooting.md) - Common issues and solutions
