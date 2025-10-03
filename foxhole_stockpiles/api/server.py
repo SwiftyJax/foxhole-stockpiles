@@ -127,7 +127,7 @@ async def scan_stockpile(
                 detail="Invalid image format or corrupted image data",
             )
 
-        rgb_image = np.asarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), dtype=np.uint8)
+        image_bgr = np.asarray(img, dtype=np.uint8)
 
         config = copy(app_settings.scanner)
         config.faction_filter = ItemFaction.from_string(faction)
@@ -135,7 +135,7 @@ async def scan_stockpile(
             config.faction_filter = None
 
         request_coordinator = OCRCoordinator(config)
-        stockpile = await request_coordinator.analyze_stockpile(rgb_image)
+        stockpile = await request_coordinator.analyze_stockpile(image_bgr)
 
         # Read the token from the specified header if configured
         if app_settings.output_format.webhook_client_auth_header:
