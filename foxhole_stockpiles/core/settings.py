@@ -86,6 +86,24 @@ class OCRSettings(BaseModel):
     )
 
 
+class APIServerSettings(BaseModel):
+    """Settings for API server."""
+
+    cors_allow_origins: list[str] = Field(
+        description="List of allowed CORS origins. Use ['*'] to allow all origins.",
+        default=["*"],
+    )
+
+    model_config = ConfigDict(
+        extra="ignore",
+        json_schema_extra={
+            "example": {
+                "cors_allow_origins": ["https://yourdomain.com", "https://app.yourdomain.com"],
+            }
+        },
+    )
+
+
 class APIAuthSettings(BaseModel):
     """Settings for API authentication."""
 
@@ -491,6 +509,9 @@ class TemplateSettings(BaseModel):
 class AppSettings(BaseSettings):
     """Application Settings."""
 
+    api_server: APIServerSettings = Field(
+        description="API server settings", default_factory=APIServerSettings
+    )
     api_auth: APIAuthSettings = Field(
         description="API authentication settings", default_factory=APIAuthSettings
     )
