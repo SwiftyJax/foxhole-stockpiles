@@ -21,7 +21,25 @@ def build_fs_executable() -> None:
         "numpy.lib.format",
         "pydantic",
         "pydantic.json_schema",
+        "pydantic_settings",
         "pytesseract",
+        # API Server dependencies
+        "fastapi",
+        "uvicorn",
+        "uvicorn.logging",
+        "uvicorn.loops",
+        "uvicorn.loops.auto",
+        "uvicorn.protocols",
+        "uvicorn.protocols.http",
+        "uvicorn.protocols.http.auto",
+        "uvicorn.protocols.websockets",
+        "uvicorn.protocols.websockets.auto",
+        "uvicorn.lifespan",
+        "uvicorn.lifespan.on",
+        "starlette",
+        "starlette.routing",
+        "starlette.middleware",
+        "multipart",
         # Core package modules
         "foxhole_stockpiles",
         "foxhole_stockpiles.core",
@@ -33,12 +51,17 @@ def build_fs_executable() -> None:
         "foxhole_stockpiles.enums.supported_resolution",
         "foxhole_stockpiles.models",
         "foxhole_stockpiles.services",
+        # API modules
+        "foxhole_stockpiles.api",
+        "foxhole_stockpiles.api.server",
+        "foxhole_stockpiles.api.auth",
         # All command modules
         "foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner",
         "foxhole_stockpiles.commands.database_builder.database_builder",
         "foxhole_stockpiles.commands.generate_templates.generate_templates",
         "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor",
         "foxhole_stockpiles.commands.candidate_inspector.candidate_inspector",
+        "foxhole_stockpiles.commands.api_server.api_server",
     ]
 
     # Build PyInstaller command
