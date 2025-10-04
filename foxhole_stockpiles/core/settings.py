@@ -5,7 +5,12 @@ from pathlib import Path
 from typing import Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import (
+    BaseSettings,
+    JsonConfigSettingsSource,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+)
 
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
@@ -562,8 +567,37 @@ class AppSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",
         env_prefix="FS_",
-        env_file=str(Path("~/.fs_config").expanduser()),
+        json_file=str(Path("~/.fs_config").expanduser()),
     )
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        """Customise settings sources to include JSON config file.
+
+        Args:
+            settings_cls: The settings class
+            init_settings: Init settings source
+            env_settings: Environment settings source
+            dotenv_settings: Dotenv settings source
+            file_secret_settings: File secret settings source
+
+        Returns:
+            tuple: Settings sources in priority order (highest to lowest)
+        """
+        return (
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            JsonConfigSettingsSource(settings_cls),
+            file_secret_settings,
+        )
 
 
 @lru_cache
