@@ -12,6 +12,7 @@ from pydantic_settings import (
     SettingsConfigDict,
 )
 
+from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 
@@ -140,10 +141,10 @@ class APIServerSettings(BaseModel):
 class APIAuthSettings(BaseModel):
     """Settings for API authentication."""
 
-    auth_type: str | None = Field(
+    auth_type: AuthType | None = Field(
         description=(
             "Authentication type to protect API endpoints. "
-            "Supported types: 'basic', 'bearer', or custom header name. "
+            "Supported types: 'basic' or 'bearer'. "
             "If None, authentication is disabled."
         ),
         default=None,
@@ -151,7 +152,8 @@ class APIAuthSettings(BaseModel):
     auth_token: str | None = Field(
         description=(
             "Token to use for API authentication. "
-            "For 'basic' auth_type, this should be base64 encoded 'username:password'."
+            "For 'basic' auth_type, this should be base64 encoded 'username:password'. "
+            "Required when auth_type is set."
         ),
         default=None,
     )
@@ -174,6 +176,8 @@ class APIAuthSettings(BaseModel):
         """
         if bool(self.auth_type) != bool(self.auth_token):
             raise ValueError("auth_type and auth_token must both be set or both be None")
+        if self.auth_type == AuthType.FORWARD:
+            raise ValueError("auth_type 'forward' is not supported for API authentication")
 
     @model_validator(mode="after")
     def validate_model(self) -> Self:
@@ -199,17 +203,18 @@ class OutputFormatSettings(BaseModel):
     file_path: str = Field(
         description="Path to the output file when using file output format", default="output.json"
     )
-    webhook_auth_type: str | None = Field(
+    webhook_auth_type: AuthType | None = Field(
         description=(
             "Authentication type to use when sending to webhook. "
-            "Supported types: 'basic', 'bearer', or custom header name."
+            "Supported types: 'basic', 'bearer', or 'forward'."
         ),
         default=None,
     )
     webhook_token: str | None = Field(
         description=(
             "Token to use for authentication when sending to webhook. "
-            "For 'basic' auth_type, this should be base64 encoded 'username:password'."
+            "For 'basic' auth_type, this should be base64 encoded 'username:password'. "
+            "Required when webhook_auth_type is 'basic' or 'bearer'."
         ),
         default=None,
     )
@@ -217,7 +222,10 @@ class OutputFormatSettings(BaseModel):
         description="Webhook URL for sending output when using webhook output format", default=None
     )
     webhook_client_auth_header: str | None = Field(
-        description=("Client header used from client to pass through to the webhook."),
+        description=(
+            "Client header used from client to pass through to the webhook. "
+            "Required when webhook_auth_type is 'forward'."
+        ),
         default=None,
     )
 
@@ -244,10 +252,17 @@ class OutputFormatSettings(BaseModel):
         """Validate that webhook auth type and token are consistent.
 
         Raises:
-            ValueError: If only one of webhook_auth_type or webhook_token is provided.
+            ValueError: If webhook auth configuration is invalid.
         """
-        if bool(self.webhook_auth_type) != bool(self.webhook_token):
-            raise ValueError("webhook_auth_type and webhook_token must both be set or both be None")
+        auth = self.webhook_auth_type
+        if auth in (AuthType.BASIC, AuthType.BEARER):
+            if not self.webhook_token:
+                raise ValueError(f"webhook_token must be set when webhook_auth_type is '{auth}'")
+        elif auth == AuthType.FORWARD:
+            if not self.webhook_client_auth_header:
+                raise ValueError(
+                    "webhook_client_auth_header must be set when webhook_auth_type is 'forward'"
+                )
 
     def _validate_file_fields(self) -> None:
         """Validate the file output settings.

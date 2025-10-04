@@ -10,6 +10,7 @@ import httpx
 from httpx import AsyncClient, ConnectTimeout
 
 from foxhole_stockpiles.core.settings import OutputFormatSettings
+from foxhole_stockpiles.enums.auth_type import AuthType
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -105,17 +106,22 @@ class WebhookConnector:
         headers: dict[str, str] = {}
 
         auth_type = self._output_settings.webhook_auth_type
-        token = token or self._output_settings.webhook_token
-        if auth_type is None or token is None:
+
+        if auth_type is None:
             return headers
 
         match auth_type:
-            case "basic":
-                headers["Authorization"] = f"Basic {token}"
-            case "bearer":
-                headers["Authorization"] = f"Bearer {token}"
-            case _:
-                headers[auth_type] = token
+            case AuthType.BASIC:
+                token_to_use = token or self._output_settings.webhook_token
+                if token_to_use:
+                    headers["Authorization"] = f"Basic {token_to_use}"
+            case AuthType.BEARER:
+                token_to_use = token or self._output_settings.webhook_token
+                if token_to_use:
+                    headers["Authorization"] = f"Bearer {token_to_use}"
+            case AuthType.FORWARD:
+                if token and self._output_settings.webhook_client_auth_header:
+                    headers[self._output_settings.webhook_client_auth_header] = token
 
         return headers
 
