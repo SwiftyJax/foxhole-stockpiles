@@ -31,7 +31,15 @@ FROM python:3.12-slim
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    libgl1 \
     tesseract-ocr \
+    libtesseract-dev \
+    tesseract-ocr-eng \
+    tesseract-ocr-fra \
+    tesseract-ocr-deu \
+    tesseract-ocr-rus \
+    tesseract-ocr-chi-sim \
+    tesseract-ocr-por \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
