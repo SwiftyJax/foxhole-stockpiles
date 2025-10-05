@@ -144,7 +144,7 @@ class StockpileDetector:
         Returns:
             bool: If the points are in the valid range
         """
-        return abs(second - first) < self._settings.pixel_diff_tolerance
+        return abs(second - first) <= self._settings.pixel_diff_tolerance
 
     def _create_grey_mask(self, image: NDArray[np.uint8]) -> NDArray[np.uint8]:
         """Create binary mask for pixels in grey range.
@@ -260,10 +260,39 @@ class StockpileDetector:
 
         # Find and filter contours
         _contours, _ = cv2.findContours(grey_mask_open, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        contours = [cv2.boundingRect(_contour) for _contour in _contours]
+        # Filter contours by size immediately using existing method
+        contours = []
+        for _contour in _contours:
+            rect = cv2.boundingRect(_contour)
+            if self._filter_contour_by_size(rect) is not None:
+                contours.append(rect)
 
         # Reorder the contours to make Soldier and Maintentance Supplies the first ones
-        contours.sort(key=lambda box: (box[1], box[0]))
+        # Group boxes by row (within tolerance), then sort by x within each row
+        tolerance = self._settings.pixel_diff_tolerance
+
+        # First sort by y to get initial grouping
+        contours.sort(key=lambda box: box[1])
+
+        # Group contours into rows based on y-coordinate tolerance
+        rows: list[list[cv2.typing.Rect]] = []
+        for contour in contours:
+            x, y, w, h = contour
+            # Find if this contour belongs to an existing row
+            placed = False
+            for row in rows:
+                if abs(row[0][1] - y) < tolerance:
+                    row.append(contour)
+                    placed = True
+                    break
+            if not placed:
+                rows.append([contour])
+
+        # Sort each row by x, then flatten back to single list
+        contours = []
+        for row in rows:
+            row.sort(key=lambda box: box[0])
+            contours.extend(row)
 
         # Find first group and establish grid
         start_index = self._detect_first_group(contours)
@@ -284,11 +313,8 @@ class StockpileDetector:
         while contour_index < len(contours):
             current_contour = contours[contour_index]
             contour_index += 1
-            coords = self._filter_contour_by_size(current_contour)
-            if coords is None:
-                continue
-
-            x, y = coords
+            # All contours are already filtered by size, just extract coordinates
+            x, y, _, _ = current_contour
 
             # Determine expected x positions
             expected_column_index = current_x_idx % 6
@@ -297,7 +323,14 @@ class StockpileDetector:
             # New group: group_offset gap or 2*group_offset gap if first group
             is_new_group = self._in_valid_range(y_diff_last, int(self.group_offset)) or (
                 current_group_idx == 0
-                and self._in_valid_range(y_diff_last, int(self.group_offset * 2))
+                and (
+                    # Bunkers with one row of orange icons
+                    self._in_valid_range(y_diff_last, int(self.group_offset * 2))
+                    # Bunkers with two rows of orange icons
+                    or self._in_valid_range(
+                        y_diff_last, int(self.group_offset * 2 + self.row_offset)
+                    )
+                )
             )
             is_same_row = self._in_valid_range(y_diff_last, 0)
             is_next_row = self._in_valid_range(y_diff_last, int(self.row_offset))
@@ -306,15 +339,18 @@ class StockpileDetector:
             if not self._in_valid_range(x, self.valid_x_positions[expected_column_index]):
                 if not self._in_valid_range(x, self.valid_x_positions[0]):
                     self._logger.debug(
-                        "Box at (%d,%d) doesn't match expected column any column %d or %d",
+                        "Box %d at (%d,%d) doesn't match expected column coords (%d) or (%d)",
+                        contour_index,
                         x,
                         y,
-                        expected_column_index,
-                        0,
+                        self.valid_x_positions[expected_column_index],
+                        self.valid_x_positions[0],
                     )
                     # Doesn't match expected column - skip
                     continue
+                # Reset to column 0 for new row
                 expected_column_index = 0
+                current_x_idx = 0
 
             if is_new_group:
                 self.groups.append((current_group_count, current_group_start_idx))
