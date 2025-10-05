@@ -1,6 +1,6 @@
 """Stockpile item model."""
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 
 class StockpileItem(BaseModel):
@@ -15,6 +15,20 @@ class StockpileItem(BaseModel):
         le=1.0,
         default=None,
     )
+
+    @field_serializer("confidence")
+    def serialize_confidence(self, value: float | None) -> float | None:
+        """Serialize confidence to 3 decimal places.
+
+        Args:
+            value (float | None): Confidence value
+
+        Returns:
+            float | None: Rounded confidence value
+        """
+        if value is None:
+            return None
+        return round(value, 3)
 
     model_config = ConfigDict(
         extra="forbid",
