@@ -1,8 +1,9 @@
 """Configuration module for the app."""
 
+import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Self
+from typing import Any, Self
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import (
@@ -15,6 +16,23 @@ from pydantic_settings import (
 from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
+
+
+class Utf8JsonConfigSettingsSource(JsonConfigSettingsSource):
+    """JSON config settings source that reads files with UTF-8 encoding."""
+
+    def _read_file(self, file_path: Path) -> dict[str, Any]:
+        """Read and parse a JSON file with UTF-8 encoding.
+
+        Args:
+            file_path: Path to the JSON file
+
+        Returns:
+            dict[str, Any]: The parsed JSON data
+        """
+        with file_path.open("r", encoding="utf-8") as f:
+            data: dict[str, Any] = json.load(f)
+            return data
 
 
 class LoggingSettings(BaseModel):
@@ -610,7 +628,7 @@ class AppSettings(BaseSettings):
             init_settings,
             env_settings,
             dotenv_settings,
-            JsonConfigSettingsSource(settings_cls),
+            Utf8JsonConfigSettingsSource(settings_cls),
             file_secret_settings,
         )
 
