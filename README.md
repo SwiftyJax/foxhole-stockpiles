@@ -136,17 +136,49 @@ sudo apt install tesseract-ocr
 
 #### Set Up Custom Renner Font Model
 
-The stockpile scanner uses a custom-trained Tesseract model optimized for recognizing the Renner font used in Foxhole's UI. **This model is already included in the repository** in the `tessdata/` folder.
+The stockpile scanner uses a custom-trained Tesseract model (`renner_numbers.traineddata`) optimized for recognizing quantities in Foxhole's Renner font. **This model is required for accurate quantity detection and is already included in the repository** in the `tessdata/` folder.
 
 The directory structure is:
 ```
 foxhole-stockpiles/
 ├── tessdata/
-│   └── custom.traineddata  # Already provided
+│   └── renner_numbers.traineddata  # Already provided - required for quantity detection
 └── ...
 ```
 
-The scanner will automatically detect and use this custom model for improved quantity recognition accuracy.
+The scanner automatically uses this custom model for quantity detection. For stockpile names, types, and other text detection, the scanner uses standard Tesseract language models.
+
+#### Install Additional Language Support (Optional)
+
+Foxhole supports multiple languages. If you want to detect stockpile information in languages other than English, you need to install the corresponding Tesseract language data files:
+
+**Supported Languages:**
+- English (eng) - Included with Tesseract by default
+- Portuguese (por)
+- French (fra)
+- German (deu)
+- Russian (rus)
+- Chinese Simplified (chi_sim)
+
+**Installation:**
+
+**Ubuntu/Debian:**
+```bash
+sudo apt install tesseract-ocr-por tesseract-ocr-fra tesseract-ocr-deu \
+                 tesseract-ocr-rus tesseract-ocr-chi-sim
+```
+
+**macOS:**
+```bash
+brew install tesseract-lang
+```
+
+**Windows:**
+- Download language data files from https://github.com/tesseract-ocr/tessdata
+- Place `.traineddata` files in your Tesseract installation's `tessdata` folder
+  - Default location: `C:\Program Files\Tesseract-OCR\tessdata\`
+
+**Note:** If you only play Foxhole in English, you don't need to install additional language packs. The scanner will work perfectly with just the English model (included by default) and the bundled `renner_numbers` model for quantity detection.
 
 ### 5. Set Up Pre-Commit Hooks (Optional, for Development)
 

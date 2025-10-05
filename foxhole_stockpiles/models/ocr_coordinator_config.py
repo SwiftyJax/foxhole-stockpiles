@@ -39,7 +39,7 @@ class OCRCoordinatorConfig(BaseModel):
     faction_filter: ItemFaction | None = Field(
         description="Optional faction filter for icon matching", default=None
     )
-    custom_model: str = Field(description="Custom OCR model name", default="custom")
+    custom_model: str = Field(description="Custom OCR model name", default="renner_numbers")
     tessdata_path: str = Field(description="Path to tessdata directory", default="./tessdata")
     debug_mode: bool = Field(description="Enable debug mode to save debug images", default=False)
 

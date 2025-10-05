@@ -19,13 +19,12 @@ class StockpileTextExtractor:
         """Initialize the OCR extractor.
 
         Args:
-            tessdata_path (str | None): Path to tesseract executable (optional)
-            custom_model (str | None): Name of the custom trained model to use (default: "custom")
+            tessdata_path (str | None): Path to tessdata directory for custom models (optional)
+            custom_model (str | None): Name of the custom trained model to use
         """
         self._logger = logging.getLogger(__name__)
+        self.tessdata_path = os.path.abspath(tessdata_path) if tessdata_path else None
         self.custom_model = custom_model
-        if tessdata_path:
-            os.environ["TESSDATA_PREFIX"] = os.path.abspath(tessdata_path)
 
     async def extract_raw_text(self, image: NDArray[np.uint8], numbers_only: bool = True) -> str:
         """Extract raw text using custom trained model.
@@ -122,6 +121,17 @@ class StockpileTextExtractor:
         Returns:
             str: Tesseract configuration string
         """
-        model = f"-l {self.custom_model}" if self.custom_model else ""
-        numbers = "-c tessedit_char_whitelist=0123456789k+" if numbers_only else ""
-        return f"--psm 6 {model} {numbers} --oem 3"
+        model = "-l eng+por+fra+deu+rus+chi_sim"
+        numbers = ""
+        tessdata_dir = ""
+        if numbers_only:
+            # Build model string with language support
+            if self.custom_model:
+                model = f"-l {self.custom_model}"
+            # Add tessdata directory if specified (per-call, not global)
+            if self.tessdata_path:
+                tessdata_dir = f"--tessdata-dir {self.tessdata_path}"
+
+            numbers = "-c tessedit_char_whitelist=0123456789k+"
+
+        return f"--psm 6 {model} {tessdata_dir} {numbers} --oem 3".strip()
