@@ -37,7 +37,7 @@ class TestOCRCoordinatorConfigInitialization:
         assert config.confidence_threshold == 0.85
         assert config.early_exit_threshold == 0.95
         assert config.faction_filter is None
-        assert config.custom_model == "custom"
+        assert config.custom_model == "renner_numbers"
         assert config.tessdata_path == "./tessdata"
         assert config.debug_mode is False
         assert config.max_ncc_candidates == 25

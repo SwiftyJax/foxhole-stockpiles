@@ -13,6 +13,7 @@ from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from foxhole_stockpiles.api.server import app
+from foxhole_stockpiles.enums.auth_type import AuthType
 
 
 @pytest.fixture
@@ -486,7 +487,9 @@ class TestAPIAuthentication:
         from foxhole_stockpiles.core.settings import APIAuthSettings
 
         # Enable bearer auth
-        mock_settings.api_auth = APIAuthSettings(auth_type="bearer", auth_token="test-token-123")
+        mock_settings.api_auth = APIAuthSettings(
+            auth_type=AuthType.BEARER, auth_token="test-token-123"
+        )
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
@@ -580,7 +583,9 @@ class TestAPIAuthentication:
         from foxhole_stockpiles.core.settings import APIAuthSettings
 
         # Enable basic auth
-        mock_settings.api_auth = APIAuthSettings(auth_type="basic", auth_token="dXNlcjpwYXNz")
+        mock_settings.api_auth = APIAuthSettings(
+            auth_type=AuthType.BASIC, auth_token="dXNlcjpwYXNz"
+        )
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)

@@ -33,23 +33,14 @@ class TestStockpileTextExtractorInitialization:
 
     def test_init_with_tessdata_path(self) -> None:
         """Test initializing with tessdata path."""
-        with patch.dict("os.environ", {}, clear=True):
-            _ = StockpileTextExtractor(tessdata_path="/path/to/tessdata")
-
-            import os
-
-            assert os.environ.get("TESSDATA_PREFIX") == "/path/to/tessdata"
+        extractor = StockpileTextExtractor(tessdata_path="/path/to/tessdata")
+        assert extractor.tessdata_path == "/path/to/tessdata"
 
     def test_init_with_tessdata_path_converts_to_absolute(self) -> None:
         """Test that tessdata path is converted to absolute path."""
-        with patch.dict("os.environ", {}, clear=True):
-            _ = StockpileTextExtractor(tessdata_path="./relative/path")
-
-            import os
-
-            tessdata = os.environ.get("TESSDATA_PREFIX")
-            assert tessdata is not None
-            assert not tessdata.startswith(".")
+        extractor = StockpileTextExtractor(tessdata_path="./relative/path")
+        assert extractor.tessdata_path is not None
+        assert not extractor.tessdata_path.startswith(".")
 
 
 class TestExtractRawText:
@@ -294,7 +285,8 @@ class TestGetTesseractConfig:
         config = extractor.get_tesseract_config(numbers_only=False)
 
         assert "--psm 6" in config
-        assert "-l custom" in config
+        # When numbers_only=False, uses standard language models not custom
+        assert "-l eng+por+fra+deu+rus+chi_sim" in config
         assert "tessedit_char_whitelist" not in config
         assert "--oem 3" in config
 
@@ -305,8 +297,9 @@ class TestGetTesseractConfig:
         config = extractor.get_tesseract_config(numbers_only=True)
 
         assert "--psm 6" in config
-        assert "-l" not in config
         assert "tessedit_char_whitelist=0123456789k+" in config
+        # Without custom model for numbers, uses standard languages
+        assert "-l eng+por+fra+deu+rus+chi_sim" in config
 
     def test_get_config_custom_model_none(self) -> None:
         """Test getting config when custom model is None."""
@@ -314,5 +307,6 @@ class TestGetTesseractConfig:
 
         config = extractor.get_tesseract_config()
 
-        # Should not include model specification
-        assert " -l " not in config
+        # Uses standard languages when custom model is None
+        assert "-l eng+por+fra+deu+rus+chi_sim" in config
+        assert "tessedit_char_whitelist=0123456789k+" in config
