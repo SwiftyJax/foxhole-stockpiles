@@ -57,7 +57,7 @@ class TemplateManager:
                 return self._shared_databases[cache_key]
 
         # Load from file if not in cache
-        logger.info(
+        logger.debug(
             "Loading template database for resolution %s from %s",
             resolution,
             self.database_path,
@@ -81,7 +81,7 @@ class TemplateManager:
         with self._shared_lock:
             self._shared_databases[cache_key] = database
 
-        logger.info(
+        logger.debug(
             "Loaded database with %d templates for resolution %s",
             len(database.templates),
             resolution,

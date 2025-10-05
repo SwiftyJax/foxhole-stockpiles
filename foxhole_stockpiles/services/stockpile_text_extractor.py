@@ -109,7 +109,7 @@ class StockpileTextExtractor:
                 result.append(numbers)
                 self._logger.debug("Added %d numbers to result for line %d", len(numbers), line_idx)
 
-        self._logger.info("Successfully parsed %d rows from text", len(result))
+        self._logger.debug("Successfully parsed %d rows from text", len(result))
         return result
 
     def get_tesseract_config(self, numbers_only: bool = True) -> str:

@@ -72,7 +72,7 @@ class TestLoadDatabase:
 
         manager = TemplateManager(db_path)
 
-        with patch("logging.Logger.info") as mock_log:
+        with patch("logging.Logger.debug") as mock_log:
             db = await manager.load_database(SupportedResolution.R_1080)
 
         assert db is not None
@@ -100,7 +100,7 @@ class TestLoadDatabase:
         await manager.load_database(SupportedResolution.R_1080)
 
         # Load it again - should use cache
-        with patch("logging.Logger.info"):
+        with patch("logging.Logger.debug"):
             db = await manager.load_database(SupportedResolution.R_1080)
 
         assert db is not None

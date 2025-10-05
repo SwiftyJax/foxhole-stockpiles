@@ -51,6 +51,10 @@ class OCRCoordinator:
         Raises:
             ValueError: If image analysis fails
         """
+        import time
+
+        start_time = time.perf_counter()
+
         detector = self._detect_regions(image)
         self.scale_factor = detector.scale_factor
         stockpile_images = self._extract_stockpile_images(detector)
@@ -58,6 +62,24 @@ class OCRCoordinator:
         await self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
         scanned_stockpile = await self._match_icons_and_build_result(
             stockpile_images=stockpile_images, quantities=quantities
+        )
+
+        elapsed_time = time.perf_counter() - start_time
+
+        # Log summary
+        successful_items = len([item for item in scanned_stockpile.items if item.code != "Unknown"])
+        stockpile_type = scanned_stockpile.type.value if scanned_stockpile.type else "Unknown"
+        stockpile_name = scanned_stockpile.name if scanned_stockpile.name else "Unknown"
+
+        self.logger.info(
+            "%s:%s (%s). Scanned %d items (%d successful, %d unknown) in %.2fs",
+            stockpile_type,
+            stockpile_name,
+            scanned_stockpile.resolution,
+            len(scanned_stockpile.items),
+            successful_items,
+            len(scanned_stockpile.items) - successful_items,
+            elapsed_time,
         )
 
         return scanned_stockpile
@@ -81,9 +103,9 @@ class OCRCoordinator:
             if self.config.debug_mode:
                 detector.draw_and_save_results()
 
-            self.logger.info("- Resolution scale factor: %.3f", detector.scale_factor)
-            self.logger.info("- Detected %d quantity boxes", len(detector.quantities))
-            self.logger.info("- Detected %d icon groups", len(detector.groups))
+            self.logger.debug("- Resolution scale factor: %.3f", detector.scale_factor)
+            self.logger.debug("- Detected %d quantity boxes", len(detector.quantities))
+            self.logger.debug("- Detected %d icon groups", len(detector.groups))
 
             return detector
 
@@ -198,7 +220,7 @@ class OCRCoordinator:
         mod: str | None = None
 
         for group_index, (group_amount, group_start_index) in enumerate(stockpile_images.groups):
-            self.logger.info(
+            self.logger.debug(
                 "Processing group %d with %d icons starting at index %d",
                 group_index,
                 group_amount,
@@ -378,7 +400,7 @@ class OCRCoordinator:
         detected["crated"].append(icon_match.crated)
         detected["mod"].append(icon_match.mod)
 
-        self.logger.info(
+        self.logger.debug(
             "[%d] '%s%s', quantity: %d (confidence: %.2f) after testing %d candidates",
             icon_index,
             icon_match.code,

@@ -128,7 +128,7 @@ class StockpileDetector:
             self._settings.icon_to_quantity_offset * self.scale_factor
         )
 
-        self._logger.info(
+        self._logger.debug(
             "Image resolution: %dx%d. Scale factor: %.3f", width, height, self.scale_factor
         )
 
