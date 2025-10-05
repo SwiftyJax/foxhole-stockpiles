@@ -41,7 +41,8 @@ Create a file at `~/.fs_config` with JSON configuration:
   },
   "scanner": {
     "database_path": "/path/to/database.pkl",
-    "faction_filter": null
+    "faction_filter": null,
+    "screenshots_folder": ""
   },
   "output_format": {
     "output_format": "json",
@@ -138,9 +139,10 @@ Settings for the stockpile scanner.
 | `confidence_by_resolution` | object | `{}` | Resolution-specific confidence thresholds (e.g., `{"1080": 0.80, "2160": 0.90}`) |
 | `early_exit_threshold` | float | `0.95` | Early exit threshold for icon matching (0.0-1.0, must be > confidence_threshold) |
 | `faction_filter` | string\|null | `null` | Filter items by faction. Valid values: `"neutral"`, `"Colonials"`, `"Wardens"`, or `null` for all |
-| `custom_model` | string | `"custom"` | Tesseract custom OCR model name |
+| `custom_model` | string | `"renner_numbers"` | Tesseract custom OCR model name |
 | `tessdata_path` | string | `"./tessdata"` | Path to Tesseract data directory |
 | `debug_mode` | boolean | `false` | Enable debug mode to save debug images |
+| `screenshots_folder` | string | `""` | Folder to save screenshots before processing. Empty string disables saving. Screenshots are saved in daily subfolders with format: `Date_HourWithSeconds_StorageType_Name_Resolution.png` |
 | `max_ncc_candidates` | integer | `25` | Maximum number of NCC candidates to consider for matching |
 | `phash_threshold` | integer | `12` | Maximum Hamming distance for pHash filtering |
 
@@ -256,7 +258,17 @@ export FS_OUTPUT_FORMAT__WEBHOOK_TOKEN=webhook-token-456
 ```bash
 export FS_LOGGING__LOG_LEVEL=DEBUG
 export FS_LOGGING__LOG_FILE=/var/log/foxhole-scanner.log
-export FS_SCANNER__DEBUG_OUTPUT_PATH=/tmp/debug/
+export FS_SCANNER__DEBUG_MODE=true
+```
+
+### Save Screenshots for Analysis
+
+```bash
+# Save all processed screenshots to a folder
+export FS_SCANNER__SCREENSHOTS_FOLDER=screenshots
+
+# Screenshots will be organized in daily subfolders:
+# screenshots/2025-10-05/2025-10-05_14-30-45_Storage_Depot_My_Logi_1920x1080.png
 ```
 
 ### Production API Server
@@ -350,9 +362,10 @@ This example shows all available settings with their default values:
     "confidence_by_resolution": {},
     "early_exit_threshold": 0.95,
     "faction_filter": null,
-    "custom_model": "custom",
+    "custom_model": "renner_numbers",
     "tessdata_path": "./tessdata",
     "debug_mode": false,
+    "screenshots_folder": "",
     "max_ncc_candidates": 25,
     "phash_threshold": 12
   },
@@ -432,9 +445,10 @@ This table lists all available environment variables with their default values:
 | `FS_SCANNER__CONFIDENCE_BY_RESOLUTION__<RESOLUTION>` | float | N/A | Resolution-specific threshold (e.g., `__1080`, `__1440`, `__2160`) |
 | `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.95` | Early exit threshold |
 | `FS_SCANNER__FACTION_FILTER` | string\|null | `null` | Faction filter (`"neutral"`, `"Colonials"`, `"Wardens"`, or `null`) |
-| `FS_SCANNER__CUSTOM_MODEL` | string | `"custom"` | Tesseract custom model name |
+| `FS_SCANNER__CUSTOM_MODEL` | string | `"renner_numbers"` | Tesseract custom model name |
 | `FS_SCANNER__TESSDATA_PATH` | string | `"./tessdata"` | Tesseract data directory |
 | `FS_SCANNER__DEBUG_MODE` | boolean | `false` | Enable debug image output |
+| `FS_SCANNER__SCREENSHOTS_FOLDER` | string | `""` | Folder to save screenshots (empty to disable) |
 | `FS_SCANNER__MAX_NCC_CANDIDATES` | integer | `25` | Max NCC candidates |
 | `FS_SCANNER__PHASH_THRESHOLD` | integer | `12` | pHash Hamming distance threshold |
 | **Templates** | | | |

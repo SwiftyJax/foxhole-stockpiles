@@ -73,6 +73,70 @@ class TestOCRCoordinatorInitialization:
         assert coordinator._text_extractor.custom_model == "custom_model"
 
 
+class TestSaveScreenshot:
+    """Test suite for OCRCoordinator screenshot saving functionality."""
+
+    def test_save_screenshot_disabled(self, tmp_path: Path) -> None:
+        """Test that screenshot is not saved when screenshots_folder is empty.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = OCRCoordinatorConfig(database_path=db_path, screenshots_folder="")
+        coordinator = OCRCoordinator(config)
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_stockpile = Stockpile(resolution="1920x1080")
+
+        coordinator._save_screenshot_with_metadata(mock_image, mock_stockpile)
+
+        # No screenshots folder should be created
+        assert not (tmp_path / "screenshots").exists()
+
+    def test_save_screenshot_enabled(self, tmp_path: Path) -> None:
+        """Test that screenshot is saved when screenshots_folder is set.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        screenshots_folder = tmp_path / "screenshots"
+        config = OCRCoordinatorConfig(
+            database_path=db_path, screenshots_folder=str(screenshots_folder)
+        )
+        coordinator = OCRCoordinator(config)
+
+        from foxhole_stockpiles.enums.stockpile_type import StockpileType
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_stockpile = Stockpile(
+            resolution="1920x1080", name="Test Storage", type=StockpileType.STORAGE_DEPOT
+        )
+
+        coordinator._save_screenshot_with_metadata(mock_image, mock_stockpile)
+
+        # Check that daily folder was created
+        from datetime import datetime
+
+        daily_folder = screenshots_folder / datetime.now().strftime("%Y-%m-%d")
+        assert daily_folder.exists()
+
+        # Check that a screenshot file was created
+        screenshots = list(daily_folder.glob("*.png"))
+        assert len(screenshots) == 1
+
+        # Verify filename format
+        filename = screenshots[0].name
+        assert "Storage_Depot" in filename
+        assert "Test_Storage" in filename
+        assert "1920x1080" in filename
+
+
 class TestAnalyzeStockpile:
     """Test suite for OCRCoordinator.analyze_stockpile method.
 

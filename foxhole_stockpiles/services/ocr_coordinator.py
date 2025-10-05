@@ -1,6 +1,8 @@
 """OCR Coordinator service for orchestrating stockpile detection."""
 
 import logging
+from datetime import datetime
+from pathlib import Path
 from typing import Any, ClassVar
 
 import cv2
@@ -31,6 +33,7 @@ class OCRCoordinator:
         self.logger = logging.getLogger(__name__)
         self.threshold_value: float = 0.0
         self.scale_factor: float = 1.0
+        self._screenshot_data: tuple[NDArray[np.uint8], str] | None = None
 
         # Initialize services
         self._text_extractor = StockpileTextExtractor(
@@ -38,6 +41,48 @@ class OCRCoordinator:
         )
         self._template_manager = TemplateManager(database_path=config.database_path)
         self._stockpile_type_classifier = StockpileTypeClassifier()
+
+    def _save_screenshot_with_metadata(
+        self, image: NDArray[np.uint8], stockpile: Stockpile
+    ) -> None:
+        """Save screenshot with metadata to folder.
+
+        Args:
+            image (NDArray[np.uint8]): Image to save (RGB format)
+            stockpile (Stockpile): Stockpile with metadata for filename
+        """
+        if not self.config.screenshots_folder:
+            return
+
+        try:
+            # Create base folder and daily subfolder
+            base_folder = Path(self.config.screenshots_folder)
+            daily_folder = base_folder / datetime.now().strftime("%Y-%m-%d")
+            daily_folder.mkdir(parents=True, exist_ok=True)
+
+            # Generate filename: Date_HourWithSeconds_StorageType_Name_Resolution.png
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+            storage_type = stockpile.type if stockpile.type else "Unknown"
+            name = stockpile.name if stockpile.name else "Unknown"
+            # Sanitize storage type and name for filename
+            storage_type = "".join(
+                c if c.isalnum() or c in (" ", "-", "_") else "_" for c in storage_type
+            )
+            storage_type = storage_type.replace(" ", "_")
+            name = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_" for c in name)
+            name = name.replace(" ", "_")
+            resolution = stockpile.resolution
+            filename = f"{timestamp}_{storage_type}_{name}_{resolution}.png"
+            filepath = daily_folder / filename
+
+            # Convert RGB to BGR for OpenCV
+            bgr_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            cv2.imwrite(str(filepath), bgr_image)
+
+            self.logger.debug("Screenshot saved to: %s", filepath)
+
+        except Exception as e:
+            self.logger.error("Failed to save screenshot: %s", e)
 
     async def analyze_stockpile(self, image: NDArray[np.uint8]) -> Stockpile:
         """Analyze a stockpile image and return detected items with quantities.
@@ -65,6 +110,9 @@ class OCRCoordinator:
         )
 
         elapsed_time = time.perf_counter() - start_time
+
+        # Save screenshot with metadata if enabled
+        self._save_screenshot_with_metadata(image, scanned_stockpile)
 
         # Log summary
         successful_items = len([item for item in scanned_stockpile.items if item.code != "Unknown"])

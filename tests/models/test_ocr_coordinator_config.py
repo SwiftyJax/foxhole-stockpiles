@@ -40,6 +40,7 @@ class TestOCRCoordinatorConfigInitialization:
         assert config.custom_model == "renner_numbers"
         assert config.tessdata_path == "./tessdata"
         assert config.debug_mode is False
+        assert config.screenshots_folder == ""
         assert config.max_ncc_candidates == 25
         assert config.phash_threshold == 12
 
@@ -60,6 +61,7 @@ class TestOCRCoordinatorConfigInitialization:
             custom_model="my_model",
             tessdata_path="/custom/tessdata",
             debug_mode=True,
+            screenshots_folder="screenshots",
             max_ncc_candidates=50,
             phash_threshold=15,
         )
@@ -71,6 +73,7 @@ class TestOCRCoordinatorConfigInitialization:
         assert config.custom_model == "my_model"
         assert config.tessdata_path == "/custom/tessdata"
         assert config.debug_mode is True
+        assert config.screenshots_folder == "screenshots"
         assert config.max_ncc_candidates == 50
         assert config.phash_threshold == 15
 
