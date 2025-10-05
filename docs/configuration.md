@@ -94,6 +94,11 @@ Settings for the API server.
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `cors_allow_origins` | array[string] | `["*"]` | List of allowed CORS origins. Use `["*"]` to allow all origins |
+| `host` | string | `"127.0.0.1"` | Server bind host address |
+| `port` | integer | `8000` | Server bind port (1-65535) |
+| `workers` | integer | `1` | Number of worker processes |
+| `reload` | boolean | `false` | Enable auto-reload on code changes (development only) |
+| `log_level` | string | `"info"` | Server log level (`"debug"`, `"info"`, `"warning"`, `"error"`) |
 
 **Examples:**
 ```bash
@@ -102,6 +107,11 @@ export FS_API_SERVER__CORS_ALLOW_ORIGINS='["*"]'
 
 # Allow specific origins (production)
 export FS_API_SERVER__CORS_ALLOW_ORIGINS='["https://yourdomain.com","https://app.yourdomain.com"]'
+
+# Production server configuration
+export FS_API_SERVER__HOST=0.0.0.0
+export FS_API_SERVER__PORT=8080
+export FS_API_SERVER__WORKERS=4
 ```
 
 ### API Authentication (`api_auth`)
@@ -110,10 +120,10 @@ Controls authentication for the API server endpoints.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `auth_type` | string\|null | `null` | Authentication method: `"basic"`, `"bearer"`, custom header name, or `null` to disable |
+| `auth_type` | string\|null | `null` | Authentication method. Valid values: `"basic"`, `"bearer"`, or `null` to disable |
 | `auth_token` | string\|null | `null` | Authentication token/credentials |
 
-**Note:** Both `auth_type` and `auth_token` must be set together or both be `null`.
+**Note:** Both `auth_type` and `auth_token` must be set together or both be `null`. The `"forward"` auth type is not supported for API authentication.
 
 See [API Authentication](api-authentication.md) for detailed examples.
 
@@ -123,10 +133,16 @@ Settings for the stockpile scanner.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `database_path` | string | `"foxhole_templates.pkl"` | Path to the template database file |
-| `faction_filter` | string\|null | `null` | Filter items by faction: `"colonials"`, `"wardens"`, or `null` for all |
-| `min_confidence` | float | `0.8` | Minimum confidence threshold for template matching (0.0-1.0) |
-| `debug_output_path` | string\|null | `null` | Path to save debug images, or `null` to disable |
+| `database_path` | string | `"database.pkl"` | Path to the template database file |
+| `confidence_threshold` | float | `0.85` | Default minimum confidence threshold for icon matching (0.0-1.0) |
+| `confidence_by_resolution` | object | `{}` | Resolution-specific confidence thresholds (e.g., `{"1080": 0.80, "2160": 0.90}`) |
+| `early_exit_threshold` | float | `0.95` | Early exit threshold for icon matching (0.0-1.0, must be > confidence_threshold) |
+| `faction_filter` | string\|null | `null` | Filter items by faction. Valid values: `"neutral"`, `"Colonials"`, `"Wardens"`, or `null` for all |
+| `custom_model` | string | `"custom"` | Tesseract custom OCR model name |
+| `tessdata_path` | string | `"./tessdata"` | Path to Tesseract data directory |
+| `debug_mode` | boolean | `false` | Enable debug mode to save debug images |
+| `max_ncc_candidates` | integer | `25` | Maximum number of NCC candidates to consider for matching |
+| `phash_threshold` | integer | `12` | Maximum Hamming distance for pHash filtering |
 
 ### Output Format (`output_format`)
 
@@ -134,12 +150,12 @@ Controls how scanner results are output.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `output_format` | string | `"json"` | Output format: `"json"`, `"console"`, `"file"`, or `"webhook"` |
+| `output_format` | string | `"json"` | Output format. Valid values: `"console"`, `"file"`, `"json"`, `"webhook"` |
 | `file_path` | string | `"output.json"` | Path for file output (supports `{timestamp}` placeholder) |
 | `webhook_url` | string\|null | `null` | Webhook URL for sending results |
-| `webhook_auth_type` | string\|null | `null` | Webhook authentication: `"basic"`, `"bearer"`, or custom header |
-| `webhook_token` | string\|null | `null` | Token for webhook authentication |
-| `webhook_client_auth_header` | string\|null | `null` | Header name to pass through from API client to webhook |
+| `webhook_auth_type` | string\|null | `null` | Webhook authentication. Valid values: `"basic"`, `"bearer"`, `"forward"`, or `null` |
+| `webhook_token` | string\|null | `null` | Token for webhook authentication (required when auth_type is `"basic"` or `"bearer"`) |
+| `webhook_client_auth_header` | string\|null | `null` | Header name to pass through from API client to webhook (required when auth_type is `"forward"`) |
 
 See [Webhooks](webhooks.md) for webhook configuration details.
 
@@ -177,6 +193,30 @@ Fine-tune OCR detection parameters (advanced users only).
 | `pixel_diff_tolerance` | int | `2` | Pixel error tolerance |
 
 **Note:** Only modify these if you understand the OCR detection algorithm. Incorrect values may reduce accuracy.
+
+### Stockpile Types (`stockpile_types`)
+
+Configure localized stockpile type names for different languages.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `encampment` | array[string] | `["Encampment", "Campement", ...]` | Localized names for Encampment stockpile type |
+| `keep` | array[string] | `["Keep", "Place Forte", ...]` | Localized names for Keep stockpile type |
+| `safe_house` | array[string] | `["Safe House", "Planque", ...]` | Localized names for Safe House stockpile type |
+| `relic_base` | array[string] | `["Relic Base", "Base Relique", ...]` | Localized names for Relic Base stockpile type |
+| `bunker_base` | array[string] | `["Bunker Base", "Base Bunker", ...]` | Localized names for Bunker Base stockpile type |
+| `border_base` | array[string] | `["Border Base", "Base Frontalière", ...]` | Localized names for Border Base stockpile type |
+| `town_base` | array[string] | `["Town Base", "Quartier Général", ...]` | Localized names for Town Base stockpile type |
+| `bms_longhook` | array[string] | `["BMS - Longhook"]` | Localized names for BMS - Longhook stockpile type |
+| `storage_depot` | array[string] | `["Storage Depot", "Dépôt", ...]` | Localized names for Storage Depot stockpile type |
+| `seaport` | array[string] | `["Seaport", "Port", ...]` | Localized names for Seaport stockpile type |
+| `undefined` | array[string] | `["Undefined"]` | Localized names for Undefined stockpile type |
+
+**Note:** These settings define how stockpile types are recognized. The defaults include translations for different game languages (English, French, German, Portuguese, Russian, Chinese). You may need to modify these if:
+- Tesseract OCR misreads stockpile names (e.g., "Bumker base" instead of "Bunker base")
+- You want to add support for additional languages
+
+When adding OCR misreads, include all default values plus the misread variation (e.g., for bunker_base, add "Bumker base" to the existing array).
 
 ### Templates (`templates`)
 
@@ -316,6 +356,19 @@ This example shows all available settings with their default values:
     "max_ncc_candidates": 25,
     "phash_threshold": 12
   },
+  "stockpile_types": {
+    "encampment": ["Encampment", "Campement", "Feldlager", "Acampamento", "Лагерь", "营地"],
+    "keep": ["Keep", "Place Forte", "Wehrturm", "Torreão", "Крепость", "要塞"],
+    "safe_house": ["Safe House", "Planque", "Unterschlupf", "Casa Fortificada", "Yбeжищe", "安全屋"],
+    "relic_base": ["Relic Base", "Base Relique", "Reliktbasis", "Base Relíquia", "Peликтoвая база", "遗迹基地"],
+    "bunker_base": ["Bunker Base", "Base Bunker", "Bunkerbasis", "Centro do Bunker", "Base de Bunker", "Base de Casamata", "Бункерная база", "Бункерная База", "地堡基地"],
+    "border_base": ["Border Base", "Base Frontalière", "Grenzbasis", "Base Fronteiriça", "Пограничная База", "边境基地"],
+    "town_base": ["Town Base", "Quartier Général", "Stadtkernbasis", "Base de Cidade", "Ратуша", "城镇基地"],
+    "bms_longhook": ["BMS - Longhook"],
+    "storage_depot": ["Storage Depot", "Dépôt", "Lagerdepot", "Depósito", "Складское Помещение", "仓库"],
+    "seaport": ["Seaport", "Port", "Seehafen", "Porto", "Морской порт", "海港"],
+    "undefined": ["Undefined"]
+  },
   "templates": {
     "crate_blue_multiplier": 145,
     "crate_blue_offset": 82,
@@ -335,8 +388,13 @@ This table lists all available environment variables with their default values:
 |---------------------|------|---------------|-------------|
 | **API Server** | | | |
 | `FS_API_SERVER__CORS_ALLOW_ORIGINS` | JSON array | `["*"]` | CORS allowed origins |
+| `FS_API_SERVER__HOST` | string | `"127.0.0.1"` | Server bind host |
+| `FS_API_SERVER__PORT` | integer | `8000` | Server bind port |
+| `FS_API_SERVER__WORKERS` | integer | `1` | Number of worker processes |
+| `FS_API_SERVER__RELOAD` | boolean | `false` | Enable auto-reload |
+| `FS_API_SERVER__LOG_LEVEL` | string | `"info"` | Server log level (`"debug"`, `"info"`, `"warning"`, `"error"`) |
 | **API Authentication** | | | |
-| `FS_API_AUTH__AUTH_TYPE` | string\|null | `null` | API authentication type |
+| `FS_API_AUTH__AUTH_TYPE` | string\|null | `null` | API auth type (`"basic"`, `"bearer"`, or `null`) |
 | `FS_API_AUTH__AUTH_TOKEN` | string\|null | `null` | API authentication token |
 | **Logging** | | | |
 | `FS_LOGGING__LOGGERS` | JSON object | `{}` | Per-logger level overrides (see special syntax below) |
@@ -361,9 +419,9 @@ This table lists all available environment variables with their default values:
 | `FS_OCR__GRAY_UPPER` | integer | `98` | Quantity box bright threshold |
 | `FS_OCR__PIXEL_DIFF_TOLERANCE` | integer | `2` | Pixel error tolerance |
 | **Output Format** | | | |
-| `FS_OUTPUT_FORMAT__OUTPUT_FORMAT` | string | `"json"` | Output format type |
+| `FS_OUTPUT_FORMAT__OUTPUT_FORMAT` | string | `"json"` | Output format (`"console"`, `"file"`, `"json"`, `"webhook"`) |
 | `FS_OUTPUT_FORMAT__FILE_PATH` | string | `"output.json"` | File output path |
-| `FS_OUTPUT_FORMAT__WEBHOOK_AUTH_TYPE` | string\|null | `null` | Webhook auth type |
+| `FS_OUTPUT_FORMAT__WEBHOOK_AUTH_TYPE` | string\|null | `null` | Webhook auth type (`"basic"`, `"bearer"`, `"forward"`, or `null`) |
 | `FS_OUTPUT_FORMAT__WEBHOOK_TOKEN` | string\|null | `null` | Webhook auth token |
 | `FS_OUTPUT_FORMAT__WEBHOOK_URL` | string\|null | `null` | Webhook URL |
 | `FS_OUTPUT_FORMAT__WEBHOOK_CLIENT_AUTH_HEADER` | string\|null | `null` | Client auth header to pass through |
@@ -373,7 +431,7 @@ This table lists all available environment variables with their default values:
 | `FS_SCANNER__CONFIDENCE_BY_RESOLUTION` | JSON object | `{}` | Per-resolution confidence thresholds (see special syntax below) |
 | `FS_SCANNER__CONFIDENCE_BY_RESOLUTION__<RESOLUTION>` | float | N/A | Resolution-specific threshold (e.g., `__1080`, `__1440`, `__2160`) |
 | `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.95` | Early exit threshold |
-| `FS_SCANNER__FACTION_FILTER` | string\|null | `null` | Faction filter |
+| `FS_SCANNER__FACTION_FILTER` | string\|null | `null` | Faction filter (`"neutral"`, `"Colonials"`, `"Wardens"`, or `null`) |
 | `FS_SCANNER__CUSTOM_MODEL` | string | `"custom"` | Tesseract custom model name |
 | `FS_SCANNER__TESSDATA_PATH` | string | `"./tessdata"` | Tesseract data directory |
 | `FS_SCANNER__DEBUG_MODE` | boolean | `false` | Enable debug image output |
