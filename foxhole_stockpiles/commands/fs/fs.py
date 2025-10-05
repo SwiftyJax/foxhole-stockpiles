@@ -5,6 +5,7 @@ import importlib
 import sys
 from typing import Any
 
+from foxhole_stockpiles import __version__
 from foxhole_stockpiles.models.command_info import CommandInfo
 
 
@@ -191,7 +192,7 @@ def main() -> None:
 
     # Special handling for version requests
     if command in ["--version", "-v", "version"]:
-        print("Foxhole Stockpiles v0.1.0")
+        print(f"Foxhole Stockpiles v{__version__}")
         return
 
     # Modify sys.argv to remove the 'fs' part and keep the subcommand arguments

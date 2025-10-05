@@ -7,32 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
-- Initial public release of Foxhole Stockpiles
-- Complete asset extraction pipeline from PAK files
-- Template generation with resolution-specific variants
-- Binary database builder with validation
-- Stockpile scanner with OCR quantity detection
-- Custom Tesseract model for Renner font recognition
-- FastAPI server with HTTP API endpoints
-- Docker and docker-compose deployment support
-- Comprehensive documentation suite
-- CI/CD pipeline with GitHub Actions
-- Code coverage reporting with codecov
-- Authentication support (Bearer tokens)
-- Webhook integration for external systems
-- Inspector tool for debugging template matching
-- Multi-resolution support (16 resolutions)
-- Two-phase icon matching (pHash + NCC)
-
-### Changed
-- Development status updated to Beta
-- Color format handling standardized to BGR across CLI and API
+## [0.1.1] - 2025-10-05
 
 ### Fixed
-- Image loading consistency between CLI and API endpoints
-- Docker multi-stage build optimization
-- Module import paths in Docker container
+- **Critical**: Fixed contour sorting and column tracking for accurate quantity detection in stockpile screenshots
+- **Critical**: Fixed UTF-8 encoding when reading JSON config files on Windows (supports Russian/Chinese characters)
+- Fixed webhook authentication header forwarding (requires `"webhook_auth_type": "forward"`)
+- Fixed reading settings from `.fs_config` file
+- Fixed test suite after authentication changes
+
+### Changed
+- Changed OCR to use per-call `--tessdata-dir` parameter instead of global `TESSDATA_PREFIX` environment variable
+- Renamed custom OCR model from "custom" to "renner_numbers" for clarity
+- Custom model now used only for quantity detection; standard Tesseract models used for text
+
+### Added
+- Added fuzzy matching for common OCR errors in stockpile type detection ("Seapon" → "Seaport")
+- Added case-insensitive matching for stockpile type classification
+
+### Documentation
+- Updated configuration documentation with all available options
+- Clarified that `renner_numbers` model is bundled and required for quantity detection
+- Added platform-specific instructions for installing optional language packs (Russian, Chinese, Portuguese, French, German)
+- Documented multilingual OCR support
 
 ## [0.1.0] - 2025-10-03
 
@@ -65,5 +62,6 @@ Initial beta release.
 - Test coverage >80%
 - CI/CD with GitHub Actions
 
-[Unreleased]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/xurxogr/foxhole-stockpiles/releases/tag/v0.1.0

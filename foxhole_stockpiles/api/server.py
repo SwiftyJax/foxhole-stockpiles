@@ -12,6 +12,7 @@ from fastapi import Depends, FastAPI, HTTPException, Query, Request, UploadFile,
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
+from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.auth import create_auth_dependency
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
@@ -56,7 +57,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 app = FastAPI(
     title="Foxhole Stockpile Scanner API",
     description="API for analyzing Foxhole stockpile screenshots and extracting item data",
-    version="0.1.0",
+    version=__version__,
     lifespan=lifespan,
 )
 
@@ -80,7 +81,7 @@ async def root() -> HealthResponse:
     Returns:
         HealthResponse: Basic API status and version information
     """
-    return HealthResponse(status="running", version="0.1.0")
+    return HealthResponse(status="running", version=__version__)
 
 
 @app.get("/health", response_model=HealthResponse)
@@ -93,7 +94,7 @@ async def health_check() -> HealthResponse:
     Raises:
         HTTPException: If application settings not initialized (503 status)
     """
-    return HealthResponse(status="healthy", version="0.1.0")
+    return HealthResponse(status="healthy", version=__version__)
 
 
 @app.post("/ocr/scan_image", dependencies=[Depends(auth_dependency)])

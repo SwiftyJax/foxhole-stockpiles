@@ -12,6 +12,7 @@ import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
+from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.server import app
 from foxhole_stockpiles.enums.auth_type import AuthType
 
@@ -69,7 +70,7 @@ class TestHealthEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "healthy"
-        assert data["version"] == "0.1.0"
+        assert data["version"] == __version__
 
 
 class TestErrorHandling:
@@ -156,7 +157,7 @@ class TestRootEndpoint:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "running"
-        assert data["version"] == "0.1.0"
+        assert data["version"] == __version__
 
     def test_root_endpoint_response_model(self, client: TestClient) -> None:
         """Test root endpoint conforms to HealthResponse model.
@@ -359,7 +360,7 @@ class TestLifespan:
 
         schema = response.json()
         assert schema["info"]["title"] == "Foxhole Stockpile Scanner API"
-        assert schema["info"]["version"] == "0.1.0"
+        assert schema["info"]["version"] == __version__
 
     @patch("foxhole_stockpiles.api.server.setup_logging")
     @patch("logging.getLogger")
