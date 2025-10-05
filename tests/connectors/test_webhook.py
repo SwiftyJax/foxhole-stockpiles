@@ -13,6 +13,7 @@ from httpx import ConnectTimeout, HTTPStatusError
 
 from foxhole_stockpiles.connectors.webhook import WebhookConnector, async_retry_on_connect_timeout
 from foxhole_stockpiles.core.settings import OutputFormatSettings
+from foxhole_stockpiles.enums.auth_type import AuthType
 
 
 @pytest.fixture
@@ -24,7 +25,7 @@ def output_settings() -> OutputFormatSettings:
     """
     return OutputFormatSettings(
         webhook_url="https://example.com/webhook",
-        webhook_auth_type="bearer",
+        webhook_auth_type=AuthType.BEARER,
         webhook_token="test_token_123",
     )
 
@@ -89,7 +90,7 @@ class TestWebhookConnector:
         Args:
             output_settings (OutputFormatSettings): Output settings fixture.
         """
-        output_settings.webhook_auth_type = "basic"
+        output_settings.webhook_auth_type = AuthType.BASIC
         output_settings.webhook_token = "dGVzdDpwYXNzd29yZA=="  # base64 of test:password
 
         connector = WebhookConnector(output_settings)
@@ -97,17 +98,18 @@ class TestWebhookConnector:
 
         assert headers == {"Authorization": "Basic dGVzdDpwYXNzd29yZA=="}
 
-    def test_build_auth_headers_custom(self, output_settings: OutputFormatSettings) -> None:
-        """Test building custom auth headers.
+    def test_build_auth_headers_forward(self, output_settings: OutputFormatSettings) -> None:
+        """Test building forward auth headers.
 
         Args:
             output_settings (OutputFormatSettings): Output settings fixture.
         """
-        output_settings.webhook_auth_type = "X-API-Key"
-        output_settings.webhook_token = "secret_api_key"
+        output_settings.webhook_auth_type = AuthType.FORWARD
+        output_settings.webhook_client_auth_header = "X-API-Key"
 
         connector = WebhookConnector(output_settings)
-        headers = connector._build_auth_headers()
+        # Forward auth passes the token through with the custom header name
+        headers = connector._build_auth_headers(token="secret_api_key")
 
         assert headers == {"X-API-Key": "secret_api_key"}
 

@@ -19,6 +19,7 @@ from foxhole_stockpiles.core.settings import (
     StockpileTypesSettings,
     get_settings,
 )
+from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.output_format import OutputFormat
 
 
@@ -157,14 +158,14 @@ class TestOutputFormatSettings:
             output_format=OutputFormat.FILE,
             file_path="custom.txt",
             webhook_url="https://example.com/webhook",
-            webhook_auth_type="bearer",
+            webhook_auth_type=AuthType.BEARER,
             webhook_token="secret_token",
         )
 
         assert settings.output_format == OutputFormat.FILE
         assert settings.file_path == "custom.txt"
         assert settings.webhook_url == "https://example.com/webhook"
-        assert settings.webhook_auth_type == "bearer"
+        assert settings.webhook_auth_type == AuthType.BEARER
         assert settings.webhook_token == "secret_token"
 
     def test_output_format_webhook_validation(self) -> None:
@@ -191,22 +192,31 @@ class TestOutputFormatSettings:
 
     def test_auth_consistency_validation(self) -> None:
         """Test webhook auth consistency validation."""
-        # Should fail when only auth_type is provided
+        # Should fail when bearer/basic auth_type is provided without token
         with pytest.raises(ValidationError) as exc_info:
-            OutputFormatSettings(webhook_auth_type="bearer")
+            OutputFormatSettings(webhook_auth_type=AuthType.BEARER)
 
-        assert "webhook_auth_type and webhook_token must both be set" in str(exc_info.value)
+        assert "webhook_token must be set when webhook_auth_type is 'bearer'" in str(exc_info.value)
 
-        # Should fail when only token is provided
+        # Should fail when forward auth_type is provided without client header
         with pytest.raises(ValidationError) as exc_info:
-            OutputFormatSettings(webhook_token="token")
+            OutputFormatSettings(webhook_auth_type=AuthType.FORWARD)
 
-        assert "webhook_auth_type and webhook_token must both be set" in str(exc_info.value)
+        assert "webhook_client_auth_header must be set when webhook_auth_type is 'forward'" in str(
+            exc_info.value
+        )
 
-        # Should pass when both are provided
-        settings = OutputFormatSettings(webhook_auth_type="bearer", webhook_token="token")
-        assert settings.webhook_auth_type == "bearer"
+        # Should pass when bearer and token are provided
+        settings = OutputFormatSettings(webhook_auth_type=AuthType.BEARER, webhook_token="token")
+        assert settings.webhook_auth_type == AuthType.BEARER
         assert settings.webhook_token == "token"
+
+        # Should pass when forward and client_auth_header are provided
+        settings = OutputFormatSettings(
+            webhook_auth_type=AuthType.FORWARD, webhook_client_auth_header="X-Auth"
+        )
+        assert settings.webhook_auth_type == AuthType.FORWARD
+        assert settings.webhook_client_auth_header == "X-Auth"
 
 
 class TestStockpileTypesSettings:
