@@ -417,8 +417,9 @@ class OCRCoordinator:
         confidence_threshold = self.config.get_confidence_threshold(resolution)
 
         self.logger.debug(
-            "Using confidence threshold %.3f for resolution %d",
+            "Using confidence threshold %.3f and early exit threshold %.3f for resolution %d",
             confidence_threshold,
+            self.config.early_exit_threshold,
             stockpile_images.vertical_resolution,
         )
 

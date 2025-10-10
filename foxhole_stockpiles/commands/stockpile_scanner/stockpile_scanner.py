@@ -62,7 +62,6 @@ async def main() -> dict[str, Any] | None:
     parser.add_argument(
         "--early_exit",
         type=float,
-        default=0.95,
         help="Early exit threshold for icon matching (default: 0.95).",
     )
     parser.add_argument(
@@ -144,7 +143,8 @@ async def main() -> dict[str, Any] | None:
             scanner_settings.confidence_threshold = args.confidence
         scanner_settings.faction_filter = faction_filter
         scanner_settings.debug_mode = args.debug_image
-        scanner_settings.early_exit_threshold = args.early_exit
+        if args.early_exit:
+            scanner_settings.early_exit_threshold = args.early_exit
 
         coordinator = OCRCoordinator(scanner_settings)
         stockpile: Stockpile = await coordinator.analyze_stockpile(image)
