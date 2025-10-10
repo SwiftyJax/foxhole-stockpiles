@@ -410,6 +410,98 @@ class TestGetCandidates:
         # Invalid category should be treated as no filter
         assert len(candidates) == 5
 
+    def test_get_candidates_exclude_single_code(self, populated_db: TemplateDatabase) -> None:
+        """Test excluding a single item code.
+
+        Args:
+            populated_db (TemplateDatabase): Populated database from fixture.
+        """
+        candidates = populated_db.get_candidates(excluded_codes=["BasicRifle"])
+
+        # Should exclude BasicRifle (index 0)
+        assert 0 not in candidates
+        assert 1 in candidates  # ColonialRifle
+        assert 2 in candidates  # WardenTank
+        assert 3 in candidates  # CratedSupplies
+        assert 4 in candidates  # ModItem
+        assert len(candidates) == 4
+
+    def test_get_candidates_exclude_multiple_codes(self, populated_db: TemplateDatabase) -> None:
+        """Test excluding multiple item codes.
+
+        Args:
+            populated_db (TemplateDatabase): Populated database from fixture.
+        """
+        candidates = populated_db.get_candidates(excluded_codes=["BasicRifle", "WardenTank"])
+
+        # Should exclude BasicRifle (index 0) and WardenTank (index 2)
+        assert 0 not in candidates
+        assert 1 in candidates  # ColonialRifle
+        assert 2 not in candidates
+        assert 3 in candidates  # CratedSupplies
+        assert 4 in candidates  # ModItem
+        assert len(candidates) == 3
+
+    def test_get_candidates_exclude_with_other_filters(
+        self, populated_db: TemplateDatabase
+    ) -> None:
+        """Test excluded_codes combined with other filters.
+
+        Args:
+            populated_db (TemplateDatabase): Populated database from fixture.
+        """
+        candidates = populated_db.get_candidates(
+            faction=ItemFaction.COLONIALS, excluded_codes=["BasicRifle"]
+        )
+
+        # Should include colonial items + neutral items, but exclude BasicRifle
+        assert 0 not in candidates  # BasicRifle (excluded)
+        assert 1 in candidates  # ColonialRifle
+        assert 3 in candidates  # CratedSupplies (neutral)
+        assert 4 in candidates  # ModItem (neutral)
+        assert 2 not in candidates  # WardenTank (filtered by faction)
+
+    def test_get_candidates_exclude_nonexistent_code(self, populated_db: TemplateDatabase) -> None:
+        """Test excluding a code that doesn't exist.
+
+        Args:
+            populated_db (TemplateDatabase): Populated database from fixture.
+        """
+        candidates = populated_db.get_candidates(excluded_codes=["NonexistentItem"])
+
+        # Should return all items (nonexistent code doesn't affect anything)
+        assert len(candidates) == 5
+
+    def test_get_candidates_exclude_all_codes(self, populated_db: TemplateDatabase) -> None:
+        """Test excluding all item codes.
+
+        Args:
+            populated_db (TemplateDatabase): Populated database from fixture.
+        """
+        all_codes = [
+            "BasicRifle",
+            "ColonialRifle",
+            "WardenTank",
+            "CratedSupplies",
+            "ModItem",
+        ]
+        candidates = populated_db.get_candidates(excluded_codes=all_codes)
+
+        # Should return no candidates
+        assert len(candidates) == 0
+        assert candidates == []
+
+    def test_get_candidates_exclude_empty_list(self, populated_db: TemplateDatabase) -> None:
+        """Test with empty excluded_codes list.
+
+        Args:
+            populated_db (TemplateDatabase): Populated database from fixture.
+        """
+        candidates = populated_db.get_candidates(excluded_codes=[])
+
+        # Should return all items (empty list means no exclusions)
+        assert len(candidates) == 5
+
 
 class TestDatabaseUtilities:
     """Test suite for TemplateDatabase utility methods.

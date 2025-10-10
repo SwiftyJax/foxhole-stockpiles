@@ -139,6 +139,7 @@ class TemplateManager:
         category: ItemCategory | None = None,
         crated: bool | None = None,
         code: str | None = None,
+        excluded_codes: list[str] | None = None,
         confidence_threshold: float = 0.85,
         phash_threshold: int = 12,
         max_ncc_candidates: int = 25,
@@ -153,6 +154,7 @@ class TemplateManager:
             category (ItemCategory | None): Optional category filter
             crated (bool | None): Optional crated filter
             code (str | None): Optional item code filter
+            excluded_codes (list[str] | None): Optional list of item codes to exclude from matching
             confidence_threshold (float): Minimum confidence for icon match
             phash_threshold (int): Maximum Hamming distance for pHash filtering
             max_ncc_candidates (int): Maximum candidates for NCC optimization
@@ -167,7 +169,12 @@ class TemplateManager:
 
         # Get candidates using filters
         candidates = self.active_database.get_candidates(
-            faction=faction, mod=mod, category=category, crated=crated, code=code
+            faction=faction,
+            mod=mod,
+            category=category,
+            crated=crated,
+            code=code,
+            excluded_codes=excluded_codes,
         )
 
         icon_result = None

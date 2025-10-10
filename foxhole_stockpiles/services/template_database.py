@@ -58,6 +58,7 @@ class TemplateDatabase:
         category: ItemCategory | None = None,
         crated: bool | None = None,
         code: str | None = None,
+        excluded_codes: list[str] | None = None,
     ) -> list[int]:
         """Get candidate template indices using faction, mod, category, and crated filters.
 
@@ -68,6 +69,7 @@ class TemplateDatabase:
             crated (bool | None): Optional crated filter (True for crated only,
                 False for normal only, None for both)
             code (str | None): Optional item code filter
+            excluded_codes (list[str] | None): Optional list of item codes to exclude from results
 
         Returns:
             list[int]: Candidate template indices for matching
@@ -105,10 +107,19 @@ class TemplateDatabase:
                     crated_candidates.append(idx)
             candidates = set(crated_candidates)
 
+        # Apply excluded_codes filter if specified
+        if excluded_codes:
+            excluded_candidates = []
+            for idx in candidates:
+                template = self.templates[idx]
+                if template.code not in excluded_codes:
+                    excluded_candidates.append(idx)
+            candidates = set(excluded_candidates)
+
         logger.debug(
             (
                 "Candidate filtering: faction=%s, mod=%s, category=%s, crated=%s, "
-                "candidates=%d, code=%s"
+                "candidates=%d, code=%s, excluded_codes=%s"
             ),
             faction.value if faction else "any",
             mod or "any",
@@ -116,6 +127,7 @@ class TemplateDatabase:
             crated if crated is not None else "any",
             len(candidates),
             code or "any",
+            excluded_codes or "none",
         )
 
         return list(candidates)

@@ -44,6 +44,10 @@ async def main() -> dict[str, Any] | None:
             "\n"
             "  # Test icon matching against filtered candidates\n"
             "  fs inspect --database db.pkl --resolution 1080 --icon icon.png --faction c\n"
+            "\n"
+            "  # Exclude specific codes from matching\n"
+            "  fs inspect --database db.pkl --resolution 1080 --icon icon.png "
+            "--exclude-code Concrete --exclude-code SandbagMaterials\n"
         ),
     )
 
@@ -76,6 +80,13 @@ async def main() -> dict[str, Any] | None:
     )
     parser.add_argument(
         "--mod", type=str, help="Mod filter. If not specified, all mods will be included. "
+    )
+    parser.add_argument(
+        "--exclude-code",
+        type=str,
+        action="append",
+        help="Exclude specific item code from results. Can be specified multiple times. "
+        "Example: --exclude-code Rifle --exclude-code Bandages",
     )
     parser.add_argument(
         "--resolution",
@@ -190,6 +201,12 @@ async def main() -> dict[str, Any] | None:
         crated_filter = args.crated.lower() == "true"
         logger.info("Using crated filter: %s", crated_filter)
 
+    # Parse excluded codes filter
+    excluded_codes_filter = None
+    if args.exclude_code:
+        excluded_codes_filter = [code.strip() for code in args.exclude_code]
+        logger.info("Excluding codes: %s", excluded_codes_filter)
+
     # Load and validate icon image if provided
     icon_image = None
     if args.icon:
@@ -225,6 +242,7 @@ async def main() -> dict[str, Any] | None:
             category=category_filter,
             crated=crated_filter,
             code=code_filter,
+            excluded_codes=excluded_codes_filter,
             confidence_threshold=scanner_settings.confidence_threshold,
             phash_threshold=scanner_settings.phash_threshold,
             max_ncc_candidates=scanner_settings.max_ncc_candidates,
