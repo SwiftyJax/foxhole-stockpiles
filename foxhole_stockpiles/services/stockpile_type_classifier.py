@@ -50,6 +50,7 @@ class StockpileTypeClassifier:
             except ValueError:
                 return StockpileType.UNDEFINED
 
+        self._logger.warning("No matching stockpile type for text: '%s'", cleaned_text)
         return StockpileType.UNDEFINED
 
     def _find_matching_type(self, text: str) -> str | None:
