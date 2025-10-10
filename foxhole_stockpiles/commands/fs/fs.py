@@ -183,6 +183,17 @@ def main() -> None:
     """
     dispatcher = CLIDispatcher()
 
+    # DEBUG MODE: Uncomment to use predefined debug arguments
+    # sys.argv = [
+    #     "fs",
+    #     "scanner",
+    #     "--database",
+    #     "data/foxhole_templates.pkl",
+    #     "--image",
+    #     "test.png",
+    #     "--debug_image",
+    # ]
+
     # Handle no arguments or help requests
     if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
         print(dispatcher.get_help())

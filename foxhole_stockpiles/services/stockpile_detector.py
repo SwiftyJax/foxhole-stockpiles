@@ -277,7 +277,7 @@ class StockpileDetector:
         # Group contours into rows based on y-coordinate tolerance
         rows: list[list[cv2.typing.Rect]] = []
         for contour in contours:
-            x, y, w, h = contour
+            x, y, _, _ = contour
             # Find if this contour belongs to an existing row
             placed = False
             for row in rows:
@@ -307,6 +307,7 @@ class StockpileDetector:
         last_y = self.first_column_y
         current_x_idx = 2  # After first group (boxes 1,2), next expected is column 2
         current_group_idx = 0
+        self.max_detected_x = self.quantities[1][0]
 
         # Process remaining boxes
         contour_index = start_index
@@ -393,7 +394,8 @@ class StockpileDetector:
         title_y = y - int(self.row_offset)
 
         title_max_x = max(
-            self.max_detected_x + self.box_width + self.title_margin, self.title_min_width
+            self.max_detected_x + self.box_width + self.title_margin,
+            title_min_x + self.title_min_width,
         )
 
         # Calculate stockpile name region
