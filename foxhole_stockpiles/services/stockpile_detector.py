@@ -115,7 +115,7 @@ class StockpileDetector:
         self.title_min_width = int(self._settings.title_min_width * self.scale_factor)
         self.title_height = int(self._settings.title_height * self.scale_factor)
         self.stockpile_type_width = int(3 * self.box_width)
-        self.stockpile_name_width = int(2 * self.box_width)
+        self.stockpile_name_width = int(2.5 * self.box_width)
 
         # Hex name, shard and ingame timestamp regions
         self.hex_name_x = self.box_height
