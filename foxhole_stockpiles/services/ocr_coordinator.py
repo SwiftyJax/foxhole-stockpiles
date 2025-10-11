@@ -342,6 +342,8 @@ class OCRCoordinator:
                     if self.logger.isEnabledFor(logging.DEBUG):
                         self.logger.exception("Full error details:")
 
+        self._check_for_duplicates(stockpile=stockpile, stockpile_images=stockpile_images)
+
         # detect the stockpile metadata from the other regions
         name_image = stockpile_images.stockpile_name
         if name_image is not None:
@@ -382,6 +384,96 @@ class OCRCoordinator:
 
         return stockpile
 
+    def _check_for_duplicates(
+        self, stockpile: Stockpile, stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Check for duplicate items in the stockpile and attempt to re-match them.
+
+        Args:
+            stockpile (Stockpile): Stockpile to check for duplicates
+            stockpile_images (StockpileImageRegions): Image regions containing the icons
+        """
+        # stockpiles can't repeat a code more than once with the same crated status
+        unique_items = {(item.code, item.crated) for item in stockpile.items}
+        non_unknown_items = [item for item in stockpile.items if item.code != "Unknown"]
+
+        excluded_codes = []
+        retries = 1
+
+        while len(unique_items) < len(non_unknown_items) and retries <= 10:
+            retries += 1
+            # Find which item is duplicated
+            seen: dict[tuple[str, bool], int] = {}
+            conflicting_code = ""
+            index = -1
+            item = stockpile.items[0]
+
+            existing_index: int | None = None
+            while existing_index is None:
+                index += 1
+                item = stockpile.items[index]
+                key = (item.code, item.crated)
+                if item.code != "Unknown":
+                    existing_index = seen.get(key)
+                    seen[key] = index
+
+            # Found the duplicate - determine which one to re-match (lower confidence)
+            conflicting_code = item.code
+            excluded_codes.append(conflicting_code)
+            existing_item = stockpile.items[existing_index]
+
+            existing_confidence = existing_item.confidence or 0.0
+            current_confidence = item.confidence or 0.0
+
+            duplicate_index = index if current_confidence < existing_confidence else existing_index
+            duplicate_item = stockpile.items[duplicate_index]
+
+            self.logger.debug(
+                "Duplicate detected: %s (crated: %s) at indices %d and %d. "
+                "Re-matching index %d (lower confidence: %.3f)",
+                duplicate_item.code,
+                duplicate_item.crated,
+                existing_index,
+                index,
+                duplicate_index,
+                min(existing_confidence, current_confidence),
+            )
+
+            # Re-match using _process_single_icon with exclusion
+
+            quantity = duplicate_item.quantity
+            rematched_item = self._process_single_icon(
+                stockpile_images=stockpile_images,
+                icon_index=duplicate_index,
+                quantity=quantity,
+                category=None,
+                crated=None,
+                mod=None,
+                detected={"category": [], "crated": [], "mod": []},
+                excluded_codes=excluded_codes,
+            )
+
+            if rematched_item is not None:
+                stockpile.items[duplicate_index] = rematched_item
+                self.logger.debug(
+                    "Re-matched index %d: %s -> %s (confidence: %.3f)",
+                    duplicate_index,
+                    conflicting_code,
+                    rematched_item.code,
+                    rematched_item.confidence or 0.0,
+                )
+            else:
+                # No alternative found, mark as Unknown
+                stockpile.items[duplicate_index].code = "Unknown"
+                stockpile.items[duplicate_index].confidence = 0.0
+                self.logger.debug(
+                    "No alternative found for index %d, marking as Unknown", duplicate_index
+                )
+
+            # Recalculate unique items for next iteration
+            unique_items = {(item.code, item.crated) for item in stockpile.items}
+            non_unknown_items = [item for item in stockpile.items if item.code != "Unknown"]
+
     def _process_single_icon(
         self,
         stockpile_images: StockpileImageRegions,
@@ -391,6 +483,7 @@ class OCRCoordinator:
         crated: bool | None,
         mod: str | None,
         detected: dict[str, list[Any]],
+        excluded_codes: list[str] | None = None,
     ) -> StockpileItem | None:
         """Process a single icon and return its code if matched.
 
@@ -402,6 +495,7 @@ class OCRCoordinator:
             crated (bool | None): Current crated filter for matching
             mod (str | None): Current mod filter for matching
             detected (dict[str, list[Any]]): Accumulator for detected properties
+            excluded_codes (list[str] | None): Optional list of item codes to exclude from matching
 
         Returns:
             StockpileItem | None: Matched item code and crated status, or None if no match found
@@ -433,6 +527,7 @@ class OCRCoordinator:
             category=category,
             crated=crated,
             mod=mod,
+            excluded_codes=excluded_codes,
         )
 
         icon_match = match_result.icon

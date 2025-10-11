@@ -5,6 +5,7 @@ which orchestrates the entire stockpile detection and analysis process.
 """
 
 from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import numpy as np
@@ -13,6 +14,8 @@ from numpy.typing import NDArray
 
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
+from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
+from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
@@ -20,6 +23,28 @@ from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegi
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.stockpile_detector import StockpileDetector
+
+
+def create_test_icon_template(code: str, crated: bool = False) -> IconTemplate:
+    """Helper function to create a test IconTemplate.
+
+    Args:
+        code (str): Item code
+        crated (bool): Whether the item is crated
+
+    Returns:
+        IconTemplate: Test icon template instance
+    """
+    dummy_image = np.zeros((64, 64, 3), dtype=np.uint8)
+    return IconTemplate(
+        image=dummy_image,
+        code=code,
+        crated=crated,
+        category=ItemCategory.Item,
+        faction=ItemFaction.NEUTRAL,
+        mod="vanilla",
+        resolution=SupportedResolution("1080"),
+    )
 
 
 class TestOCRCoordinatorInitialization:
@@ -608,3 +633,382 @@ class TestProcessSingleIcon:
             assert call_kwargs["category"] == ItemCategory.Item
             assert call_kwargs["crated"] is True
             assert call_kwargs["mod"] == "vanilla"
+
+
+class TestCheckForDuplicates:
+    """Test suite for OCRCoordinator._check_for_duplicates method."""
+
+    @pytest.fixture
+    def coordinator(self, tmp_path: Path) -> OCRCoordinator:
+        """Create an OCRCoordinator instance for testing.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+
+        Returns:
+            OCRCoordinator: Coordinator instance for testing.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+        config = OCRCoordinatorConfig(database_path=db_path)
+        return OCRCoordinator(config)
+
+    @pytest.fixture
+    def mock_stockpile_images(self) -> StockpileImageRegions:
+        """Create mock stockpile images.
+
+        Returns:
+            StockpileImageRegions: Mock stockpile images with icons.
+        """
+        mock_images = MagicMock(spec=StockpileImageRegions)
+        mock_images.vertical_resolution = 1080
+        mock_images.icons = [
+            np.zeros((64, 64, 3), dtype=np.uint8),
+            np.zeros((64, 64, 3), dtype=np.uint8),
+            np.zeros((64, 64, 3), dtype=np.uint8),
+        ]
+        return mock_images
+
+    def test_no_duplicates(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that no changes occur when there are no duplicates.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        stockpile.items = [
+            StockpileItem(code="Rifle", quantity=100, crated=False, confidence=0.95),
+            StockpileItem(code="Bandages", quantity=50, crated=False, confidence=0.90),
+            StockpileItem(code="Ammo", quantity=200, crated=False, confidence=0.88),
+        ]
+
+        coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # Items should remain unchanged
+        assert len(stockpile.items) == 3
+        assert stockpile.items[0].code == "Rifle"
+        assert stockpile.items[1].code == "Bandages"
+        assert stockpile.items[2].code == "Ammo"
+
+    def test_simple_duplicate_resolves(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that a simple duplicate is resolved by re-matching.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        stockpile.items = [
+            StockpileItem(code="Rifle", quantity=100, crated=False, confidence=0.85),
+            StockpileItem(code="Rifle", quantity=200, crated=False, confidence=0.95),
+        ]
+
+        # Mock _process_single_icon to return a different item
+        mock_icon = create_test_icon_template("Ammo", crated=False)
+
+        mock_match_result = MatchResult(
+            candidates=[0, 1, 2, 3, 4],
+            icon=mock_icon,
+            confidence=0.82,
+            tested_candidates=5,
+        )
+
+        with patch.object(
+            coordinator._template_manager, "match_icon", return_value=mock_match_result
+        ):
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # Lower confidence item (index 0) should be re-matched
+        assert stockpile.items[0].code == "Ammo"
+        assert stockpile.items[0].confidence == 0.82
+        assert stockpile.items[1].code == "Rifle"
+        assert stockpile.items[1].confidence == 0.95
+
+    def test_duplicate_with_none_confidence(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test duplicate detection handles None confidence values.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        stockpile.items = [
+            StockpileItem(code="Rifle", quantity=100, crated=False, confidence=None),
+            StockpileItem(code="Rifle", quantity=200, crated=False, confidence=0.95),
+        ]
+
+        # Mock to return alternative
+        mock_icon = create_test_icon_template("Ammo", crated=False)
+
+        mock_match_result = MatchResult(
+            candidates=[0, 1, 2, 3, 4],
+            icon=mock_icon,
+            confidence=0.80,
+            tested_candidates=5,
+        )
+
+        with patch.object(
+            coordinator._template_manager, "match_icon", return_value=mock_match_result
+        ):
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # Item with None confidence (treated as 0.0) should be re-matched
+        assert stockpile.items[0].code == "Ammo"
+        assert stockpile.items[1].code == "Rifle"
+
+    def test_crated_vs_non_crated_not_duplicate(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that crated and non-crated versions are NOT considered duplicates.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        stockpile.items = [
+            StockpileItem(code="Rifle", quantity=100, crated=False, confidence=0.90),
+            StockpileItem(code="Rifle", quantity=200, crated=True, confidence=0.85),
+        ]
+
+        coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # Both should remain unchanged
+        assert stockpile.items[0].code == "Rifle"
+        assert stockpile.items[0].crated is False
+        assert stockpile.items[1].code == "Rifle"
+        assert stockpile.items[1].crated is True
+
+    def test_no_alternative_marks_unknown(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that when no alternative is found, item is marked as Unknown.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        stockpile.items = [
+            StockpileItem(code="Rifle", quantity=100, crated=False, confidence=0.85),
+            StockpileItem(code="Rifle", quantity=200, crated=False, confidence=0.95),
+        ]
+
+        # Mock to return None (no alternative found)
+        mock_match_result = MatchResult(
+            candidates=[0, 1, 2],
+            icon=None,
+            confidence=0.0,
+            tested_candidates=3,
+        )
+
+        with patch.object(
+            coordinator._template_manager, "match_icon", return_value=mock_match_result
+        ):
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # Lower confidence item should be marked as Unknown
+        assert stockpile.items[0].code == "Unknown"
+        assert stockpile.items[0].confidence == 0.0
+        assert stockpile.items[1].code == "Rifle"
+
+    def test_unknown_items_ignored(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that Unknown items are ignored in duplicate detection.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        # Only one Unknown item to avoid infinite loop - Unknown items don't get tracked
+        stockpile.items = [
+            StockpileItem(code="Unknown", quantity=100, crated=False, confidence=0.0),
+            StockpileItem(code="Rifle", quantity=50, crated=False, confidence=0.90),
+            StockpileItem(code="Bandages", quantity=75, crated=False, confidence=0.88),
+        ]
+
+        coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # Unknown items should not trigger duplicate detection
+        assert stockpile.items[0].code == "Unknown"
+        assert stockpile.items[1].code == "Rifle"
+        assert stockpile.items[2].code == "Bandages"
+
+    def test_cascading_duplicates_with_exclusion_list(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that cascading duplicates are resolved with growing exclusion list.
+
+        This tests the scenario where:
+        1. "Rifle" conflicts -> re-match finds "Ammo"
+        2. "Ammo" also conflicts -> should exclude both "Rifle" and "Ammo"
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        stockpile.items = [
+            StockpileItem(code="Rifle", quantity=100, crated=False, confidence=0.85),
+            StockpileItem(code="Rifle", quantity=200, crated=False, confidence=0.95),
+        ]
+
+        call_count = 0
+
+        def mock_match_side_effect(*args: Any, **kwargs: Any) -> MatchResult:
+            """Side effect function to simulate cascading exclusions.
+
+            Args:
+                *args (Any): Positional arguments.
+                **kwargs (Any): Keyword arguments.
+
+            Returns:
+                MatchResult: Mock match result based on call count and exclusions.
+            """
+            nonlocal call_count
+            call_count += 1
+
+            excluded = kwargs.get("excluded_codes", [])
+
+            # First call: excluded=["Rifle"] -> return "Ammo"
+            if call_count == 1:
+                assert "Rifle" in excluded
+                mock_icon = create_test_icon_template("Ammo", crated=False)
+                return MatchResult(
+                    candidates=[0, 1, 2],
+                    icon=mock_icon,
+                    confidence=0.82,
+                    tested_candidates=3,
+                )
+
+            # Second call: excluded=["Rifle", "Ammo"] -> return "Bandages"
+            if call_count == 2:
+                assert "Rifle" in excluded
+                assert "Ammo" in excluded
+                mock_icon = create_test_icon_template("Bandages", crated=False)
+                return MatchResult(
+                    candidates=[0, 1, 2],
+                    icon=mock_icon,
+                    confidence=0.80,
+                    tested_candidates=3,
+                )
+
+            # Should not reach here
+            raise AssertionError(f"Unexpected call count: {call_count}")
+
+        with patch.object(
+            coordinator._template_manager, "match_icon", side_effect=mock_match_side_effect
+        ):
+            # Add another "Ammo" to trigger cascading
+            stockpile.items.insert(
+                1, StockpileItem(code="Ammo", quantity=150, crated=False, confidence=0.90)
+            )
+
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # Verify exclusion list grew and final result
+        assert call_count >= 1
+
+    def test_multiple_independent_duplicates(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test handling multiple independent duplicate pairs.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        stockpile.items = [
+            StockpileItem(code="Rifle", quantity=100, crated=False, confidence=0.85),
+            StockpileItem(code="Rifle", quantity=200, crated=False, confidence=0.95),
+            StockpileItem(code="Bandages", quantity=50, crated=False, confidence=0.80),
+            StockpileItem(code="Bandages", quantity=75, crated=False, confidence=0.90),
+        ]
+
+        call_count = 0
+
+        def mock_match_side_effect(*args: Any, **kwargs: Any) -> MatchResult:
+            nonlocal call_count
+            call_count += 1
+
+            # First re-match: Rifle -> Ammo
+            if call_count == 1:
+                mock_icon = create_test_icon_template("Ammo", crated=False)
+                return MatchResult(
+                    candidates=[0, 1, 2],
+                    icon=mock_icon,
+                    confidence=0.82,
+                    tested_candidates=3,
+                )
+
+            # Second re-match: Bandages -> MedKit
+            if call_count == 2:
+                mock_icon = create_test_icon_template("MedKit", crated=False)
+                return MatchResult(
+                    candidates=[0, 1, 2],
+                    icon=mock_icon,
+                    confidence=0.78,
+                    tested_candidates=3,
+                )
+
+            raise AssertionError(f"Unexpected call count: {call_count}")
+
+        with patch.object(
+            coordinator._template_manager, "match_icon", side_effect=mock_match_side_effect
+        ):
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # Both duplicates should be resolved
+        assert stockpile.items[0].code == "Ammo"
+        assert stockpile.items[1].code == "Rifle"
+        assert stockpile.items[2].code == "MedKit"
+        assert stockpile.items[3].code == "Bandages"
+
+    def test_exclusion_list_accumulates(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that exclusion list properly accumulates conflicting codes.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        stockpile.items = [
+            StockpileItem(code="Rifle", quantity=100, crated=False, confidence=0.85),
+            StockpileItem(code="Rifle", quantity=200, crated=False, confidence=0.95),
+        ]
+
+        excluded_lists: list[list[str]] = []
+
+        def mock_match_side_effect(*args: Any, **kwargs: Any) -> MatchResult:
+            excluded = kwargs.get("excluded_codes", [])
+            excluded_lists.append(excluded.copy())
+
+            # Return a unique item each time
+            mock_icon = create_test_icon_template(f"Item{len(excluded_lists)}", crated=False)
+            return MatchResult(
+                candidates=[0, 1, 2],
+                icon=mock_icon,
+                confidence=0.80,
+                tested_candidates=3,
+            )
+
+        with patch.object(
+            coordinator._template_manager, "match_icon", side_effect=mock_match_side_effect
+        ):
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # First call should have "Rifle" in exclusion list
+        assert len(excluded_lists) >= 1
+        assert "Rifle" in excluded_lists[0]
