@@ -48,7 +48,7 @@ class OCRCoordinator:
         """Save screenshot with metadata to folder.
 
         Args:
-            image (NDArray[np.uint8]): Image to save (RGB format)
+            image (NDArray[np.uint8]): Image to save (BGR format)
             stockpile (Stockpile): Stockpile with metadata for filename
         """
         if not self.config.screenshots_folder:
@@ -75,9 +75,8 @@ class OCRCoordinator:
             filename = f"{timestamp}_{storage_type}_{name}_{resolution}.png"
             filepath = daily_folder / filename
 
-            # Convert RGB to BGR for OpenCV
-            bgr_image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-            cv2.imwrite(str(filepath), bgr_image)
+            # Image is already in BGR format (OpenCV default)
+            cv2.imwrite(str(filepath), image)
 
             self.logger.debug("Screenshot saved to: %s", filepath)
 
@@ -88,7 +87,7 @@ class OCRCoordinator:
         """Analyze a stockpile image and return detected items with quantities.
 
         Args:
-            image (NDArray[np.uint8]): Image data as numpy array (RGB format)
+            image (NDArray[np.uint8]): Image data as numpy array (BGR format)
 
         Returns:
             Stockpile: Stockpile with the detected items and metadata
@@ -221,7 +220,7 @@ class OCRCoordinator:
         Return:
             NDArray[np.uint8]: processed image
         """
-        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         upscale_factor = 2 / self.scale_factor
 
         upscaled = cv2.resize(

@@ -105,7 +105,8 @@ async def main() -> dict[str, Any] | None:
         print(f"Error: Could not load image from '{args.image}'")
         sys.exit(1)
 
-    image = np.asarray(cv2.cvtColor(_image, cv2.IMREAD_COLOR), dtype=np.uint8)
+    # Image is already in BGR format (OpenCV default), which is what OCRCoordinator expects
+    image = np.asarray(_image, dtype=np.uint8)
 
     # Setup logging
     settings = copy(get_app_settings(args.config))
