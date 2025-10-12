@@ -19,6 +19,17 @@ class MatchResult(BaseModel):
         description="Confidence score of the icon match, None if no icon matching performed",
         default=None,
     )
+    best_match: IconTemplate | None = Field(
+        description=(
+            "Best matching template even if below confidence threshold. "
+            "Useful for debugging and error reporting."
+        ),
+        default=None,
+    )
+    best_confidence: float = Field(
+        description="Confidence score of the best match, regardless of threshold",
+        default=0.0,
+    )
     tested_candidates: int = Field(
         description="Number of candidates that were tested during icon matching",
         default=0,

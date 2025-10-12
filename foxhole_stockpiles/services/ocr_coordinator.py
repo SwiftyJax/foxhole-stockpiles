@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
+from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
@@ -282,7 +283,7 @@ class OCRCoordinator:
             for icon_index in range(group_start_index, group_start_index + group_amount):
                 try:
                     quantity = quantities[icon_index]
-                    stockpile_item = self._process_single_icon(
+                    stockpile_item, match_result = self._process_single_icon(
                         stockpile_images=stockpile_images,
                         icon_index=icon_index,
                         quantity=quantity,
@@ -295,9 +296,28 @@ class OCRCoordinator:
                     if stockpile_item is None:
                         mod_text = f", mod: {mod}" if mod else ""
                         category_text = f", category: {category.value}" if category else ""
+
+                        # Include best match information if available
+                        best_match_text = ""
+                        if match_result and match_result.best_match:
+                            best_match = match_result.best_match
+                            best_match_text = (
+                                f" Best match: {best_match.code}"
+                                f"{' (crated)' if best_match.crated else ''}"
+                                f" (confidence: {match_result.best_confidence:.3f},"
+                                f" threshold: {
+                                    self.config.get_confidence_threshold(
+                                        SupportedResolution(
+                                            str(stockpile_images.vertical_resolution)
+                                        )
+                                    )
+                                })"
+                            )
+
                         stockpile.errors.append(
                             f"Group {group_index}, index {icon_index}: No match found. "
-                            f"Quantity: {quantity}, crated: {crated}{mod_text}{category_text}"
+                            f"Quantity: {quantity}, crated: "
+                            f"{crated}{mod_text}{category_text}.{best_match_text}"
                         )
                         unkown_item = StockpileItem(
                             code="Unknown",
@@ -441,7 +461,7 @@ class OCRCoordinator:
             # Re-match using _process_single_icon with exclusion
 
             quantity = duplicate_item.quantity
-            rematched_item = self._process_single_icon(
+            rematched_item, rematch_result = self._process_single_icon(
                 stockpile_images=stockpile_images,
                 icon_index=duplicate_index,
                 quantity=quantity,
@@ -465,8 +485,30 @@ class OCRCoordinator:
                 # No alternative found, mark as Unknown
                 stockpile.items[duplicate_index].code = "Unknown"
                 stockpile.items[duplicate_index].confidence = 0.0
+
+                # Add error with best match info if available
+                best_match_text = ""
+                if rematch_result and rematch_result.best_match:
+                    best_match = rematch_result.best_match
+                    resolution = SupportedResolution(str(stockpile_images.vertical_resolution))
+                    threshold = self.config.get_confidence_threshold(resolution)
+                    best_match_text = (
+                        f" Best match: {best_match.code}"
+                        f"{' (crated)' if best_match.crated else ''}"
+                        f" (confidence: {rematch_result.best_confidence:.3f},"
+                        f" threshold: {threshold:.3f})"
+                    )
+
+                stockpile.errors.append(
+                    f"Duplicate resolution failed at index {duplicate_index}: "
+                    f"Conflicting with '{conflicting_code}'. "
+                    f"No valid alternative found.{best_match_text}"
+                )
+
                 self.logger.debug(
-                    "No alternative found for index %d, marking as Unknown", duplicate_index
+                    "No alternative found for index %d, marking as Unknown. %s",
+                    duplicate_index,
+                    best_match_text,
                 )
 
             # Recalculate unique items for next iteration
@@ -483,7 +525,7 @@ class OCRCoordinator:
         mod: str | None,
         detected: dict[str, list[Any]],
         excluded_codes: list[str] | None = None,
-    ) -> StockpileItem | None:
+    ) -> tuple[StockpileItem | None, MatchResult]:
         """Process a single icon and return its code if matched.
 
         Args:
@@ -497,7 +539,8 @@ class OCRCoordinator:
             excluded_codes (list[str] | None): Optional list of item codes to exclude from matching
 
         Returns:
-            StockpileItem | None: Matched item code and crated status, or None if no match found
+            tuple[StockpileItem | None, MatchResult]: Matched item and match result with best match
+                info
         """
         if category == ItemCategory.Invalid:
             category = None
@@ -531,12 +574,22 @@ class OCRCoordinator:
 
         icon_match = match_result.icon
         if not icon_match:
-            self.logger.warning(
-                "[%d] No match found with confidence %.2f",
-                icon_index,
-                confidence_threshold,
-            )
-            return None
+            # Log best match if available for debugging
+            if match_result.best_match:
+                self.logger.warning(
+                    "[%d] No match found with confidence %.2f (best: %s with %.3f)",
+                    icon_index,
+                    confidence_threshold,
+                    match_result.best_match.code,
+                    match_result.best_confidence,
+                )
+            else:
+                self.logger.warning(
+                    "[%d] No match found with confidence %.2f",
+                    icon_index,
+                    confidence_threshold,
+                )
+            return None, match_result
 
         # Update detected properties for future matching
         detected["category"].append(icon_match.category)
@@ -553,9 +606,12 @@ class OCRCoordinator:
             match_result.tested_candidates,
         )
 
-        return StockpileItem(
-            code=icon_match.code,
-            crated=icon_match.crated,
-            quantity=quantity,
-            confidence=match_result.confidence,
+        return (
+            StockpileItem(
+                code=icon_match.code,
+                crated=icon_match.crated,
+                quantity=quantity,
+                confidence=match_result.confidence,
+            ),
+            match_result,
         )

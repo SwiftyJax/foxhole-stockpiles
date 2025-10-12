@@ -513,23 +513,23 @@ class TestProcessSingleIcon:
         mock_stockpile_images.vertical_resolution = 1080
         mock_stockpile_images.icons = [np.zeros((64, 64, 3), dtype=np.uint8)]
 
-        mock_icon = MagicMock()
-        mock_icon.code = "Rifle"
-        mock_icon.crated = False
-        mock_icon.category = ItemCategory.Item
-        mock_icon.mod = "vanilla"
+        mock_icon = create_test_icon_template("Rifle", crated=False)
 
-        mock_match_result = MagicMock(spec=MatchResult)
-        mock_match_result.icon = mock_icon
-        mock_match_result.confidence = 0.9
-        mock_match_result.tested_candidates = 5
+        mock_match_result = MatchResult(
+            candidates=[0, 1, 2],
+            icon=mock_icon,
+            confidence=0.9,
+            best_match=mock_icon,
+            best_confidence=0.9,
+            tested_candidates=5,
+        )
 
         with patch.object(
             coordinator._template_manager,
             "match_icon",
             return_value=mock_match_result,
         ):
-            result = coordinator._process_single_icon(
+            result, match_result = coordinator._process_single_icon(
                 stockpile_images=mock_stockpile_images,
                 icon_index=0,
                 quantity=100,
@@ -544,6 +544,7 @@ class TestProcessSingleIcon:
             assert result.code == "Rifle"
             assert result.quantity == 100
             assert result.crated is False
+            assert match_result == mock_match_result
 
     def test_process_single_icon_no_match(self, tmp_path: Path) -> None:
         """Test icon processing when no match is found.
@@ -561,15 +562,21 @@ class TestProcessSingleIcon:
         mock_stockpile_images.vertical_resolution = 1080
         mock_stockpile_images.icons = [np.zeros((64, 64, 3), dtype=np.uint8)]
 
-        mock_match_result = MagicMock(spec=MatchResult)
-        mock_match_result.icon = None
+        mock_match_result = MatchResult(
+            candidates=[0, 1, 2],
+            icon=None,
+            confidence=0.0,
+            best_match=None,
+            best_confidence=0.0,
+            tested_candidates=3,
+        )
 
         with patch.object(
             coordinator._template_manager,
             "match_icon",
             return_value=mock_match_result,
         ):
-            result = coordinator._process_single_icon(
+            result, match_result = coordinator._process_single_icon(
                 stockpile_images=mock_stockpile_images,
                 icon_index=0,
                 quantity=100,
@@ -580,6 +587,7 @@ class TestProcessSingleIcon:
             )
 
             assert result is None
+            assert match_result == mock_match_result
 
     def test_process_single_icon_with_filters(self, tmp_path: Path) -> None:
         """Test icon processing with category and crated filters.
@@ -715,6 +723,8 @@ class TestCheckForDuplicates:
             candidates=[0, 1, 2, 3, 4],
             icon=mock_icon,
             confidence=0.82,
+            best_match=mock_icon,
+            best_confidence=0.82,
             tested_candidates=5,
         )
 
@@ -751,6 +761,8 @@ class TestCheckForDuplicates:
             candidates=[0, 1, 2, 3, 4],
             icon=mock_icon,
             confidence=0.80,
+            best_match=mock_icon,
+            best_confidence=0.80,
             tested_candidates=5,
         )
 
@@ -806,6 +818,8 @@ class TestCheckForDuplicates:
             candidates=[0, 1, 2],
             icon=None,
             confidence=0.0,
+            best_match=None,
+            best_confidence=0.0,
             tested_candidates=3,
         )
 
@@ -887,6 +901,8 @@ class TestCheckForDuplicates:
                     candidates=[0, 1, 2],
                     icon=mock_icon,
                     confidence=0.82,
+                    best_match=mock_icon,
+                    best_confidence=0.82,
                     tested_candidates=3,
                 )
 
@@ -899,6 +915,8 @@ class TestCheckForDuplicates:
                     candidates=[0, 1, 2],
                     icon=mock_icon,
                     confidence=0.80,
+                    best_match=mock_icon,
+                    best_confidence=0.80,
                     tested_candidates=3,
                 )
 
@@ -948,6 +966,8 @@ class TestCheckForDuplicates:
                     candidates=[0, 1, 2],
                     icon=mock_icon,
                     confidence=0.82,
+                    best_match=mock_icon,
+                    best_confidence=0.82,
                     tested_candidates=3,
                 )
 
@@ -958,6 +978,8 @@ class TestCheckForDuplicates:
                     candidates=[0, 1, 2],
                     icon=mock_icon,
                     confidence=0.78,
+                    best_match=mock_icon,
+                    best_confidence=0.78,
                     tested_candidates=3,
                 )
 
@@ -1001,6 +1023,8 @@ class TestCheckForDuplicates:
                 candidates=[0, 1, 2],
                 icon=mock_icon,
                 confidence=0.80,
+                best_match=mock_icon,
+                best_confidence=0.80,
                 tested_candidates=3,
             )
 

@@ -261,6 +261,8 @@ class TemplateManager:
             candidates=candidates,
             icon=icon_result,
             confidence=confidence_result,
+            best_match=best_match,
+            best_confidence=best_confidence,
             tested_candidates=candidates_tested,
         )
 
