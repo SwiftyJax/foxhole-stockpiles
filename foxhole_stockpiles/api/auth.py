@@ -31,34 +31,33 @@ def verify_auth(auth_settings: APIAuthSettings, auth_header: str | None) -> None
         )
 
     # Validate based on auth type
+    # Note: auth_type is guaranteed to be either 'basic' or 'bearer' at this point
+    # due to validation in APIAuthSettings (FORWARD is rejected for API auth)
     expected_token = auth_settings.auth_token
     auth_type = auth_settings.auth_type
 
-    match auth_type:
-        case "basic":
-            expected_header = f"Basic {expected_token}"
-            if auth_header != expected_header:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication credentials",
-                    headers={"WWW-Authenticate": "Basic"},
-                )
-        case "bearer":
-            expected_header = f"Bearer {expected_token}"
-            if auth_header != expected_header:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication credentials",
-                    headers={"WWW-Authenticate": "Bearer"},
-                )
-        case _:
-            # Custom header - auth_type is the header name, token is the value
-            # In this case, the auth_header should just be the token value
-            if auth_header != expected_token:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid authentication credentials",
-                )
+    if auth_type == "basic":
+        expected_header = f"Basic {expected_token}"
+        if auth_header != expected_header:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Basic"},
+            )
+    elif auth_type == "bearer":
+        expected_header = f"Bearer {expected_token}"
+        if auth_header != expected_header:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    else:
+        # This should never happen due to APIAuthSettings validation
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invalid authentication configuration",
+        )
 
 
 def create_auth_dependency(
@@ -73,11 +72,14 @@ def create_auth_dependency(
         Callable[[str | None], Coroutine[Any, Any, None]]: FastAPI dependency function
     """
 
-    async def auth_dependency(authorization: str | None = Header(default=None)) -> None:
+    async def auth_dependency(
+        authorization: str | None = Header(default=None, alias="Authorization"),
+    ) -> None:
         """FastAPI dependency that validates authentication.
 
         Args:
-            authorization (str | None): Authorization header from the request
+            authorization (str | None): Authorization header from the request.
+                FastAPI will automatically extract this from the HTTP Authorization header.
 
         Raises:
             HTTPException: 401 if authentication fails
