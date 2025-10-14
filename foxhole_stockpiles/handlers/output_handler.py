@@ -123,5 +123,5 @@ class OutputHandler:
 
         payload = stockpile.model_dump(mode="json")
         response = await webhook_connector.send_stockpile(payload=payload, token=token)
-        self.logger.info("Webhook response: %s", response)
+        self.logger.debug("Webhook response: %s", response)
         return response
