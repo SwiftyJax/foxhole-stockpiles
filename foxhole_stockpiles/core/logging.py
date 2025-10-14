@@ -41,3 +41,7 @@ def setup_logging(settings: LoggingSettings) -> None:
         handlers=handlers,
         force=True,
     )
+
+    # Configure individual logger levels
+    for logger_name, level in settings.loggers.items():
+        logging.getLogger(logger_name).setLevel(level)
