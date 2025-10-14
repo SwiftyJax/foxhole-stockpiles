@@ -431,6 +431,80 @@ class TestExtractSingleFile:
 
         assert result is False
 
+    async def test_extract_file_successful_extraction(
+        self, extractor: PakExtractor, tmp_path: Path
+    ) -> None:
+        """Test extract_single_file with successful extraction.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        file_path = "War/Content/test.uasset"
+        temp_dir = str(tmp_path / "temp")
+
+        # Create the expected extraction structure
+        pak_name = extractor.pak_files[0].stem
+        pak_extract_dir = Path(temp_dir) / pak_name
+        pak_extract_dir.mkdir(parents=True)
+        extracted_file = pak_extract_dir / file_path
+        extracted_file.parent.mkdir(parents=True, exist_ok=True)
+        extracted_file.touch()
+
+        # Mock subprocess to return success (returncode 0)
+        mock_process = MagicMock()
+        mock_process.returncode = 0
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await extractor.extract_single_file(file_path, temp_dir)
+
+        assert result is True
+
+    async def test_extract_file_not_found_in_pak(
+        self, extractor: PakExtractor, tmp_path: Path
+    ) -> None:
+        """Test extract_single_file when file not found in PAK.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        file_path = "War/Content/nonexistent.uasset"
+        temp_dir = str(tmp_path / "temp")
+
+        # Create temp dir but don't create the file
+        Path(temp_dir).mkdir(parents=True, exist_ok=True)
+
+        # Mock subprocess to return success but file doesn't exist
+        mock_process = MagicMock()
+        mock_process.returncode = 0
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await extractor.extract_single_file(file_path, temp_dir)
+
+        assert result is False
+
+    async def test_extract_file_non_zero_returncode(
+        self, extractor: PakExtractor, tmp_path: Path
+    ) -> None:
+        """Test extract_single_file with non-zero returncode.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        file_path = "War/Content/test.uasset"
+        temp_dir = str(tmp_path / "temp")
+
+        # Mock subprocess to return failure
+        mock_process = MagicMock()
+        mock_process.returncode = 1
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await extractor.extract_single_file(file_path, temp_dir)
+
+        assert result is False
+
 
 class TestConvertToPng:
     """Test suite for convert_to_png method."""
@@ -517,6 +591,107 @@ class TestConvertToPng:
 
         assert result is False
 
+    async def test_try_convert_success(self, extractor: PakExtractor, tmp_path: Path) -> None:
+        """Test _try_convert_with_version with successful conversion.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        file_path = "War/Content/test.uasset"
+        temp_dir = str(tmp_path / "temp")
+
+        # Create a pak directory structure
+        pak_dir = Path(temp_dir) / "test"
+        pak_dir.mkdir(parents=True)
+        (pak_dir / file_path).parent.mkdir(parents=True, exist_ok=True)
+        (pak_dir / file_path).touch()
+
+        # Create the expected output PNG file
+        png_path = pak_dir / "War/Content/test.png"
+        png_path.parent.mkdir(parents=True, exist_ok=True)
+        png_path.touch()
+
+        # Mock subprocess to return success
+        mock_process = MagicMock()
+        mock_process.returncode = 0
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await extractor._try_convert_with_version(file_path, temp_dir)
+
+        assert result is True
+
+    async def test_try_convert_file_not_created(
+        self, extractor: PakExtractor, tmp_path: Path
+    ) -> None:
+        """Test _try_convert_with_version when output PNG not created.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        file_path = "War/Content/test.uasset"
+        temp_dir = str(tmp_path / "temp")
+
+        # Create a pak directory structure
+        pak_dir = Path(temp_dir) / "test"
+        pak_dir.mkdir(parents=True)
+        (pak_dir / file_path).parent.mkdir(parents=True, exist_ok=True)
+        (pak_dir / file_path).touch()
+
+        # Don't create the PNG file
+
+        # Mock subprocess to return success but no PNG created
+        mock_process = MagicMock()
+        mock_process.returncode = 0
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await extractor._try_convert_with_version(file_path, temp_dir)
+
+        assert result is False
+
+    async def test_try_convert_non_zero_returncode(
+        self, extractor: PakExtractor, tmp_path: Path
+    ) -> None:
+        """Test _try_convert_with_version with non-zero returncode.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        file_path = "War/Content/test.uasset"
+        temp_dir = str(tmp_path / "temp")
+
+        # Create a pak directory structure
+        pak_dir = Path(temp_dir) / "test"
+        pak_dir.mkdir(parents=True)
+        (pak_dir / file_path).parent.mkdir(parents=True, exist_ok=True)
+        (pak_dir / file_path).touch()
+
+        # Mock subprocess to return failure
+        mock_process = MagicMock()
+        mock_process.returncode = 1
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await extractor._try_convert_with_version(file_path, temp_dir)
+
+        assert result is False
+
+    async def test_convert_to_png_success(self, extractor: PakExtractor, tmp_path: Path) -> None:
+        """Test convert_to_png with successful conversion.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        file_path = "War/Content/test.uasset"
+        temp_dir = str(tmp_path / "temp")
+
+        with patch.object(extractor, "_try_convert_with_version", return_value=True):
+            result = await extractor.convert_to_png(file_path, temp_dir)
+
+        assert result is True
+
 
 class TestProcessFiles:
     """Test suite for process_files method."""
@@ -572,6 +747,37 @@ class TestProcessFiles:
                 result = await extractor.process_files()
 
         assert result is False
+
+    async def test_process_files_with_successful_conversions(self, extractor: PakExtractor) -> None:
+        """Test process_files with successful extractions and conversions.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+        """
+        with patch.object(
+            extractor, "get_files_to_extract", return_value={"file1.uasset", "file2.uasset"}
+        ):
+            with patch.object(extractor, "extract_single_file", return_value=True):
+                with patch.object(extractor, "convert_to_png", return_value=True):
+                    result = await extractor.process_files(max_workers=2)
+
+        assert result is True
+
+    async def test_process_files_partial_conversions(self, extractor: PakExtractor) -> None:
+        """Test process_files when some conversions succeed.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+        """
+        files = ["file1.uasset", "file2.uasset"]
+        with patch.object(extractor, "get_files_to_extract", return_value=set(files)):
+            with patch.object(extractor, "extract_single_file", return_value=True):
+                # First conversion succeeds, second fails
+                with patch.object(extractor, "convert_to_png", side_effect=[True, False]):
+                    result = await extractor.process_files(max_workers=2)
+
+        # Should still return True if at least one conversion succeeded
+        assert result is True
 
 
 class TestMainFunction:

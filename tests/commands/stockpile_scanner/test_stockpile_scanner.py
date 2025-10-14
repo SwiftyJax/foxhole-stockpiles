@@ -397,3 +397,277 @@ class TestMainFunction:
             await main()
 
         assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputHandler")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
+    async def test_main_with_quiet_mode(
+        self,
+        mock_setup_logging: Mock,
+        mock_output_handler_class: Mock,
+        mock_coordinator_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        mock_stockpile: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with quiet mode enabled.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_output_handler_class (Mock): Mocked OutputHandler class.
+            mock_coordinator_class (Mock): Mocked OCRCoordinator class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            mock_stockpile (MagicMock): Mock stockpile from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=True,  # Quiet mode
+            output_format=None,
+            config=None,
+            token=None,
+        )
+
+        # Mock OCR coordinator
+        mock_coordinator = MagicMock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=mock_stockpile)
+        mock_coordinator_class.return_value = mock_coordinator
+
+        # Mock output handler
+        mock_handler = MagicMock()
+        mock_handler.handle_output = AsyncMock(return_value=None)
+        mock_output_handler_class.return_value = mock_handler
+
+        await main()
+
+        # Verify setup_logging was called
+        mock_setup_logging.assert_called_once()
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    async def test_main_invalid_confidence(
+        self,
+        mock_imread: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with invalid confidence threshold.
+
+        Args:
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=1.5,  # Invalid: > 1.0
+            early_exit=0.95,
+            faction=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            config=None,
+            token=None,
+        )
+
+        # Should exit with code 2 for argparse validation error
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    async def test_main_image_path_does_not_exist(
+        self,
+        mock_imread: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when image path does not exist.
+
+        Args:
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "nonexistent.png"  # Doesn't exist
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        # imread succeeds but Path.exists() returns False
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            config=None,
+            token=None,
+        )
+
+        # Should exit with code 1 for missing file
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
+    async def test_main_file_not_found_error(
+        self,
+        mock_setup_logging: Mock,
+        mock_coordinator_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when FileNotFoundError is raised.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_coordinator_class (Mock): Mocked OCRCoordinator class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            config=None,
+            token=None,
+        )
+
+        # Mock OCR coordinator to raise FileNotFoundError
+        mock_coordinator = MagicMock()
+
+        async def mock_analyze(*args: Any, **kwargs: Any) -> None:
+            raise FileNotFoundError("Database file not found")
+
+        mock_coordinator.analyze_stockpile = mock_analyze
+        mock_coordinator_class.return_value = mock_coordinator
+
+        # Should exit with code 1
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
+    async def test_main_generic_exception(
+        self,
+        mock_setup_logging: Mock,
+        mock_coordinator_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when generic Exception is raised.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_coordinator_class (Mock): Mocked OCRCoordinator class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            config=None,
+            token=None,
+        )
+
+        # Mock OCR coordinator to raise generic Exception
+        mock_coordinator = MagicMock()
+
+        async def mock_analyze(*args: Any, **kwargs: Any) -> None:
+            raise RuntimeError("Unexpected runtime error")
+
+        mock_coordinator.analyze_stockpile = mock_analyze
+        mock_coordinator_class.return_value = mock_coordinator
+
+        # Should exit with code 1
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1

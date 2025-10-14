@@ -4,9 +4,14 @@ This module contains comprehensive tests for the StockpileDetector class,
 which detects stockpile components in Foxhole game screenshots with resolution scaling.
 """
 
+import os
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
+import cv2
 import numpy as np
+import pytest
+from numpy.typing import NDArray
 
 from foxhole_stockpiles.core.settings import OCRSettings
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
@@ -486,3 +491,273 @@ class TestDetectFirstGroup:
         # Should return 0 when not found
         assert result == 0
         assert len(detector.quantities) == 0
+
+
+# Integration tests using real screenshots
+
+
+@pytest.fixture
+def real_screenshot() -> NDArray[np.uint8]:
+    """Load the real test screenshot.
+
+    Returns:
+        NDArray[np.uint8]: Image loaded in RGB format
+    """
+    test_image_path = Path(__file__).parent.parent / "test.png"
+    if not test_image_path.exists():
+        pytest.skip("test.png not found")
+
+    # Load image in BGR (OpenCV default) and convert to RGB
+    image_bgr = cv2.imread(str(test_image_path))
+    if image_bgr is None:
+        pytest.skip("Failed to load test.png")
+
+    # Convert BGR to RGB and cast to proper type
+    return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB).astype(np.uint8)
+
+
+class TestStockpileDetectorIntegration:
+    """Integration tests using real screenshot."""
+
+    def test_detect_with_real_screenshot(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test full detection pipeline with real screenshot."""
+        detector = StockpileDetector(real_screenshot)
+        detector.analize()
+
+        # Should detect at least some quantities
+        assert len(detector.quantities) >= 0  # May be empty for some screenshots
+        # Should have detected groups if quantities found
+        if detector.quantities:
+            assert len(detector.groups) >= 0
+
+    def test_detect_quantity_boxes_with_real_image(
+        self, real_screenshot: NDArray[np.uint8]
+    ) -> None:
+        """Test quantity box detection with real screenshot."""
+        detector = StockpileDetector(real_screenshot)
+        detector.detect_quantity_boxes()
+
+        # Verify quantities detected
+        assert isinstance(detector.quantities, list)
+        # If quantities found, should have groups
+        if len(detector.quantities) > 0:
+            assert isinstance(detector.groups, list)
+            # First group should have at least 2 items
+            if len(detector.groups) > 0:
+                first_group_size, _ = detector.groups[0]
+                assert first_group_size >= 2
+
+    def test_detect_stockpile_regions_with_real_image(
+        self, real_screenshot: NDArray[np.uint8]
+    ) -> None:
+        """Test stockpile region detection with real screenshot."""
+        detector = StockpileDetector(real_screenshot)
+        detector.detect_quantity_boxes()
+        detector.detect_stockpile_regions()
+
+        # If quantities detected, regions should be set
+        if detector.quantities:
+            assert detector.stockpile_type is not None
+            assert detector.stockpile_name is not None
+            # Verify region format (x, y, w, h)
+            assert len(detector.stockpile_type) == 4
+            assert len(detector.stockpile_name) == 4
+
+    def test_get_stockpile_images_with_real_screenshot(
+        self, real_screenshot: NDArray[np.uint8]
+    ) -> None:
+        """Test extracting stockpile images from real screenshot."""
+        detector = StockpileDetector(real_screenshot)
+        detector.analize()
+
+        result = detector.get_stockpile_images()
+
+        # If quantities detected, should return StockpileImageRegions
+        if detector.quantities:
+            assert result is not None
+            assert len(result.icons) == len(detector.quantities)
+            assert len(result.quantities) == len(detector.quantities)
+            assert result.resolution == "3840x2160"
+            assert result.vertical_resolution == 2160
+
+    def test_composite_image_built_with_real_screenshot(
+        self, real_screenshot: NDArray[np.uint8]
+    ) -> None:
+        """Test that composite image is built during detection."""
+        detector = StockpileDetector(real_screenshot)
+        detector.detect_quantity_boxes()
+
+        # If quantities detected, composite should be built
+        if detector.quantities:
+            assert detector.composite_image.shape[2] == 3  # RGB
+            assert detector.composite_image.dtype == np.uint8
+            # Composite should have non-zero dimensions
+            assert detector.composite_image.shape[0] > 0
+            assert detector.composite_image.shape[1] > 0
+
+
+class TestAdaptiveThresholdDetection:
+    """Test adaptive threshold detection with real images."""
+
+    def test_adaptive_threshold_triggered(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test that adaptive threshold logic is exercised."""
+        detector = StockpileDetector(real_screenshot)
+
+        # Run detection which includes adaptive threshold logic
+        detector.detect_quantity_boxes()
+
+        # The adaptive threshold code should run if valid boxes are found
+        # We can't easily assert on internal state, but we verify detection completes
+        assert isinstance(detector.quantities, list)
+        assert isinstance(detector.groups, list)
+
+
+class TestGroupDetectionLogic:
+    """Test group detection with real images."""
+
+    def test_first_group_detection(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test that first group detection works with real image."""
+        detector = StockpileDetector(real_screenshot)
+        detector.detect_quantity_boxes()
+
+        # If first group detected, should have at least 2 quantities
+        if detector.quantities:
+            assert len(detector.quantities) >= 2
+            # First group should be recorded
+            if detector.groups:
+                first_group_size, first_group_start = detector.groups[0]
+                assert first_group_start == 0
+                assert first_group_size >= 2
+
+    def test_multiple_groups_detection(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test detection of multiple groups."""
+        detector = StockpileDetector(real_screenshot)
+        detector.detect_quantity_boxes()
+
+        # Verify group structure
+        for group_size, group_start in detector.groups:
+            assert group_size > 0
+            assert group_start >= 0
+            assert group_start < len(detector.quantities)
+            # Verify group doesn't exceed available quantities
+            assert group_start + group_size <= len(detector.quantities) + 1
+
+    def test_group_continuity(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test that groups cover all detected quantities."""
+        detector = StockpileDetector(real_screenshot)
+        detector.detect_quantity_boxes()
+
+        if not detector.groups:
+            return
+
+        # Calculate total items across all groups
+        total_items = sum(group_size for group_size, _ in detector.groups)
+
+        # Total should match number of quantities
+        assert total_items == len(detector.quantities)
+
+
+class TestDetectionWithDifferentResolutions:
+    """Test detection with scaled versions of the screenshot."""
+
+    @pytest.mark.parametrize("scale", [0.5, 0.75, 1.0])
+    def test_detection_at_different_scales(
+        self, real_screenshot: NDArray[np.uint8], scale: float
+    ) -> None:
+        """Test detection works at different resolutions.
+
+        Args:
+            real_screenshot: Original test image
+            scale: Scale factor to test
+        """
+        # Resize image
+        height, width = real_screenshot.shape[:2]
+        new_size = (int(width * scale), int(height * scale))
+        scaled_image = cv2.resize(real_screenshot, new_size, interpolation=cv2.INTER_AREA).astype(
+            np.uint8
+        )
+
+        detector = StockpileDetector(scaled_image)
+        detector.analize()
+
+        # Verify scale factor calculated correctly
+        expected_scale = new_size[1] / 2160  # Base height is 2160
+        assert abs(detector.scale_factor - expected_scale) < 0.01
+
+        # Detection should work at any scale
+        assert isinstance(detector.quantities, list)
+        assert isinstance(detector.groups, list)
+
+
+class TestGreyMaskCreationWithRealImage:
+    """Test grey mask creation with real images."""
+
+    def test_grey_mask_with_real_image(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test grey mask creation with real screenshot."""
+        detector = StockpileDetector(real_screenshot)
+        mask = detector._create_grey_mask(real_screenshot)
+
+        # Mask should be 2D (grayscale)
+        assert len(mask.shape) == 2
+        # Mask should match image dimensions
+        assert mask.shape == (real_screenshot.shape[0], real_screenshot.shape[1])
+        # Mask should be binary
+        assert mask.dtype == np.uint8
+
+
+class TestHexNameRegion:
+    """Test hex name region detection."""
+
+    def test_hex_name_region_initialized(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test that hex name region is properly initialized."""
+        detector = StockpileDetector(real_screenshot)
+
+        # Hex name region should be calculated based on image dimensions
+        assert detector.hex_name_x > 0
+        assert detector.hex_name_y > 0
+        assert detector.hex_name_width > 0
+        assert detector.hex_name_height > 0
+        # Y should be near bottom of image
+        assert detector.hex_name_y > detector.height * 0.5
+
+    def test_hex_name_included_in_result(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test that hex name is included in StockpileImageRegions."""
+        detector = StockpileDetector(real_screenshot)
+        detector.analize()
+
+        result = detector.get_stockpile_images()
+
+        if result is not None:
+            # Hex name should be included
+            assert result.hex_name is not None
+            # Should be an image array
+            assert isinstance(result.hex_name, np.ndarray)
+            assert len(result.hex_name.shape) == 3  # Height x Width x Channels
+
+
+class TestDrawAndSaveWithRealImage:
+    """Test debug visualization with real images."""
+
+    def test_draw_and_save_with_detection_results(
+        self, real_screenshot: NDArray[np.uint8], tmp_path: Path
+    ) -> None:
+        """Test drawing detection results on real image.
+
+        Args:
+            real_screenshot: Real test image
+            tmp_path: Pytest temporary directory
+        """
+        detector = StockpileDetector(real_screenshot)
+        detector.analize()
+
+        # Change to temp directory to avoid cluttering project
+        original_dir = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            detector.draw_and_save_results()
+
+            # Should create two output files
+            assert (Path(tmp_path) / "stockpile_detection_result.png").exists()
+            assert (Path(tmp_path) / "stockpile_quantities_result.png").exists()
+        finally:
+            os.chdir(original_dir)

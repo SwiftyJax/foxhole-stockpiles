@@ -368,6 +368,229 @@ class TestDatabaseBuilderMethods:
         # Verify file size is reasonable
         assert output_path.stat().st_size > 0
 
+    @patch("cv2.imread")
+    async def test_process_item_templates_with_missing_code(
+        self, mock_imread: Mock, builder: DatabaseBuilder
+    ) -> None:
+        """Test processing templates for item with missing code.
+
+        Args:
+            mock_imread (Mock): Mocked cv2.imread function.
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+        """
+        # Create catalog item without code
+        catalog_item = CatalogItem(
+            code="",  # Empty code
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            icon_path="War/Content/test/Item",
+            subicon_path="",
+        )
+
+        # Process templates
+        templates = await builder._process_item_templates(
+            item=catalog_item, resolution=SupportedResolution.R_1080, icon_size=32
+        )
+
+        # Should return empty list when code is missing
+        assert templates == []
+
+    @patch("cv2.imread")
+    @patch("cv2.resize")
+    async def test_process_item_templates_with_failed_icon_load(
+        self, mock_resize: Mock, mock_imread: Mock, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test processing templates when icon fails to load.
+
+        Args:
+            mock_resize (Mock): Mocked cv2.resize function.
+            mock_imread (Mock): Mocked cv2.imread function.
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Mock imread to return None (failed load)
+        mock_imread.return_value = None
+
+        # Create test icon file
+        item_code = "TestRifle"
+        item_folder = builder.assets_path / item_code
+        item_folder.mkdir()
+
+        icon_size = int(builder.icon_scaling_factor * 1080)
+        icon_file = item_folder / f"vanilla_{item_code}_{icon_size}.png"
+        icon_file.touch()
+
+        # Create catalog item
+        catalog_item = CatalogItem(
+            code=item_code,
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            icon_path=f"War/Content/test/{item_code}",
+            subicon_path="",
+        )
+
+        # Process templates
+        templates = await builder._process_item_templates(
+            item=catalog_item, resolution=SupportedResolution.R_1080, icon_size=icon_size
+        )
+
+        # Should return empty list when icon fails to load
+        assert templates == []
+
+    @patch("cv2.imread")
+    @patch("cv2.resize")
+    async def test_process_item_templates_with_exception(
+        self, mock_resize: Mock, mock_imread: Mock, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test processing templates when template creation raises exception.
+
+        Args:
+            mock_resize (Mock): Mocked cv2.resize function.
+            mock_imread (Mock): Mocked cv2.imread function.
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Create mock image
+        mock_image = np.zeros((64, 64, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+        mock_resize.return_value = mock_image
+
+        # Create test icon file
+        item_code = "TestRifle"
+        item_folder = builder.assets_path / item_code
+        item_folder.mkdir()
+
+        icon_size = int(builder.icon_scaling_factor * 1080)
+        icon_file = item_folder / f"vanilla_{item_code}_{icon_size}.png"
+        icon_file.touch()
+
+        # Create catalog item
+        catalog_item = CatalogItem(
+            code=item_code,
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            icon_path=f"War/Content/test/{item_code}",
+            subicon_path="",
+        )
+
+        # Mock IconTemplate to raise exception
+        with patch(
+            "foxhole_stockpiles.commands.database_builder.database_builder.IconTemplate"
+        ) as mock_template:
+            mock_template.side_effect = ValueError("Invalid template data")
+
+            # Process templates
+            templates = await builder._process_item_templates(
+                item=catalog_item, resolution=SupportedResolution.R_1080, icon_size=icon_size
+            )
+
+            # Should return empty list when exception occurs
+            assert templates == []
+
+    async def test_find_icon_files_no_icons_found(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test finding icon files when none exist.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Try to find icons for non-existent item
+        found_icons = builder._find_icon_files(item_code="NonExistentItem", icon_size=32)
+
+        # Should return empty list
+        assert found_icons == []
+
+    async def test_find_size_variants_scaling_disabled(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test finding size variants with scaling disabled when exact size not found.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Create test icon structure with wrong size
+        item_code = "TestRifle"
+        item_folder = builder.assets_path / item_code
+        item_folder.mkdir()
+
+        # Create icon at different size than we're looking for
+        icon_file = item_folder / f"vanilla_{item_code}_128.png"
+        icon_file.touch()
+
+        # Find size variants (looking for size 32, but only 128 exists)
+        # Scaling is disabled in fixture
+        found_icons = builder._find_size_variants(
+            folder=item_folder, item_code=item_code, target_size=32, is_crated=False
+        )
+
+        # Should return empty list when scaling disabled and exact size not found
+        assert found_icons == []
+
+    async def test_find_size_variants_with_scaling_no_files(
+        self, tmp_path: Path, mock_catalog_file: Path
+    ) -> None:
+        """Test finding size variants with scaling enabled but no files found.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            mock_catalog_file (Path): Mock catalog file from fixture.
+        """
+        assets_path = tmp_path / "assets"
+        assets_path.mkdir()
+
+        builder = DatabaseBuilder(
+            catalog_path=mock_catalog_file, assets_path=assets_path, use_scaling=True
+        )
+
+        # Create empty folder
+        item_code = "TestRifle"
+        item_folder = builder.assets_path / item_code
+        item_folder.mkdir()
+
+        # Find size variants (no files in folder)
+        found_icons = builder._find_size_variants(
+            folder=item_folder, item_code=item_code, target_size=32, is_crated=False
+        )
+
+        # Should return empty list when no files found
+        assert found_icons == []
+
+    async def test_find_size_variants_with_invalid_filename(
+        self, tmp_path: Path, mock_catalog_file: Path
+    ) -> None:
+        """Test finding size variants with invalid filename format.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            mock_catalog_file (Path): Mock catalog file from fixture.
+        """
+        assets_path = tmp_path / "assets"
+        assets_path.mkdir()
+
+        builder = DatabaseBuilder(
+            catalog_path=mock_catalog_file, assets_path=assets_path, use_scaling=True
+        )
+
+        # Create test icon structure
+        item_code = "TestRifle"
+        item_folder = builder.assets_path / item_code
+        item_folder.mkdir()
+
+        # Create icon with invalid size in filename
+        icon_file = item_folder / f"vanilla_{item_code}_invalid.png"
+        icon_file.touch()
+
+        # Find size variants (looking for size 32)
+        found_icons = builder._find_size_variants(
+            folder=item_folder, item_code=item_code, target_size=32, is_crated=False
+        )
+
+        # Should return empty list when filename has invalid size
+        assert found_icons == []
+
 
 class TestMainFunction:
     """Test suite for the main CLI function.
@@ -475,3 +698,98 @@ class TestMainFunction:
         call_kwargs = mock_builder.build_all_databases.call_args[1]
         assert "target_resolutions" in call_kwargs
         assert len(call_kwargs["target_resolutions"]) == 2
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.DatabaseBuilder")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.setup_logging")
+    async def test_main_with_quiet_mode(
+        self,
+        mock_setup_logging: Mock,
+        mock_builder_class: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with quiet mode enabled.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_builder_class (Mock): Mocked DatabaseBuilder class.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_path = tmp_path / "catalog.json"
+        catalog_path.write_text("[]")
+
+        templates_path = tmp_path / "templates"
+        templates_path.mkdir()
+
+        database_path = tmp_path / "database.pkl"
+
+        mock_args.return_value = argparse.Namespace(
+            catalog=catalog_path,
+            templates=templates_path,
+            database=database_path,
+            use_scaling=False,
+            verbose=False,
+            quiet=True,  # Quiet mode
+            log_file=None,
+            resolution=None,
+        )
+
+        # Mock builder instance
+        mock_builder = MagicMock()
+        mock_builder.build_all_databases = AsyncMock(return_value=None)
+        mock_builder_class.return_value = mock_builder
+
+        await main()
+
+        # Verify setup_logging was called
+        mock_setup_logging.assert_called_once()
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.DatabaseBuilder")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.setup_logging")
+    async def test_main_with_invalid_resolution(
+        self,
+        mock_setup_logging: Mock,
+        mock_builder_class: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with invalid resolution argument.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_builder_class (Mock): Mocked DatabaseBuilder class.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_path = tmp_path / "catalog.json"
+        catalog_path.write_text("[]")
+
+        templates_path = tmp_path / "templates"
+        templates_path.mkdir()
+
+        database_path = tmp_path / "database.pkl"
+
+        mock_args.return_value = argparse.Namespace(
+            catalog=catalog_path,
+            templates=templates_path,
+            database=database_path,
+            use_scaling=False,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+            resolution=["9999"],  # Invalid resolution
+        )
+
+        # Mock builder instance
+        mock_builder = MagicMock()
+        mock_builder.build_all_databases = AsyncMock(return_value=None)
+        mock_builder_class.return_value = mock_builder
+
+        # Should raise SystemExit due to parser.error()
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2

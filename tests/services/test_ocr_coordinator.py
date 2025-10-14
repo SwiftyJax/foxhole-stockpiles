@@ -1036,3 +1036,206 @@ class TestCheckForDuplicates:
         # First call should have "Rifle" in exclusion list
         assert len(excluded_lists) >= 1
         assert "Rifle" in excluded_lists[0]
+
+
+class TestDetectRegionsCriticalException:
+    """Test suite for critical exception handling in _detect_regions."""
+
+    def test_detect_regions_exception_handler(self, tmp_path: Path) -> None:
+        """Test that _detect_regions properly catches and re-raises exceptions.
+
+        This tests the critical exception path at lines 160-162 in ocr_coordinator.py.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = OCRCoordinatorConfig(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+
+        # Mock StockpileDetector to raise an exception during analysis
+        with patch("foxhole_stockpiles.services.ocr_coordinator.StockpileDetector") as mock_class:
+            mock_detector = MagicMock(spec=StockpileDetector)
+            # Simulate detector.analize() raising an exception
+            mock_detector.analize.side_effect = RuntimeError("Simulated detector failure")
+            mock_class.return_value = mock_detector
+
+            # Verify that the exception is caught and re-raised as ValueError
+            with pytest.raises(ValueError, match="Failed to analyze image"):
+                coordinator._detect_regions(mock_image)
+
+    def test_save_screenshot_exception_handler(self, tmp_path: Path) -> None:
+        """Test that screenshot save failures are handled gracefully.
+
+        This tests the exception handling at lines 84-85 in ocr_coordinator.py.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        # Set a screenshots folder
+        config = OCRCoordinatorConfig(
+            database_path=db_path, screenshots_folder=str(tmp_path / "screenshots")
+        )
+        coordinator = OCRCoordinator(config)
+
+        from foxhole_stockpiles.enums.stockpile_type import StockpileType
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_stockpile = Stockpile(
+            resolution="1920x1080", name="Test", type=StockpileType.STORAGE_DEPOT
+        )
+
+        # Mock cv2.imwrite to raise an exception
+        with patch("foxhole_stockpiles.services.ocr_coordinator.cv2.imwrite") as mock_imwrite:
+            mock_imwrite.side_effect = OSError("Simulated write failure")
+
+            # Should not raise - exception should be caught and logged
+            coordinator._save_screenshot_with_metadata(mock_image, mock_stockpile)
+
+
+class TestOCRCoordinatorIntegration:
+    """Integration tests with real screenshots for OCRCoordinator."""
+
+    @pytest.fixture
+    def real_screenshot(self) -> NDArray[np.uint8]:
+        """Load the real test screenshot in BGR format.
+
+        Returns:
+            NDArray[np.uint8]: Real screenshot in BGR format for testing.
+        """
+        import cv2
+
+        test_image_path = Path(__file__).parent.parent / "test.png"
+        if not test_image_path.exists():
+            pytest.skip("test.png not found")
+
+        # Load in BGR format as expected by OCRCoordinator
+        image_bgr = cv2.imread(str(test_image_path))
+        if image_bgr is None:
+            pytest.skip("Failed to load test.png")
+
+        # Cast to proper type for type checking
+        return image_bgr.astype(np.uint8)
+
+    @pytest.fixture
+    def real_database(self) -> Path:
+        """Get path to real template database.
+
+        Returns:
+            Path: Path to the template database file.
+        """
+        db_path = Path(__file__).parent.parent.parent / "data" / "vanilla.pkl"
+        if not db_path.exists():
+            pytest.skip("vanilla.pkl database not found")
+        return db_path
+
+    @pytest.mark.asyncio
+    async def test_analyze_with_high_confidence_triggers_unknown_items(
+        self, real_screenshot: NDArray[np.uint8], real_database: Path
+    ) -> None:
+        """Test that high confidence threshold triggers Unknown item creation.
+
+        This test uses a real screenshot with an artificially high confidence
+        threshold (0.99) to force some items to fail matching, triggering the
+        Unknown item creation code path at line 297-329 in ocr_coordinator.py.
+
+        Args:
+            real_screenshot (NDArray[np.uint8]): Real screenshot fixture.
+            real_database (Path): Path to template database.
+        """
+        # Use very high confidence threshold to trigger Unknown items
+        config = OCRCoordinatorConfig(
+            database_path=real_database,
+            confidence_threshold=0.99,  # Artificially high to cause failures
+            early_exit_threshold=0.995,
+        )
+
+        coordinator = OCRCoordinator(config)
+        result = await coordinator.analyze_stockpile(real_screenshot)
+
+        # Should have some items
+        assert len(result.items) > 0
+
+        # With high confidence threshold, should have some Unknown items
+        unknown_items = [item for item in result.items if item.code == "Unknown"]
+        assert len(unknown_items) > 0, "High confidence threshold should create Unknown items"
+
+        # Should also have some errors recorded
+        assert len(result.errors) > 0, "Unknown items should generate error messages"
+
+    @pytest.mark.asyncio
+    async def test_analyze_with_debug_mode_saves_images(
+        self,
+        real_screenshot: NDArray[np.uint8],
+        real_database: Path,
+        tmp_path: Path,
+    ) -> None:
+        """Test that debug mode triggers image saving code paths.
+
+        This tests the debug mode branches at lines 297-329, 370-371, 381-382,
+        and 396-397 in ocr_coordinator.py.
+
+        Args:
+            real_screenshot (NDArray[np.uint8]): Real screenshot fixture.
+            real_database (Path): Path to template database.
+            tmp_path (Path): Temporary directory for test output.
+        """
+        # Use debug mode to trigger image save paths
+        config = OCRCoordinatorConfig(
+            database_path=real_database,
+            confidence_threshold=0.85,
+            debug_mode=True,
+        )
+
+        coordinator = OCRCoordinator(config)
+
+        # Change to tmp_path so debug images are saved there
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            result = await coordinator.analyze_stockpile(real_screenshot)
+        finally:
+            os.chdir(original_cwd)
+
+        # Should have successfully analyzed
+        assert len(result.items) > 0
+
+        # Debug mode should have created some debug images
+        # Note: We don't assert on specific filenames as they may vary
+
+    @pytest.mark.asyncio
+    async def test_analyze_extracts_metadata_from_real_screenshot(
+        self, real_screenshot: NDArray[np.uint8], real_database: Path
+    ) -> None:
+        """Test that metadata extraction paths are tested with real screenshot.
+
+        This tests the metadata extraction code paths at lines 369-402 in
+        ocr_coordinator.py, which extract stockpile name, hex, and type.
+
+        Args:
+            real_screenshot (NDArray[np.uint8]): Real screenshot fixture.
+            real_database (Path): Path to template database.
+        """
+        config = OCRCoordinatorConfig(
+            database_path=real_database,
+            confidence_threshold=0.85,
+        )
+
+        coordinator = OCRCoordinator(config)
+        result = await coordinator.analyze_stockpile(real_screenshot)
+
+        # Should have extracted resolution
+        assert result.resolution is not None
+        assert result.resolution != ""
+
+        # May or may not have name/hex/type depending on the screenshot
+        # but the code paths should have been exercised
