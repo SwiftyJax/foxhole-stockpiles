@@ -103,8 +103,7 @@ async def main() -> dict[str, Any] | None:
     parser.add_argument(
         "--confidence",
         type=float,
-        help="Minimum confidence threshold for icon matching (default: 0.85). "
-        "Only used with --icon parameter.",
+        help="Minimum confidence threshold for icon matching. Only used with --icon parameter.",
     )
     parser.add_argument("--log-file", type=Path, help="Path to log file (default: console only)")
     parser.add_argument(
@@ -128,7 +127,7 @@ async def main() -> dict[str, Any] | None:
     settings = copy(get_settings())
 
     # Validate confidence parameter
-    if args.confidence < 0.0 or args.confidence > 1.0:
+    if args.confidence is not None and (args.confidence < 0.0 or args.confidence > 1.0):
         parser.error("Confidence threshold must be between 0.0 and 1.0")
 
     logging_settings = settings.logging
@@ -235,6 +234,7 @@ async def main() -> dict[str, Any] | None:
         scanner_settings = settings.scanner
         if args.confidence:
             scanner_settings.confidence_threshold = args.confidence
+
         match_result = manager.match_icon(
             icon_image=icon_image,
             faction=faction_filter,

@@ -57,12 +57,12 @@ async def main() -> dict[str, Any] | None:
     parser.add_argument(
         "--confidence",
         type=float,
-        help="Minimum confidence threshold for icon matching (default: 0.85).",
+        help="Minimum confidence threshold for icon matching.",
     )
     parser.add_argument(
         "--early_exit",
         type=float,
-        help="Early exit threshold for icon matching (default: 0.95).",
+        help="Early exit threshold for icon matching.",
     )
     parser.add_argument(
         "--faction",
