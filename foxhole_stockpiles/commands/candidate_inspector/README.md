@@ -154,7 +154,7 @@ Use the numeric value (e.g., '1080', '2160') with the `--resolution` parameter.
 fs inspect --database templates.pkl --resolution 1080
 
 # Verify specific item exists
-fs inspect --database templates.pkl --code "BasicMaterials" --resolution 1080 --print
+fs inspect --database templates.pkl --code "SoldierSupplies" --resolution 1080 --print
 
 # Check faction distribution
 fs inspect --database templates.pkl --faction c --resolution 1080
