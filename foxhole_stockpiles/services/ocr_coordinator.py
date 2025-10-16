@@ -43,6 +43,33 @@ class OCRCoordinator:
         self._template_manager = TemplateManager(database_path=config.database_path)
         self._stockpile_type_classifier = StockpileTypeClassifier()
 
+    def _extract_icon_to_folder(
+        self, icon_image: NDArray[np.uint8], icon_index: int, code: str
+    ) -> None:
+        """Extract icon to icons folder for debugging.
+
+        Args:
+            icon_image (NDArray[np.uint8]): Icon image to save (BGR format)
+            icon_index (int): Index of the icon in the stockpile
+            code (str): Detected item code or "processing" if not yet matched
+        """
+        try:
+            # Create icons folder if it doesn't exist
+            icons_folder = Path("icons")
+            icons_folder.mkdir(exist_ok=True)
+
+            # Filename: index_code.png (with 3-digit zero-padded index)
+            filename = f"{icon_index:03d}_{code}.png"
+            filepath = icons_folder / filename
+
+            # Save icon image (already in BGR format)
+            cv2.imwrite(str(filepath), icon_image)
+
+            self.logger.debug("Extracted icon to: %s", filepath)
+
+        except Exception as e:
+            self.logger.error("Failed to extract icon %d: %s", icon_index, e)
+
     def _save_screenshot_with_metadata(
         self, image: NDArray[np.uint8], stockpile: Stockpile
     ) -> None:
@@ -589,6 +616,12 @@ class OCRCoordinator:
                     icon_index,
                     confidence_threshold,
                 )
+
+            # Extract failed icon with best match code if available
+            if self.config.extract_icons:
+                code = match_result.best_match.code if match_result.best_match else "Unknown"
+                self._extract_icon_to_folder(image, icon_index, code)
+
             return None, match_result
 
         # Update detected properties for future matching
@@ -605,6 +638,10 @@ class OCRCoordinator:
             match_result.confidence,
             match_result.tested_candidates,
         )
+
+        # Extract matched icon to folder with detected code if enabled
+        if self.config.extract_icons:
+            self._extract_icon_to_folder(image, icon_index, icon_match.code)
 
         return (
             StockpileItem(

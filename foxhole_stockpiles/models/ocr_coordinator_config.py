@@ -42,6 +42,10 @@ class OCRCoordinatorConfig(BaseModel):
     custom_model: str = Field(description="Custom OCR model name", default="renner_numbers")
     tessdata_path: str = Field(description="Path to tessdata directory", default="./tessdata")
     debug_mode: bool = Field(description="Enable debug mode to save debug images", default=False)
+    extract_icons: bool = Field(
+        description="Extract detected icons to 'icons' folder for debugging (<index>_<code>.png)",
+        default=False,
+    )
     screenshots_folder: str = Field(
         description="Folder to save screenshots before processing. Empty string disables saving.",
         default="",
@@ -72,6 +76,7 @@ class OCRCoordinatorConfig(BaseModel):
                 "custom_model": "custom",
                 "tessdata_path": "./tessdata",
                 "debug_mode": False,
+                "extract_icons": False,
                 "screenshots_folder": "screenshots",
                 "max_ncc_candidates": 25,
                 "phash_threshold": 12,
