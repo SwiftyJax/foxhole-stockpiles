@@ -133,11 +133,14 @@ class PakExtractor:
                 str(pak_file),
             ]
 
+            process = None
             try:
                 self._logger.debug("Extracting %s from %s", file_path, pak_file)
                 process = await asyncio.create_subprocess_exec(
                     *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                 )
+                # Await process completion and capture output
+                stdout, stderr = await process.communicate()
                 returncode = process.returncode
 
                 if returncode == 0:
@@ -146,16 +149,25 @@ class PakExtractor:
                     if extracted_file_path.exists():
                         self._logger.info("Successfully extracted: %s", file_path)
                         return True
-
                     self._logger.debug("File %s not found in %s", file_path, pak_file)
                     continue
-
-                self._logger.debug("Failed to extract from %s (file not in PAK)", pak_file)
-                continue
+                else:
+                    self._logger.debug(
+                        "Failed to extract from %s (file not in PAK): %s", pak_file, stderr.decode()
+                    )
+                    continue
 
             except Exception as e:
                 self._logger.error("Error extracting %s from %s: %s", file_path, pak_file, e)
                 continue
+            finally:
+                # Ensure the process is terminated and resources are cleaned up
+                if process is not None:
+                    try:
+                        process.terminate()
+                        await process.wait()
+                    except Exception:
+                        pass
 
         # If we get here, file wasn't found in any PAK
         self._logger.error("Failed to extract %s from any PAK file", file_path)
@@ -191,6 +203,7 @@ class PakExtractor:
         Returns:
             bool: True if conversion succeeded, False otherwise.
         """
+        process = None
         try:
             # Find the PAK directory that contains the extracted file
             temp_path = Path(temp_dir)
@@ -221,6 +234,8 @@ class PakExtractor:
             process = await asyncio.create_subprocess_exec(
                 *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
+            # Await process completion and capture output
+            stdout, stderr = await process.communicate()
             returncode = process.returncode
 
             if returncode == 0:
@@ -244,12 +259,22 @@ class PakExtractor:
                     )
                     return False
             else:
-                self._logger.debug("Conversion failed with %s for %s", ue_version, file_path)
+                self._logger.debug(
+                    "Conversion failed with %s for %s: %s", ue_version, file_path, stderr.decode()
+                )
                 return False
 
         except Exception as e:
             self._logger.debug("Error converting %s with %s: %s", file_path, ue_version, e)
             return False
+        finally:
+            # Ensure the process is terminated and resources are cleaned up
+            if process is not None:
+                try:
+                    process.terminate()
+                    await process.wait()
+                except Exception:
+                    pass
 
     def get_files_to_extract(self) -> set[str]:
         """Get all unique files that need to be extracted from the catalog.
@@ -261,7 +286,6 @@ class PakExtractor:
         if not catalog:
             return set()
 
-        # Issdsad
         files_to_extract: set[str] = set()
 
         # Add the crate icon file
