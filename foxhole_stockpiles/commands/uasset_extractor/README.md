@@ -107,9 +107,11 @@ Optional:
   --pak PATH                  PAK file path (can be specified multiple times)
   --extractor-tool PATH       Path to repak.exe (default: C:\repak\repak.exe)
   --converter-tool PATH       Path to umodel.exe (default: C:\UModel\umodel.exe)
-  --output PATH               Output directory (default: ./output)
+  --output PATH               Output directory (default: output)
   --workers N                 Number of parallel workers (default: CPU count)
-  --logfile PATH              Log file path (default: console only)
+  --log-file PATH             Path to log file (default: console only)
+  --verbose                   Enable verbose logging (debug level)
+  --quiet                     Suppress all output except errors and warnings
 ```
 
 ## Performance Options
@@ -128,7 +130,13 @@ fs extract-assets --catalog catalog.json
 
 ```bash
 # Log to file for debugging
-fs extract-assets --catalog catalog.json --logfile extraction.log
+fs extract-assets --catalog catalog.json --log-file extraction.log
+
+# Verbose logging
+fs extract-assets --catalog catalog.json --verbose --log-file extraction.log
+
+# Quiet mode (only errors)
+fs extract-assets --catalog catalog.json --quiet
 ```
 
 ## Output Structure

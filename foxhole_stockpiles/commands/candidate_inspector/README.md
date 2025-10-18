@@ -39,20 +39,22 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector
 ### Optional Filtering Arguments
 
 - `--code`: Item code to search for (supports partial matching)
-- `--faction`: Faction filter (`c` for Colonial, `w` for Warden)
-- `--category`: Item category filter (see available categories below)
+- `--faction`: Faction filter (`c`/`colonials` for Colonial, `w`/`wardens` for Warden)
+- `--category`: Item category filter (item, vehicle, shippable)
 - `--crated`: Filter by crated status (`true` for crated only, `false` for normal only)
 - `--mod`: Mod filter (specify mod name)
+- `--exclude-code`: Exclude specific item code from results (can be specified multiple times)
 
 ### Icon Matching Arguments
 
 - `--icon`: Path to icon image file for template matching
-- `--confidence`: Minimum confidence threshold for matches (default: 0.85, range: 0.0-1.0)
+- `--confidence`: Minimum confidence threshold for matches (only used with --icon parameter)
 
 ### Output Control Arguments
 
 - `--print`: Show detailed list of matching candidates
-- `--verbose`: Enable debug-level logging
+- `--verbose`: Enable verbose logging (debug level)
+- `--quiet`: Suppress all output except errors and warnings
 - `--log-file`: Path to log file (default: console only)
 
 ## Examples

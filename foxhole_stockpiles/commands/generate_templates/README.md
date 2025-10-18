@@ -40,8 +40,8 @@ This tool is **Step 2** in the database building pipeline:
 The template generator is available through the unified Foxhole Stockpiles CLI:
 
 ```bash
-fs generate-templates --catalog CATALOG --assets INPUT --templates TEMPLATES [--logfile LOGFILE]
-fs generate --catalog CATALOG --assets INPUT --templates TEMPLATES [--logfile LOGFILE]    # Short alias
+fs generate-templates --catalog CATALOG --assets ASSETS --templates TEMPLATES [OPTIONS]
+fs generate --catalog CATALOG --assets ASSETS --templates TEMPLATES [OPTIONS]    # Short alias
 ```
 
 ### Development Interface
@@ -49,7 +49,7 @@ fs generate --catalog CATALOG --assets INPUT --templates TEMPLATES [--logfile LO
 For development and testing, you can also run the template generator module directly:
 
 ```bash
-python -m foxhole_stockpiles.commands.generate_templates.generate_templates --catalog CATALOG --assets INPUT --templates TEMPLATES [--logfile LOGFILE]
+python -m foxhole_stockpiles.commands.generate_templates.generate_templates --catalog CATALOG --assets ASSETS --templates TEMPLATES [OPTIONS]
 ```
 
 **Note**: The recommended way to use this tool is through the unified `fs` command.
@@ -59,9 +59,12 @@ python -m foxhole_stockpiles.commands.generate_templates.generate_templates --ca
 ### Arguments
 
 - `--catalog` (required): Path to catalog.json file containing item definitions
-- `--assets` (required): Path to directory containing extracted PNG assets
-- `--templates` (required): Path where template images will be saved
-- `--logfile` (optional): Path to log file for detailed output
+- `--assets` (required): Path to directory containing extracted PNG assets (with mod subfolders)
+- `--templates` (required): Path where generated templates will be saved
+- `--filter` (optional): Filter items by CodeName containing this string (case-insensitive)
+- `--verbose` (optional): Enable verbose logging (debug level)
+- `--quiet` (optional): Suppress all output except errors and warnings
+- `--log-file` (optional): Path to log file for detailed output (default: console only)
 
 ### Examples
 
@@ -70,10 +73,16 @@ python -m foxhole_stockpiles.commands.generate_templates.generate_templates --ca
 fs generate-templates --catalog catalog.json --assets extracted_assets --templates template_images
 ```
 
-**With logging:**
+**With logging and verbose output:**
 ```bash
 fs generate-templates --catalog catalog.json --assets extracted_assets \
-  --templates template_images --logfile generation.log
+  --templates template_images --verbose --log-file generation.log
+```
+
+**Filter specific items:**
+```bash
+fs generate-templates --catalog catalog.json --assets extracted_assets \
+  --templates template_images --filter Rifle
 ```
 
 ## Input Requirements
@@ -223,16 +232,19 @@ Based on common game resolutions, scaled proportionally:
 - Check available disk space
 
 ### Debug Tips
-- Use `--logfile` to capture detailed processing information
+- Use `--verbose` to enable debug-level logging
+- Use `--log-file` to capture detailed processing information to a file
+- Use `--filter` to test processing for specific items
 - Check logs for specific items that fail processing
 - Verify catalog item names match extracted file paths
 - Ensure proper directory permissions for input and output
 
 ## Dependencies
 
-- **OpenCV (cv2)**: Image processing and manipulation
-- **NumPy**: Efficient array operations
-- **Python 3.12+**: Modern Python features and type annotations
+- **PIL (Pillow)**: Image loading and RGBA conversion
+- **OpenCV (cv2)**: Image processing, overlay blending, and output
+- **NumPy**: Efficient array operations for image manipulation
+- **Python 3.12+**: Modern Python features including async/await and type annotations
 
 See `pyproject.toml` for exact version requirements.
 

@@ -24,11 +24,11 @@ fs api [options]
 
 ## Options
 
-- `--host TEXT` - Bind socket to this host (default: 127.0.0.1)
-- `--port INTEGER` - Bind socket to this port (default: 8000)
-- `--workers INTEGER` - Number of worker processes (default: 1)
+- `--host HOST` - Bind socket to this host (default: 0.0.0.0)
+- `--port PORT` - Bind socket to this port (default: 8000)
+- `--workers WORKERS` - Number of worker processes (default: 1)
 - `--reload` - Enable auto-reload on code changes (development only)
-- `--log-level LEVEL` - Log level: critical, error, warning, info, debug, trace (default: info)
+- `--log-level {critical,error,warning,info,debug,trace}` - Log level (default: info)
 
 ## Examples
 
@@ -38,7 +38,7 @@ fs api [options]
 fs server
 ```
 
-Server will be available at http://127.0.0.1:8000
+Server will be available at http://0.0.0.0:8000 (accessible from any network interface)
 
 ### Start server on custom port
 

@@ -16,47 +16,28 @@ This tool is **Step 3** in the database building pipeline:
 
 ## What It Does
 
-### Feature Computation
-Computes 8 different features for each template to enable ultra-fast filtering:
+### Template Database Creation
+Builds resolution-specific template databases from extracted game assets:
 
-- **Brightness Bucket** (0-15): Average brightness for instant brightness filtering
-- **Dominant Color**: Primary color category (red, blue, green, etc.)
-- **Edge Density**: Complexity measure for detail-based filtering
-- **Color Histogram**: 24-bin color distribution for similarity matching
-- **Corner Hash**: Shape signature for geometric comparison
-- **Size Category**: Visual complexity (small/medium/large)
-- **Pixel Density**: Non-black pixel ratio
-- **Symmetry Score**: Horizontal symmetry measurement
-
-### Lookup Table Generation
-Creates indexed lookup tables for Stage 1 filtering (0.1ms performance):
-
-```python
-brightness_bucket[7] → [template_indices_with_brightness_7]
-dominant_color["blue"] → [template_indices_with_blue_dominance]
-edge_density_range[3] → [template_indices_with_30_40_percent_edges]
-```
+- **Multi-resolution support**: Creates templates for all supported game resolutions (664p to 2160p)
+- **Template metadata**: Stores item code, faction, category, mod, and crated variant information
+- **Image data**: Resizes and stores icon images for each resolution
+- **Optimization data**: Computes optimization features for each template via `compute_optimization_data()`
+- **Async processing**: Parallel processing with semaphore-limited concurrency (8 concurrent operations)
 
 ### Binary Database Creation
-- **Compressed format**: Custom `.fhic` (Foxhole Icon) binary format
+- **Pickle format**: Uses Python's pickle with HIGHEST_PROTOCOL for efficient serialization
 - **Fast loading**: Optimized for runtime performance
-- **Version control**: Database versioning for compatibility
-- **Metadata inclusion**: Resolution info, mods, items, features
+- **Resolution mapping**: Dictionary structure mapping SupportedResolution → TemplateDatabase
+- **Metadata inclusion**: Resolution info, mods, items, faction, category data
 
-## Performance Goals
-
-### Recognition Speed Target
-Enables the planned multi-stage recognition pipeline:
-
-1. **Stage 1** (0.1ms): Lookup table filtering eliminates 90% of candidates
-2. **Stage 2** (2-3ms): Template matching on remaining ~20-30 candidates
-3. **Total**: 1-4ms per icon with 99%+ accuracy
+## Performance Characteristics
 
 ### Database Efficiency
-- **Template capacity**: 12,000-18,000 templates supported
-- **Memory usage**: ~5-10MB active database in memory
-- **File size**: 35-75MB compressed database file
-- **Loading time**: <2 seconds database initialization
+- **Template capacity**: Supports all catalog items across all resolutions
+- **Memory usage**: Varies based on number of items and resolutions
+- **File size**: Typically 35-75MB for full game databases
+- **Processing**: Async/await with concurrent processing for speed
 
 ## Usage
 
@@ -65,8 +46,8 @@ Enables the planned multi-stage recognition pipeline:
 The database builder is available through the unified Foxhole Stockpiles CLI:
 
 ```bash
-fs database-builder --catalog CATALOG --templates TEMPLATES --output OUTPUT [OPTIONS]
-fs build --catalog CATALOG --templates TEMPLATES --output OUTPUT [OPTIONS]    # Short alias
+fs database-builder --catalog CATALOG --templates TEMPLATES --database DATABASE [OPTIONS]
+fs build --catalog CATALOG --templates TEMPLATES --database DATABASE [OPTIONS]    # Short alias
 ```
 
 ### Development Interface
@@ -74,7 +55,7 @@ fs build --catalog CATALOG --templates TEMPLATES --output OUTPUT [OPTIONS]    # 
 For development and testing, you can also run the database builder module directly:
 
 ```bash
-python -m foxhole_stockpiles.commands.database_builder.database_builder --catalog CATALOG --templates TEMPLATES --output OUTPUT [OPTIONS]
+python -m foxhole_stockpiles.commands.database_builder.database_builder --catalog CATALOG --templates TEMPLATES --database DATABASE [OPTIONS]
 ```
 
 **Note**: The recommended way to use this tool is through the unified `fs` command.
@@ -85,21 +66,30 @@ python -m foxhole_stockpiles.commands.database_builder.database_builder --catalo
 
 - `--catalog` (required): Path to catalog.json file for validation
 - `--templates` (required): Path to directory containing training images
-- `--output` (required): Path for output binary database file (.fhic recommended)
-- `--logfile` (optional): Path to log file for detailed output
-- `--validate` (optional): Perform validation checks on generated database
+- `--database` (required): Path for output binary database file (.pkl format)
+- `--use-scaling` (optional): Scale from largest available size when exact size not found (better quality)
+- `--verbose` (optional): Enable verbose logging (debug level)
+- `--quiet` (optional): Suppress all output except errors and warnings
+- `--log-file` (optional): Path to log file for detailed output (default: console only)
+- `--resolution` (optional): Resolution to generate (can be specified multiple times, e.g., --resolution 1080 --resolution 1440). If not specified, all supported resolutions will be generated
 
 ### Examples
 
 **Basic usage:**
 ```bash
-fs database-builder --catalog catalog.json --templates training_images/ --output icons.pkl
+fs database-builder --catalog catalog.json --templates training_images/ --database icons.pkl
 ```
 
-**With validation and logging:**
+**With scaling, logging, and verbose output:**
 ```bash
 fs database-builder --catalog catalog.json --templates training_images/ \
-  --output icons.pkl --validate --logfile build.log
+  --database icons.pkl --use-scaling --verbose --log-file build.log
+```
+
+**Build specific resolutions only:**
+```bash
+fs database-builder --catalog catalog.json --templates training_images/ \
+  --database icons.pkl --resolution 1080 --resolution 1440
 ```
 
 ## Input Requirements
@@ -135,18 +125,18 @@ Same JSON catalog used by template generator for validation:
 ## Output Format
 
 ### Binary Database Structure
-The `.fhic` file contains:
+The `.pkl` file contains:
 
 ```
-Header:
-- Signature: "FHIC" (4 bytes)
-- Version: 1 (4 bytes)
-- Data size: (8 bytes)
-
-Data (compressed):
-- Metadata: Database info, resolutions, mods, items
-- Lookup Tables: Feature → template index mappings
-- Templates: IconTemplate objects with features + image data
+Pickle format (HIGHEST_PROTOCOL):
+- Dictionary mapping SupportedResolution → TemplateDatabase
+- Each TemplateDatabase contains:
+  - Resolution metadata
+  - List of IconTemplate objects with:
+    - Image data (numpy arrays)
+    - Item metadata (code, faction, category, mod)
+    - Crated variant flag
+    - Optimization data (computed features)
 ```
 
 ### Runtime Loading
@@ -154,136 +144,101 @@ The database is designed for fast runtime loading:
 
 ```python
 # Pseudo-code for runtime usage
-database = load_icon_database("icons.fhic")
+import pickle
+from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 
-# Stage 1: Ultra-fast filtering (0.1ms)
-candidates = database.filter_candidates(
-    brightness=7,
-    color="blue",
-    edge_range=3,
-    resolution=32
-)  # 12,000 → 25 candidates
+# Load database
+with open("icons.pkl", "rb") as f:
+    databases = pickle.load(f)
 
-# Stage 2: Template matching (2-3ms)
-best_match = template_match(unknown_icon, candidates)
+# Get templates for specific resolution
+resolution = SupportedResolution("1080")
+database = databases[resolution]
+
+# Access templates
+for template in database.templates:
+    # Perform template matching
+    match_score = compare_template(unknown_icon, template.image)
 ```
 
 ## Features
 
-### Advanced Feature Computation
+### Template Processing
 
-**Brightness Analysis:**
-- Analyzes only non-black pixels for accurate brightness
-- Groups into 16 buckets for efficient filtering
+**Image Processing:**
+- Loads icon images using OpenCV
+- Resizes to target resolution-specific sizes
+- Converts to numpy arrays for storage
 
-**Color Classification:**
-- Sophisticated color categorization (red, blue, green, yellow, etc.)
-- Handles mixed colors and edge cases
+**Metadata Extraction:**
+- Parses mod name from filename
+- Detects crated variants
+- Links to catalog item data (faction, category)
 
-**Edge Detection:**
-- Canny edge detection for complexity measurement
-- Normalized by non-black pixel area
-
-**Shape Analysis:**
-- Corner-based shape signatures for geometric matching
-- MD5 hash of corner regions for fast comparison
+**Variant Handling:**
+- Normal (non-crated) variants
+- Crated variants with `_crated` suffix
+- Multi-mod support (vanilla + mod icons)
 
 ### Quality Assurance
 
 **Template Validation:**
-- Verifies all catalog items have corresponding templates
-- Checks feature completeness for all templates
-- Validates resolution coverage (all 16 resolutions)
+- Logs warnings for items without templates
+- Validates catalog data before processing
+- Checks for image loading failures
 
-**Database Integrity:**
-- Lookup table coverage verification
-- Feature consistency checks
-- Metadata completeness validation
-
-**Performance Validation:**
-- File size optimization checks
-- Template density analysis
-- Loading performance verification
+**Resolution Coverage:**
+- Supports selective resolution building
+- Skips resolutions with no templates
+- Reports statistics per resolution
 
 ## Performance
 
-### Processing Speed
-- **Small databases** (≤1,000 templates): ~10 seconds
-- **Medium databases** (1,000-5,000 templates): ~30-60 seconds
-- **Large databases** (5,000+ templates): ~2-5 minutes
-
 ### Memory Usage
-- **Peak memory**: ~100-200MB during processing
-- **Runtime memory**: ~5-10MB for loaded database
+- **Peak memory**: ~100-300MB during processing
 - **Disk usage**: 35-75MB for typical game databases
 
 ## Technical Details
 
-### Feature Algorithms
-
-**Brightness Bucket Calculation:**
+### Icon Size Calculation
+Templates are sized based on resolution:
 ```python
-bucket = min(15, int(avg_brightness // 17))  # 255/15 ≈ 17
+icon_scaling_factor = 64 / 2160  # 64px at 2160p
+icon_size = int(icon_scaling_factor * resolution_height)
 ```
 
-**Color Histogram:**
-- 8 bins per RGB channel (24 total bins)
-- Normalized by total colored pixels
-- Excludes pure black background pixels
+For example:
+- 1080p → 32px icons
+- 1440p → 43px icons
+- 2160p → 64px icons
 
-**Edge Density:**
-- Canny edge detection with thresholds (50, 150)
-- Ratio of edge pixels to total non-black pixels
-
-### Lookup Table Strategy
-- **Hash-based indexing** for O(1) lookup performance
-- **Multiple feature combination** for precise filtering
-- **Fallback mechanisms** for edge cases
-
-### Binary Format
-- **Custom signature** for format validation
-- **Version header** for compatibility checking
-- **Pickle serialization** with highest protocol
-- **No compression** for faster loading (speed over size)
-
-## Integration
+## Integration with Scanner
 
 ### Runtime System
-The database integrates with the recognition system:
+The database integrates with the scanner for stockpile recognition:
 
 ```
-Screenshot → Region Detection → Icon Extraction → Database Lookup → Template Match → Result
+Screenshot → Stockpile Detection → Icon Extraction → Database Lookup → Template Match → Result
 ```
 
-### Multi-Database Architecture
-Supports separate databases for different recognition types:
-- **icons.fhic**: Icon templates (this tool)
-- **quantities.fhic**: Number templates (future tool)
-- **types.fhic**: Stockpile type templates (future tool)
+The scanner loads the database and uses templates for recognition:
+1. Loads pickle file containing all resolution databases
+2. Selects appropriate resolution database based on screenshot
+3. Iterates through templates to find best matches
 
-## Validation
+## Output Statistics
 
-### Database Validation Features
-When using `--validate`, the tool performs:
-
-- **Template Count Verification**: Ensures expected number of templates
-- **Feature Coverage**: Checks all templates have required features
-- **Resolution Coverage**: Verifies all 16 resolutions are present
-- **Lookup Table Integrity**: Validates index consistency
-- **Catalog Consistency**: Ensures templates match catalog items
-
-### Quality Metrics
-Reports key quality indicators:
+### Build Summary
+The tool reports key statistics after completion:
 
 ```
-Database Quality Report:
-✓ 15,247 templates loaded successfully
-✓ All 16 resolutions present
-✓ 8 feature types computed for all templates
-✓ 7 lookup tables built with full coverage
-✓ Database file: 67.3 MB (226 templates/MB)
-✓ Validation: PASSED
+Database saved: X resolutions, Y total templates, Z.Z MB
 ```
+
+For each resolution, it logs:
+- Number of templates created
+- Items processed
+- Any warnings for items without templates
 
 ## Troubleshooting
 
@@ -293,22 +248,24 @@ Database Quality Report:
 - Verify the templates path from `generate_training_images.py` output
 - Check directory permissions
 
-**Warning: "Missing resolutions"**
-- Ensure `generate_training_images.py` completed successfully
-- Check for partially generated template sets
+**Warning: "No templates generated for item"**
+- Check that template files exist in the templates directory
+- Verify template file naming matches expected pattern
+- If using exact size matching (no --use-scaling), ensure templates exist for all target sizes
 
 **Error: "Failed to save database"**
 - Verify output directory is writable
 - Check available disk space (database can be 50-100MB)
 
-**Validation Error: "Template missing features"**
-- Usually indicates corrupted template images
-- Re-run template generation for affected items
+**Warning: "NO templates found - skipping"**
+- This resolution will be excluded from the database
+- Check that templates were generated for this resolution
 
 ### Debug Tips
-- Use `--validate` to identify specific issues
-- Enable logging with `--logfile` for detailed processing information
-- Check that input templates match expected naming convention
+- Use `--verbose` to enable debug-level logging
+- Enable logging with `--log-file` for detailed processing information
+- Use `--use-scaling` to allow scaling from largest available size when exact matches aren't found
+- Check that input templates match expected naming convention: `modname_itemcode_size.png`
 - Verify catalog file matches template generation catalog
 
 ### Performance Tips
@@ -318,9 +275,10 @@ Database Quality Report:
 
 ## Dependencies
 
-- **OpenCV (cv2)**: Image processing and feature computation
-- **NumPy**: Efficient array operations and mathematical computations
-- **Python 3.12+**: Modern Python features and optimizations
+- **OpenCV (cv2)**: Image loading and resizing
+- **NumPy**: Efficient array operations for image data
+- **Python 3.12+**: Modern Python features including async/await
+- **Pickle**: Database serialization (standard library)
 
 See `pyproject.toml` for exact version requirements.
 

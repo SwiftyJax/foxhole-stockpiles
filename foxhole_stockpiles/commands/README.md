@@ -129,8 +129,7 @@ fs generate-templates \
 fs database-builder \
   --catalog catalog.json \
   --templates processed_templates/ \
-  --database foxhole_templates.pkl \
-  --validate
+  --database foxhole_templates.pkl
 
 # Step 4: Test and validate the database
 fs inspect \

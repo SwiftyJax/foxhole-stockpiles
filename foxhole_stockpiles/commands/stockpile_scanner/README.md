@@ -57,22 +57,19 @@ python -m foxhole_stockpiles.commands.stockpile_scanner --database DATABASE --im
 
 #### Required
 - `--database`: Path to the template database file (.pkl format)
+
+#### Optional
 - `--image`: Path to the input screenshot image file
-
-#### Optional Filtering
-- `--faction`: Faction filter (Colonial: 'c'/'colonial', Warden: 'w'/'warden')
-- `--confidence`: Minimum confidence threshold for icon matching (default: 0.85, range: 0.0-1.0)
-
-#### Template Matching Parameters
-- `--early_exit`: Early exit threshold for icon matching (default: 0.95)
-- `--max_ncc_candidates`: Maximum number of NCC candidates to consider for matching (default: 25)
-- `--phash_threshold`: Maximum Hamming distance for pHash filtering (default: 12)
-
-#### Output Control
+- `--faction`: Faction filter (Colonial: 'c'/'colonials', Warden: 'w'/'wardens')
+- `--confidence`: Minimum confidence threshold for icon matching
+- `--early_exit`: Early exit threshold for icon matching
 - `--debug_image`: Save debug image showing detected regions and matches
 - `--verbose`: Enable verbose logging (debug level)
 - `--quiet`: Suppress output except errors and warnings
 - `--log-file`: Path to log file (default: console only)
+- `--output-format`: Output format for results (console, file, json, webhook)
+- `--config`: Path to configuration file
+- `--token`: Override the webhook token from the configuration file
 
 ### Examples
 
@@ -93,11 +90,16 @@ fs scanner --database database/db.pkl --image stockpile.png \
   --confidence 0.9 --log-file scan_results.log
 ```
 
-**Advanced template matching configuration:**
+**Webhook output:**
 ```bash
 fs scanner --database database/db.pkl --image stockpile.png \
-  --confidence 0.8 --early_exit 0.98 --max_ncc_candidates 30 \
-  --phash_threshold 10 --faction warden --debug_image --verbose
+  --output-format webhook --config config.json
+```
+
+**JSON output to file:**
+```bash
+fs scanner --database database/db.pkl --image stockpile.png \
+  --output-format json
 ```
 
 ## Input Requirements
