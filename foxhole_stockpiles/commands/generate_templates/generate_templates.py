@@ -10,6 +10,7 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 from PIL import Image
+from PIL.Image import Resampling
 
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import TemplateSettings, get_settings
@@ -302,7 +303,7 @@ class TemplateGenerator:
         # Convert BGRA to RGBA for PIL
         subicon_rgba = subicon_tinted[:, :, [2, 1, 0, 3]]
         subicon_pil = Image.fromarray(subicon_rgba.astype(np.uint8))
-        subicon_pil_resized = subicon_pil.resize((subicon_size, subicon_size), Image.LANCZOS)
+        subicon_pil_resized = subicon_pil.resize((subicon_size, subicon_size), Resampling.LANCZOS)
         # Convert back to BGRA numpy array
         subicon_resized = np.array(subicon_pil_resized, dtype=np.uint8)[:, :, [2, 1, 0, 3]]
 
@@ -342,7 +343,7 @@ class TemplateGenerator:
         # Convert BGRA to RGBA for PIL
         main_rgba = main_icon[:, :, [2, 1, 0, 3]]
         main_pil = Image.fromarray(main_rgba.astype(np.uint8))
-        main_pil_resized = main_pil.resize((target_size, target_size), Image.LANCZOS)
+        main_pil_resized = main_pil.resize((target_size, target_size), Resampling.LANCZOS)
 
         # Create black background and paste using alpha channel
         background = Image.new("RGB", (target_size, target_size), (0, 0, 0))
