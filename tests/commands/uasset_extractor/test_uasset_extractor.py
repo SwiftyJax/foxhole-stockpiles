@@ -8,7 +8,7 @@ and error handling scenarios.
 import argparse
 from pathlib import Path
 from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
@@ -452,8 +452,9 @@ class TestExtractSingleFile:
         extracted_file.touch()
 
         # Mock subprocess to return success (returncode 0)
-        mock_process = MagicMock()
+        mock_process = AsyncMock()
         mock_process.returncode = 0
+        mock_process.communicate.return_value = (b"", b"")
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             result = await extractor.extract_single_file(file_path, temp_dir)
@@ -476,8 +477,9 @@ class TestExtractSingleFile:
         Path(temp_dir).mkdir(parents=True, exist_ok=True)
 
         # Mock subprocess to return success but file doesn't exist
-        mock_process = MagicMock()
+        mock_process = AsyncMock()
         mock_process.returncode = 0
+        mock_process.communicate.return_value = (b"", b"")
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             result = await extractor.extract_single_file(file_path, temp_dir)
@@ -497,8 +499,9 @@ class TestExtractSingleFile:
         temp_dir = str(tmp_path / "temp")
 
         # Mock subprocess to return failure
-        mock_process = MagicMock()
+        mock_process = AsyncMock()
         mock_process.returncode = 1
+        mock_process.communicate.return_value = (b"", b"error")
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             result = await extractor.extract_single_file(file_path, temp_dir)
@@ -613,8 +616,9 @@ class TestConvertToPng:
         png_path.touch()
 
         # Mock subprocess to return success
-        mock_process = MagicMock()
+        mock_process = AsyncMock()
         mock_process.returncode = 0
+        mock_process.communicate.return_value = (b"", b"")
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             result = await extractor._try_convert_with_version(file_path, temp_dir)
@@ -642,8 +646,9 @@ class TestConvertToPng:
         # Don't create the PNG file
 
         # Mock subprocess to return success but no PNG created
-        mock_process = MagicMock()
+        mock_process = AsyncMock()
         mock_process.returncode = 0
+        mock_process.communicate.return_value = (b"", b"")
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             result = await extractor._try_convert_with_version(file_path, temp_dir)
@@ -669,8 +674,9 @@ class TestConvertToPng:
         (pak_dir / file_path).touch()
 
         # Mock subprocess to return failure
-        mock_process = MagicMock()
+        mock_process = AsyncMock()
         mock_process.returncode = 1
+        mock_process.communicate.return_value = (b"", b"error")
 
         with patch("asyncio.create_subprocess_exec", return_value=mock_process):
             result = await extractor._try_convert_with_version(file_path, temp_dir)
