@@ -11,7 +11,6 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import numpy as np
 import pytest
-from numpy.typing import NDArray
 
 from foxhole_stockpiles.commands.generate_templates.generate_templates import (
     TemplateGenerator,
@@ -193,14 +192,14 @@ class TestTemplateGeneratorMethods:
         assert size_1080 == 32
         assert size_2160 == 64
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     async def test_load_icon_image_success(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading icon image successfully.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -210,23 +209,29 @@ class TestTemplateGeneratorMethods:
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.touch()
 
-        # Mock image loading with BGRA image
-        mock_image = np.zeros((64, 64, 4), dtype=np.uint8)
-        mock_imread.return_value = mock_image
+        # Mock PIL Image loading with RGBA image
+        from PIL import Image
 
-        result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
+        mock_img = Mock(spec=Image.Image)
+        mock_rgba = Mock()
+        mock_rgba_array = np.zeros((64, 64, 4), dtype=np.uint8)
+        mock_img.convert.return_value = mock_rgba
+        # Mock the context manager
+        mock_image_open.return_value.__enter__.return_value = mock_img
+        mock_image_open.return_value.__exit__.return_value = None
+
+        with patch("numpy.array", return_value=mock_rgba_array):
+            result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
         assert result is not None
         assert result.shape == (64, 64, 4)
 
-    @patch("cv2.imread")
     async def test_load_icon_image_not_found(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading icon image when file doesn't exist.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -287,14 +292,14 @@ class TestTemplateGeneratorMethods:
         # Result should be different from input (color tint applied)
         assert not np.array_equal(result[:, :, :3], test_image[:, :, :3])
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     async def test_load_crate_icon_success(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading crate icon successfully.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -305,40 +310,45 @@ class TestTemplateGeneratorMethods:
         crate_path.parent.mkdir(parents=True, exist_ok=True)
         crate_path.touch()
 
-        # Mock image loading
-        mock_image = np.ones((64, 64, 4), dtype=np.uint8)
-        mock_imread.return_value = mock_image
+        # Mock PIL Image loading with RGBA image
+        from PIL import Image
 
-        result = await generator._load_crate_icon()
+        mock_img = Mock(spec=Image.Image)
+        mock_rgba = Mock()
+        mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8)
+        mock_img.convert.return_value = mock_rgba
+        # Mock the context manager
+        mock_image_open.return_value.__enter__.return_value = mock_img
+        mock_image_open.return_value.__exit__.return_value = None
+
+        with patch("numpy.array", return_value=mock_rgba_array):
+            result = await generator._load_crate_icon()
 
         assert result is not None
         assert result.shape == (64, 64, 4)
 
-    @patch("cv2.imread")
     async def test_load_crate_icon_not_found(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading crate icon when not found in any mod.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
         # Don't create the file, so it won't be found
-        mock_imread.return_value = None
 
         with pytest.raises(FileNotFoundError, match="Crate icon not found"):
             await generator._load_crate_icon()
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     async def test_load_icon_image_grayscale(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading grayscale icon and converting to BGRA.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -347,25 +357,32 @@ class TestTemplateGeneratorMethods:
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.touch()
 
-        # Mock grayscale image (2D array)
-        mock_image = np.zeros((64, 64), dtype=np.uint8)
-        mock_imread.return_value = mock_image
+        # Mock PIL Image loading - convert() will handle grayscale to RGBA
+        from PIL import Image
 
-        with patch("cv2.cvtColor") as mock_cvtcolor:
-            mock_cvtcolor.return_value = np.zeros((64, 64, 4), dtype=np.uint8)
+        mock_img = Mock(spec=Image.Image)
+        mock_rgba = Mock()
+        mock_rgba_array = np.zeros((64, 64, 4), dtype=np.uint8)
+        mock_img.convert.return_value = mock_rgba
+        # Mock the context manager
+        mock_image_open.return_value.__enter__.return_value = mock_img
+        mock_image_open.return_value.__exit__.return_value = None
+
+        with patch("numpy.array", return_value=mock_rgba_array):
             result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
             assert result is not None
-            mock_cvtcolor.assert_called_once()
+            # PIL's convert("RGBA") handles grayscale automatically
+            mock_img.convert.assert_called_once_with("RGBA")
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     async def test_load_icon_image_bgr(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading BGR icon and converting to BGRA.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -374,25 +391,32 @@ class TestTemplateGeneratorMethods:
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.touch()
 
-        # Mock BGR image (3 channels)
-        mock_image = np.zeros((64, 64, 3), dtype=np.uint8)
-        mock_imread.return_value = mock_image
+        # Mock PIL Image loading - convert() will handle RGB to RGBA
+        from PIL import Image
 
-        with patch("cv2.cvtColor") as mock_cvtcolor:
-            mock_cvtcolor.return_value = np.zeros((64, 64, 4), dtype=np.uint8)
+        mock_img = Mock(spec=Image.Image)
+        mock_rgba = Mock()
+        mock_rgba_array = np.zeros((64, 64, 4), dtype=np.uint8)
+        mock_img.convert.return_value = mock_rgba
+        # Mock the context manager
+        mock_image_open.return_value.__enter__.return_value = mock_img
+        mock_image_open.return_value.__exit__.return_value = None
+
+        with patch("numpy.array", return_value=mock_rgba_array):
             result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
             assert result is not None
-            mock_cvtcolor.assert_called_once()
+            # PIL's convert("RGBA") handles RGB/BGR automatically
+            mock_img.convert.assert_called_once_with("RGBA")
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     async def test_load_icon_image_imread_returns_none(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
-        """Test loading icon when imread returns None.
+        """Test loading icon when PIL Image.open raises exception.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -401,21 +425,21 @@ class TestTemplateGeneratorMethods:
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.touch()
 
-        # Mock imread returning None (corrupted file)
-        mock_imread.return_value = None
+        # Mock PIL Image.open raising an exception (corrupted file)
+        mock_image_open.side_effect = Exception("Corrupted image")
 
         result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
         assert result is None
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     async def test_load_icon_image_exception(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading icon when an exception occurs.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -424,8 +448,8 @@ class TestTemplateGeneratorMethods:
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.touch()
 
-        # Mock imread raising exception
-        mock_imread.side_effect = RuntimeError("Read error")
+        # Mock PIL Image.open raising exception
+        mock_image_open.side_effect = RuntimeError("Read error")
 
         result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
@@ -451,14 +475,14 @@ class TestTemplateGeneratorMethods:
         assert result is not None
         assert np.array_equal(result, mock_subicon)
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     async def test_load_subicon_cached_vanilla_fallback(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading subicon with vanilla fallback.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -470,34 +494,48 @@ class TestTemplateGeneratorMethods:
         vanilla_path.parent.mkdir(parents=True, exist_ok=True)
         vanilla_path.touch()
 
-        # Mock image loading - fails for mod1, succeeds for vanilla
-        def imread_side_effect(path: str, flags: int) -> NDArray[np.uint8] | None:
+        # Mock PIL Image loading - fails for mod1, succeeds for vanilla
+        from pathlib import Path as PathType
+
+        from PIL import Image
+
+        def image_open_side_effect(path: PathType) -> Mock:
             if "vanilla" in str(path):
-                return np.ones((32, 32, 4), dtype=np.uint8)
-            return None
+                mock_img = Mock(spec=Image.Image)
+                mock_rgba = Mock()
+                mock_img.convert.return_value = mock_rgba
+                mock_cm = Mock()
+                mock_cm.__enter__ = Mock(return_value=mock_img)
+                mock_cm.__exit__ = Mock(return_value=None)
+                return mock_cm
+            raise FileNotFoundError("Not found")
 
-        mock_imread.side_effect = imread_side_effect
+        mock_image_open.side_effect = image_open_side_effect
 
-        result = await generator._load_subicon_cached(subicon_path=subicon_path, mod_name="mod1")
+        mock_rgba_array = np.ones((32, 32, 4), dtype=np.uint8)
+        with patch("numpy.array", return_value=mock_rgba_array):
+            result = await generator._load_subicon_cached(
+                subicon_path=subicon_path, mod_name="mod1"
+            )
 
         # Should fallback to vanilla
         assert result is not None
         # Cache should have entries for both mod1 (pointing to vanilla result) and vanilla
         assert "mod1:War/Content/test_subicon" in generator.subicon_cache
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     async def test_load_subicon_cached_not_found_anywhere(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading subicon when not found anywhere.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
         subicon_path = "War/Content/nonexistent"
-        mock_imread.return_value = None
+        mock_image_open.side_effect = FileNotFoundError("Not found")
 
         result = await generator._load_subicon_cached(subicon_path=subicon_path, mod_name="vanilla")
 
@@ -538,14 +576,12 @@ class TestTemplateGeneratorMethods:
 
         assert result.shape == (64, 64, 4)
 
-    @patch("cv2.imread")
     async def test_generate_templates_item_missing_code(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test generating templates for item with missing code.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -564,19 +600,16 @@ class TestTemplateGeneratorMethods:
 
         assert result is False
 
-    @patch("cv2.imread")
     async def test_generate_templates_icon_not_found(
-        self, mock_imread: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test generating templates when icon not found.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
         # Don't create the icon file
-        mock_imread.return_value = None
 
         catalog_item = CatalogItem(
             code="TestItem",
@@ -592,12 +625,10 @@ class TestTemplateGeneratorMethods:
 
         assert result is False
 
-    @patch("cv2.imread")
     @patch("cv2.imwrite")
     async def test_generate_templates_with_subicon(
         self,
         mock_imwrite: Mock,
-        mock_imread: Mock,
         generator: TemplateGenerator,
         tmp_path: Path,
     ) -> None:
@@ -605,11 +636,12 @@ class TestTemplateGeneratorMethods:
 
         Args:
             mock_imwrite (Mock): Mocked cv2.imwrite function.
-            mock_imread (Mock): Mocked cv2.imread function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        # Create icon and subicon files
+        # Create real icon and subicon image files for PIL to load
+        from PIL import Image
+
         icon_path = "War/Content/test_rifle"
         subicon_path = "War/Content/test_subicon"
 
@@ -618,18 +650,17 @@ class TestTemplateGeneratorMethods:
 
         icon_full.parent.mkdir(parents=True, exist_ok=True)
         subicon_full.parent.mkdir(parents=True, exist_ok=True)
-        icon_full.touch()
-        subicon_full.touch()
+
+        # Create a real 64x64 RGBA icon image
+        icon_img = Image.new("RGBA", (64, 64), (128, 128, 128, 255))
+        icon_img.save(icon_full)
+
+        # Create a real 32x32 RGBA subicon image
+        subicon_img = Image.new("RGBA", (32, 32), (200, 200, 200, 255))
+        subicon_img.save(subicon_full)
 
         generator.crate_icon = np.ones((64, 64, 4), dtype=np.uint8)
 
-        # Mock imread to return different images for icon and subicon
-        def imread_side_effect(path: str, flags: int) -> NDArray[np.uint8]:
-            if "subicon" in str(path):
-                return np.ones((32, 32, 4), dtype=np.uint8) * 200
-            return np.ones((64, 64, 4), dtype=np.uint8) * 128
-
-        mock_imread.side_effect = imread_side_effect
         mock_imwrite.return_value = True
 
         catalog_item = CatalogItem(
@@ -646,12 +677,12 @@ class TestTemplateGeneratorMethods:
 
         assert result is True
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     @patch("cv2.imwrite")
     async def test_generate_templates_crate_icon_not_loaded(
         self,
         mock_imwrite: Mock,
-        mock_imread: Mock,
+        mock_image_open: Mock,
         generator: TemplateGenerator,
         tmp_path: Path,
     ) -> None:
@@ -659,7 +690,7 @@ class TestTemplateGeneratorMethods:
 
         Args:
             mock_imwrite (Mock): Mocked cv2.imwrite function.
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -671,8 +702,16 @@ class TestTemplateGeneratorMethods:
         # Don't set crate_icon
         generator.crate_icon = None
 
-        mock_image = np.ones((64, 64, 4), dtype=np.uint8) * 128
-        mock_imread.return_value = mock_image
+        # Mock PIL Image loading
+        from PIL import Image
+
+        mock_img = Mock(spec=Image.Image)
+        mock_rgba = Mock()
+        mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8) * 128
+        mock_img.convert.return_value = mock_rgba
+        mock_image_open.return_value.__enter__.return_value = mock_img
+        mock_image_open.return_value.__exit__.return_value = None
+
         mock_imwrite.return_value = True
 
         catalog_item = CatalogItem(
@@ -683,20 +722,21 @@ class TestTemplateGeneratorMethods:
             subicon_path="",
         )
 
-        result = await generator._generate_templates_for_item_and_mod(
-            item=catalog_item, mod_name="vanilla"
-        )
+        with patch("numpy.array", return_value=mock_rgba_array):
+            result = await generator._generate_templates_for_item_and_mod(
+                item=catalog_item, mod_name="vanilla"
+            )
 
         # Should return partial success (True) since normal templates succeed
         # Only crated templates fail, so success_count > 0
         assert result is True
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     @patch("cv2.imwrite")
     async def test_generate_templates_imwrite_exception(
         self,
         mock_imwrite: Mock,
-        mock_imread: Mock,
+        mock_image_open: Mock,
         generator: TemplateGenerator,
         tmp_path: Path,
     ) -> None:
@@ -704,7 +744,7 @@ class TestTemplateGeneratorMethods:
 
         Args:
             mock_imwrite (Mock): Mocked cv2.imwrite function.
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -714,7 +754,17 @@ class TestTemplateGeneratorMethods:
         full_path.touch()
 
         generator.crate_icon = np.ones((64, 64, 4), dtype=np.uint8)
-        mock_imread.return_value = np.ones((64, 64, 4), dtype=np.uint8) * 128
+
+        # Mock PIL Image loading
+        from PIL import Image
+
+        mock_img = Mock(spec=Image.Image)
+        mock_rgba = Mock()
+        mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8) * 128
+        mock_img.convert.return_value = mock_rgba
+        mock_image_open.return_value.__enter__.return_value = mock_img
+        mock_image_open.return_value.__exit__.return_value = None
+
         mock_imwrite.side_effect = RuntimeError("Write error")
 
         catalog_item = CatalogItem(
@@ -725,19 +775,20 @@ class TestTemplateGeneratorMethods:
             subicon_path="",
         )
 
-        result = await generator._generate_templates_for_item_and_mod(
-            item=catalog_item, mod_name="vanilla"
-        )
+        with patch("numpy.array", return_value=mock_rgba_array):
+            result = await generator._generate_templates_for_item_and_mod(
+                item=catalog_item, mod_name="vanilla"
+            )
 
         # Should return False due to errors
         assert result is False
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     @patch("cv2.imwrite")
     async def test_generate_all_templates_success(
         self,
         mock_imwrite: Mock,
-        mock_imread: Mock,
+        mock_image_open: Mock,
         tmp_path: Path,
         mock_catalog_file: Path,
     ) -> None:
@@ -745,7 +796,7 @@ class TestTemplateGeneratorMethods:
 
         Args:
             mock_imwrite (Mock): Mocked cv2.imwrite function.
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             tmp_path (Path): Temporary directory path from pytest fixture.
             mock_catalog_file (Path): Mock catalog file from fixture.
         """
@@ -783,10 +834,20 @@ class TestTemplateGeneratorMethods:
         icon_path.parent.mkdir(parents=True, exist_ok=True)
         icon_path.touch()
 
-        mock_imread.return_value = np.ones((64, 64, 4), dtype=np.uint8)
+        # Mock PIL Image loading
+        from PIL import Image
+
+        mock_img = Mock(spec=Image.Image)
+        mock_rgba = Mock()
+        mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8)
+        mock_img.convert.return_value = mock_rgba
+        mock_image_open.return_value.__enter__.return_value = mock_img
+        mock_image_open.return_value.__exit__.return_value = None
+
         mock_imwrite.return_value = True
 
-        result = await generator.generate_all_templates()
+        with patch("numpy.array", return_value=mock_rgba_array):
+            result = await generator.generate_all_templates()
 
         assert result is True
 
@@ -814,17 +875,17 @@ class TestTemplateGeneratorMethods:
 
         assert result is False
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     async def test_generate_all_templates_no_matching_filter(
         self,
-        mock_imread: Mock,
+        mock_image_open: Mock,
         tmp_path: Path,
         mock_catalog_file: Path,
     ) -> None:
         """Test generating templates when filter matches nothing.
 
         Args:
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             tmp_path (Path): Temporary directory path from pytest fixture.
             mock_catalog_file (Path): Mock catalog file from fixture.
         """
@@ -848,18 +909,27 @@ class TestTemplateGeneratorMethods:
         crate_path.parent.mkdir(parents=True, exist_ok=True)
         crate_path.touch()
 
-        mock_imread.return_value = np.ones((64, 64, 4), dtype=np.uint8)
+        # Mock PIL Image loading
+        from PIL import Image
 
-        result = await generator.generate_all_templates()
+        mock_img = Mock(spec=Image.Image)
+        mock_rgba = Mock()
+        mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8)
+        mock_img.convert.return_value = mock_rgba
+        mock_image_open.return_value.__enter__.return_value = mock_img
+        mock_image_open.return_value.__exit__.return_value = None
+
+        with patch("numpy.array", return_value=mock_rgba_array):
+            result = await generator.generate_all_templates()
 
         assert result is False
 
-    @patch("cv2.imread")
+    @patch("PIL.Image.open")
     @patch("cv2.imwrite")
     async def test_generate_templates_for_item_and_mod(
         self,
         mock_imwrite: Mock,
-        mock_imread: Mock,
+        mock_image_open: Mock,
         generator: TemplateGenerator,
         tmp_path: Path,
     ) -> None:
@@ -867,7 +937,7 @@ class TestTemplateGeneratorMethods:
 
         Args:
             mock_imwrite (Mock): Mocked cv2.imwrite function.
-            mock_imread (Mock): Mocked cv2.imread function.
+            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -880,9 +950,16 @@ class TestTemplateGeneratorMethods:
         # Mock crate icon
         generator.crate_icon = np.ones((64, 64, 4), dtype=np.uint8)
 
-        # Mock image loading
-        mock_image = np.ones((64, 64, 4), dtype=np.uint8) * 128
-        mock_imread.return_value = mock_image
+        # Mock PIL Image loading
+        from PIL import Image
+
+        mock_img = Mock(spec=Image.Image)
+        mock_rgba = Mock()
+        mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8) * 128
+        mock_img.convert.return_value = mock_rgba
+        mock_image_open.return_value.__enter__.return_value = mock_img
+        mock_image_open.return_value.__exit__.return_value = None
+
         mock_imwrite.return_value = True
 
         # Create catalog item
@@ -894,9 +971,10 @@ class TestTemplateGeneratorMethods:
             subicon_path="",
         )
 
-        result = await generator._generate_templates_for_item_and_mod(
-            item=catalog_item, mod_name="vanilla"
-        )
+        with patch("numpy.array", return_value=mock_rgba_array):
+            result = await generator._generate_templates_for_item_and_mod(
+                item=catalog_item, mod_name="vanilla"
+            )
 
         # Should succeed
         assert result is True

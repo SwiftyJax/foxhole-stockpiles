@@ -9,6 +9,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 from numpy.typing import NDArray
+from PIL import Image
 
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import TemplateSettings, get_settings
@@ -134,7 +135,8 @@ class TemplateGenerator:
             mod_name (str): Name of the mod folder
 
         Returns:
-            np.ndarray | None: Loaded image as BGRA array, or None if not found
+            np.ndarray | None: Loaded image as RGBA array (converted to BGRA format), or None
+                if not found
         """
         png_path = f"{icon_path}.png"
         full_path = self.assets_path / mod_name / png_path
@@ -146,25 +148,25 @@ class TemplateGenerator:
             return None
 
         try:
-            image = await asyncio.to_thread(cv2.imread, str(full_path), cv2.IMREAD_UNCHANGED)
+
+            def load_with_pil() -> NDArray[np.uint8] | None:
+                with Image.open(full_path) as img:
+                    # Convert to RGBA to ensure consistent 4-channel format
+                    img_rgba = img.convert("RGBA")
+                    # Convert PIL image to numpy array (RGBA format)
+                    image_array = np.array(img_rgba, dtype=np.uint8)
+                    # Convert RGBA to BGRA (OpenCV format) for compatibility with rest of code
+                    # Swap R and B channels
+                    bgra = image_array[:, :, [2, 1, 0, 3]]
+                    return bgra
+
+            image = await asyncio.to_thread(load_with_pil)
             if image is None:
                 logger.debug("Failed to load icon from %s: %s", mod_name, full_path)
                 return None
 
-            # Ensure 4 channels (BGRA)
-            if len(image.shape) == 2:
-                # Grayscale - convert to BGRA
-                image = cv2.cvtColor(image, cv2.COLOR_GRAY2BGRA)
-            elif len(image.shape) == 3 and image.shape[2] == 3:
-                # BGR - convert to BGRA
-                image = cv2.cvtColor(image, cv2.COLOR_BGR2BGRA)
-            # If already 4 channels, assume it's BGRA
-
-            # Ensure the image is uint8 type
-            result: NDArray[np.uint8] = image.astype(np.uint8)
-
             logger.debug("Successfully loaded icon from %s: %s", mod_name, full_path)
-            return result
+            return image
 
         except Exception as e:
             logger.error("Error loading icon %s from %s: %s", full_path, mod_name, e)
@@ -296,10 +298,13 @@ class TemplateGenerator:
         # Apply color tint
         subicon_tinted = self._apply_subicon_effects(image=subicon)
 
-        # Resize subicon
-        subicon_resized = cv2.resize(
-            subicon_tinted, (subicon_size, subicon_size), interpolation=cv2.INTER_LANCZOS4
-        )
+        # Resize subicon using PIL
+        # Convert BGRA to RGBA for PIL
+        subicon_rgba = subicon_tinted[:, :, [2, 1, 0, 3]]
+        subicon_pil = Image.fromarray(subicon_rgba.astype(np.uint8))
+        subicon_pil_resized = subicon_pil.resize((subicon_size, subicon_size), Image.LANCZOS)
+        # Convert back to BGRA numpy array
+        subicon_resized = np.array(subicon_pil_resized, dtype=np.uint8)[:, :, [2, 1, 0, 3]]
 
         # Apply alpha blending for subicon overlay
         alpha_subicon = (subicon_resized[:, :, 3:4].astype(np.float32) / 255.0) * self.SUBICON_ALPHA
@@ -333,19 +338,24 @@ class TemplateGenerator:
         Returns:
             np.ndarray: Base icon with black background and optional subicon overlay
         """
-        # Create black background for normal icons
-        base_icon = np.zeros((target_size, target_size, 4), dtype=np.uint8)
-        base_icon[:, :, 3] = 255  # Set alpha to fully opaque
-        main_resized = cv2.resize(
-            main_icon, (target_size, target_size), interpolation=cv2.INTER_LANCZOS4
-        )
+        # Resize main icon using PIL for better quality
+        # Convert BGRA to RGBA for PIL
+        main_rgba = main_icon[:, :, [2, 1, 0, 3]]
+        main_pil = Image.fromarray(main_rgba.astype(np.uint8))
+        main_pil_resized = main_pil.resize((target_size, target_size), Image.LANCZOS)
 
-        # Blend main icon with black background
-        alpha_main = main_resized[:, :, 3:4].astype(np.float32) / 255.0
-        for c in range(3):  # BGR channels
-            base_icon[:, :, c] = (1 - alpha_main[:, :, 0]) * base_icon[:, :, c] + alpha_main[
-                :, :, 0
-            ] * main_resized[:, :, c]
+        # Create black background and paste using alpha channel
+        background = Image.new("RGB", (target_size, target_size), (0, 0, 0))
+        background.paste(main_pil_resized, mask=main_pil_resized.split()[3])
+
+        # Convert back to BGRA numpy array
+        background_rgb = np.array(background, dtype=np.uint8)
+        # Add alpha channel (fully opaque)
+        base_icon = np.zeros((target_size, target_size, 4), dtype=np.uint8)
+        base_icon[:, :, 2] = background_rgb[:, :, 0]  # R -> B
+        base_icon[:, :, 1] = background_rgb[:, :, 1]  # G -> G
+        base_icon[:, :, 0] = background_rgb[:, :, 2]  # B -> R
+        base_icon[:, :, 3] = 255  # Alpha
 
         if subicon is not None:
             return self._add_subicon(main_icon=base_icon, subicon=subicon, target_size=target_size)
