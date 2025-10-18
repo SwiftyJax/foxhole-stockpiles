@@ -96,6 +96,17 @@ class TestMainModules:
         assert result.returncode == 0
         assert "usage" in result.stdout.lower() or "inspect" in result.stdout.lower()
 
+    def test_add_icon_main_module(self) -> None:
+        """Test that foxhole_stockpiles.commands.add_icon can be run as module."""
+        result = subprocess.run(
+            [sys.executable, "-m", "foxhole_stockpiles.commands.add_icon", "--help"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        assert result.returncode == 0
+        assert "usage" in result.stdout.lower() or "icon" in result.stdout.lower()
+
 
 class TestMainModuleImports:
     """Test suite for __main__.py module imports."""
@@ -152,6 +163,12 @@ class TestMainModuleImports:
 
         assert hasattr(candidate_inspector_main, "main")
 
+    def test_add_icon_main_import(self) -> None:
+        """Test importing add_icon __main__ module."""
+        from foxhole_stockpiles.commands.add_icon import __main__ as add_icon_main
+
+        assert hasattr(add_icon_main, "main")
+
 
 class TestMainModuleFiles:
     """Test that all __main__.py files exist and are valid Python."""
@@ -166,6 +183,7 @@ class TestMainModuleFiles:
             "foxhole_stockpiles/commands/generate_templates/__main__.py",
             "foxhole_stockpiles/commands/uasset_extractor/__main__.py",
             "foxhole_stockpiles/commands/candidate_inspector/__main__.py",
+            "foxhole_stockpiles/commands/add_icon/__main__.py",
         ],
     )
     def test_main_file_exists(self, module_path: str) -> None:
@@ -191,6 +209,7 @@ class TestMainModuleFiles:
             "foxhole_stockpiles/commands/generate_templates/__main__.py",
             "foxhole_stockpiles/commands/uasset_extractor/__main__.py",
             "foxhole_stockpiles/commands/candidate_inspector/__main__.py",
+            "foxhole_stockpiles/commands/add_icon/__main__.py",
         ],
     )
     def test_main_file_contains_required_code(self, module_path: str) -> None:

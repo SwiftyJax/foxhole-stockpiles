@@ -53,6 +53,11 @@ class CLIDispatcher:
                 module="foxhole_stockpiles.commands.api_server.api_server",
                 aliases=["api"],
             ),
+            "add-icon": CommandInfo(
+                description="Add individual icons to template database",
+                module="foxhole_stockpiles.commands.add_icon.add_icon",
+                aliases=["add"],
+            ),
         }
 
     def resolve_command_alias(self, command: str) -> str | None:
