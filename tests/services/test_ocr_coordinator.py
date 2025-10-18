@@ -98,6 +98,171 @@ class TestOCRCoordinatorInitialization:
         assert coordinator._text_extractor.custom_model == "custom_model"
 
 
+class TestExtractIconToFolder:
+    """Test suite for OCRCoordinator icon extraction functionality."""
+
+    def test_extract_icon_creates_folder_and_file(self, tmp_path: Path) -> None:
+        """Test that icon extraction creates icons folder and saves files.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        coordinator = OCRCoordinator(config)
+
+        mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
+
+        # Change to tmp_path so icons folder is created there
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+
+            # Icons folder should not exist yet
+            icons_folder = tmp_path / "icons"
+            assert not icons_folder.exists()
+
+            # Extract first icon
+            coordinator._extract_icon_to_folder(mock_icon, 0, "Rifle")
+
+            # Now icons folder should be created
+            assert icons_folder.exists()
+
+            # Verify icon file exists
+            assert (icons_folder / "000_Rifle.png").exists()
+        finally:
+            os.chdir(original_cwd)
+
+    def test_extract_icon_enabled(self, tmp_path: Path) -> None:
+        """Test that icons are extracted when extract_icons is True.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        coordinator = OCRCoordinator(config)
+
+        # Create a test icon image (35x35 BGR as used in Foxhole)
+        mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
+        mock_icon[10:25, 10:25] = [255, 0, 0]  # Add some blue color
+
+        # Change to tmp_path so icons folder is created there
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            coordinator._extract_icon_to_folder(mock_icon, 0, "Rifle")
+
+            # Check that icons folder was created
+            icons_folder = tmp_path / "icons"
+            assert icons_folder.exists()
+
+            # Check that the icon file was created with correct naming
+            icon_file = icons_folder / "000_Rifle.png"
+            assert icon_file.exists()
+
+            # Verify the image can be loaded and has correct dimensions
+            import cv2
+
+            loaded_icon = cv2.imread(str(icon_file))
+            assert loaded_icon is not None
+            assert loaded_icon.shape == (35, 35, 3)
+        finally:
+            os.chdir(original_cwd)
+
+    def test_extract_icon_with_index_padding(self, tmp_path: Path) -> None:
+        """Test that icon filenames have zero-padded indices.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        coordinator = OCRCoordinator(config)
+
+        mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
+
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+
+            # Test various icon indices
+            coordinator._extract_icon_to_folder(mock_icon, 0, "Item1")
+            coordinator._extract_icon_to_folder(mock_icon, 9, "Item2")
+            coordinator._extract_icon_to_folder(mock_icon, 42, "Item3")
+            coordinator._extract_icon_to_folder(mock_icon, 123, "Item4")
+
+            icons_folder = tmp_path / "icons"
+
+            # Verify correct filename formatting with 3-digit zero-padding
+            assert (icons_folder / "000_Item1.png").exists()
+            assert (icons_folder / "009_Item2.png").exists()
+            assert (icons_folder / "042_Item3.png").exists()
+            assert (icons_folder / "123_Item4.png").exists()
+        finally:
+            os.chdir(original_cwd)
+
+    def test_extract_icon_with_unknown_code(self, tmp_path: Path) -> None:
+        """Test extracting an icon with 'Unknown' code.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        coordinator = OCRCoordinator(config)
+
+        mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
+
+        import os
+
+        original_cwd = os.getcwd()
+        try:
+            os.chdir(tmp_path)
+            coordinator._extract_icon_to_folder(mock_icon, 5, "Unknown")
+
+            icons_folder = tmp_path / "icons"
+            icon_file = icons_folder / "005_Unknown.png"
+            assert icon_file.exists()
+        finally:
+            os.chdir(original_cwd)
+
+    def test_extract_icon_exception_handling(self, tmp_path: Path) -> None:
+        """Test that icon extraction handles exceptions gracefully.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        coordinator = OCRCoordinator(config)
+
+        mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
+
+        # Mock cv2.imwrite to raise an exception
+        with patch("foxhole_stockpiles.services.ocr_coordinator.cv2.imwrite") as mock_imwrite:
+            mock_imwrite.side_effect = OSError("Simulated write failure")
+
+            # Should not raise - exception should be caught and logged
+            coordinator._extract_icon_to_folder(mock_icon, 0, "Rifle")
+
+
 class TestSaveScreenshot:
     """Test suite for OCRCoordinator screenshot saving functionality."""
 
@@ -832,6 +997,54 @@ class TestCheckForDuplicates:
         assert stockpile.items[0].code == "Unknown"
         assert stockpile.items[0].confidence == 0.0
         assert stockpile.items[1].code == "Rifle"
+
+    def test_no_alternative_with_best_match_below_threshold(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that best match info is included when no alternative meets threshold.
+
+        This test covers line 528 where best_match exists but didn't meet the
+        confidence threshold during duplicate resolution.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        stockpile = Stockpile(resolution="1920x1080")
+        stockpile.items = [
+            StockpileItem(code="Rifle", quantity=100, crated=False, confidence=0.85),
+            StockpileItem(code="Rifle", quantity=200, crated=False, confidence=0.95),
+        ]
+
+        # Create a mock best match that didn't meet threshold
+        mock_best_match = create_test_icon_template("Bandages", crated=True)
+
+        # Mock to return None for icon (no match above threshold) but with best_match
+        mock_match_result = MatchResult(
+            candidates=[0, 1, 2],
+            icon=None,  # No match above threshold
+            confidence=0.0,
+            best_match=mock_best_match,  # But best match exists
+            best_confidence=0.75,  # Below threshold
+            tested_candidates=3,
+        )
+
+        with patch.object(
+            coordinator._template_manager, "match_icon", return_value=mock_match_result
+        ):
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+
+        # Lower confidence item should be marked as Unknown
+        assert stockpile.items[0].code == "Unknown"
+        assert stockpile.items[0].confidence == 0.0
+        assert stockpile.items[1].code == "Rifle"
+
+        # Verify error message includes best match information
+        assert len(stockpile.errors) > 0
+        error_message = stockpile.errors[0]
+        assert "Best match: Bandages (crated)" in error_message
+        assert "confidence: 0.750" in error_message
+        assert "threshold:" in error_message
 
     def test_unknown_items_ignored(
         self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions

@@ -1154,3 +1154,108 @@ class TestCandidateInspectorMain:
             await main()
 
         assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.TemplateManager")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.setup_logging")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.cv2.imread")
+    async def test_main_with_top_matches_display(
+        self,
+        mock_imread: Mock,
+        mock_setup_logging: Mock,
+        mock_manager_class: Mock,
+        mock_args: Mock,
+        mock_template_manager: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function displays top matches with crated and non-crated items.
+
+        This test verifies that line 307 (crated_str display logic) is executed
+        by providing actual top_matches data with both crated and non-crated templates.
+
+        Args:
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_manager_class (Mock): Mocked TemplateManager class.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            mock_template_manager (MagicMock): Mock template manager from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        icon_path = tmp_path / "icon.png"
+        icon_path.touch()
+
+        # Mock image loading
+        mock_image = np.zeros((64, 64, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        # Create mock templates with different crated status
+        mock_template1 = MagicMock()
+        mock_template1.code = "Rifle"
+        mock_template1.crated = False  # Normal item
+        mock_template1.faction = ItemFaction.COLONIALS
+        mock_template1.category = ItemCategory.Item
+        mock_template1.mod = "vanilla"
+        mock_template1.resolution = SupportedResolution.R_1080
+
+        mock_template2 = MagicMock()
+        mock_template2.code = "Rifle"
+        mock_template2.crated = True  # Crated item
+        mock_template2.faction = ItemFaction.COLONIALS
+        mock_template2.category = ItemCategory.Item
+        mock_template2.mod = "vanilla"
+        mock_template2.resolution = SupportedResolution.R_1080
+
+        mock_template3 = MagicMock()
+        mock_template3.code = "Bandages"
+        mock_template3.crated = False  # Normal item
+        mock_template3.faction = ItemFaction.NEUTRAL
+        mock_template3.category = ItemCategory.Item
+        mock_template3.mod = "vanilla"
+        mock_template3.resolution = SupportedResolution.R_1080
+
+        # Configure match result with top matches including crated items
+        mock_match_result = MagicMock()
+        mock_match_result.candidates = [0, 1, 2]
+        mock_match_result.icon = None  # No match above threshold
+        mock_match_result.confidence = 0.0
+        # Populate top_matches with (template, confidence) tuples
+        mock_match_result.top_matches = [
+            (mock_template1, 0.85),  # Normal Rifle
+            (mock_template2, 0.82),  # Crated Rifle
+            (mock_template3, 0.78),  # Normal Bandages
+        ]
+        mock_template_manager.match_icon.return_value = mock_match_result
+
+        mock_args.return_value = argparse.Namespace(
+            database=db_path,
+            code=None,
+            faction=None,
+            category=None,
+            crated=None,
+            mod=None,
+            exclude_code=None,
+            resolution="1080",
+            icon=icon_path,
+            confidence=0.90,  # High threshold so no match, but top_matches will be shown
+            log_file=None,
+            verbose=False,
+            print=False,
+            quiet=False,
+            top=3,
+        )
+
+        mock_manager_class.return_value = mock_template_manager
+
+        result = await main()
+
+        # Verify icon was loaded
+        mock_imread.assert_called_once()
+
+        # Verify match_icon was called
+        assert mock_template_manager.match_icon.called
+
+        # Result should be None since no match above threshold
+        assert result is None
