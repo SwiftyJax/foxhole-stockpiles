@@ -52,7 +52,7 @@ dev = [
     "types-requests",
 
     # Developer Tools
-    "PyQt5>=5.15.0",
+    "PyQt6>=6.4.0",
 ]
 
 [project.urls]

@@ -7,9 +7,9 @@ import sys
 from pathlib import Path
 
 import cv2
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
-from PyQt5.QtGui import QFont, QImage, QPixmap
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from PyQt6.QtGui import QFont, QImage, QPixmap
+from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
@@ -101,7 +101,7 @@ class TemplateBrowser(QMainWindow):
         main_layout = QHBoxLayout(central_widget)
 
         # Create splitter for resizable panels
-        splitter = QSplitter(Qt.Horizontal)
+        splitter = QSplitter(Qt.Orientation.Horizontal)
         main_layout.addWidget(splitter)
 
         # Left panel - filters and list
@@ -224,7 +224,7 @@ class TemplateBrowser(QMainWindow):
         current_layout = QVBoxLayout(self.current_group)
         current_scroll = QScrollArea()
         self.current_image = QLabel("No image selected")
-        self.current_image.setAlignment(Qt.AlignCenter)
+        self.current_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.current_image.setMinimumHeight(200)
         self.current_image.setStyleSheet(
             "QLabel { border: 1px solid #ccc; background-color: white; }"
@@ -239,7 +239,7 @@ class TemplateBrowser(QMainWindow):
         highest_layout = QVBoxLayout(self.highest_group)
         highest_scroll = QScrollArea()
         self.highest_image = QLabel("No image selected")
-        self.highest_image.setAlignment(Qt.AlignCenter)
+        self.highest_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.highest_image.setMinimumHeight(200)
         self.highest_image.setStyleSheet(
             "QLabel { border: 1px solid #ccc; background-color: white; }"
@@ -392,7 +392,7 @@ class TemplateBrowser(QMainWindow):
             item_text = f"{template.code}{crated_str} | {template.faction.value} | {template.mod}"
 
             item = QListWidgetItem(item_text)
-            item.setData(Qt.UserRole, (idx, template))
+            item.setData(Qt.ItemDataRole.UserRole, (idx, template))
             self.template_list.addItem(item)
 
         # Update results count
@@ -402,7 +402,7 @@ class TemplateBrowser(QMainWindow):
 
     def on_template_selected(self, item: QListWidgetItem) -> None:
         """Handle template selection."""
-        idx, template = item.data(Qt.UserRole)
+        idx, template = item.data(Qt.ItemDataRole.UserRole)
 
         # Find highest resolution available
         highest_resolution = max(self.all_databases.keys(), key=lambda x: int(x.value))
@@ -466,7 +466,7 @@ class TemplateBrowser(QMainWindow):
             current_w,
             current_h,
             current_bytes_per_line,
-            QImage.Format_RGB888,
+            QImage.Format.Format_RGB888,
         )
         current_pixmap = QPixmap.fromImage(current_qt_image)
 
@@ -488,8 +488,8 @@ class TemplateBrowser(QMainWindow):
             current_scaled = current_pixmap.scaled(
                 int(current_w * current_scale),
                 int(current_h * current_scale),
-                Qt.KeepAspectRatio,
-                Qt.FastTransformation,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.FastTransformation,
             )
 
             # Display highest resolution image (4x)
@@ -499,13 +499,16 @@ class TemplateBrowser(QMainWindow):
                 highest_w,
                 highest_h,
                 highest_bytes_per_line,
-                QImage.Format_RGB888,
+                QImage.Format.Format_RGB888,
             )
             highest_pixmap = QPixmap.fromImage(highest_qt_image)
 
             # Scale highest to 4x
             highest_scaled = highest_pixmap.scaled(
-                target_width, target_height, Qt.KeepAspectRatio, Qt.FastTransformation
+                target_width,
+                target_height,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.FastTransformation,
             )
 
             self.highest_image.setPixmap(highest_scaled)
@@ -522,8 +525,8 @@ class TemplateBrowser(QMainWindow):
             current_scaled = current_pixmap.scaled(
                 int(current_w * current_scale),
                 int(current_h * current_scale),
-                Qt.KeepAspectRatio,
-                Qt.FastTransformation,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.FastTransformation,
             )
 
             # No highest resolution template found
@@ -559,7 +562,7 @@ def main() -> None:
     browser.show()
 
     # Run event loop
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@
 """Interactive Crate Color Tuner.
 
 Real-time adjustment with brightness threshold for separate dark/light area control.
-Uses OpenCV for all image processing, PyQt5 for GUI interface.
+Uses OpenCV for all image processing, PyQt6 for GUI interface.
 """
 
 import argparse
@@ -13,9 +13,9 @@ from pathlib import Path
 import cv2
 import numpy as np
 from numpy.typing import NDArray
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QImage, QMouseEvent, QPixmap
-from PyQt5.QtWidgets import (
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QImage, QMouseEvent, QPixmap
+from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
     QFileDialog,
@@ -55,9 +55,9 @@ class ClickableLabel(QLabel):
         """
         self.click_handler = handler
 
-    def mousePressEvent(self, ev: QMouseEvent) -> None:
+    def mousePressEvent(self, ev: QMouseEvent | None) -> None:
         """Handle mouse press events."""
-        if self.click_handler:
+        if ev and self.click_handler:
             self.click_handler(ev)
         super().mousePressEvent(ev)
 
@@ -153,7 +153,7 @@ class CrateTunerQt(QMainWindow):
 
         self.preview_label = ClickableLabel()
         self.preview_label.setMinimumSize(1000, 1000)
-        self.preview_label.setAlignment(Qt.AlignCenter)
+        self.preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.preview_label.setStyleSheet("background-color: white; border: 1px solid gray;")
         self.preview_label.set_click_handler(self.on_preview_click)
 
@@ -202,7 +202,7 @@ class CrateTunerQt(QMainWindow):
         self.red_input.valueChanged.connect(self.on_input_change)
         color_layout.addWidget(self.red_input, 1, 1)
 
-        self.red_slider = QSlider(Qt.Horizontal)
+        self.red_slider = QSlider(Qt.Orientation.Horizontal)
         self.red_slider.setRange(0, 2000)
         self.red_slider.setValue(int(self.red_mult * 1000))
         self.red_slider.valueChanged.connect(self.on_slider_change)
@@ -219,7 +219,7 @@ class CrateTunerQt(QMainWindow):
         self.green_input.valueChanged.connect(self.on_input_change)
         color_layout.addWidget(self.green_input, 2, 1)
 
-        self.green_slider = QSlider(Qt.Horizontal)
+        self.green_slider = QSlider(Qt.Orientation.Horizontal)
         self.green_slider.setRange(0, 2000)
         self.green_slider.setValue(int(self.green_mult * 1000))
         self.green_slider.valueChanged.connect(self.on_slider_change)
@@ -236,7 +236,7 @@ class CrateTunerQt(QMainWindow):
         self.blue_input.valueChanged.connect(self.on_input_change)
         color_layout.addWidget(self.blue_input, 3, 1)
 
-        self.blue_slider = QSlider(Qt.Horizontal)
+        self.blue_slider = QSlider(Qt.Orientation.Horizontal)
         self.blue_slider.setRange(0, 2000)
         self.blue_slider.setValue(int(self.blue_mult * 1000))
         self.blue_slider.valueChanged.connect(self.on_slider_change)
@@ -254,7 +254,7 @@ class CrateTunerQt(QMainWindow):
 
         # Red offset
         color_layout.addWidget(QLabel("Red:"), 6, 0)
-        self.red_offset_slider = QSlider(Qt.Horizontal)
+        self.red_offset_slider = QSlider(Qt.Orientation.Horizontal)
         self.red_offset_slider.setRange(0, 255)
         self.red_offset_slider.setValue(0)
         self.red_offset_slider.valueChanged.connect(lambda v: self.on_offset_change(v, "red"))
@@ -264,7 +264,7 @@ class CrateTunerQt(QMainWindow):
 
         # Green offset
         color_layout.addWidget(QLabel("Green:"), 7, 0)
-        self.green_offset_slider = QSlider(Qt.Horizontal)
+        self.green_offset_slider = QSlider(Qt.Orientation.Horizontal)
         self.green_offset_slider.setRange(0, 255)
         self.green_offset_slider.setValue(0)
         self.green_offset_slider.valueChanged.connect(lambda v: self.on_offset_change(v, "green"))
@@ -274,7 +274,7 @@ class CrateTunerQt(QMainWindow):
 
         # Blue offset
         color_layout.addWidget(QLabel("Blue:"), 8, 0)
-        self.blue_offset_slider = QSlider(Qt.Horizontal)
+        self.blue_offset_slider = QSlider(Qt.Orientation.Horizontal)
         self.blue_offset_slider.setRange(0, 255)
         self.blue_offset_slider.setValue(0)
         self.blue_offset_slider.valueChanged.connect(lambda v: self.on_offset_change(v, "blue"))
@@ -291,7 +291,7 @@ class CrateTunerQt(QMainWindow):
 
         # Alpha control
         global_layout.addWidget(QLabel("Alpha:"), 0, 0)
-        self.alpha_slider = QSlider(Qt.Horizontal)
+        self.alpha_slider = QSlider(Qt.Orientation.Horizontal)
         self.alpha_slider.setRange(0, 1000)
         self.alpha_slider.setValue(int(self.alpha_mult * 1000))
         self.alpha_slider.valueChanged.connect(self.on_alpha_change)
@@ -332,13 +332,13 @@ class CrateTunerQt(QMainWindow):
 
         # Instructions
         instructions = QLabel("Click on preview image to select sample points")
-        instructions.setFont(QFont("Default", 9, QFont.StyleItalic))
+        instructions.setFont(QFont("Default", 9, -1, True))
         sample_layout.addWidget(instructions, 1, 0, 1, 3)
 
         # Light area sample
         sample_layout.addWidget(QLabel("Light area sample:"), 2, 0, 1, 3)
         self.sample_rgb_label = QLabel("R: -, G: -, B: -")
-        self.sample_rgb_label.setFont(QFont("Default", 10, QFont.Bold))
+        self.sample_rgb_label.setFont(QFont("Default", 10, QFont.Weight.Bold))
         sample_layout.addWidget(self.sample_rgb_label, 3, 0, 1, 3)
         self.light_pos_label = QLabel("Position: not selected")
         self.light_pos_label.setFont(QFont("Default", 8))
@@ -351,7 +351,7 @@ class CrateTunerQt(QMainWindow):
         # Dark area sample
         sample_layout.addWidget(QLabel("Dark area sample:"), 6, 0, 1, 3)
         self.sample_bars_label = QLabel("R: -, G: -, B: -")
-        self.sample_bars_label.setFont(QFont("Default", 10, QFont.Bold))
+        self.sample_bars_label.setFont(QFont("Default", 10, QFont.Weight.Bold))
         sample_layout.addWidget(self.sample_bars_label, 7, 0, 1, 3)
         self.dark_pos_label = QLabel("Position: not selected")
         self.dark_pos_label.setFont(QFont("Default", 8))
@@ -443,8 +443,8 @@ class CrateTunerQt(QMainWindow):
             return
 
         # Get click position
-        click_x = ev.x()
-        click_y = ev.y()
+        click_x = int(ev.position().x())
+        click_y = int(ev.position().y())
 
         # Get label dimensions
         label_width = self.preview_label.width()
@@ -725,14 +725,16 @@ class CrateTunerQt(QMainWindow):
         height, width, channel = cv_image.shape
         bytes_per_line = 4 * width
         # Convert to bytes for QImage constructor
-        return QImage(cv_image.tobytes(), width, height, bytes_per_line, QImage.Format_RGBA8888)
+        return QImage(
+            cv_image.tobytes(), width, height, bytes_per_line, QImage.Format.Format_RGBA8888
+        )
 
     def draw_sample_markers(self, pixmap: QPixmap) -> QPixmap:
         """Draw visual markers on the pixmap to show selected sample points."""
         if self.current_result is None:
             return pixmap
 
-        from PyQt5.QtGui import QColor, QPainter, QPen
+        from PyQt6.QtGui import QColor, QPainter, QPen
 
         painter = QPainter(pixmap)
         display_scale = 16
@@ -1289,7 +1291,7 @@ def main() -> None:
     app = QApplication(sys.argv)
     window = CrateTunerQt(icon_size=args.size, icon_path=args.icon, crate_path=args.crate)
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 
 if __name__ == "__main__":
