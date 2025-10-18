@@ -142,18 +142,27 @@ class OCRCoordinator:
         self._save_screenshot_with_metadata(image, scanned_stockpile)
 
         # Log summary
-        successful_items = len([item for item in scanned_stockpile.items if item.code != "Unknown"])
         stockpile_type = scanned_stockpile.type.value if scanned_stockpile.type else "Unknown"
         stockpile_name = scanned_stockpile.name if scanned_stockpile.name else "Unknown"
 
+        # Calculate average confidence (excluding unknown items)
+        matched_items = [item for item in scanned_stockpile.items if item.code != "Unknown"]
+        total_items = len(scanned_stockpile.items)
+        unmatched_items = total_items - len(matched_items)
+        avg_confidence = (
+            sum(item.confidence or 0.0 for item in matched_items) / len(matched_items)
+            if matched_items
+            else 0.0
+        )
+
         self.logger.info(
-            "%s:%s (%s). Scanned %d items (%d successful, %d unknown) in %.2fs",
+            "%s:%s (%s). Scanned %d items (%d unmatched) with avg confidence: %.3f in %.2fs",
             stockpile_type,
             stockpile_name,
             scanned_stockpile.resolution,
             len(scanned_stockpile.items),
-            successful_items,
-            len(scanned_stockpile.items) - successful_items,
+            unmatched_items,
+            avg_confidence,
             elapsed_time,
         )
 
