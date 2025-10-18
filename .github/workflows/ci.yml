@@ -34,17 +34,14 @@ jobs:
   test:
     name: Test Suite
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.12', '3.13']
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python 3.12
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: '3.12'
           cache: 'pip'
 
       - name: Install system dependencies
@@ -59,15 +56,13 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest --cov=foxhole_stockpiles --cov-report=xml --cov-report=term
+          pytest tests/ --cov=foxhole_stockpiles --cov-report=xml --cov-report=term-missing
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
-          fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
-        continue-on-error: true
 
   test-build:
     name: Test Package Build
