@@ -49,6 +49,7 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector
 
 - `--icon`: Path to icon image file for template matching
 - `--confidence`: Minimum confidence threshold for matches (only used with --icon parameter)
+- `--top`: Show top N matches with confidence scores when matching icon (default: 5)
 
 ### Output Control Arguments
 
@@ -97,6 +98,12 @@ Test icon recognition against all candidates:
 
 ```bash
 fs inspect --database templates.pkl --resolution 1080 --icon screenshot_icon.png --confidence 0.8
+```
+
+**View top matches** to debug confidence scores:
+
+```bash
+fs inspect --database templates.pkl --resolution 1080 --icon screenshot_icon.png --top 10
 ```
 
 ### 6. Test Icon Matching with Filters
@@ -165,8 +172,8 @@ fs inspect --database templates.pkl --faction w --resolution 1080
 
 ### Icon Recognition Issues
 ```bash
-# Test problematic icon
-fs inspect --database templates.pkl --resolution 1080 --icon failing_icon.png --verbose
+# Test problematic icon and view top matches
+fs inspect --database templates.pkl --resolution 1080 --icon failing_icon.png --verbose --top 10
 
 # Try with lower confidence
 fs inspect --database templates.pkl --resolution 1080 --icon failing_icon.png --confidence 0.6
@@ -270,6 +277,15 @@ Icon matching results:
   Mod: base
   Resolution: 1080px
 
+Top 5 matches:
+Code                      | Faction    | Category     | Mod             | Resolution | Confidence
+-----------------------------------------------------------------------------------------------
+Rifle                     | Colonial   | item         | vanilla         | 1080px     | 0.852
+RifleShort                | Colonial   | item         | vanilla         | 1080px     | 0.785
+Pistol                    | Colonial   | item         | vanilla         | 1080px     | 0.723
+SMG                       | Colonial   | item         | vanilla         | 1080px     | 0.695
+Carbine                   | Colonial   | item         | vanilla         | 1080px     | 0.670
+
 Found 45 matching candidates
 ```
 
@@ -298,11 +314,12 @@ Found 45 matching candidates
 ### Debug Tips
 
 1. **Use `--verbose` flag** for detailed logging
-2. **Start with broad filters** then narrow down
-3. **Use `--print` flag** to see what candidates are found
-4. **Test without `--icon` first** to verify candidate filtering works
-5. **Lower `--confidence` threshold** if icon matching fails
-6. **Check log files** for detailed error information
+2. **Use `--top` parameter** to see top N matches with confidence scores for debugging
+3. **Start with broad filters** then narrow down
+4. **Use `--print` flag** to see what candidates are found
+5. **Test without `--icon` first** to verify candidate filtering works
+6. **Lower `--confidence` threshold** if icon matching fails
+7. **Check log files** for detailed error information
 
 ## Performance Notes
 

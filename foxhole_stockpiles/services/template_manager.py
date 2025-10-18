@@ -16,6 +16,7 @@ from foxhole_stockpiles.core.utils import compute_icon_phash, hamming_distance
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
+from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.services.template_database import TemplateDatabase
 
@@ -144,6 +145,7 @@ class TemplateManager:
         phash_threshold: int = 12,
         max_ncc_candidates: int = 25,
         early_exit_threshold: float = 0.95,
+        top_n: int = 5,
     ) -> MatchResult:
         """Get candidates and optionally perform icon matching.
 
@@ -160,6 +162,7 @@ class TemplateManager:
             max_ncc_candidates (int): Maximum candidates for NCC optimization
             early_exit_threshold (float): Confidence threshold for immediate exit
                 (if >= confidence_threshold)
+            top_n (int): Number of top matches to return with confidence scores (default: 5)
 
         Returns:
             MatchResult: Candidates list and optional icon match result
@@ -216,6 +219,7 @@ class TemplateManager:
         best_match = None
         best_confidence = 0.0
         candidates_tested = 0
+        all_matches: list[tuple[float, IconTemplate]] = []
 
         for candidate_idx in final_candidates:
             candidates_tested += 1
@@ -225,6 +229,9 @@ class TemplateManager:
                 image=icon_image, templ=cast(cv2.Mat, template.image), method=cv2.TM_CCOEFF_NORMED
             )
             _, confidence, _, _ = cv2.minMaxLoc(result)
+
+            # Store all matches for top N
+            all_matches.append((confidence, template))
 
             if confidence > best_confidence:
                 best_confidence = confidence
@@ -239,6 +246,10 @@ class TemplateManager:
                     candidates_tested,
                 )
                 break
+
+        # Sort all matches by confidence and get top N
+        all_matches.sort(key=lambda x: x[0], reverse=True)
+        top_matches = [(template, conf) for conf, template in all_matches[:top_n]]
 
         ncc_time_ms = (time.perf_counter() - ncc_start) * 1000
         end_time = time.perf_counter()
@@ -264,6 +275,7 @@ class TemplateManager:
             best_match=best_match,
             best_confidence=best_confidence,
             tested_candidates=candidates_tested,
+            top_matches=top_matches,
         )
 
     def __repr__(self) -> str:

@@ -34,6 +34,10 @@ class MatchResult(BaseModel):
         description="Number of candidates that were tested during icon matching",
         default=0,
     )
+    top_matches: list[tuple[IconTemplate, float]] = Field(
+        description="List of top N matches with their confidence scores (template, confidence)",
+        default_factory=list,
+    )
 
     model_config = ConfigDict(
         str_strip_whitespace=True,

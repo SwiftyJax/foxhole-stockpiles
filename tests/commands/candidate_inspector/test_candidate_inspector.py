@@ -103,6 +103,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -189,6 +190,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -246,6 +248,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=True,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -292,6 +295,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         # Mock template manager to raise FileNotFoundError
@@ -345,6 +349,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = MagicMock()
@@ -391,6 +396,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = MagicMock()
@@ -439,6 +445,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -488,6 +495,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -537,6 +545,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -586,6 +595,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -638,6 +648,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         # imread returns None for missing files
@@ -700,6 +711,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=True,  # Quiet mode
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -747,6 +759,7 @@ class TestCandidateInspectorMain:
             verbose=True,  # Verbose mode
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -794,6 +807,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -841,6 +855,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         # Mock template manager with empty candidates
@@ -926,6 +941,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         mock_manager_class.return_value = mock_template_manager
@@ -971,6 +987,7 @@ class TestCandidateInspectorMain:
             verbose=False,
             print=False,
             quiet=False,
+            top=5,
         )
 
         # Mock template manager with crated items
@@ -1057,6 +1074,7 @@ class TestCandidateInspectorMain:
             verbose=True,  # Verbose mode to trigger exception logging
             print=False,
             quiet=False,
+            top=5,
         )
 
         # Mock template manager
@@ -1114,6 +1132,7 @@ class TestCandidateInspectorMain:
             verbose=True,  # Verbose mode
             print=False,
             quiet=False,
+            top=5,
         )
 
         # Mock template manager that raises exception during matching

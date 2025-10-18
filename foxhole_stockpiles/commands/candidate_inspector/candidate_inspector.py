@@ -105,6 +105,12 @@ async def main() -> dict[str, Any] | None:
         type=float,
         help="Minimum confidence threshold for icon matching. Only used with --icon parameter.",
     )
+    parser.add_argument(
+        "--top",
+        type=int,
+        default=5,
+        help="Show top N matches with confidence scores when matching icon (default: 5)",
+    )
     parser.add_argument("--log-file", type=Path, help="Path to log file (default: console only)")
     parser.add_argument(
         "--verbose", action="store_true", help="Enable verbose logging (debug level)"
@@ -246,6 +252,7 @@ async def main() -> dict[str, Any] | None:
             confidence_threshold=scanner_settings.confidence_threshold,
             phash_threshold=scanner_settings.phash_threshold,
             max_ncc_candidates=scanner_settings.max_ncc_candidates,
+            top_n=args.top,
         )
 
         candidate_indices = match_result.candidates
@@ -283,6 +290,30 @@ async def main() -> dict[str, Any] | None:
                     f" Searched {len(candidate_indices)} candidates"
                 ),
             )
+
+        # Display top N matches
+        if match_result.top_matches:
+            logger.info(f"\nTop {len(match_result.top_matches)} matches:")
+            logger.info(
+                "%-25s | %-10s | %-12s | %-15s | %-10s | Confidence",
+                "Code",
+                "Faction",
+                "Category",
+                "Mod",
+                "Resolution",
+            )
+            logger.info("-" * 95)
+            for template, confidence in match_result.top_matches:
+                crated_str = " (crated)" if template.crated else ""
+                logger.info(
+                    "%-25s | %-10s | %-12s | %-15s | %-10s | %.3f",
+                    template.code + crated_str,
+                    template.faction.value,
+                    template.category.value,
+                    template.mod,
+                    f"{template.resolution.value}px",
+                    confidence,
+                )
     else:
         logger.info(f"Total: {len(candidate_indices)} candidates")
 
