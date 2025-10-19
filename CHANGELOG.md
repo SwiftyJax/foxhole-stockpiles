@@ -7,6 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2025-10-19
+
+### Added
+- **New Command**: `fs add-icon` command for manual icon database management
+- Added `extract_icons` option in scanner settings to save extracted icons from screenshots for debugging
+- Added `--top` option to inspector command to show confidence of top N items in database (default: 5)
+- Added average confidence to scan summary log messages
+- Added low-confidence match reporting to error messages
+- Added adaptive grey threshold detection based on darkest quantity box grey values
+- Added option to save screenshots to a folder before processing (`screenshots_folder` setting)
+- Added `exclude_codes` parameter to `get_candidates` method for better icon redetection
+- Improved test coverage significantly across multiple modules
+
+### Changed
+- Replaced OpenCV with PIL for image loading and resizing in template generation
+- Scanner now redetects icons when there is a conflict to improve accuracy
+- Corrected image format handling to consistently use BGR format
+- Made name detection coordinates larger to avoid cutting names in edge cases
+- Adjusted name box detection coordinates to reduce empty gap to left of name
+- Moved webhook response logging to debug level
+- Reduced scanner verbosity - most logs moved to debug, leaving scan summary at info level
+- Item confidence now displays with 3 decimal places for better precision
+
+### Fixed
+- Fixed stockpile type and name location detection with empty stockpiles
+- Fixed subprocess handling in uasset_extractor to prevent resource leaks
+- Fixed individual logger level configuration from settings not being applied
+- Removed default value for early exit parameter in CLI to prevent overwriting configured value in `~/.fs_config`
+- Fixed uasset tests after template refactoring
+- Fixed test image handling by adding via Git LFS for complete CI test coverage
+- Standardized CI to Python 3.12 for consistent coverage reporting
+- Used `Resampling.LANCZOS` instead of deprecated `Image.LANCZOS` to fix mypy warnings
+
+### Development
+- Updated dependencies to latest versions
+- Upgraded development tools from PyQt5 to PyQt6
+- Added crate overlay calibrator tool for visualizing crate icon positioning
+- Updated Codevoc configuration and improved test reporting
+- Updated CLI documentation to match current usage
+
 ## [0.1.1] - 2025-10-05
 
 ### Fixed
@@ -62,6 +102,7 @@ Initial beta release.
 - Test coverage >80%
 - CI/CD with GitHub Actions
 
-[Unreleased]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/xurxogr/foxhole-stockpiles/releases/tag/v0.1.0
