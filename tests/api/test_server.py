@@ -463,6 +463,64 @@ class TestScanStockpileEndpoint:
         assert response.status_code == 200
 
     @patch("foxhole_stockpiles.api.server.OCRCoordinator")
+    @patch("foxhole_stockpiles.api.server.OutputHandler")
+    def test_scan_stockpile_with_language(
+        self, mock_output_handler: Mock, mock_coordinator: Mock, client: TestClient
+    ) -> None:
+        """Test scan with language parameter.
+
+        Args:
+            mock_output_handler (Mock): Mocked OutputHandler class.
+            mock_coordinator (Mock): Mocked OCRCoordinator class.
+            client (TestClient): FastAPI test client from fixture.
+        """
+        import cv2
+
+        from foxhole_stockpiles.enums.supported_language import SupportedLanguage
+
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        _, buffer = cv2.imencode(".png", img)
+        image_bytes = buffer.tobytes()
+
+        # Mock the coordinator
+        mock_instance = Mock()
+        mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
+        mock_coordinator.return_value = mock_instance
+
+        # Mock the output handler
+        mock_handler_instance = Mock()
+        mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
+        mock_output_handler.return_value = mock_handler_instance
+
+        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+        response = client.post("/ocr/scan_image?language=fr", files=files)
+
+        assert response.status_code == 200
+
+        # Verify coordinator was called with French language
+        mock_coordinator.assert_called_once()
+        config = mock_coordinator.call_args[0][0]
+        assert config.language == SupportedLanguage.FRENCH
+
+    def test_scan_stockpile_with_invalid_language(self, client: TestClient) -> None:
+        """Test scan with invalid language parameter.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        import cv2
+
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        _, buffer = cv2.imencode(".png", img)
+        image_bytes = buffer.tobytes()
+
+        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+        response = client.post("/ocr/scan_image?language=invalid", files=files)
+
+        # FastAPI validation should return 422 for invalid enum value
+        assert response.status_code == 422
+
+    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
     def test_scan_stockpile_processing_error(
         self, mock_coordinator: Mock, client: TestClient
     ) -> None:

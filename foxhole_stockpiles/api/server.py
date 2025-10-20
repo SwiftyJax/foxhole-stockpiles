@@ -17,6 +17,7 @@ from foxhole_stockpiles.api.auth import create_auth_dependency
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
+from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.handlers.output_handler import OutputHandler
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 
@@ -107,6 +108,10 @@ async def scan_stockpile(
     mod_name: Annotated[
         str | None, Query(max_length=50, description="Mod name filter (max 50 chars)")
     ] = None,
+    language: Annotated[
+        SupportedLanguage | None,
+        Query(description="Language for text detection (en, pt, fr, de, ru, zh)"),
+    ] = None,
 ) -> Any:
     """Scan a stockpile screenshot and return detected items.
 
@@ -116,6 +121,8 @@ async def scan_stockpile(
         faction (ItemFaction | None): Optional faction filter to limit detection to specific
             faction items
         mod_name (str | None): Optional mod name filter (max 50 chars)
+        language (SupportedLanguage | None): Optional language for text detection. If None,
+            uses all supported languages.
 
     Returns:
         Any: Output from configured output handler
@@ -141,6 +148,7 @@ async def scan_stockpile(
         # Set faction filter, treating NEUTRAL as None (no filter)
         config.faction_filter = faction if faction != ItemFaction.NEUTRAL else None
         config.mod_name = mod_name
+        config.language = language
 
         request_coordinator = OCRCoordinator(config)
         stockpile = await request_coordinator.analyze_stockpile(image_bgr)

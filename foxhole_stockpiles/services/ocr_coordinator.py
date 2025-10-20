@@ -1,6 +1,7 @@
 """OCR Coordinator service for orchestrating stockpile detection."""
 
 import logging
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Any, ClassVar
@@ -125,8 +126,6 @@ class OCRCoordinator:
         Raises:
             ValueError: If image analysis fails or mod_name is not supported
         """
-        import time
-
         # Validate mod_name if provided
         if self.config.mod_name:
             supported_mods = await self._template_manager.get_supported_mods()

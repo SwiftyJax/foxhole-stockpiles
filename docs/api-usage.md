@@ -74,6 +74,8 @@ Upload and analyze a stockpile screenshot.
 **Parameters:**
 - `image` (file, required): Stockpile screenshot (PNG, JPG, JPEG)
 - `faction` (query, optional): Filter by faction (`colonials` or `wardens`)
+- `mod_name` (query, optional): Filter by mod name (max 50 characters)
+- `language` (query, optional): Language for text detection (`en`, `pt`, `fr`, `de`, `ru`, `zh`)
 
 **Request Example:**
 ```bash
@@ -85,6 +87,21 @@ curl -X POST http://localhost:8000/ocr/scan_image \
 curl -X POST http://localhost:8000/ocr/scan_image \
   -F "image=@screenshot.png" \
   -G -d "faction=colonials"
+
+# With mod filter
+curl -X POST http://localhost:8000/ocr/scan_image \
+  -F "image=@screenshot.png" \
+  -G -d "mod_name=vanilla"
+
+# With language filter (French stockpile)
+curl -X POST http://localhost:8000/ocr/scan_image \
+  -F "image=@screenshot.png" \
+  -G -d "language=fr"
+
+# With all filters
+curl -X POST http://localhost:8000/ocr/scan_image \
+  -F "image=@screenshot.png" \
+  -G -d "faction=wardens&mod_name=vanilla&language=en"
 
 # With authentication
 curl -X POST http://localhost:8000/ocr/scan_image \
@@ -197,9 +214,16 @@ import requests
 url = "http://localhost:8000/ocr/scan_image"
 headers = {"Authorization": "Bearer your-token"}
 
+# Optional query parameters
+params = {
+    "faction": "colonials",  # Optional: colonials or wardens
+    "mod_name": "vanilla",   # Optional: filter by mod
+    "language": "en"         # Optional: en, pt, fr, de, ru, zh
+}
+
 with open("screenshot.png", "rb") as f:
     files = {"image": f}
-    response = requests.post(url, headers=headers, files=files)
+    response = requests.post(url, headers=headers, files=files, params=params)
 
 if response.status_code == 200:
     data = response.json()
@@ -220,7 +244,14 @@ const fetch = require('node-fetch');
 const form = new FormData();
 form.append('image', fs.createReadStream('screenshot.png'));
 
-fetch('http://localhost:8000/ocr/scan_image', {
+// Build URL with optional query parameters
+const params = new URLSearchParams({
+  faction: 'colonials',  // Optional: colonials or wardens
+  mod_name: 'vanilla',   // Optional: filter by mod
+  language: 'en'         // Optional: en, pt, fr, de, ru, zh
+});
+
+fetch(`http://localhost:8000/ocr/scan_image?${params}`, {
   method: 'POST',
   headers: {
     'Authorization': 'Bearer your-token'
