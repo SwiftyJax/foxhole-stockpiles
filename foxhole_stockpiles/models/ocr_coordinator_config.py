@@ -6,6 +6,7 @@ from typing import Self
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from foxhole_stockpiles.enums.item_faction import ItemFaction
+from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 
 
@@ -44,6 +45,11 @@ class OCRCoordinatorConfig(BaseModel):
         default=None,
         max_length=50,
     )
+    language: SupportedLanguage | None = Field(
+        description="Optional language for text detection (stockpile name, type, hex_name). "
+        "If None, uses all supported languages. Number detection always uses the custom model.",
+        default=None,
+    )
     custom_model: str = Field(description="Custom OCR model name", default="renner_numbers")
     tessdata_path: str = Field(description="Path to tessdata directory", default="./tessdata")
     debug_mode: bool = Field(description="Enable debug mode to save debug images", default=False)
@@ -79,6 +85,7 @@ class OCRCoordinatorConfig(BaseModel):
                 "early_exit_threshold": 0.95,
                 "faction_filter": "colonial",
                 "mod_name": "my_mod",
+                "language": "eng",
                 "custom_model": "custom",
                 "tessdata_path": "./tessdata",
                 "debug_mode": False,

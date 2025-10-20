@@ -38,7 +38,9 @@ class OCRCoordinator:
 
         # Initialize services
         self._text_extractor = StockpileTextExtractor(
-            custom_model=config.custom_model, tessdata_path=config.tessdata_path
+            custom_model=config.custom_model,
+            tessdata_path=config.tessdata_path,
+            language=config.language,
         )
         self._template_manager = TemplateManager(database_path=config.database_path)
         self._stockpile_type_classifier = StockpileTypeClassifier()

@@ -8,6 +8,8 @@ import numpy as np
 import pytesseract
 from numpy.typing import NDArray
 
+from foxhole_stockpiles.enums.supported_language import SupportedLanguage
+
 
 class StockpileTextExtractor:
     """Extract quantities from composite images created by the stockpile detector.
@@ -15,16 +17,26 @@ class StockpileTextExtractor:
     Handles numbers with 'k' suffix and '+' suffix (e.g., "500k", "999+").
     """
 
-    def __init__(self, tessdata_path: str | None = None, custom_model: str | None = None) -> None:
+    def __init__(
+        self,
+        tessdata_path: str | None = None,
+        custom_model: str | None = None,
+        language: SupportedLanguage | None = None,
+    ) -> None:
         """Initialize the OCR extractor.
 
         Args:
             tessdata_path (str | None): Path to tessdata directory for custom models (optional)
-            custom_model (str | None): Name of the custom trained model to use
+            custom_model (str | None): Name of the custom trained model to use for number
+                recognition (e.g., renner_numbers). This replaces English for numbers.
+            language (SupportedLanguage | None): Language for text detection (stockpile name,
+                type, hex_name). If None, uses all supported languages. Note: number detection
+                always uses the custom model regardless of this setting.
         """
         self._logger = logging.getLogger(__name__)
         self.tessdata_path = os.path.abspath(tessdata_path) if tessdata_path else None
         self.custom_model = custom_model
+        self.language = language
 
     async def extract_raw_text(self, image: NDArray[np.uint8], numbers_only: bool = True) -> str:
         """Extract raw text using custom trained model.
@@ -121,17 +133,31 @@ class StockpileTextExtractor:
         Returns:
             str: Tesseract configuration string
         """
-        model = "-l eng+por+fra+deu+rus+chi_sim"
         numbers = ""
         tessdata_dir = ""
+
         if numbers_only:
-            # Build model string with language support
+            # For numbers, always use custom model if specified (e.g., renner_numbers)
+            # The custom model is trained to replace English for number recognition
             if self.custom_model:
                 model = f"-l {self.custom_model}"
+            else:
+                # Fallback to all languages if no custom model
+                model = f"-l {SupportedLanguage.get_all_languages_string()}"
+
             # Add tessdata directory if specified (per-call, not global)
             if self.tessdata_path:
                 tessdata_dir = f"--tessdata-dir {self.tessdata_path}"
 
             numbers = "-c tessedit_char_whitelist=0123456789k+"
+        else:
+            # For text detection (stockpile name, type, hex_name)
+            if self.language:
+                # Use specified language for text detection
+                # Convert i18n code to Tesseract code
+                model = f"-l {self.language.get_tesseract_code()}"
+            else:
+                # Default to all supported languages for text detection
+                model = f"-l {SupportedLanguage.get_all_languages_string()}"
 
         return f"--psm 6 {model} {tessdata_dir} {numbers} --oem 3".strip()

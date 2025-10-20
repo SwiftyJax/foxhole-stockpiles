@@ -9,6 +9,7 @@ from unittest.mock import AsyncMock, patch
 
 import numpy as np
 
+from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.services.stockpile_text_extractor import StockpileTextExtractor
 
 
@@ -41,6 +42,16 @@ class TestStockpileTextExtractorInitialization:
         extractor = StockpileTextExtractor(tessdata_path="./relative/path")
         assert extractor.tessdata_path is not None
         assert not extractor.tessdata_path.startswith(".")
+
+    def test_init_with_language(self) -> None:
+        """Test initializing with language parameter."""
+        extractor = StockpileTextExtractor(language=SupportedLanguage.FRENCH)
+        assert extractor.language == SupportedLanguage.FRENCH
+
+    def test_init_without_language(self) -> None:
+        """Test initializing without language parameter defaults to None."""
+        extractor = StockpileTextExtractor()
+        assert extractor.language is None
 
 
 class TestExtractRawText:
@@ -76,6 +87,8 @@ class TestExtractRawText:
             # Check that config does not include numbers-only whitelist
             config = mock_ocr.call_args[1]["config"]
             assert "tessedit_char_whitelist" not in config
+            # Should use all languages by default for text
+            assert "-l eng+por+fra+deu+rus+chi_sim" in config
 
     async def test_extract_raw_text_strips_whitespace(self) -> None:
         """Test that extracted text is stripped of trailing whitespace."""
@@ -285,7 +298,7 @@ class TestGetTesseractConfig:
         config = extractor.get_tesseract_config(numbers_only=False)
 
         assert "--psm 6" in config
-        # When numbers_only=False, uses standard language models not custom
+        # When numbers_only=False, uses all languages by default (not custom model)
         assert "-l eng+por+fra+deu+rus+chi_sim" in config
         assert "tessedit_char_whitelist" not in config
         assert "--oem 3" in config
@@ -298,7 +311,7 @@ class TestGetTesseractConfig:
 
         assert "--psm 6" in config
         assert "tessedit_char_whitelist=0123456789k+" in config
-        # Without custom model for numbers, uses standard languages
+        # Without custom model for numbers, uses all languages
         assert "-l eng+por+fra+deu+rus+chi_sim" in config
 
     def test_get_config_custom_model_none(self) -> None:
@@ -307,6 +320,51 @@ class TestGetTesseractConfig:
 
         config = extractor.get_tesseract_config()
 
-        # Uses standard languages when custom model is None
+        # Uses all languages when custom model is None
         assert "-l eng+por+fra+deu+rus+chi_sim" in config
         assert "tessedit_char_whitelist=0123456789k+" in config
+
+    def test_get_config_with_specific_language(self) -> None:
+        """Test getting config with specific language for text detection."""
+        extractor = StockpileTextExtractor(language=SupportedLanguage.FRENCH)
+
+        config = extractor.get_tesseract_config(numbers_only=False)
+
+        assert "--psm 6" in config
+        assert "-l fra" in config
+        assert "tessedit_char_whitelist" not in config
+        assert "--oem 3" in config
+
+    def test_get_config_with_language_but_numbers_only_uses_custom_model(self) -> None:
+        """Test that numbers_only mode uses custom model even when language is set."""
+        extractor = StockpileTextExtractor(
+            custom_model="renner_numbers", language=SupportedLanguage.GERMAN
+        )
+
+        config = extractor.get_tesseract_config(numbers_only=True)
+
+        # For numbers, custom model takes precedence
+        assert "-l renner_numbers" in config
+        assert "tessedit_char_whitelist=0123456789k+" in config
+
+    def test_get_config_without_language_uses_all_languages(self) -> None:
+        """Test that not specifying language defaults to all supported languages."""
+        extractor = StockpileTextExtractor()
+
+        config = extractor.get_tesseract_config(numbers_only=False)
+
+        assert "-l eng+por+fra+deu+rus+chi_sim" in config
+
+    def test_get_config_with_language_for_text_only(self) -> None:
+        """Test that language is used for text but not for numbers."""
+        extractor = StockpileTextExtractor(
+            language=SupportedLanguage.PORTUGUESE, custom_model="renner_numbers"
+        )
+
+        # Text mode should use the language
+        text_config = extractor.get_tesseract_config(numbers_only=False)
+        assert "-l por" in text_config
+
+        # Numbers mode should use custom model
+        numbers_config = extractor.get_tesseract_config(numbers_only=True)
+        assert "-l renner_numbers" in numbers_config
