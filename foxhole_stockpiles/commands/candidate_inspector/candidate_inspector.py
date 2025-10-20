@@ -192,6 +192,13 @@ async def main() -> dict[str, Any] | None:
     mod_filter = None
     if args.mod:
         mod_filter = args.mod.strip()
+        # Validate mod against available mods in database
+        available_mods = database.get_available_mods()
+        if mod_filter not in available_mods:
+            logger.error(
+                "Mod '%s' is not supported. Available mods: %s", mod_filter, sorted(available_mods)
+            )
+            exit(1)
         logger.info("Using mod filter: %s", mod_filter)
 
     # Parse faction filter

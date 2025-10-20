@@ -70,6 +70,11 @@ async def main() -> dict[str, Any] | None:
         help=ItemFaction.get_cli_help_text(),
     )
     parser.add_argument(
+        "--mod",
+        type=str,
+        help="Mod filter. If not specified, all mods will be included.",
+    )
+    parser.add_argument(
         "--debug_image", action="store_true", help="Save debug image with detected regions"
     )
     parser.add_argument("--log-file", type=Path, help="Path to log file (default: console only)")
@@ -137,12 +142,16 @@ async def main() -> dict[str, Any] | None:
     # Parse faction filter
     faction_filter = ItemFaction.from_string(args.faction)
 
+    # Parse mod filter
+    mod_filter = args.mod.strip() if args.mod else None
+
     try:
         scanner_settings: OCRCoordinatorConfig = settings.scanner
         scanner_settings.database_path = args.database
         if args.confidence:
             scanner_settings.confidence_threshold = args.confidence
         scanner_settings.faction_filter = faction_filter
+        scanner_settings.mod_name = mod_filter
         scanner_settings.debug_mode = args.debug_image
         if args.early_exit:
             scanner_settings.early_exit_threshold = args.early_exit

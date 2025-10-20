@@ -111,6 +111,7 @@ class TestMainFunction:
             confidence=None,
             early_exit=0.95,
             faction=None,
+            mod=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -171,6 +172,7 @@ class TestMainFunction:
             confidence=None,
             early_exit=0.95,
             faction=None,
+            mod=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -229,6 +231,7 @@ class TestMainFunction:
             confidence=0.90,
             early_exit=0.95,
             faction="w",
+            mod=None,
             debug_image=True,
             log_file=None,
             verbose=True,
@@ -304,6 +307,7 @@ class TestMainFunction:
             confidence=0.92,
             early_exit=0.95,
             faction=None,
+            mod=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -374,6 +378,7 @@ class TestMainFunction:
             confidence=None,
             early_exit=0.95,
             faction=None,
+            mod=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -439,6 +444,7 @@ class TestMainFunction:
             confidence=None,
             early_exit=0.95,
             faction=None,
+            mod=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -493,6 +499,7 @@ class TestMainFunction:
             confidence=1.5,  # Invalid: > 1.0
             early_exit=0.95,
             faction=None,
+            mod=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -537,6 +544,7 @@ class TestMainFunction:
             confidence=None,
             early_exit=0.95,
             faction=None,
+            mod=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -588,6 +596,7 @@ class TestMainFunction:
             confidence=None,
             early_exit=0.95,
             faction=None,
+            mod=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -648,6 +657,7 @@ class TestMainFunction:
             confidence=None,
             early_exit=0.95,
             faction=None,
+            mod=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -667,6 +677,67 @@ class TestMainFunction:
         mock_coordinator_class.return_value = mock_coordinator
 
         # Should exit with code 1
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
+    async def test_main_invalid_mod_filter(
+        self,
+        mock_setup_logging: Mock,
+        mock_coordinator_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when invalid mod is specified.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_coordinator_class (Mock): Mocked OCRCoordinator class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            mod="invalid_mod",  # Invalid mod that doesn't exist
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            config=None,
+            token=None,
+        )
+
+        # Mock OCR coordinator to raise ValueError for invalid mod
+        mock_coordinator = MagicMock()
+
+        async def mock_analyze(*args: Any, **kwargs: Any) -> None:
+            raise ValueError("Mod 'invalid_mod' is not supported. Available mods: ['vanilla']")
+
+        mock_coordinator.analyze_stockpile = mock_analyze
+        mock_coordinator_class.return_value = mock_coordinator
+
+        # Should exit with code 1 for invalid mod
         with pytest.raises(SystemExit) as exc_info:
             await main()
 

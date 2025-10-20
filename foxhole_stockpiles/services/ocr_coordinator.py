@@ -121,9 +121,18 @@ class OCRCoordinator:
             Stockpile: Stockpile with the detected items and metadata
 
         Raises:
-            ValueError: If image analysis fails
+            ValueError: If image analysis fails or mod_name is not supported
         """
         import time
+
+        # Validate mod_name if provided
+        if self.config.mod_name:
+            supported_mods = await self._template_manager.get_supported_mods()
+            if self.config.mod_name not in supported_mods:
+                raise ValueError(
+                    f"Mod '{self.config.mod_name}' is not supported. "
+                    f"Available mods: {sorted(supported_mods)}"
+                )
 
         start_time = time.perf_counter()
 

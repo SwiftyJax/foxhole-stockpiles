@@ -132,6 +132,14 @@ class TemplateDatabase:
 
         return list(candidates)
 
+    def get_available_mods(self) -> set[str]:
+        """Get all mods available in this database.
+
+        Returns:
+            set[str]: Set of mod names present in the database
+        """
+        return set(self.mod_lookup.keys())
+
     def __len__(self) -> int:
         """Return number of templates in database."""
         return len(self.templates)

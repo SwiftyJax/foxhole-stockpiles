@@ -4,7 +4,7 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 from copy import copy
-from typing import Any
+from typing import Annotated, Any
 
 import cv2
 import numpy as np
@@ -101,14 +101,21 @@ async def health_check() -> HealthResponse:
 async def scan_stockpile(
     image: UploadFile,
     request: Request,
-    faction: str | None = Query(default=None, description="Faction filter (colonials or wardens)"),
+    faction: Annotated[
+        ItemFaction | None, Query(description="Faction filter (Colonials or Wardens)")
+    ] = None,
+    mod_name: Annotated[
+        str | None, Query(max_length=50, description="Mod name filter (max 50 chars)")
+    ] = None,
 ) -> Any:
     """Scan a stockpile screenshot and return detected items.
 
     Args:
         image (UploadFile): Screenshot image file (PNG, JPG, JPEG supported)
         request (Request): FastAPI request object
-        faction (str | None): Optional faction filter to limit detection to specific faction items
+        faction (ItemFaction | None): Optional faction filter to limit detection to specific
+            faction items
+        mod_name (str | None): Optional mod name filter (max 50 chars)
 
     Returns:
         Any: Output from configured output handler
@@ -131,9 +138,9 @@ async def scan_stockpile(
         image_bgr = np.asarray(img, dtype=np.uint8)
 
         config = copy(app_settings.scanner)
-        config.faction_filter = ItemFaction.from_string(faction)
-        if config.faction_filter == ItemFaction.NEUTRAL:
-            config.faction_filter = None
+        # Set faction filter, treating NEUTRAL as None (no filter)
+        config.faction_filter = faction if faction != ItemFaction.NEUTRAL else None
+        config.mod_name = mod_name
 
         request_coordinator = OCRCoordinator(config)
         stockpile = await request_coordinator.analyze_stockpile(image_bgr)
@@ -151,9 +158,19 @@ async def scan_stockpile(
 
     except ValueError as e:
         logger = logging.getLogger(__name__)
+        error_msg = str(e)
+
+        # Check if it's a mod validation error
+        if "not supported" in error_msg and "Available mods:" in error_msg:
+            logger.error("Mod validation error: %s", e)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail=error_msg
+            ) from None
+
+        # Other validation errors
         logger.error("Validation error during processing: %s", e)
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Processing error: {str(e)}"
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Processing error: {error_msg}"
         ) from None
     except Exception as e:
         logger = logging.getLogger(__name__)

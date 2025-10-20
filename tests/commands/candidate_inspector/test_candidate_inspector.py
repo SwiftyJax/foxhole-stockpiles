@@ -46,6 +46,12 @@ class TestCandidateInspectorMain:
             template.resolution = SupportedResolution.R_1080
             mock_db.templates.append(template)
 
+        # Mock get_available_mods to return available mods
+        def mock_get_available_mods_db() -> set[str]:
+            return {"vanilla", "custom_mod"}
+
+        mock_db.get_available_mods = mock_get_available_mods_db
+
         async def mock_load_database(resolution: SupportedResolution) -> MagicMock:
             return mock_db
 
@@ -55,6 +61,12 @@ class TestCandidateInspectorMain:
             pass
 
         manager.set_active_resolution = mock_set_active_resolution
+
+        # Mock get_supported_mods to return available mods
+        async def mock_get_supported_mods() -> set[str]:
+            return {"vanilla", "custom_mod"}
+
+        manager.get_supported_mods = mock_get_supported_mods
 
         # Mock match_icon to return candidates
         mock_match_result = MagicMock()
@@ -556,6 +568,55 @@ class TestCandidateInspectorMain:
         mock_template_manager.match_icon.assert_called()
         call_args = mock_template_manager.match_icon.call_args
         assert call_args[1]["mod"] == "custom_mod"
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.TemplateManager")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.setup_logging")
+    async def test_main_with_invalid_mod_filter(
+        self,
+        mock_setup_logging: Mock,
+        mock_manager_class: Mock,
+        mock_args: Mock,
+        mock_template_manager: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with invalid mod filter.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_manager_class (Mock): Mocked TemplateManager class.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            mock_template_manager (MagicMock): Mock template manager from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        mock_args.return_value = argparse.Namespace(
+            database=db_path,
+            code=None,
+            faction=None,
+            category=None,
+            crated=None,
+            mod="invalid_mod",  # Invalid mod that doesn't exist
+            exclude_code=None,
+            resolution="1080",
+            icon=None,
+            confidence=0.85,
+            log_file=None,
+            verbose=False,
+            print=False,
+            quiet=False,
+            top=5,
+        )
+
+        mock_manager_class.return_value = mock_template_manager
+
+        # Should exit with code 1 for invalid mod
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
 
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.TemplateManager")

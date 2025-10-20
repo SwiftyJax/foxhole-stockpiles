@@ -39,6 +39,11 @@ class OCRCoordinatorConfig(BaseModel):
     faction_filter: ItemFaction | None = Field(
         description="Optional faction filter for icon matching", default=None
     )
+    mod_name: str | None = Field(
+        description="Optional mod name filter for icon matching (max 50 chars)",
+        default=None,
+        max_length=50,
+    )
     custom_model: str = Field(description="Custom OCR model name", default="renner_numbers")
     tessdata_path: str = Field(description="Path to tessdata directory", default="./tessdata")
     debug_mode: bool = Field(description="Enable debug mode to save debug images", default=False)
@@ -73,6 +78,7 @@ class OCRCoordinatorConfig(BaseModel):
                 "confidence_by_resolution": {"720": 0.75, "1080": 0.85, "2160": 0.90},
                 "early_exit_threshold": 0.95,
                 "faction_filter": "colonial",
+                "mod_name": "my_mod",
                 "custom_model": "custom",
                 "tessdata_path": "./tessdata",
                 "debug_mode": False,

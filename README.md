@@ -204,10 +204,20 @@ fs scanner \
   --image your_screenshot.png
 ```
 
+Optional filters:
+```bash
+# Filter by faction
+fs scanner --database foxhole_templates.pkl --image screenshot.png --faction colonials
+
+# Filter by mod
+fs scanner --database foxhole_templates.pkl --image screenshot.png --mod my_mod_name
+```
+
 The scanner will automatically:
 - Detect and identify all items in the stockpile
 - Extract quantities using OCR with the custom Renner font model
 - Output structured JSON data with items, quantities, and metadata
+- Validate mod names against available mods in the database
 
 ### Building Custom Database (For Mods or Game Updates)
 
