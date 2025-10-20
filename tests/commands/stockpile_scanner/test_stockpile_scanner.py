@@ -112,6 +112,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod=None,
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -173,6 +174,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod=None,
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -232,6 +234,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction="w",
             mod=None,
+            language=None,
             debug_image=True,
             log_file=None,
             verbose=True,
@@ -308,6 +311,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod=None,
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -379,6 +383,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod=None,
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -445,6 +450,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod=None,
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -500,6 +506,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod=None,
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -545,6 +552,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod=None,
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -597,6 +605,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod=None,
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -658,6 +667,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod=None,
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -719,6 +729,7 @@ class TestMainFunction:
             early_exit=0.95,
             faction=None,
             mod="invalid_mod",  # Invalid mod that doesn't exist
+            language=None,
             debug_image=False,
             log_file=None,
             verbose=False,
@@ -742,3 +753,111 @@ class TestMainFunction:
             await main()
 
         assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputHandler")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
+    async def test_main_with_language_filter(
+        self,
+        mock_setup_logging: Mock,
+        mock_output_handler_class: Mock,
+        mock_coordinator_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        mock_stockpile: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with language filter.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_output_handler_class (Mock): Mocked OutputHandler class.
+            mock_coordinator_class (Mock): Mocked OCRCoordinator class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            mock_stockpile (MagicMock): Mock stockpile from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            mod=None,
+            language="fr",  # French language
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            config=None,
+            token=None,
+        )
+
+        # Mock OCR coordinator
+        mock_coordinator = MagicMock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=mock_stockpile)
+        mock_coordinator_class.return_value = mock_coordinator
+
+        # Mock output handler
+        mock_handler = MagicMock()
+        mock_handler.handle_output = AsyncMock(return_value=None)
+        mock_output_handler_class.return_value = mock_handler
+
+        await main()
+
+        # Verify coordinator was configured with language filter
+        mock_coordinator_class.assert_called()
+        call_args = mock_coordinator_class.call_args[0][0]
+        assert call_args.language is not None
+        assert call_args.language.value == "fr"
+
+    async def test_main_with_invalid_language(
+        self,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Test main function with invalid language code.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            capsys (pytest.CaptureFixture[str]): Pytest fixture to capture output.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        # Test with invalid language argument - argparse will handle the validation
+        import sys
+
+        sys.argv = [
+            "test",
+            "--image",
+            str(image_path),
+            "--database",
+            str(database_path),
+            "--language",
+            "invalid_lang",  # Invalid language
+        ]
+
+        # Should exit with code 2 for argparse validation error
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2
+        captured = capsys.readouterr()
+        assert "invalid choice" in captured.err.lower()

@@ -14,6 +14,7 @@ from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.output_format import OutputFormat
+from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.handlers.output_handler import OutputHandler
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
@@ -73,6 +74,12 @@ async def main() -> dict[str, Any] | None:
         "--mod",
         type=str,
         help="Mod filter. If not specified, all mods will be included.",
+    )
+    parser.add_argument(
+        "--language",
+        type=str,
+        choices=[lang.value for lang in SupportedLanguage],
+        help="Language for text detection. If not specified, uses all supported languages.",
     )
     parser.add_argument(
         "--debug_image", action="store_true", help="Save debug image with detected regions"
@@ -145,6 +152,9 @@ async def main() -> dict[str, Any] | None:
     # Parse mod filter
     mod_filter = args.mod.strip() if args.mod else None
 
+    # Parse language filter
+    language_filter = SupportedLanguage(args.language) if args.language else None
+
     try:
         scanner_settings: OCRCoordinatorConfig = settings.scanner
         scanner_settings.database_path = args.database
@@ -152,6 +162,7 @@ async def main() -> dict[str, Any] | None:
             scanner_settings.confidence_threshold = args.confidence
         scanner_settings.faction_filter = faction_filter
         scanner_settings.mod_name = mod_filter
+        scanner_settings.language = language_filter
         scanner_settings.debug_mode = args.debug_image
         if args.early_exit:
             scanner_settings.early_exit_threshold = args.early_exit
