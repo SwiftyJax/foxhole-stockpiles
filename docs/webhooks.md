@@ -110,7 +110,6 @@ The webhook receives `X-Client-ID: client-abc-123`.
 {
   "name": "Logi",
   "type": "seaport",
-  "hex_name": "Terminus",
   "shard": "ABLE",
   "ingame_timestamp": "Day 1,293, 1906 Hours",
   "timestamp": "2024-01-04T09:00:00Z",

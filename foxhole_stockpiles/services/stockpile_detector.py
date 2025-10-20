@@ -49,11 +49,11 @@ class StockpileDetector:
         self.stockpile_type_width: int = 0
         self.stockpile_name_width: int = 0
 
-        # Screenshot information. Shard, Hex and ingame timestamp
-        self.hex_name_x: int = 0
-        self.hex_name_y: int = 0
-        self.hex_name_width: int = 0
-        self.hex_name_height: int = 0
+        # Screenshot information. Shard and ingame timestamp
+        self.shard_x: int = 0
+        self.shard_y: int = 0
+        self.shard_width: int = 0
+        self.shard_height: int = 0
 
         # Detected quantities locations
         self.quantities: list[Coordinates] = []
@@ -117,11 +117,11 @@ class StockpileDetector:
         self.stockpile_type_width = int(3 * self.box_width)
         self.stockpile_name_width = int(2.5 * self.box_width)
 
-        # Hex name, shard and ingame timestamp regions
-        self.hex_name_x = self.box_height
-        self.hex_name_y = self.height - int(self._settings.box_height * self.scale_factor * 3.5)
-        self.hex_name_height = int(self.box_height * 1.5)
-        self.hex_name_width = int(self.box_width * 3.5)
+        # Shard and ingame timestamp regions
+        self.shard_x = self.box_height
+        self.shard_y = self.height - int(self._settings.box_height * self.scale_factor * 3)
+        self.shard_height = int(self.box_height)
+        self.shard_width = int(self.box_width * 3.5)
 
         # Icon shift to quantity box
         self.icon_to_quantity_offset = int(
@@ -525,12 +525,12 @@ class StockpileDetector:
                     max(1, int(1 * self.scale_factor)),
                 )
 
-        if self.hex_name_x and self.hex_name_y:
+        if self.shard_x and self.shard_y:
             cv2.rectangle(
                 result_img,
-                (self.hex_name_x, self.hex_name_y),
-                (self.hex_name_x + self.hex_name_width, self.hex_name_y + self.hex_name_height),
-                (0, 255, 255),  # Cyan for hex name
+                (self.shard_x, self.shard_y),
+                (self.shard_x + self.shard_width, self.shard_y + self.shard_height),
+                (0, 255, 255),  # Cyan for shard
                 max(1, int(2 * self.scale_factor)),
             )
 
@@ -620,13 +620,13 @@ class StockpileDetector:
             else None
         )
 
-        # Hex name contains also ingame shard and timestamp
-        hex_name = (
+        # Ingame shard and timestamp
+        shard = (
             self.img[
-                self.hex_name_y : self.hex_name_y + self.hex_name_height,
-                self.hex_name_x : self.hex_name_x + self.hex_name_width,
+                self.shard_y : self.shard_y + self.shard_height,
+                self.shard_x : self.shard_x + self.shard_width,
             ]
-            if self.hex_name_x and self.hex_name_y
+            if self.shard_x and self.shard_y
             else None
         )
 
@@ -636,7 +636,7 @@ class StockpileDetector:
             icons=icons,
             stockpile_type=stockpile_type,
             stockpile_name=stockpile_name,
-            hex_name=hex_name,
+            shard=shard,
             resolution=f"{self.width}x{self.height}",
             vertical_resolution=self.height,
             groups=self.groups,

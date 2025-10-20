@@ -58,7 +58,6 @@ class OutputHandler:
         """
         self.logger.info("Name: %s", stockpile.name)
         self.logger.info("Type: %s", stockpile.type)
-        self.logger.info("Hex: %s", stockpile.hex_name)
         self.logger.info("Shard: %s", stockpile.shard)
         self.logger.info("Ingame timestamp: %s", stockpile.ingame_timestamp)
         self.logger.info("Items:")

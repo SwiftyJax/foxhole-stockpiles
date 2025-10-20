@@ -34,7 +34,6 @@ def sample_stockpile() -> Stockpile:
         name="Test Stockpile",
         type=StockpileType.SEAPORT,
         items=items,
-        hex_name="TestHex",
         shard="TEST",
         ingame_timestamp="Day 1,000, 1000 Hours",
         resolution="1920x1080",
@@ -102,7 +101,6 @@ class TestOutputHandler:
         assert result["name"] == "Test Stockpile"
         assert result["type"] == "Seaport"
         assert len(result["items"]) == 3
-        assert result["hex_name"] == "TestHex"
 
     @pytest.mark.asyncio
     async def test_handle_output_console(
@@ -198,7 +196,6 @@ class TestOutputHandler:
             # Verify logger calls
             mock_logger.assert_any_call("Name: %s", "Test Stockpile")
             mock_logger.assert_any_call("Type: %s", "Seaport")
-            mock_logger.assert_any_call("Hex: %s", "TestHex")
             mock_logger.assert_any_call("Shard: %s", "TEST")
 
     @pytest.mark.asyncio
@@ -372,7 +369,6 @@ class TestOutputHandler:
             name="Empty",
             type=StockpileType.SEAPORT,
             items=[],
-            hex_name="EmptyHex",
             shard="TEST",
         )
 
@@ -391,7 +387,6 @@ class TestOutputHandler:
         stockpile_with_errors = Stockpile(
             name="Error Test",
             type=StockpileType.SEAPORT,
-            hex_name="ErrorHex",
             shard="TEST",
             items=[],
             errors=["Template matching failed", "OCR failed for position (100, 200)"],

@@ -16,7 +16,6 @@ class Stockpile(BaseModel):
     type: StockpileType = Field(description="Type of stockpile", default=StockpileType.UNDEFINED)
     items: list[StockpileItem] = Field(description="List of items", default=[])
     timestamp: datetime = Field(description="last update datetime", default_factory=datetime.now)
-    hex_name: str = Field(description="Hex name of the stockpile", default="")
     shard: str = Field(description="Shard name", default="")
     ingame_timestamp: str = Field(description="In game timestamp", default="")
     resolution: str | None = Field(description="Resolution of the screenshot", default=None)
@@ -43,7 +42,6 @@ class Stockpile(BaseModel):
                 ],
                 "timestamp": "2024-01-04T09:00:00Z",
                 "resolution": "1920x1080",
-                "hex_name": "Terminus",
                 "shard": "ABLE",
                 "ingame_timestamp": "Day 1,293, 1906 Hours",
                 "errors": ["No icon detected in group 1, index 67 with confidence 0.75"],

@@ -148,7 +148,6 @@ The tool builds a structured data object containing:
     "quantities": [150, 75, 12, ...],
     "type": "Seaport",
     "name": "Port Base",
-    "hex_name": "Deadlands",
     "shard": "Able",
     "timestamp": "2024-01-15T14:30:00Z"
 }

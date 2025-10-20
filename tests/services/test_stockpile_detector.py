@@ -394,17 +394,17 @@ class TestGetStockpileImages:
         detector.composite_image = np.zeros((100, 100, 3), dtype=np.uint8)
         detector.stockpile_type = (50, 50, 100, 30)
         detector.stockpile_name = (200, 50, 100, 30)
-        detector.hex_name_x = 10
-        detector.hex_name_y = 950
-        detector.hex_name_width = 200
-        detector.hex_name_height = 100
+        detector.shard_x = 10
+        detector.shard_y = 950
+        detector.shard_width = 200
+        detector.shard_height = 100
 
         result = detector.get_stockpile_images()
 
         assert result is not None
         assert result.stockpile_type is not None
         assert result.stockpile_name is not None
-        assert result.hex_name is not None
+        assert result.shard is not None
 
 
 class TestDrawAndSaveResults:
@@ -705,34 +705,34 @@ class TestGreyMaskCreationWithRealImage:
         assert mask.dtype == np.uint8
 
 
-class TestHexNameRegion:
-    """Test hex name region detection."""
+class TestshardRegion:
+    """Test shard region detection."""
 
-    def test_hex_name_region_initialized(self, real_screenshot: NDArray[np.uint8]) -> None:
-        """Test that hex name region is properly initialized."""
+    def test_shard_region_initialized(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test that shard region is properly initialized."""
         detector = StockpileDetector(real_screenshot)
 
-        # Hex name region should be calculated based on image dimensions
-        assert detector.hex_name_x > 0
-        assert detector.hex_name_y > 0
-        assert detector.hex_name_width > 0
-        assert detector.hex_name_height > 0
+        # shard region should be calculated based on image dimensions
+        assert detector.shard_x > 0
+        assert detector.shard_y > 0
+        assert detector.shard_width > 0
+        assert detector.shard_height > 0
         # Y should be near bottom of image
-        assert detector.hex_name_y > detector.height * 0.5
+        assert detector.shard_y > detector.height * 0.5
 
-    def test_hex_name_included_in_result(self, real_screenshot: NDArray[np.uint8]) -> None:
-        """Test that hex name is included in StockpileImageRegions."""
+    def test_shard_included_in_result(self, real_screenshot: NDArray[np.uint8]) -> None:
+        """Test that shard is included in StockpileImageRegions."""
         detector = StockpileDetector(real_screenshot)
         detector.analize()
 
         result = detector.get_stockpile_images()
 
         if result is not None:
-            # Hex name should be included
-            assert result.hex_name is not None
+            # shard should be included
+            assert result.shard is not None
             # Should be an image array
-            assert isinstance(result.hex_name, np.ndarray)
-            assert len(result.hex_name.shape) == 3  # Height x Width x Channels
+            assert isinstance(result.shard, np.ndarray)
+            assert len(result.shard.shape) == 3  # Height x Width x Channels
 
 
 class TestDrawAndSaveWithRealImage:

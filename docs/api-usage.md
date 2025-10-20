@@ -97,7 +97,6 @@ curl -X POST http://localhost:8000/ocr/scan_image \
 {
   "name": "Logi",
   "type": "seaport",
-  "hex_name": "Terminus",
   "shard": "ABLE",
   "ingame_timestamp": "Day 1,293, 1906 Hours",
   "timestamp": "2024-01-04T09:00:00Z",
@@ -149,7 +148,6 @@ curl -X POST http://localhost:8000/ocr/scan_image \
 |-------|------|-------------|
 | `name` | string | Stockpile name from in-game screenshot |
 | `type` | string | Stockpile type (e.g., `seaport`, `town_base`, `bunker_base`, `storage_depot`) |
-| `hex_name` | string | Map hex name where stockpile is located |
 | `shard` | string | Game shard (e.g., `ABLE`, `BAKER`, `CHARLIE`) |
 | `ingame_timestamp` | string | In-game timestamp from screenshot (e.g., "Day 1,293, 1906 Hours") |
 | `timestamp` | string | ISO 8601 timestamp when scan was processed |

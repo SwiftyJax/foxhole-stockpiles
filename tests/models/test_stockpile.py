@@ -27,7 +27,6 @@ class TestStockpile:
             type=StockpileType.SEAPORT,
             items=items,
             timestamp=custom_time,
-            hex_name="TestHex",
             shard="TEST",
         )
 

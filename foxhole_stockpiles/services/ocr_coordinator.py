@@ -411,20 +411,19 @@ class OCRCoordinator:
             )
             stockpile.name = text.strip()
 
-        hex_image = stockpile_images.hex_name
-        if hex_image is not None:
-            source_image = self._prepare_image_for_detection(image=hex_image, use_inv=False)
+        shard_image = stockpile_images.shard
+        if shard_image is not None:
+            source_image = self._prepare_image_for_detection(image=shard_image, use_inv=False)
             if self.config.debug_mode:
-                cv2.imwrite("stockpile_hex_region.png", source_image)
+                cv2.imwrite("stockpile_shard.png", source_image)
 
             text = await self._text_extractor.extract_raw_text(
                 image=source_image, numbers_only=False
             )
             text = text.strip() + "\n\n"
             lines = text.splitlines()
-            stockpile.hex_name = lines[0]
-            stockpile.ingame_timestamp = extract_day_and_hour(lines[1])
-            stockpile.shard = lines[2]
+            stockpile.ingame_timestamp = extract_day_and_hour(lines[0])
+            stockpile.shard = lines[1]
 
         type_image = stockpile_images.stockpile_type
         if type_image is not None:

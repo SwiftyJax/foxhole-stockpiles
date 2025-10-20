@@ -55,7 +55,6 @@ def sample_payload() -> dict[str, Any]:
         "type": "Seaport",
         "items": [{"name": "Basic Materials", "quantity": 100, "code": "BasicMaterialsIcon"}],
         "timestamp": "2024-01-04T09:00:00",
-        "hex_name": "TestHex",
         "shard": "TEST",
     }
 

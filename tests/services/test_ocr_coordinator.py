@@ -391,7 +391,7 @@ class TestAnalyzeStockpile:
         ]
         mock_stockpile_images.groups = [(2, 0)]
         mock_stockpile_images.stockpile_name = None
-        mock_stockpile_images.hex_name = None
+        mock_stockpile_images.shard = None
         mock_stockpile_images.stockpile_type = None
 
         mock_detector.get_stockpile_images.return_value = mock_stockpile_images
@@ -1432,7 +1432,7 @@ class TestOCRCoordinatorIntegration:
         """Test that metadata extraction paths are tested with real screenshot.
 
         This tests the metadata extraction code paths at lines 369-402 in
-        ocr_coordinator.py, which extract stockpile name, hex, and type.
+        ocr_coordinator.py, which extract stockpile name, info and type.
 
         Args:
             real_screenshot (NDArray[np.uint8]): Real screenshot fixture.
@@ -1450,5 +1450,5 @@ class TestOCRCoordinatorIntegration:
         assert result.resolution is not None
         assert result.resolution != ""
 
-        # May or may not have name/hex/type depending on the screenshot
+        # May or may not have name/info/type depending on the screenshot
         # but the code paths should have been exercised
