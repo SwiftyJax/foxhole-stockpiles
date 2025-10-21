@@ -303,7 +303,7 @@ async def main() -> dict[str, Any] | None:
         if match_result.top_matches:
             logger.info(f"\nTop {len(match_result.top_matches)} matches:")
             logger.info(
-                "%-25s | %-10s | %-12s | %-15s | %-10s | Confidence",
+                "%-35s | %-10s | %-12s | %-15s | %-10s | Confidence",
                 "Code",
                 "Faction",
                 "Category",
@@ -314,7 +314,7 @@ async def main() -> dict[str, Any] | None:
             for template, confidence in match_result.top_matches:
                 crated_str = " (crated)" if template.crated else ""
                 logger.info(
-                    "%-25s | %-10s | %-12s | %-15s | %-10s | %.3f",
+                    "%-35s | %-10s | %-12s | %-15s | %-10s | %.3f",
                     template.code + crated_str,
                     template.faction.value,
                     template.category.value,
@@ -328,13 +328,13 @@ async def main() -> dict[str, Any] | None:
     # Show regular candidate listing results when no icon provided
     if args.print and candidate_indices:
         logger.info(
-            "%-25s | %-10s | %-12s | %-15s | Resolution", "Code", "Faction", "Category", "Mod"
+            "%-35s | %-10s | %-12s | %-15s | Resolution", "Code", "Faction", "Category", "Mod"
         )
         for idx in candidate_indices:
             template = database.templates[idx]
             crated_str = " (crated)" if template.crated else ""
             logger.info(
-                "%-25s | %-10s | %-12s | %-15s | %spx%s",
+                "%-35s | %-10s | %-12s | %-15s | %spx%s",
                 template.code,
                 template.faction.value,
                 template.category.value,
