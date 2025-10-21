@@ -259,6 +259,7 @@ async def main() -> dict[str, Any] | None:
             confidence_threshold=scanner_settings.confidence_threshold,
             phash_threshold=scanner_settings.phash_threshold,
             max_ncc_candidates=scanner_settings.max_ncc_candidates,
+            early_exit_threshold=scanner_settings.early_exit_threshold,
             top_n=args.top,
         )
 
