@@ -32,8 +32,12 @@ class OCRCoordinatorConfig(BaseModel):
         default_factory=_default_confidence_dict,
     )
     early_exit_threshold: float = Field(
-        description="Early exit threshold for icon matching",
-        default=0.95,
+        description=(
+            "Early exit threshold for icon matching. "
+            "If a match with confidence >= this threshold is found, stop testing other candidates. "
+            "Set to 0.0 to disable early exit and test all candidates."
+        ),
+        default=0.0,
         ge=0.0,
         le=1.0,
     )
@@ -82,7 +86,7 @@ class OCRCoordinatorConfig(BaseModel):
                 "database_path": "/path/to/templates.db",
                 "confidence_threshold": 0.85,
                 "confidence_by_resolution": {"720": 0.75, "1080": 0.85, "2160": 0.90},
-                "early_exit_threshold": 0.95,
+                "early_exit_threshold": 0.0,
                 "faction_filter": "colonial",
                 "mod_name": "my_mod",
                 "language": "eng",
@@ -129,10 +133,17 @@ class OCRCoordinatorConfig(BaseModel):
             Self: Returns the instance itself for method chaining.
 
         Raises:
-            ValueError: if early_exit_threshold is not greater than confidence_threshold
+            ValueError: if early_exit_threshold is invalid
         """
-        if self.early_exit_threshold <= self.confidence_threshold:
-            raise ValueError("Early exit threshold must be greater than confidence threshold")
+        # If early exit is enabled (> 0), it must be greater than confidence threshold
+        if (
+            self.early_exit_threshold > 0.0
+            and self.early_exit_threshold <= self.confidence_threshold
+        ):
+            raise ValueError(
+                "Early exit threshold must be greater than confidence threshold "
+                "or set to 0.0 to disable"
+            )
 
         return self
 
