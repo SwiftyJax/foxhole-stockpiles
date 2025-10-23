@@ -112,6 +112,14 @@ async def main() -> dict[str, Any] | None:
     if database_path is None:
         parser.error("Database path must be provided via --database or in config file")
 
+    # Validate database file exists
+    if not database_path.exists():
+        print(f"Error: Database file not found: {database_path}", file=sys.stderr)
+        sys.exit(1)
+    if not database_path.is_file():
+        print(f"Error: Database path is not a file: {database_path}", file=sys.stderr)
+        sys.exit(1)
+
     # Load and preprocess the image
     _image = await asyncio.to_thread(cv2.imread, args.image, cv2.IMREAD_COLOR)
     if _image is None:

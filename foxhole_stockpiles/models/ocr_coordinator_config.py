@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
@@ -96,15 +96,3 @@ class OCRCoordinatorConfig(BaseModel):
             }
         },
     )
-
-    @field_validator("database_path")
-    @classmethod
-    def validate_database_path(cls, v: Path | None) -> Path | None:
-        """Validate that the database path exists and is a file (if provided)."""
-        if v is None:
-            return v
-        if not v.exists():
-            raise ValueError(f"Database path does not exist: {v}")
-        if not v.is_file():
-            raise ValueError(f"Database path is not a file: {v}")
-        return v

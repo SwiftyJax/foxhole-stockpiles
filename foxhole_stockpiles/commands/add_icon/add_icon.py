@@ -4,6 +4,7 @@ import argparse
 import asyncio
 import logging
 import pickle
+import sys
 from copy import copy
 from pathlib import Path
 
@@ -398,6 +399,15 @@ Note: Icon dimensions must exactly match the target resolution requirements.
     database_path = args.database if args.database is not None else settings.scanner.database_path
     if database_path is None:
         parser.error("Database path must be provided via --database or in config file")
+
+    # Validate database file exists (fail early with clearer error)
+    if not database_path.exists():
+        print(f"Error: Database file not found: {database_path}", file=sys.stderr)
+        sys.exit(1)
+    if not database_path.is_file():
+        print(f"Error: Database path is not a file: {database_path}", file=sys.stderr)
+        sys.exit(1)
+
     logging_settings = copy(settings.logging)
     if args.quiet:
         logging_settings.log_level = "WARNING"
