@@ -21,7 +21,7 @@ This is the **primary recognition tool** in the Foxhole Stockpiles system. It co
 ### Template Matching
 - **Database Loading**: Loads optimized binary databases for fast template matching
 - **Multi-Stage Filtering**: Uses pre-computed features for efficient candidate filtering
-- **Confidence Scoring**: Provides match confidence levels for quality assurance
+- **Match Scoring**: Provides match confidence scores for all detected items
 - **Faction Filtering**: Supports filtering by Colonial/Warden faction when specified
 
 ### Results Processing
@@ -63,8 +63,7 @@ python -m foxhole_stockpiles.commands.stockpile_scanner --database DATABASE --im
 - `--faction`: Faction filter (Colonial: 'c'/'colonials', Warden: 'w'/'wardens')
 - `--mod`: Mod filter to limit detection to specific mod items
 - `--language`: Language for text detection (en, pt, fr, de, ru, zh). If not specified, uses all supported languages
-- `--confidence`: Minimum confidence threshold for icon matching
-- `--early_exit`: Early exit threshold for icon matching
+- `--early_exit`: Early exit threshold for icon matching (0.0 = disabled, test all candidates)
 - `--debug_image`: Save debug image showing detected regions and matches
 - `--verbose`: Enable verbose logging (debug level)
 - `--quiet`: Suppress output except errors and warnings
@@ -86,10 +85,10 @@ fs scanner --database database/db.pkl --image stockpile_screenshot.png \
   --faction colonial --debug_image --verbose
 ```
 
-**High confidence matching with logging:**
+**With logging:**
 ```bash
 fs scanner --database database/db.pkl --image stockpile.png \
-  --confidence 0.9 --log-file scan_results.log
+  --log-file scan_results.log
 ```
 
 **Webhook output:**
@@ -188,7 +187,7 @@ When using `--debug_image`, creates a visual debugging image showing:
 - **Crate Detection**: Distinguishes between normal and crated item variants
 
 ### Quality Assurance
-- **Confidence Thresholds**: Configurable minimum confidence for reliable matches
+- **Match Confidence**: Returns confidence scores for all matches for downstream filtering
 - **Faction Validation**: Cross-references matches against expected factions
 - **Category Consistency**: Validates item categories within groups
 - **Progressive Learning**: Improves accuracy using group context
@@ -237,8 +236,8 @@ Screenshot Input → Region Detection → Icon Extraction → Database Lookup �
 - Check that the screenshot shows the full stockpile interface
 
 **Warning: "No match found for icon"**
-- Try lowering confidence threshold (--confidence 0.7 or 0.75)
-- Increase max NCC candidates (--max_ncc_candidates 50)
+- Check the returned confidence score to see how close the best match was
+- Increase max NCC candidates in config (max_ncc_candidates = 50)
 - Adjust pHash threshold (--phash_threshold 15)
 - Enable debug output to see what was detected
 - Verify database contains templates for the target resolution
@@ -251,7 +250,7 @@ Screenshot Input → Region Detection → Icon Extraction → Database Lookup �
 ### Debug Tips
 - Use `--debug_image` to visualize detection regions
 - Enable `--verbose` logging for detailed processing information
-- Start with lower confidence thresholds and increase gradually
+- Check confidence scores in output to understand match quality
 - Test with different resolution screenshots to find optimal settings
 - Verify database loading succeeds and reports expected template count
 

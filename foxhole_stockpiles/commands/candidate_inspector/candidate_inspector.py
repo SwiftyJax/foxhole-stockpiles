@@ -101,11 +101,6 @@ async def main() -> dict[str, Any] | None:
         "When specified, performs template matching in addition to candidate listing.",
     )
     parser.add_argument(
-        "--confidence",
-        type=float,
-        help="Minimum confidence threshold for icon matching. Only used with --icon parameter.",
-    )
-    parser.add_argument(
         "--top",
         type=int,
         default=5,
@@ -131,10 +126,6 @@ async def main() -> dict[str, Any] | None:
 
     args = parser.parse_args()
     settings = copy(get_settings())
-
-    # Validate confidence parameter
-    if args.confidence is not None and (args.confidence < 0.0 or args.confidence > 1.0):
-        parser.error("Confidence threshold must be between 0.0 and 1.0")
 
     logging_settings = settings.logging
     # Setup logging
@@ -245,8 +236,6 @@ async def main() -> dict[str, Any] | None:
     # Always use match_icon to get candidates and optional icon matching
     try:
         scanner_settings = settings.scanner
-        if args.confidence:
-            scanner_settings.confidence_threshold = args.confidence
 
         match_result = manager.match_icon(
             icon_image=icon_image,
@@ -256,7 +245,6 @@ async def main() -> dict[str, Any] | None:
             crated=crated_filter,
             code=code_filter,
             excluded_codes=excluded_codes_filter,
-            confidence_threshold=scanner_settings.confidence_threshold,
             phash_threshold=scanner_settings.phash_threshold,
             max_ncc_candidates=scanner_settings.max_ncc_candidates,
             early_exit_threshold=scanner_settings.early_exit_threshold,
@@ -287,16 +275,12 @@ async def main() -> dict[str, Any] | None:
                     f" Category: {icon_match.category.value}"
                     f" Mod: {icon_match.mod}"
                     f" Confidence: {match_result.confidence:.4f}"
-                    f" Threshold: {args.confidence}"
                     f" Resolution: {icon_match.resolution.value}px"
                 ),
             )
         else:
             logger.info(
-                (
-                    f"No match found above confidence threshold {args.confidence}"
-                    f" Searched {len(candidate_indices)} candidates"
-                ),
+                (f"No match found Searched {len(candidate_indices)} candidates"),
             )
 
         # Display top N matches

@@ -12,7 +12,6 @@ from numpy.typing import NDArray
 
 from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
 from foxhole_stockpiles.enums.item_category import ItemCategory
-from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
@@ -350,14 +349,7 @@ class OCRCoordinator:
                             best_match_text = (
                                 f" Best match: {best_match.code}"
                                 f"{' (crated)' if best_match.crated else ''}"
-                                f" (confidence: {match_result.best_confidence:.3f},"
-                                f" threshold: {
-                                    self.config.get_confidence_threshold(
-                                        SupportedResolution(
-                                            str(stockpile_images.vertical_resolution)
-                                        )
-                                    )
-                                })"
+                                f" (confidence: {match_result.best_confidence:.3f})"
                             )
 
                         stockpile.errors.append(
@@ -535,13 +527,10 @@ class OCRCoordinator:
                 best_match_text = ""
                 if rematch_result and rematch_result.best_match:
                     best_match = rematch_result.best_match
-                    resolution = SupportedResolution(str(stockpile_images.vertical_resolution))
-                    threshold = self.config.get_confidence_threshold(resolution)
                     best_match_text = (
                         f" Best match: {best_match.code}"
                         f"{' (crated)' if best_match.crated else ''}"
-                        f" (confidence: {rematch_result.best_confidence:.3f},"
-                        f" threshold: {threshold:.3f})"
+                        f" (confidence: {rematch_result.best_confidence:.3f})"
                     )
 
                 stockpile.errors.append(
@@ -593,20 +582,14 @@ class OCRCoordinator:
         image = stockpile_images.icons[icon_index]
         self.logger.debug("Processing icon at index %d", icon_index)
 
-        # Get resolution-specific confidence threshold
-        resolution = SupportedResolution(str(stockpile_images.vertical_resolution))
-        confidence_threshold = self.config.get_confidence_threshold(resolution)
-
         self.logger.debug(
-            "Using confidence threshold %.3f and early exit threshold %.3f for resolution %d",
-            confidence_threshold,
+            "Using early exit threshold %.3f for resolution %d",
             self.config.early_exit_threshold,
             stockpile_images.vertical_resolution,
         )
 
         match_result = self._template_manager.match_icon(
             icon_image=image,
-            confidence_threshold=confidence_threshold,
             early_exit_threshold=self.config.early_exit_threshold,
             max_ncc_candidates=self.config.max_ncc_candidates,
             phash_threshold=self.config.phash_threshold,
@@ -622,18 +605,13 @@ class OCRCoordinator:
             # Log best match if available for debugging
             if match_result.best_match:
                 self.logger.warning(
-                    "[%d] No match found with confidence %.2f (best: %s with %.3f)",
+                    "[%d] No match found (best: %s with %.3f)",
                     icon_index,
-                    confidence_threshold,
                     match_result.best_match.code,
                     match_result.best_confidence,
                 )
             else:
-                self.logger.warning(
-                    "[%d] No match found with confidence %.2f",
-                    icon_index,
-                    confidence_threshold,
-                )
+                self.logger.warning("[%d] No match found", icon_index)
 
             # Extract failed icon with best match code if available
             if self.config.extract_icons:

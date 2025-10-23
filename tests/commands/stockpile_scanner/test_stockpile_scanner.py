@@ -341,10 +341,8 @@ class TestMainFunction:
 
         await main()
 
-        # Verify coordinator was configured with custom confidence
+        # Verify coordinator was created
         mock_coordinator_class.assert_called()
-        call_args = mock_coordinator_class.call_args[0][0]
-        assert call_args.confidence_threshold == 0.92
 
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
@@ -474,53 +472,6 @@ class TestMainFunction:
 
         # Verify setup_logging was called
         mock_setup_logging.assert_called_once()
-
-    @patch("argparse.ArgumentParser.parse_args")
-    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
-    async def test_main_invalid_confidence(
-        self,
-        mock_imread: Mock,
-        mock_args: Mock,
-        tmp_path: Path,
-    ) -> None:
-        """Test main function with invalid confidence threshold.
-
-        Args:
-            mock_imread (Mock): Mocked cv2.imread function.
-            mock_args (Mock): Mocked ArgumentParser.parse_args method.
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        image_path = tmp_path / "test_screenshot.png"
-        image_path.touch()
-
-        database_path = tmp_path / "test.pkl"
-        database_path.touch()
-
-        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
-        mock_imread.return_value = mock_image
-
-        mock_args.return_value = argparse.Namespace(
-            image=str(image_path),
-            database=database_path,
-            confidence=1.5,  # Invalid: > 1.0
-            early_exit=0.95,
-            faction=None,
-            mod=None,
-            language=None,
-            debug_image=False,
-            log_file=None,
-            verbose=False,
-            quiet=False,
-            output_format=None,
-            config=None,
-            token=None,
-        )
-
-        # Should exit with code 2 for argparse validation error
-        with pytest.raises(SystemExit) as exc_info:
-            await main()
-
-        assert exc_info.value.code == 2
 
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")

@@ -48,7 +48,6 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector
 ### Icon Matching Arguments
 
 - `--icon`: Path to icon image file for template matching
-- `--confidence`: Minimum confidence threshold for matches (only used with --icon parameter)
 - `--top`: Show top N matches with confidence scores when matching icon (default: 5)
 
 ### Output Control Arguments
@@ -97,7 +96,7 @@ fs inspect --database templates.pkl --crated true --resolution 1080 --print
 Test icon recognition against all candidates:
 
 ```bash
-fs inspect --database templates.pkl --resolution 1080 --icon screenshot_icon.png --confidence 0.8
+fs inspect --database templates.pkl --resolution 1080 --icon screenshot_icon.png
 ```
 
 **View top matches** to debug confidence scores:
@@ -112,7 +111,7 @@ Test icon matching against specific faction and category:
 
 ```bash
 fs inspect --database templates.pkl --faction c --category item --resolution 1080 \
-  --icon unknown_item.png --confidence 0.75 --verbose
+  --icon unknown_item.png --verbose
 ```
 
 ### 7. Comprehensive Debugging Session
@@ -121,7 +120,7 @@ Full debugging with all filters and verbose output:
 
 ```bash
 fs inspect --database templates.pkl --code "7.92mm" --faction w --crated false \
-  --resolution 2160 --icon ammo_icon.png --confidence 0.9 --verbose --log-file debug.log
+  --resolution 2160 --icon ammo_icon.png --verbose --log-file debug.log
 ```
 
 ## Available Categories
@@ -174,9 +173,6 @@ fs inspect --database templates.pkl --faction w --resolution 1080
 ```bash
 # Test problematic icon and view top matches
 fs inspect --database templates.pkl --resolution 1080 --icon failing_icon.png --verbose --top 10
-
-# Try with lower confidence
-fs inspect --database templates.pkl --resolution 1080 --icon failing_icon.png --confidence 0.6
 
 # Check similar items
 fs inspect --database templates.pkl --code "Rifle" --resolution 1080 --print
@@ -271,7 +267,6 @@ Icon matching results:
 ======================
 ✓ Match found: Rifle
   Confidence: 0.8523
-  Threshold: 0.8
   Faction: Colonial
   Category: item
   Mod: base
@@ -307,7 +302,7 @@ Found 45 matching candidates
 - Verify faction and category filters aren't too restrictive
 
 **Icon matching returns no results**
-- Lower the confidence threshold with `--confidence 0.5`
+- Check the top matches with `--top 10` to see what candidates were found
 - Enable verbose logging to see matching details
 - Verify the icon file format and quality
 
@@ -318,8 +313,7 @@ Found 45 matching candidates
 3. **Start with broad filters** then narrow down
 4. **Use `--print` flag** to see what candidates are found
 5. **Test without `--icon` first** to verify candidate filtering works
-6. **Lower `--confidence` threshold** if icon matching fails
-7. **Check log files** for detailed error information
+6. **Check log files** for detailed error information
 
 ## Performance Notes
 

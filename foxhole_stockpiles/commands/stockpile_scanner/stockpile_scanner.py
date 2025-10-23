@@ -56,11 +56,6 @@ async def main() -> dict[str, Any] | None:
         "--database", type=Path, required=True, help="Path to the template database file"
     )
     parser.add_argument(
-        "--confidence",
-        type=float,
-        help="Minimum confidence threshold for icon matching.",
-    )
-    parser.add_argument(
         "--early_exit",
         type=float,
         help="Early exit threshold for icon matching.",
@@ -139,9 +134,6 @@ async def main() -> dict[str, Any] | None:
     setup_logging(logging_settings)
 
     # Validate inputs
-    if args.confidence is not None and (args.confidence < 0.0 or args.confidence > 1.0):
-        parser.error("Confidence threshold must be between 0.0 and 1.0")
-
     if not Path(args.image).exists():
         print(f"Error: File '{args.image}' does not exist")
         sys.exit(1)
@@ -158,8 +150,6 @@ async def main() -> dict[str, Any] | None:
     try:
         scanner_settings: OCRCoordinatorConfig = settings.scanner
         scanner_settings.database_path = args.database
-        if args.confidence:
-            scanner_settings.confidence_threshold = args.confidence
         scanner_settings.faction_filter = faction_filter
         scanner_settings.mod_name = mod_filter
         scanner_settings.language = language_filter

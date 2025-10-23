@@ -387,7 +387,7 @@ class TestMatchIcon:
         await manager.set_active_resolution(1080)
 
         # Match with the same image should return high confidence
-        result = manager.match_icon(icon_image=test_image, confidence_threshold=0.8)
+        result = manager.match_icon(icon_image=test_image)
 
         assert result.icon is not None
         assert result.confidence is not None
@@ -552,9 +552,7 @@ class TestMatchIcon:
         await manager.set_active_resolution(1080)
 
         # Match with early exit enabled
-        result = manager.match_icon(
-            icon_image=test_image, confidence_threshold=0.8, early_exit_threshold=0.95
-        )
+        result = manager.match_icon(icon_image=test_image, early_exit_threshold=0.95)
 
         # Should have found match and exited early
         assert result.icon is not None

@@ -135,9 +135,7 @@ Settings for the stockpile scanner.
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
 | `database_path` | string | `"database.pkl"` | Path to the template database file |
-| `confidence_threshold` | float | `0.85` | Default minimum confidence threshold for icon matching (0.0-1.0) |
-| `confidence_by_resolution` | object | `{}` | Resolution-specific confidence thresholds (e.g., `{"1080": 0.80, "2160": 0.90}`) |
-| `early_exit_threshold` | float | `0.95` | Early exit threshold for icon matching (0.0-1.0, must be > confidence_threshold) |
+| `early_exit_threshold` | float | `0.0` | Early exit threshold for icon matching (0.0-1.0). Set to 0.0 to disable early exit |
 | `faction_filter` | string\|null | `null` | Filter items by faction. Valid values: `"neutral"`, `"Colonials"`, `"Wardens"`, or `null` for all |
 | `custom_model` | string | `"renner_numbers"` | Tesseract custom OCR model name |
 | `tessdata_path` | string | `"./tessdata"` | Path to Tesseract data directory |
@@ -288,8 +286,7 @@ export FS_SCANNER__SCREENSHOTS_FOLDER=screenshots
     "rotate_logs": true
   },
   "scanner": {
-    "database_path": "/opt/foxhole/templates.pkl",
-    "min_confidence": 0.85
+    "database_path": "/opt/foxhole/templates.pkl"
   },
   "output_format": {
     "output_format": "webhook",
@@ -358,9 +355,7 @@ This example shows all available settings with their default values:
   },
   "scanner": {
     "database_path": "database.pkl",
-    "confidence_threshold": 0.85,
-    "confidence_by_resolution": {},
-    "early_exit_threshold": 0.95,
+    "early_exit_threshold": 0.0,
     "faction_filter": null,
     "custom_model": "renner_numbers",
     "tessdata_path": "./tessdata",
@@ -440,10 +435,7 @@ This table lists all available environment variables with their default values:
 | `FS_OUTPUT_FORMAT__WEBHOOK_CLIENT_AUTH_HEADER` | string\|null | `null` | Client auth header to pass through |
 | **Scanner** | | | |
 | `FS_SCANNER__DATABASE_PATH` | string | `"database.pkl"` | Template database path |
-| `FS_SCANNER__CONFIDENCE_THRESHOLD` | float | `0.85` | Default confidence threshold |
-| `FS_SCANNER__CONFIDENCE_BY_RESOLUTION` | JSON object | `{}` | Per-resolution confidence thresholds (see special syntax below) |
-| `FS_SCANNER__CONFIDENCE_BY_RESOLUTION__<RESOLUTION>` | float | N/A | Resolution-specific threshold (e.g., `__1080`, `__1440`, `__2160`) |
-| `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.95` | Early exit threshold |
+| `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.0` | Early exit threshold |
 | `FS_SCANNER__FACTION_FILTER` | string\|null | `null` | Faction filter (`"neutral"`, `"Colonials"`, `"Wardens"`, or `null`) |
 | `FS_SCANNER__CUSTOM_MODEL` | string | `"renner_numbers"` | Tesseract custom model name |
 | `FS_SCANNER__TESSDATA_PATH` | string | `"./tessdata"` | Tesseract data directory |
@@ -496,36 +488,3 @@ export FS_LOGGING__LOGGERS='{"foxhole_stockpiles":"DEBUG","uvicorn":"WARNING"}'
 Valid log levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
 
 When a logger-specific level is set, it overrides the global `log_level` for that logger only.
-
-#### Resolution-Specific Confidence Thresholds
-
-The `confidence_by_resolution` setting has special syntax for environment variables. You can set resolution-specific thresholds in two ways:
-
-**Method 1: Individual resolution variables (recommended)**
-```bash
-export FS_SCANNER__CONFIDENCE_BY_RESOLUTION__1080=0.80
-export FS_SCANNER__CONFIDENCE_BY_RESOLUTION__1440=0.85
-export FS_SCANNER__CONFIDENCE_BY_RESOLUTION__2160=0.90
-```
-
-**Method 2: JSON object**
-```bash
-export FS_SCANNER__CONFIDENCE_BY_RESOLUTION='{"1080":0.80,"1440":0.85,"2160":0.90}'
-```
-
-**In config file:**
-```json
-{
-  "scanner": {
-    "confidence_by_resolution": {
-      "1080": 0.80,
-      "1440": 0.85,
-      "2160": 0.90
-    }
-  }
-}
-```
-
-Valid resolutions: `720`, `1080`, `1440`, `2160`
-
-When a resolution-specific threshold is set, it overrides the default `confidence_threshold` for that resolution only.

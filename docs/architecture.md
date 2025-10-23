@@ -69,8 +69,8 @@ Output (JSON/Console/Webhook)
 **Decision:** Pre-generated template database with resolution-specific variants
 
 **Rationale:**
-- **Accuracy:** Pixel-perfect matching with NCC (Normalized Cross-Correlation)
-- **Speed:** Pre-computed templates avoid runtime generation
+- **Accuracy:** Precise matching with NCC (Normalized Cross-Correlation)
+- **Speed:** Pre-computed templates and pHash filtering avoid expensive computation
 - **Flexibility:** Easy to add new items by updating template database
 - **Multi-resolution:** Supports different screen resolutions without retraining
 
@@ -79,12 +79,19 @@ Output (JSON/Console/Webhook)
 # Template database structure
 {
     resolution: {
-        item_code: {
-            'template': np.ndarray,      # Pre-scaled image
-            'phash': int,                # Fast similarity filter
-            'crated': bool,              # Crate overlay applied
-            'metadata': {...}            # Item information
-        }
+        templates: [
+            IconTemplate(
+                image=np.ndarray,      # Pre-scaled image
+                phash=int,            # Fast similarity filter
+                crated=bool,          # Crate overlay applied
+                code=str,             # Item code
+                faction=ItemFaction,  # Item faction
+                category=ItemCategory,# Item category
+                mod=str,              # Mod name
+                resolution=SupportedResolution
+            ),
+            ...
+        ]
     }
 }
 ```
@@ -113,10 +120,10 @@ def match_icon(detected_icon):
     # Phase 2: Precise matching
     for candidate in sorted_by_phash_similarity(candidates):
         confidence = ncc_match(detected_icon, candidate.template)
-        if confidence > 0.95:  # Early exit
+        if confidence > early_exit_threshold and early_exit_threshold > 0:  # Early exit
             return candidate, confidence
 
-    return best_match if best_confidence > 0.85 else None
+    return best_match, best_confidence
 ```
 
 **Performance:**
@@ -158,7 +165,7 @@ def match_icon(detected_icon):
 ```python
 class OCRCoordinatorConfig(BaseModel):
     database_path: Path
-    confidence_threshold: float = Field(ge=0.0, le=1.0, default=0.85)
+    early_exit_threshold: float = Field(ge=0.0, le=1.0, default=0.0)
 
     @field_validator("database_path")
     def validate_database_exists(cls, v: Path) -> Path:

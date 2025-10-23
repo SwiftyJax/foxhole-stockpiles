@@ -328,53 +328,6 @@ class TestCandidateInspectorMain:
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.TemplateManager")
     @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.setup_logging")
-    async def test_main_with_invalid_confidence(
-        self,
-        mock_setup_logging: Mock,
-        mock_manager_class: Mock,
-        mock_args: Mock,
-        tmp_path: Path,
-    ) -> None:
-        """Test main function with invalid confidence value.
-
-        Args:
-            mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_manager_class (Mock): Mocked TemplateManager class.
-            mock_args (Mock): Mocked ArgumentParser.parse_args method.
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        db_path = tmp_path / "test.pkl"
-        db_path.touch()
-
-        mock_args.return_value = argparse.Namespace(
-            database=db_path,
-            code=None,
-            faction=None,
-            category=None,
-            crated=None,
-            mod=None,
-            exclude_code=None,
-            resolution="1080",
-            icon=None,
-            confidence=1.5,  # Invalid: > 1
-            log_file=None,
-            verbose=False,
-            print=False,
-            quiet=False,
-            top=5,
-        )
-
-        mock_manager_class.return_value = MagicMock()
-
-        # Should exit with code 2 for argparse validation error
-        with pytest.raises(SystemExit) as exc_info:
-            await main()
-
-        assert exc_info.value.code == 2
-
-    @patch("argparse.ArgumentParser.parse_args")
-    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.TemplateManager")
-    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.setup_logging")
     async def test_main_with_invalid_resolution(
         self,
         mock_setup_logging: Mock,

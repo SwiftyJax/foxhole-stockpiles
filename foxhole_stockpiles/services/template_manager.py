@@ -153,10 +153,9 @@ class TemplateManager:
         crated: bool | None = None,
         code: str | None = None,
         excluded_codes: list[str] | None = None,
-        confidence_threshold: float = 0.85,
         phash_threshold: int = 12,
         max_ncc_candidates: int = 25,
-        early_exit_threshold: float = 0.95,
+        early_exit_threshold: float = 0.0,
         top_n: int = 5,
     ) -> MatchResult:
         """Get candidates and optionally perform icon matching.
@@ -169,11 +168,9 @@ class TemplateManager:
             crated (bool | None): Optional crated filter
             code (str | None): Optional item code filter
             excluded_codes (list[str] | None): Optional list of item codes to exclude from matching
-            confidence_threshold (float): Minimum confidence for icon match
             phash_threshold (int): Maximum Hamming distance for pHash filtering
             max_ncc_candidates (int): Maximum candidates for NCC optimization
-            early_exit_threshold (float): Confidence threshold for immediate exit
-                (if >= confidence_threshold)
+            early_exit_threshold (float): Confidence threshold for immediate exit (0.0 = disabled)
             top_n (int): Number of top matches to return with confidence scores (default: 5)
 
         Returns:
@@ -249,8 +246,8 @@ class TemplateManager:
                 best_confidence = confidence
                 best_match = template
 
-            # Early exit if very high confidence found
-            if confidence >= early_exit_threshold and early_exit_threshold >= confidence_threshold:
+            # Early exit if very high confidence found (only if early_exit_threshold > 0)
+            if early_exit_threshold > 0.0 and confidence >= early_exit_threshold:
                 logger.debug(
                     "Early exit: found %.3f confidence (>= %.3f) after testing %d candidates",
                     confidence,
@@ -276,7 +273,8 @@ class TemplateManager:
             len(final_candidates),
         )
 
-        if best_match and best_confidence >= confidence_threshold:
+        # Always return the best match regardless of confidence
+        if best_match:
             icon_result = best_match
             confidence_result = best_confidence
 
