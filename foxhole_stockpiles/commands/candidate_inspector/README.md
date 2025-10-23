@@ -33,8 +33,11 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector
 
 ### Required Arguments
 
-- `--database`: Path to the template database file (`.pkl` format)
 - `--resolution`: Target resolution (e.g., '1080', '2160')
+
+### Database Argument
+
+- `--database`: Path to the template database file (`.pkl` format). If not provided, uses the value from configuration file
 
 ### Optional Filtering Arguments
 

@@ -51,9 +51,7 @@ async def main() -> dict[str, Any] | None:
         ),
     )
 
-    parser.add_argument(
-        "--database", type=Path, required=True, help="Path to the template database file"
-    )
+    parser.add_argument("--database", type=Path, help="Path to the template database file")
     parser.add_argument(
         "--code", type=str, help="Item code to search for (partial match supported)"
     )
@@ -127,6 +125,11 @@ async def main() -> dict[str, Any] | None:
     args = parser.parse_args()
     settings = copy(get_settings())
 
+    # Use database from args or fall back to config
+    database_path = args.database if args.database is not None else settings.scanner.database_path
+    if database_path is None:
+        parser.error("Database path must be provided via --database or in config file")
+
     logging_settings = settings.logging
     # Setup logging
     if args.quiet:
@@ -140,7 +143,7 @@ async def main() -> dict[str, Any] | None:
     logger = logging.getLogger(__name__)
 
     # Initialize template manager
-    manager = TemplateManager(database_path=args.database)
+    manager = TemplateManager(database_path=database_path)
 
     # Parse resolution (required)
     try:
@@ -161,7 +164,7 @@ async def main() -> dict[str, Any] | None:
             len(database.templates),
         )
     except FileNotFoundError:
-        logger.error("Database file not found: %s", args.database)
+        logger.error("Database file not found: %s", database_path)
         exit(1)
 
     # Set active resolution for template manager

@@ -11,8 +11,11 @@ from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 class OCRCoordinatorConfig(BaseModel):
     """Configuration for stockpile analysis."""
 
-    database_path: Path = Field(
-        description="Path to the template database file", default=Path("database.pkl")
+    database_path: Path | None = Field(
+        description=(
+            "Path to the template database file. Optional for commands that don't use templates."
+        ),
+        default=None,
     )
     early_exit_threshold: float = Field(
         description=(
@@ -77,7 +80,7 @@ class OCRCoordinatorConfig(BaseModel):
         extra="forbid",
         json_schema_extra={
             "example": {
-                "database_path": "/path/to/templates.db",
+                "database_path": "database.pkl",
                 "early_exit_threshold": 0.0,
                 "confidence_gap": 0.0,
                 "faction_filter": "colonial",
@@ -96,8 +99,10 @@ class OCRCoordinatorConfig(BaseModel):
 
     @field_validator("database_path")
     @classmethod
-    def validate_database_path(cls, v: Path) -> Path:
-        """Validate that the database path exists and is a file."""
+    def validate_database_path(cls, v: Path | None) -> Path | None:
+        """Validate that the database path exists and is a file (if provided)."""
+        if v is None:
+            return v
         if not v.exists():
             raise ValueError(f"Database path does not exist: {v}")
         if not v.is_file():

@@ -316,7 +316,6 @@ Note: Icon dimensions must exactly match the target resolution requirements.
     parser.add_argument(
         "--database",
         type=Path,
-        required=True,
         help="Path to existing template database (.pkl file)",
     )
     parser.add_argument(
@@ -394,6 +393,11 @@ Note: Icon dimensions must exactly match the target resolution requirements.
 
     # Setup logging
     settings = get_settings()
+
+    # Use database from args or fall back to config
+    database_path = args.database if args.database is not None else settings.scanner.database_path
+    if database_path is None:
+        parser.error("Database path must be provided via --database or in config file")
     logging_settings = copy(settings.logging)
     if args.quiet:
         logging_settings.log_level = "WARNING"
@@ -435,7 +439,7 @@ Note: Icon dimensions must exactly match the target resolution requirements.
             )
 
     # Add icon
-    adder = IconAdder(database_path=args.database)
+    adder = IconAdder(database_path=database_path)
 
     for resolution in target_resolutions:
         await adder.add_icon(

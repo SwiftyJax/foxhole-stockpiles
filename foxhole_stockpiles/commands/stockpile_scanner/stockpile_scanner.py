@@ -52,9 +52,7 @@ async def main() -> dict[str, Any] | None:
         description="Detect quantity boxes and title regions in Foxhole game screenshot"
     )
     parser.add_argument("--image", help="Path to the input image file")
-    parser.add_argument(
-        "--database", type=Path, required=True, help="Path to the template database file"
-    )
+    parser.add_argument("--database", type=Path, help="Path to the template database file")
     parser.add_argument(
         "--early_exit",
         type=float,
@@ -106,6 +104,14 @@ async def main() -> dict[str, Any] | None:
 
     args = parser.parse_args()
 
+    # Setup logging and load settings first
+    settings = copy(get_app_settings(args.config))
+
+    # Use database from args or fall back to config
+    database_path = args.database if args.database is not None else settings.scanner.database_path
+    if database_path is None:
+        parser.error("Database path must be provided via --database or in config file")
+
     # Load and preprocess the image
     _image = await asyncio.to_thread(cv2.imread, args.image, cv2.IMREAD_COLOR)
     if _image is None:
@@ -114,9 +120,6 @@ async def main() -> dict[str, Any] | None:
 
     # Image is already in BGR format (OpenCV default), which is what OCRCoordinator expects
     image = np.asarray(_image, dtype=np.uint8)
-
-    # Setup logging
-    settings = copy(get_app_settings(args.config))
     output_format = (
         OutputFormat(args.output_format)
         if args.output_format
@@ -149,7 +152,7 @@ async def main() -> dict[str, Any] | None:
 
     try:
         scanner_settings: OCRCoordinatorConfig = settings.scanner
-        scanner_settings.database_path = args.database
+        scanner_settings.database_path = database_path
         scanner_settings.faction_filter = faction_filter
         scanner_settings.mod_name = mod_filter
         scanner_settings.language = language_filter

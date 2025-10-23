@@ -357,7 +357,7 @@ async def main() -> None:
     parser = argparse.ArgumentParser(description="Build template databases")
     parser.add_argument("--catalog", type=Path, required=True, help="Path to catalog.json")
     parser.add_argument("--templates", type=Path, required=True, help="Path to extracted templates")
-    parser.add_argument("--database", type=Path, required=True, help="Output database path")
+    parser.add_argument("--database", type=Path, help="Output database path")
     parser.add_argument(
         "--use-scaling",
         action="store_true",
@@ -385,6 +385,14 @@ async def main() -> None:
 
     args = parser.parse_args()
 
+    # Setup logging
+    settings = get_settings()
+
+    # Use database from args or fall back to config
+    database_path = args.database if args.database is not None else settings.scanner.database_path
+    if database_path is None:
+        parser.error("Database path must be provided via --database or in config file")
+
     # Parse and validate resolutions if specified
     target_resolutions: list[SupportedResolution] | None = None
     if args.resolution:
@@ -401,8 +409,6 @@ async def main() -> None:
                     f"Valid resolutions are: {', '.join(valid_resolutions)}"
                 )
 
-    # Setup logging
-    settings = get_settings()
     logging_settings = copy(settings.logging)
     # Setup logging
     if args.quiet:
@@ -418,7 +424,7 @@ async def main() -> None:
         catalog_path=args.catalog, assets_path=args.templates, use_scaling=args.use_scaling
     )
     await builder.build_all_databases(
-        output_path=args.database, target_resolutions=target_resolutions
+        output_path=database_path, target_resolutions=target_resolutions
     )
 
 

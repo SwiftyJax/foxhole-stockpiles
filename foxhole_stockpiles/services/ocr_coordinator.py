@@ -30,7 +30,17 @@ class OCRCoordinator:
     TESSERACT_BINARY_THRESHOLD: ClassVar[int] = 127
 
     def __init__(self, config: OCRCoordinatorConfig) -> None:
-        """Initialize the model."""
+        """Initialize the model.
+
+        Args:
+            config (OCRCoordinatorConfig): Configuration for the coordinator
+
+        Raises:
+            ValueError: If database_path is None (required for OCRCoordinator)
+        """
+        if config.database_path is None:
+            raise ValueError("database_path is required for OCRCoordinator")
+
         self.config = config
         self.logger = logging.getLogger(__name__)
         self.threshold_value: float = 0.0

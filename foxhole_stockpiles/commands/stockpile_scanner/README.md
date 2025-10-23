@@ -55,8 +55,8 @@ python -m foxhole_stockpiles.commands.stockpile_scanner --database DATABASE --im
 
 ### Arguments
 
-#### Required
-- `--database`: Path to the template database file (.pkl format)
+#### Database
+- `--database`: Path to the template database file (.pkl format). If not provided, uses the value from configuration file
 
 #### Optional
 - `--image`: Path to the input screenshot image file
