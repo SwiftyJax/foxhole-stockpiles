@@ -12,6 +12,7 @@ from numpy.typing import NDArray
 
 from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
 from foxhole_stockpiles.enums.item_category import ItemCategory
+from foxhole_stockpiles.models.item_candidate import ItemCandidate
 from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
@@ -591,6 +592,7 @@ class OCRCoordinator:
         match_result = self._template_manager.match_icon(
             icon_image=image,
             early_exit_threshold=self.config.early_exit_threshold,
+            confidence_gap=self.config.confidence_gap,
             max_ncc_candidates=self.config.max_ncc_candidates,
             phash_threshold=self.config.phash_threshold,
             faction=self.config.faction_filter,
@@ -639,12 +641,21 @@ class OCRCoordinator:
         if self.config.extract_icons:
             self._extract_icon_to_folder(image, icon_index, icon_match.code)
 
+        # Build candidates list from gap_candidates
+        candidates = None
+        if match_result.gap_candidates:
+            candidates = [
+                ItemCandidate(code=template.code, confidence=conf)
+                for template, conf in match_result.gap_candidates
+            ]
+
         return (
             StockpileItem(
                 code=icon_match.code,
                 crated=icon_match.crated,
                 quantity=quantity,
                 confidence=match_result.confidence,
+                candidates=candidates,
             ),
             match_result,
         )

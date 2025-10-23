@@ -156,6 +156,7 @@ class TemplateManager:
         phash_threshold: int = 12,
         max_ncc_candidates: int = 25,
         early_exit_threshold: float = 0.0,
+        confidence_gap: float = 0.0,
         top_n: int = 5,
     ) -> MatchResult:
         """Get candidates and optionally perform icon matching.
@@ -171,6 +172,7 @@ class TemplateManager:
             phash_threshold (int): Maximum Hamming distance for pHash filtering
             max_ncc_candidates (int): Maximum candidates for NCC optimization
             early_exit_threshold (float): Confidence threshold for immediate exit (0.0 = disabled)
+            confidence_gap (float): Gap for returning alternative candidates (0.0 = disabled)
             top_n (int): Number of top matches to return with confidence scores (default: 5)
 
         Returns:
@@ -260,6 +262,37 @@ class TemplateManager:
         all_matches.sort(key=lambda x: x[0], reverse=True)
         top_matches = [(template, conf) for conf, template in all_matches[:top_n]]
 
+        # Calculate gap candidates if confidence_gap > 0
+        gap_candidates: list[tuple[IconTemplate, float]] = []
+        if confidence_gap > 0.0 and best_match and best_confidence > 0.0:
+            min_confidence = best_confidence - confidence_gap
+
+            for conf, template in all_matches:
+                # Skip if it's the best match itself
+                if template.code == best_match.code and template.crated == best_match.crated:
+                    continue
+
+                # Only include candidates within the gap that match category, crated, and mod
+                if (
+                    conf >= min_confidence
+                    and conf < best_confidence
+                    and template.category == best_match.category
+                    and template.crated == best_match.crated
+                    and template.mod == best_match.mod
+                ):
+                    gap_candidates.append((template, conf))
+
+            # Sort gap candidates by confidence (highest first)
+            gap_candidates.sort(key=lambda x: x[1], reverse=True)
+
+            if gap_candidates:
+                logger.debug(
+                    "Found %d gap candidates within %.3f of best match (%.3f)",
+                    len(gap_candidates),
+                    confidence_gap,
+                    best_confidence,
+                )
+
         ncc_time_ms = (time.perf_counter() - ncc_start) * 1000
         end_time = time.perf_counter()
         total_time_ms = (end_time - start_time) * 1000
@@ -286,6 +319,7 @@ class TemplateManager:
             best_confidence=best_confidence,
             tested_candidates=candidates_tested,
             top_matches=top_matches,
+            gap_candidates=gap_candidates,
         )
 
     def __repr__(self) -> str:

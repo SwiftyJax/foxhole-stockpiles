@@ -136,6 +136,7 @@ Settings for the stockpile scanner.
 |---------|------|---------|-------------|
 | `database_path` | string | `"database.pkl"` | Path to the template database file |
 | `early_exit_threshold` | float | `0.0` | Early exit threshold for icon matching (0.0-1.0). Set to 0.0 to disable early exit |
+| `confidence_gap` | float | `0.0` | Confidence gap for returning alternative candidates (0.0-1.0). Returns candidates within `(best_confidence - confidence_gap)` range that have the same category, crated status, and mod. Set to 0.0 to disable |
 | `faction_filter` | string\|null | `null` | Filter items by faction. Valid values: `"neutral"`, `"Colonials"`, `"Wardens"`, or `null` for all |
 | `custom_model` | string | `"renner_numbers"` | Tesseract custom OCR model name |
 | `tessdata_path` | string | `"./tessdata"` | Path to Tesseract data directory |
@@ -356,6 +357,7 @@ This example shows all available settings with their default values:
   "scanner": {
     "database_path": "database.pkl",
     "early_exit_threshold": 0.0,
+    "confidence_gap": 0.0,
     "faction_filter": null,
     "custom_model": "renner_numbers",
     "tessdata_path": "./tessdata",
@@ -436,6 +438,7 @@ This table lists all available environment variables with their default values:
 | **Scanner** | | | |
 | `FS_SCANNER__DATABASE_PATH` | string | `"database.pkl"` | Template database path |
 | `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.0` | Early exit threshold |
+| `FS_SCANNER__CONFIDENCE_GAP` | float | `0.0` | Confidence gap for alternative candidates |
 | `FS_SCANNER__FACTION_FILTER` | string\|null | `null` | Faction filter (`"neutral"`, `"Colonials"`, `"Wardens"`, or `null`) |
 | `FS_SCANNER__CUSTOM_MODEL` | string | `"renner_numbers"` | Tesseract custom model name |
 | `FS_SCANNER__TESSDATA_PATH` | string | `"./tessdata"` | Tesseract data directory |

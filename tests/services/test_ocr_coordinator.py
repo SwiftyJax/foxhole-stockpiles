@@ -423,6 +423,7 @@ class TestAnalyzeStockpile:
             mock_match_result.icon = mock_icon
             mock_match_result.confidence = 0.9
             mock_match_result.tested_candidates = 10
+            mock_match_result.gap_candidates = []
 
             mock_match.return_value = mock_match_result
 
@@ -685,6 +686,7 @@ class TestProcessSingleIcon:
             best_match=mock_icon,
             best_confidence=0.9,
             tested_candidates=5,
+            gap_candidates=[],
         )
 
         with patch.object(
@@ -732,6 +734,7 @@ class TestProcessSingleIcon:
             best_match=None,
             best_confidence=0.0,
             tested_candidates=3,
+            gap_candidates=[],
         )
 
         with patch.object(
@@ -781,6 +784,7 @@ class TestProcessSingleIcon:
         mock_match_result.icon = mock_icon
         mock_match_result.confidence = 0.9
         mock_match_result.tested_candidates = 5
+        mock_match_result.gap_candidates = []
 
         with patch.object(
             coordinator._template_manager,
@@ -889,6 +893,7 @@ class TestCheckForDuplicates:
             best_match=mock_icon,
             best_confidence=0.82,
             tested_candidates=5,
+            gap_candidates=[],
         )
 
         with patch.object(
@@ -927,6 +932,7 @@ class TestCheckForDuplicates:
             best_match=mock_icon,
             best_confidence=0.80,
             tested_candidates=5,
+            gap_candidates=[],
         )
 
         with patch.object(
@@ -984,6 +990,7 @@ class TestCheckForDuplicates:
             best_match=None,
             best_confidence=0.0,
             tested_candidates=3,
+            gap_candidates=[],
         )
 
         with patch.object(
@@ -1025,6 +1032,7 @@ class TestCheckForDuplicates:
             best_match=mock_best_match,  # But best match exists
             best_confidence=0.75,  # Below threshold
             tested_candidates=3,
+            gap_candidates=[],
         )
 
         with patch.object(
@@ -1114,6 +1122,7 @@ class TestCheckForDuplicates:
                     best_match=mock_icon,
                     best_confidence=0.82,
                     tested_candidates=3,
+                    gap_candidates=[],
                 )
 
             # Second call: excluded=["Rifle", "Ammo"] -> return "Bandages"
@@ -1128,6 +1137,7 @@ class TestCheckForDuplicates:
                     best_match=mock_icon,
                     best_confidence=0.80,
                     tested_candidates=3,
+                    gap_candidates=[],
                 )
 
             # Should not reach here
@@ -1179,6 +1189,7 @@ class TestCheckForDuplicates:
                     best_match=mock_icon,
                     best_confidence=0.82,
                     tested_candidates=3,
+                    gap_candidates=[],
                 )
 
             # Second re-match: Bandages -> MedKit
@@ -1191,6 +1202,7 @@ class TestCheckForDuplicates:
                     best_match=mock_icon,
                     best_confidence=0.78,
                     tested_candidates=3,
+                    gap_candidates=[],
                 )
 
             raise AssertionError(f"Unexpected call count: {call_count}")
@@ -1236,6 +1248,7 @@ class TestCheckForDuplicates:
                 best_match=mock_icon,
                 best_confidence=0.80,
                 tested_candidates=3,
+                gap_candidates=[],
             )
 
         with patch.object(

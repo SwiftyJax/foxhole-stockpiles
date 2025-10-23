@@ -38,6 +38,14 @@ class MatchResult(BaseModel):
         description="List of top N matches with their confidence scores (template, confidence)",
         default_factory=list,
     )
+    gap_candidates: list[tuple[IconTemplate, float]] = Field(
+        description=(
+            "Alternative candidates within the confidence gap. "
+            "Only includes items with the same category, crated status, and mod as the best match. "
+            "Empty if confidence_gap is 0.0 or no alternatives exist."
+        ),
+        default_factory=list,
+    )
 
     model_config = ConfigDict(
         str_strip_whitespace=True,

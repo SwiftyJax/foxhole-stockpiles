@@ -24,6 +24,17 @@ class OCRCoordinatorConfig(BaseModel):
         ge=0.0,
         le=1.0,
     )
+    confidence_gap: float = Field(
+        description=(
+            "Confidence gap for returning alternative candidates. "
+            "If set > 0.0, returns candidates within (best_confidence - confidence_gap) range. "
+            "These candidates must have the same category, crated status, and mod as the "
+            "best match. Set to 0.0 to disable candidate reporting."
+        ),
+        default=0.0,
+        ge=0.0,
+        le=1.0,
+    )
     faction_filter: ItemFaction | None = Field(
         description="Optional faction filter for icon matching", default=None
     )
@@ -68,6 +79,7 @@ class OCRCoordinatorConfig(BaseModel):
             "example": {
                 "database_path": "/path/to/templates.db",
                 "early_exit_threshold": 0.0,
+                "confidence_gap": 0.0,
                 "faction_filter": "colonial",
                 "mod_name": "my_mod",
                 "language": "eng",

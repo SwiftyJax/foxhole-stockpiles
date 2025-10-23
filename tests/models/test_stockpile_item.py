@@ -6,6 +6,7 @@ including serialization and validation.
 
 import pytest
 
+from foxhole_stockpiles.models.item_candidate import ItemCandidate
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
 
 
@@ -163,3 +164,90 @@ class TestStockpileItemValidation:
                 quantity=10,
                 extra_field="not_allowed",  # type: ignore
             )
+
+
+class TestStockpileItemWithCandidates:
+    """Test suite for StockpileItem with candidates field."""
+
+    def test_create_item_with_candidates(self) -> None:
+        """Test creating a StockpileItem with candidates."""
+        candidates = [
+            ItemCandidate(code="RifleAlt1", confidence=0.92),
+            ItemCandidate(code="RifleAlt2", confidence=0.90),
+        ]
+
+        item = StockpileItem(
+            code="Rifle",
+            quantity=10,
+            crated=False,
+            confidence=0.95,
+            candidates=candidates,
+        )
+
+        assert item.candidates is not None
+        assert len(item.candidates) == 2
+        assert item.candidates[0].code == "RifleAlt1"
+        assert item.candidates[0].confidence == 0.92
+        assert item.candidates[1].code == "RifleAlt2"
+        assert item.candidates[1].confidence == 0.90
+
+    def test_create_item_without_candidates(self) -> None:
+        """Test creating a StockpileItem without candidates (default)."""
+        item = StockpileItem(code="Rifle", quantity=10, confidence=0.95)
+
+        assert item.candidates is None
+
+    def test_create_item_with_empty_candidates(self) -> None:
+        """Test creating a StockpileItem with empty candidates list."""
+        item = StockpileItem(
+            code="Rifle",
+            quantity=10,
+            confidence=0.95,
+            candidates=[],
+        )
+
+        assert item.candidates == []
+
+    def test_serialize_item_with_candidates(self) -> None:
+        """Test serializing item with candidates."""
+        candidates = [
+            ItemCandidate(code="RifleAlt1", confidence=0.923456),
+            ItemCandidate(code="RifleAlt2", confidence=0.901234),
+        ]
+
+        item = StockpileItem(
+            code="Rifle",
+            quantity=10,
+            crated=False,
+            confidence=0.954321,
+            candidates=candidates,
+        )
+
+        data = item.model_dump()
+        assert data["candidates"] is not None
+        assert len(data["candidates"]) == 2
+        assert data["candidates"][0]["code"] == "RifleAlt1"
+        assert data["candidates"][0]["confidence"] == 0.923
+        assert data["candidates"][1]["code"] == "RifleAlt2"
+        assert data["candidates"][1]["confidence"] == 0.901
+
+    def test_serialize_item_without_candidates_omits_field(self) -> None:
+        """Test that items without candidates omit the field in serialization."""
+        item = StockpileItem(code="Rifle", quantity=10, confidence=0.95)
+
+        json_data = item.model_dump_json()
+        # Field should not be present when None
+        assert "candidates" not in json_data
+
+    def test_serialize_item_with_empty_candidates(self) -> None:
+        """Test serializing item with empty candidates list."""
+        item = StockpileItem(
+            code="Rifle",
+            quantity=10,
+            confidence=0.95,
+            candidates=[],
+        )
+
+        json_data = item.model_dump_json()
+        # Empty list should not be included in serialization
+        assert "candidates" not in json_data

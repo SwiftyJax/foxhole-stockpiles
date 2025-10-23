@@ -1,6 +1,11 @@
 """Stockpile item model."""
 
-from pydantic import BaseModel, ConfigDict, Field, field_serializer
+from collections.abc import Callable
+from typing import Any
+
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, model_serializer
+
+from foxhole_stockpiles.models.item_candidate import ItemCandidate
 
 
 class StockpileItem(BaseModel):
@@ -14,6 +19,15 @@ class StockpileItem(BaseModel):
         ge=0.0,
         le=1.0,
         default=None,
+    )
+    candidates: list[ItemCandidate] | None = Field(
+        description=(
+            "Alternative candidates within the confidence gap. "
+            "Only included if confidence_gap > 0 and alternatives exist. "
+            "Candidates have the same category, crated status, and mod as the matched item."
+        ),
+        default=None,
+        exclude=True,  # Exclude from default serialization, handle in model_serializer
     )
 
     @field_serializer("confidence")
@@ -30,6 +44,26 @@ class StockpileItem(BaseModel):
             return None
         return round(value, 3)
 
+    @model_serializer(mode="wrap")
+    def serialize_model(self, serializer: Callable[[Any], dict[str, Any]]) -> dict[str, Any]:
+        """Custom serializer to conditionally include candidates field.
+
+        Args:
+            serializer: The default serializer function
+
+        Returns:
+            dict: Serialized model data
+        """
+        data: dict[str, Any] = serializer(self)
+
+        # Add candidates only if not None and not empty
+        if self.candidates:
+            data["candidates"] = [
+                {"code": c.code, "confidence": round(c.confidence, 3)} for c in self.candidates
+            ]
+
+        return data
+
     model_config = ConfigDict(
         extra="forbid",
         json_schema_extra={
@@ -38,6 +72,10 @@ class StockpileItem(BaseModel):
                 "quantity": 3,
                 "crated": False,
                 "confidence": 0.95,
+                "candidates": [
+                    {"code": "GrenadeLauncherW", "confidence": 0.92},
+                    {"code": "GrenadeLauncher", "confidence": 0.90},
+                ],
             }
         },
     )

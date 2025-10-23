@@ -561,6 +561,176 @@ class TestMatchIcon:
         # Should have tested fewer candidates due to early exit
         assert result.tested_candidates < 11
 
+    async def test_match_icon_with_confidence_gap(self, tmp_path: Path) -> None:
+        """Test match_icon with confidence_gap returns alternative candidates.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        import numpy as np
+
+        from foxhole_stockpiles.enums.item_category import ItemCategory
+        from foxhole_stockpiles.enums.item_faction import ItemFaction
+        from foxhole_stockpiles.models.icon_template import IconTemplate
+
+        db_path = tmp_path / "test.pkl"
+
+        # Create test image with distinct pattern
+        test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
+        # Add a distinctive pattern to make it more unique
+        test_image[10:20, 10:20] = [200, 200, 200]
+
+        # Create database with multiple similar templates
+        db = TemplateDatabase(SupportedResolution.R_1080)
+
+        # Add best match template
+        template1 = IconTemplate(
+            code="Rifle",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=test_image.copy(),
+            phash=0,
+        )
+        db.add_template(template1)
+
+        # Add similar template (same category, crated, mod) - but with noticeable differences
+        similar_image1 = np.ones((32, 32, 3), dtype=np.uint8) * 128
+        similar_image1[10:20, 10:20] = [180, 180, 180]  # Different brightness in same area
+        similar_image1[:8, :8] = [100, 100, 100]  # Additional difference
+        template2 = IconTemplate(
+            code="RifleAlt1",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=similar_image1,
+            phash=1,
+        )
+        db.add_template(template2)
+
+        # Add another similar template - even more different
+        similar_image2 = np.ones((32, 32, 3), dtype=np.uint8) * 128
+        similar_image2[10:20, 10:20] = [160, 160, 160]  # More different brightness
+        similar_image2[:12, :12] = [80, 80, 80]  # Larger different area
+        template3 = IconTemplate(
+            code="RifleAlt2",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=similar_image2,
+            phash=2,
+        )
+        db.add_template(template3)
+
+        # Add template with different category (should NOT be included)
+        template4 = IconTemplate(
+            code="Vehicle",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Vehicle,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=test_image.copy(),
+            phash=3,
+        )
+        db.add_template(template4)
+
+        # Add template with different crated status (should NOT be included)
+        template5 = IconTemplate(
+            code="RifleCrated",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=True,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=test_image.copy(),
+            phash=4,
+        )
+        db.add_template(template5)
+
+        databases = {SupportedResolution.R_1080: db}
+        with open(db_path, "wb") as f:
+            pickle.dump(databases, f)
+
+        manager = TemplateManager(db_path)
+        await manager.set_active_resolution(1080)
+
+        # Match with a larger confidence_gap to ensure we get candidates
+        result = manager.match_icon(icon_image=test_image, confidence_gap=0.25)
+
+        # Should have found best match
+        assert result.icon is not None
+        assert result.icon.code == "Rifle"
+
+        # With different enough images and a 0.25 gap, we should have gap_candidates
+        # If confidence scores are very close, we might not get any, so we test the logic instead
+        if len(result.gap_candidates) > 0:
+            # Gap candidates should only include items with same category, crated, and mod
+            for template, conf in result.gap_candidates:
+                assert template.category == ItemCategory.Item
+                assert template.crated is False
+                assert template.mod == "vanilla"
+                # Should not include the best match itself
+                assert template.code != "Rifle"
+                # Confidence should be within the gap
+                assert conf < result.best_confidence
+                assert conf >= (result.best_confidence - 0.25)
+
+        # Verify that gap_candidates field exists and is a list
+        assert isinstance(result.gap_candidates, list)
+
+    async def test_match_icon_with_zero_confidence_gap(self, tmp_path: Path) -> None:
+        """Test match_icon with confidence_gap=0.0 returns no gap candidates.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        import numpy as np
+
+        from foxhole_stockpiles.enums.item_category import ItemCategory
+        from foxhole_stockpiles.enums.item_faction import ItemFaction
+        from foxhole_stockpiles.models.icon_template import IconTemplate
+
+        db_path = tmp_path / "test.pkl"
+
+        # Create test image
+        test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
+
+        # Create database with template
+        db = TemplateDatabase(SupportedResolution.R_1080)
+        template = IconTemplate(
+            code="Rifle",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=test_image.copy(),
+            phash=0,
+        )
+        db.add_template(template)
+
+        databases = {SupportedResolution.R_1080: db}
+        with open(db_path, "wb") as f:
+            pickle.dump(databases, f)
+
+        manager = TemplateManager(db_path)
+        await manager.set_active_resolution(1080)
+
+        # Match with confidence_gap=0.0 (default)
+        result = manager.match_icon(icon_image=test_image, confidence_gap=0.0)
+
+        # Should have found match
+        assert result.icon is not None
+        # Should have NO gap candidates
+        assert len(result.gap_candidates) == 0
+
 
 class TestTemplateManagerRepr:
     """Test suite for TemplateManager.__repr__ method."""

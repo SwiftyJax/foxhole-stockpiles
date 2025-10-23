@@ -184,6 +184,53 @@ class TestFieldConstraints:
 
         assert "greater than or equal to 0" in str(exc_info.value)
 
+    def test_confidence_gap_below_minimum(self, tmp_path: Path) -> None:
+        """Test that confidence_gap below minimum (< 0.0) raises validation error.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_file = tmp_path / "database.pkl"
+        db_file.touch()
+
+        with pytest.raises(ValidationError) as exc_info:
+            OCRCoordinatorConfig(database_path=db_file, confidence_gap=-0.1)
+
+        assert "greater than or equal to 0" in str(exc_info.value)
+
+    def test_confidence_gap_above_maximum(self, tmp_path: Path) -> None:
+        """Test that confidence_gap above maximum (> 1.0) raises validation error.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_file = tmp_path / "database.pkl"
+        db_file.touch()
+
+        with pytest.raises(ValidationError) as exc_info:
+            OCRCoordinatorConfig(database_path=db_file, confidence_gap=1.5)
+
+        assert "less than or equal to 1" in str(exc_info.value)
+
+    def test_confidence_gap_valid_values(self, tmp_path: Path) -> None:
+        """Test that valid confidence_gap values are accepted.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_file = tmp_path / "database.pkl"
+        db_file.touch()
+
+        # Test boundary values
+        config_min = OCRCoordinatorConfig(database_path=db_file, confidence_gap=0.0)
+        assert config_min.confidence_gap == 0.0
+
+        config_mid = OCRCoordinatorConfig(database_path=db_file, confidence_gap=0.15)
+        assert config_mid.confidence_gap == 0.15
+
+        config_max = OCRCoordinatorConfig(database_path=db_file, confidence_gap=1.0)
+        assert config_max.confidence_gap == 1.0
+
 
 class TestModelConfigSettings:
     """Test suite for model configuration settings.
