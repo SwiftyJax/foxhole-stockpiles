@@ -7,6 +7,7 @@ template generation for multiple resolutions.
 
 import argparse
 from pathlib import Path
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import numpy as np
@@ -192,14 +193,12 @@ class TestTemplateGeneratorMethods:
         assert size_1080 == 32
         assert size_2160 == 64
 
-    @patch("PIL.Image.open")
     async def test_load_icon_image_success(
-        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading icon image successfully.
 
         Args:
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -210,18 +209,23 @@ class TestTemplateGeneratorMethods:
         full_path.touch()
 
         # Mock PIL Image loading with RGBA image
-        from PIL import Image
-
-        mock_img = Mock(spec=Image.Image)
-        mock_rgba = Mock()
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
         mock_rgba_array = np.zeros((64, 64, 4), dtype=np.uint8)
-        mock_img.convert.return_value = mock_rgba
-        # Mock the context manager
-        mock_image_open.return_value.__enter__.return_value = mock_img
-        mock_image_open.return_value.__exit__.return_value = None
+        mock_img.convert = MagicMock(return_value=mock_rgba)
 
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
+        # Create context manager using __enter__ and __exit__ as regular methods
+        class MockContextManager:
+            def __enter__(self) -> Any:
+                return mock_img
+
+            def __exit__(self, *args: Any) -> None:
+                return None
+
+        mock_open = MagicMock(return_value=MockContextManager())
+        with patch("PIL.Image.open", mock_open):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
         assert result is not None
         assert result.shape == (64, 64, 4)
@@ -292,14 +296,12 @@ class TestTemplateGeneratorMethods:
         # Result should be different from input (color tint applied)
         assert not np.array_equal(result[:, :, :3], test_image[:, :, :3])
 
-    @patch("PIL.Image.open")
     async def test_load_crate_icon_success(
-        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading crate icon successfully.
 
         Args:
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -311,18 +313,20 @@ class TestTemplateGeneratorMethods:
         crate_path.touch()
 
         # Mock PIL Image loading with RGBA image
-        from PIL import Image
-
-        mock_img = Mock(spec=Image.Image)
-        mock_rgba = Mock()
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
         mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8)
-        mock_img.convert.return_value = mock_rgba
-        # Mock the context manager
-        mock_image_open.return_value.__enter__.return_value = mock_img
-        mock_image_open.return_value.__exit__.return_value = None
+        mock_img.convert = MagicMock(return_value=mock_rgba)
 
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator._load_crate_icon()
+        # Create context manager mock properly
+        mock_cm = MagicMock()
+        mock_cm.__enter__ = MagicMock(return_value=mock_img)
+        mock_cm.__exit__ = MagicMock(return_value=None)
+
+        mock_open = MagicMock(return_value=mock_cm)
+        with patch("PIL.Image.open", mock_open):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator._load_crate_icon()
 
         assert result is not None
         assert result.shape == (64, 64, 4)
@@ -341,14 +345,12 @@ class TestTemplateGeneratorMethods:
         with pytest.raises(FileNotFoundError, match="Crate icon not found"):
             await generator._load_crate_icon()
 
-    @patch("PIL.Image.open")
     async def test_load_icon_image_grayscale(
-        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading grayscale icon and converting to BGRA.
 
         Args:
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -358,31 +360,29 @@ class TestTemplateGeneratorMethods:
         full_path.touch()
 
         # Mock PIL Image loading - convert() will handle grayscale to RGBA
-        from PIL import Image
-
-        mock_img = Mock(spec=Image.Image)
-        mock_rgba = Mock()
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
         mock_rgba_array = np.zeros((64, 64, 4), dtype=np.uint8)
-        mock_img.convert.return_value = mock_rgba
-        # Mock the context manager
-        mock_image_open.return_value.__enter__.return_value = mock_img
-        mock_image_open.return_value.__exit__.return_value = None
+        mock_img.convert = MagicMock(return_value=mock_rgba)
 
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
+        # Create context manager mock properly
+        mock_cm = MagicMock()
+        mock_cm.__enter__ = MagicMock(return_value=mock_img)
+        mock_cm.__exit__ = MagicMock(return_value=None)
 
-            assert result is not None
-            # PIL's convert("RGBA") handles grayscale automatically
-            mock_img.convert.assert_called_once_with("RGBA")
+        mock_open = MagicMock(return_value=mock_cm)
+        with patch("PIL.Image.open", mock_open):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
-    @patch("PIL.Image.open")
-    async def test_load_icon_image_bgr(
-        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
-    ) -> None:
+                assert result is not None
+                # PIL's convert("RGBA") handles grayscale automatically
+                mock_img.convert.assert_called_once_with("RGBA")
+
+    async def test_load_icon_image_bgr(self, generator: TemplateGenerator, tmp_path: Path) -> None:
         """Test loading BGR icon and converting to BGRA.
 
         Args:
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -392,31 +392,31 @@ class TestTemplateGeneratorMethods:
         full_path.touch()
 
         # Mock PIL Image loading - convert() will handle RGB to RGBA
-        from PIL import Image
-
-        mock_img = Mock(spec=Image.Image)
-        mock_rgba = Mock()
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
         mock_rgba_array = np.zeros((64, 64, 4), dtype=np.uint8)
-        mock_img.convert.return_value = mock_rgba
-        # Mock the context manager
-        mock_image_open.return_value.__enter__.return_value = mock_img
-        mock_image_open.return_value.__exit__.return_value = None
+        mock_img.convert = MagicMock(return_value=mock_rgba)
 
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
+        # Create context manager mock properly
+        mock_cm = MagicMock()
+        mock_cm.__enter__ = MagicMock(return_value=mock_img)
+        mock_cm.__exit__ = MagicMock(return_value=None)
 
-            assert result is not None
-            # PIL's convert("RGBA") handles RGB/BGR automatically
-            mock_img.convert.assert_called_once_with("RGBA")
+        mock_open = MagicMock(return_value=mock_cm)
+        with patch("PIL.Image.open", mock_open):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
-    @patch("PIL.Image.open")
+                assert result is not None
+                # PIL's convert("RGBA") handles RGB/BGR automatically
+                mock_img.convert.assert_called_once_with("RGBA")
+
     async def test_load_icon_image_imread_returns_none(
-        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading icon when PIL Image.open raises exception.
 
         Args:
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -426,20 +426,18 @@ class TestTemplateGeneratorMethods:
         full_path.touch()
 
         # Mock PIL Image.open raising an exception (corrupted file)
-        mock_image_open.side_effect = Exception("Corrupted image")
-
-        result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
+        mock_open = MagicMock(side_effect=Exception("Corrupted image"))
+        with patch("PIL.Image.open", mock_open):
+            result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
         assert result is None
 
-    @patch("PIL.Image.open")
     async def test_load_icon_image_exception(
-        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading icon when an exception occurs.
 
         Args:
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -448,10 +446,13 @@ class TestTemplateGeneratorMethods:
         full_path.parent.mkdir(parents=True, exist_ok=True)
         full_path.touch()
 
-        # Mock PIL Image.open raising exception
-        mock_image_open.side_effect = RuntimeError("Read error")
+        # Mock PIL Image.open to raise exception
+        def raise_error(*args: Any, **kwargs: Any) -> None:
+            raise RuntimeError("Read error")
 
-        result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
+        mock_open = MagicMock(side_effect=raise_error)
+        with patch("PIL.Image.open", mock_open):
+            result = await generator._load_icon_image(icon_path=icon_path, mod_name="vanilla")
 
         assert result is None
 
@@ -475,14 +476,12 @@ class TestTemplateGeneratorMethods:
         assert result is not None
         assert np.array_equal(result, mock_subicon)
 
-    @patch("PIL.Image.open")
     async def test_load_subicon_cached_vanilla_fallback(
-        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading subicon with vanilla fallback.
 
         Args:
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -497,47 +496,46 @@ class TestTemplateGeneratorMethods:
         # Mock PIL Image loading - fails for mod1, succeeds for vanilla
         from pathlib import Path as PathType
 
-        from PIL import Image
-
-        def image_open_side_effect(path: PathType) -> Mock:
+        def image_open_side_effect(path: PathType) -> MagicMock:
             if "vanilla" in str(path):
-                mock_img = Mock(spec=Image.Image)
-                mock_rgba = Mock()
-                mock_img.convert.return_value = mock_rgba
-                mock_cm = Mock()
-                mock_cm.__enter__ = Mock(return_value=mock_img)
-                mock_cm.__exit__ = Mock(return_value=None)
+                mock_img = MagicMock()
+                mock_rgba = MagicMock()
+                mock_img.convert = MagicMock(return_value=mock_rgba)
+                mock_cm = MagicMock()
+                mock_cm.__enter__ = MagicMock(return_value=mock_img)
+                mock_cm.__exit__ = MagicMock(return_value=None)
                 return mock_cm
             raise FileNotFoundError("Not found")
 
-        mock_image_open.side_effect = image_open_side_effect
-
         mock_rgba_array = np.ones((32, 32, 4), dtype=np.uint8)
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator._load_subicon_cached(
-                subicon_path=subicon_path, mod_name="mod1"
-            )
+        mock_open = MagicMock(side_effect=image_open_side_effect)
+        with patch("PIL.Image.open", mock_open):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator._load_subicon_cached(
+                    subicon_path=subicon_path, mod_name="mod1"
+                )
 
         # Should fallback to vanilla
         assert result is not None
         # Cache should have entries for both mod1 (pointing to vanilla result) and vanilla
         assert "mod1:War/Content/test_subicon" in generator.subicon_cache
 
-    @patch("PIL.Image.open")
     async def test_load_subicon_cached_not_found_anywhere(
-        self, mock_image_open: Mock, generator: TemplateGenerator, tmp_path: Path
+        self, generator: TemplateGenerator, tmp_path: Path
     ) -> None:
         """Test loading subicon when not found anywhere.
 
         Args:
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
         subicon_path = "War/Content/nonexistent"
-        mock_image_open.side_effect = FileNotFoundError("Not found")
 
-        result = await generator._load_subicon_cached(subicon_path=subicon_path, mod_name="vanilla")
+        mock_open = MagicMock(side_effect=FileNotFoundError("Not found"))
+        with patch("PIL.Image.open", mock_open):
+            result = await generator._load_subicon_cached(
+                subicon_path=subicon_path, mod_name="vanilla"
+            )
 
         assert result is None
         # Should cache None result
@@ -677,12 +675,10 @@ class TestTemplateGeneratorMethods:
 
         assert result is True
 
-    @patch("PIL.Image.open")
     @patch("cv2.imwrite")
     async def test_generate_templates_crate_icon_not_loaded(
         self,
         mock_imwrite: Mock,
-        mock_image_open: Mock,
         generator: TemplateGenerator,
         tmp_path: Path,
     ) -> None:
@@ -690,7 +686,6 @@ class TestTemplateGeneratorMethods:
 
         Args:
             mock_imwrite (Mock): Mocked cv2.imwrite function.
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -703,14 +698,16 @@ class TestTemplateGeneratorMethods:
         generator.crate_icon = None
 
         # Mock PIL Image loading
-        from PIL import Image
 
-        mock_img = Mock(spec=Image.Image)
-        mock_rgba = Mock()
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
         mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8) * 128
-        mock_img.convert.return_value = mock_rgba
-        mock_image_open.return_value.__enter__.return_value = mock_img
-        mock_image_open.return_value.__exit__.return_value = None
+        mock_img.convert = MagicMock(return_value=mock_rgba)
+
+        # Create context manager mock properly
+        mock_cm = MagicMock()
+        mock_cm.__enter__ = MagicMock(return_value=mock_img)
+        mock_cm.__exit__ = MagicMock(return_value=None)
 
         mock_imwrite.return_value = True
 
@@ -722,21 +719,20 @@ class TestTemplateGeneratorMethods:
             subicon_path="",
         )
 
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator._generate_templates_for_item_and_mod(
-                item=catalog_item, mod_name="vanilla"
-            )
+        with patch("PIL.Image.open", return_value=mock_cm):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator._generate_templates_for_item_and_mod(
+                    item=catalog_item, mod_name="vanilla"
+                )
 
         # Should return partial success (True) since normal templates succeed
         # Only crated templates fail, so success_count > 0
         assert result is True
 
-    @patch("PIL.Image.open")
     @patch("cv2.imwrite")
     async def test_generate_templates_imwrite_exception(
         self,
         mock_imwrite: Mock,
-        mock_image_open: Mock,
         generator: TemplateGenerator,
         tmp_path: Path,
     ) -> None:
@@ -744,7 +740,6 @@ class TestTemplateGeneratorMethods:
 
         Args:
             mock_imwrite (Mock): Mocked cv2.imwrite function.
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -756,14 +751,16 @@ class TestTemplateGeneratorMethods:
         generator.crate_icon = np.ones((64, 64, 4), dtype=np.uint8)
 
         # Mock PIL Image loading
-        from PIL import Image
 
-        mock_img = Mock(spec=Image.Image)
-        mock_rgba = Mock()
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
         mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8) * 128
-        mock_img.convert.return_value = mock_rgba
-        mock_image_open.return_value.__enter__.return_value = mock_img
-        mock_image_open.return_value.__exit__.return_value = None
+        mock_img.convert = MagicMock(return_value=mock_rgba)
+
+        # Create context manager mock properly
+        mock_cm = MagicMock()
+        mock_cm.__enter__ = MagicMock(return_value=mock_img)
+        mock_cm.__exit__ = MagicMock(return_value=None)
 
         mock_imwrite.side_effect = RuntimeError("Write error")
 
@@ -775,20 +772,19 @@ class TestTemplateGeneratorMethods:
             subicon_path="",
         )
 
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator._generate_templates_for_item_and_mod(
-                item=catalog_item, mod_name="vanilla"
-            )
+        with patch("PIL.Image.open", return_value=mock_cm):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator._generate_templates_for_item_and_mod(
+                    item=catalog_item, mod_name="vanilla"
+                )
 
         # Should return False due to errors
         assert result is False
 
-    @patch("PIL.Image.open")
     @patch("cv2.imwrite")
     async def test_generate_all_templates_success(
         self,
         mock_imwrite: Mock,
-        mock_image_open: Mock,
         tmp_path: Path,
         mock_catalog_file: Path,
     ) -> None:
@@ -796,7 +792,6 @@ class TestTemplateGeneratorMethods:
 
         Args:
             mock_imwrite (Mock): Mocked cv2.imwrite function.
-            mock_image_open (Mock): Mocked PIL Image.open function.
             tmp_path (Path): Temporary directory path from pytest fixture.
             mock_catalog_file (Path): Mock catalog file from fixture.
         """
@@ -835,19 +830,22 @@ class TestTemplateGeneratorMethods:
         icon_path.touch()
 
         # Mock PIL Image loading
-        from PIL import Image
 
-        mock_img = Mock(spec=Image.Image)
-        mock_rgba = Mock()
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
         mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8)
-        mock_img.convert.return_value = mock_rgba
-        mock_image_open.return_value.__enter__.return_value = mock_img
-        mock_image_open.return_value.__exit__.return_value = None
+        mock_img.convert = MagicMock(return_value=mock_rgba)
+
+        # Create context manager mock properly
+        mock_cm = MagicMock()
+        mock_cm.__enter__ = MagicMock(return_value=mock_img)
+        mock_cm.__exit__ = MagicMock(return_value=None)
 
         mock_imwrite.return_value = True
 
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator.generate_all_templates()
+        with patch("PIL.Image.open", return_value=mock_cm):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator.generate_all_templates()
 
         assert result is True
 
@@ -875,17 +873,14 @@ class TestTemplateGeneratorMethods:
 
         assert result is False
 
-    @patch("PIL.Image.open")
     async def test_generate_all_templates_no_matching_filter(
         self,
-        mock_image_open: Mock,
         tmp_path: Path,
         mock_catalog_file: Path,
     ) -> None:
         """Test generating templates when filter matches nothing.
 
         Args:
-            mock_image_open (Mock): Mocked PIL Image.open function.
             tmp_path (Path): Temporary directory path from pytest fixture.
             mock_catalog_file (Path): Mock catalog file from fixture.
         """
@@ -910,26 +905,28 @@ class TestTemplateGeneratorMethods:
         crate_path.touch()
 
         # Mock PIL Image loading
-        from PIL import Image
 
-        mock_img = Mock(spec=Image.Image)
-        mock_rgba = Mock()
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
         mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8)
-        mock_img.convert.return_value = mock_rgba
-        mock_image_open.return_value.__enter__.return_value = mock_img
-        mock_image_open.return_value.__exit__.return_value = None
+        mock_img.convert = MagicMock(return_value=mock_rgba)
 
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator.generate_all_templates()
+        # Create context manager mock properly
+        mock_cm = MagicMock()
+        mock_cm.__enter__ = MagicMock(return_value=mock_img)
+        mock_cm.__exit__ = MagicMock(return_value=None)
+
+        mock_open = MagicMock(return_value=mock_cm)
+        with patch("PIL.Image.open", mock_open):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator.generate_all_templates()
 
         assert result is False
 
-    @patch("PIL.Image.open")
     @patch("cv2.imwrite")
     async def test_generate_templates_for_item_and_mod(
         self,
         mock_imwrite: Mock,
-        mock_image_open: Mock,
         generator: TemplateGenerator,
         tmp_path: Path,
     ) -> None:
@@ -937,7 +934,6 @@ class TestTemplateGeneratorMethods:
 
         Args:
             mock_imwrite (Mock): Mocked cv2.imwrite function.
-            mock_image_open (Mock): Mocked PIL Image.open function.
             generator (TemplateGenerator): TemplateGenerator instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
@@ -951,14 +947,16 @@ class TestTemplateGeneratorMethods:
         generator.crate_icon = np.ones((64, 64, 4), dtype=np.uint8)
 
         # Mock PIL Image loading
-        from PIL import Image
 
-        mock_img = Mock(spec=Image.Image)
-        mock_rgba = Mock()
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
         mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8) * 128
-        mock_img.convert.return_value = mock_rgba
-        mock_image_open.return_value.__enter__.return_value = mock_img
-        mock_image_open.return_value.__exit__.return_value = None
+        mock_img.convert = MagicMock(return_value=mock_rgba)
+
+        # Create context manager mock properly
+        mock_cm = MagicMock()
+        mock_cm.__enter__ = MagicMock(return_value=mock_img)
+        mock_cm.__exit__ = MagicMock(return_value=None)
 
         mock_imwrite.return_value = True
 
@@ -971,10 +969,11 @@ class TestTemplateGeneratorMethods:
             subicon_path="",
         )
 
-        with patch("numpy.array", return_value=mock_rgba_array):
-            result = await generator._generate_templates_for_item_and_mod(
-                item=catalog_item, mod_name="vanilla"
-            )
+        with patch("PIL.Image.open", return_value=mock_cm):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator._generate_templates_for_item_and_mod(
+                    item=catalog_item, mod_name="vanilla"
+                )
 
         # Should succeed
         assert result is True

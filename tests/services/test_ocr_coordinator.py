@@ -1354,9 +1354,9 @@ class TestOCRCoordinatorIntegration:
         Returns:
             Path: Path to the template database file.
         """
-        db_path = Path(__file__).parent.parent.parent / "data" / "vanilla.pkl"
+        db_path = Path(__file__).parent.parent.parent / "data" / "foxhole_templates.pkl"
         if not db_path.exists():
-            pytest.skip("vanilla.pkl database not found")
+            pytest.skip("foxhole_templates.pkl database not found")
         return db_path
 
     @pytest.mark.asyncio

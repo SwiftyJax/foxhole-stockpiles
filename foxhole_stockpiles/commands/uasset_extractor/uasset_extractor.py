@@ -162,7 +162,7 @@ class PakExtractor:
                 continue
             finally:
                 # Ensure the process is terminated and resources are cleaned up
-                if process is not None:
+                if process is not None and process.returncode is None:
                     try:
                         process.terminate()
                         await process.wait()
@@ -269,7 +269,7 @@ class PakExtractor:
             return False
         finally:
             # Ensure the process is terminated and resources are cleaned up
-            if process is not None:
+            if process is not None and process.returncode is None:
                 try:
                     process.terminate()
                     await process.wait()

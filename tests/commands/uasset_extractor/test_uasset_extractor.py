@@ -426,7 +426,8 @@ class TestExtractSingleFile:
         file_path = "War/Content/test.uasset"
         temp_dir = str(tmp_path / "temp")
 
-        with patch("asyncio.create_subprocess_exec", side_effect=RuntimeError("Subprocess error")):
+        mock_subprocess = MagicMock(side_effect=RuntimeError("Subprocess error"))
+        with patch("asyncio.create_subprocess_exec", mock_subprocess):
             result = await extractor.extract_single_file(file_path, temp_dir)
 
         assert result is False
@@ -589,7 +590,8 @@ class TestConvertToPng:
         (pak_dir / file_path).parent.mkdir(parents=True, exist_ok=True)
         (pak_dir / file_path).touch()
 
-        with patch("asyncio.create_subprocess_exec", side_effect=RuntimeError("Conversion error")):
+        mock_subprocess = MagicMock(side_effect=RuntimeError("Conversion error"))
+        with patch("asyncio.create_subprocess_exec", mock_subprocess):
             result = await extractor._try_convert_with_version(file_path, temp_dir)
 
         assert result is False

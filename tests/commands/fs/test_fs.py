@@ -4,7 +4,7 @@ This module contains comprehensive tests for the unified CLI dispatcher,
 including command resolution, alias handling, and command execution.
 """
 
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
@@ -136,11 +136,7 @@ class TestCLIDispatcherExecution:
         ):
             # Mock the module and main function
             mock_module = MagicMock()
-
-            async def mock_main() -> None:
-                return None
-
-            mock_module.main = mock_main
+            mock_module.main = AsyncMock(return_value=None)
             mock_import.return_value = mock_module
             mock_asyncio_run.return_value = None
 
@@ -160,19 +156,14 @@ class TestCLIDispatcherExecution:
         # Should have exited with code 1
         assert exc_info.value.code == 1
 
-    @patch("foxhole_stockpiles.commands.fs.fs.importlib.import_module")
-    def test_execute_command_import_error(self, mock_import: Mock) -> None:
-        """Test command execution when import fails.
-
-        Args:
-            mock_import (Mock): Mocked importlib.import_module function.
-        """
+    def test_execute_command_import_error(self) -> None:
+        """Test command execution when import fails."""
         dispatcher = CLIDispatcher()
 
-        mock_import.side_effect = ImportError("Module not found")
-
-        with pytest.raises(SystemExit) as exc_info:
-            dispatcher.execute_command("scanner")
+        mock_import = MagicMock(side_effect=ImportError("Module not found"))
+        with patch("foxhole_stockpiles.commands.fs.fs.importlib.import_module", mock_import):
+            with pytest.raises(SystemExit) as exc_info:
+                dispatcher.execute_command("scanner")
 
         # Should have exited with code 1
         assert exc_info.value.code == 1
@@ -262,20 +253,48 @@ class TestMainFunction:
 
     @patch("foxhole_stockpiles.commands.fs.fs.sys.argv", ["fs", "scanner"])
     @patch("foxhole_stockpiles.commands.fs.fs.sys.exit")
-    @patch("foxhole_stockpiles.commands.fs.fs.CLIDispatcher.execute_command")
-    def test_main_handles_system_exit(self, mock_execute: Mock, mock_exit: Mock) -> None:
+    def test_main_handles_exception(self, mock_exit: Mock) -> None:
+        """Test main function handles exceptions from subcommand.
+
+        Args:
+            mock_exit (Mock): Mocked sys.exit function.
+        """
+        mock_execute = MagicMock(side_effect=RuntimeError("Test error"))
+        with patch("foxhole_stockpiles.commands.fs.fs.CLIDispatcher.execute_command", mock_execute):
+            main()
+
+        # Should exit with code 1
+        mock_exit.assert_called_once_with(1)
+
+    @patch("foxhole_stockpiles.commands.fs.fs.sys.argv", ["fs", "scanner"])
+    @patch("foxhole_stockpiles.commands.fs.fs.sys.exit")
+    def test_main_handles_system_exit(self, mock_exit: Mock) -> None:
         """Test main function handles SystemExit from subcommand.
 
         Args:
-            mock_execute (Mock): Mocked execute_command method.
             mock_exit (Mock): Mocked sys.exit function.
         """
-        mock_execute.side_effect = SystemExit(1)
-
-        main()
+        mock_execute = MagicMock(side_effect=SystemExit(1))
+        with patch("foxhole_stockpiles.commands.fs.fs.CLIDispatcher.execute_command", mock_execute):
+            main()
 
         # Should exit with the same code
         mock_exit.assert_called_once_with(1)
+
+    @patch("foxhole_stockpiles.commands.fs.fs.sys.argv", ["fs", "scanner"])
+    @patch("foxhole_stockpiles.commands.fs.fs.sys.exit")
+    def test_main_handles_keyboard_interrupt(self, mock_exit: Mock) -> None:
+        """Test main function handles KeyboardInterrupt.
+
+        Args:
+            mock_exit (Mock): Mocked sys.exit function.
+        """
+        mock_execute = MagicMock(side_effect=KeyboardInterrupt())
+        with patch("foxhole_stockpiles.commands.fs.fs.CLIDispatcher.execute_command", mock_execute):
+            main()
+
+        # Should exit with code 130
+        mock_exit.assert_called_once_with(130)
 
     @patch("foxhole_stockpiles.commands.fs.fs.sys.argv", ["fs", "scanner"])
     @patch("foxhole_stockpiles.commands.fs.fs.CLIDispatcher.execute_command")
@@ -296,37 +315,3 @@ class TestMainFunction:
         # Check that JSON was printed
         printed_text = str(mock_print.call_args[0][0])
         assert "result" in printed_text or "success" in printed_text
-
-    @patch("foxhole_stockpiles.commands.fs.fs.sys.argv", ["fs", "scanner"])
-    @patch("foxhole_stockpiles.commands.fs.fs.sys.exit")
-    @patch("foxhole_stockpiles.commands.fs.fs.CLIDispatcher.execute_command")
-    def test_main_handles_exception(self, mock_execute: Mock, mock_exit: Mock) -> None:
-        """Test main function handles exceptions from subcommand.
-
-        Args:
-            mock_execute (Mock): Mocked execute_command method.
-            mock_exit (Mock): Mocked sys.exit function.
-        """
-        mock_execute.side_effect = RuntimeError("Test error")
-
-        main()
-
-        # Should exit with code 1
-        mock_exit.assert_called_once_with(1)
-
-    @patch("foxhole_stockpiles.commands.fs.fs.sys.argv", ["fs", "scanner"])
-    @patch("foxhole_stockpiles.commands.fs.fs.sys.exit")
-    @patch("foxhole_stockpiles.commands.fs.fs.CLIDispatcher.execute_command")
-    def test_main_handles_keyboard_interrupt(self, mock_execute: Mock, mock_exit: Mock) -> None:
-        """Test main function handles KeyboardInterrupt.
-
-        Args:
-            mock_execute (Mock): Mocked execute_command method.
-            mock_exit (Mock): Mocked sys.exit function.
-        """
-        mock_execute.side_effect = KeyboardInterrupt()
-
-        main()
-
-        # Should exit with code 130
-        mock_exit.assert_called_once_with(130)
