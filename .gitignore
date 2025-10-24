@@ -174,3 +174,5 @@ images/
 logs/
 test.py
 screenshots/
+data/
+.claude
