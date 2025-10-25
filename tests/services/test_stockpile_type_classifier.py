@@ -7,7 +7,8 @@ mappings and fuzzy matching for OCR errors.
 
 from unittest.mock import MagicMock, patch
 
-from foxhole_stockpiles.core.settings import AppSettings, StockpileTypesSettings
+from foxhole_stockpiles.core.settings import AppSettings
+from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
 from foxhole_stockpiles.enums.stockpile_type import StockpileType
 from foxhole_stockpiles.services.stockpile_type_classifier import StockpileTypeClassifier
 

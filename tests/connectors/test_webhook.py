@@ -12,7 +12,7 @@ import pytest
 from httpx import ConnectTimeout, HTTPStatusError
 
 from foxhole_stockpiles.connectors.webhook import WebhookConnector, async_retry_on_connect_timeout
-from foxhole_stockpiles.core.settings import WebhookOutputSettings
+from foxhole_stockpiles.core.settings.sections.output import WebhookOutputSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
 
 

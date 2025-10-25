@@ -163,7 +163,7 @@ def match_icon(detected_icon):
 
 **Example:**
 ```python
-class OCRCoordinatorConfig(BaseModel):
+class ScannerSettings(BaseModel):
     database_path: Path
     early_exit_threshold: float = Field(ge=0.0, le=1.0, default=0.0)
 

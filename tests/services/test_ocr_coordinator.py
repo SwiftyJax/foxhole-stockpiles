@@ -12,12 +12,12 @@ import numpy as np
 import pytest
 from numpy.typing import NDArray
 
+from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.match_result import MatchResult
-from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
@@ -63,7 +63,7 @@ class TestOCRCoordinatorInitialization:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(
+        config = ScannerSettings(
             database_path=db_path,
             early_exit_threshold=0.95,
         )
@@ -86,7 +86,7 @@ class TestOCRCoordinatorInitialization:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(
+        config = ScannerSettings(
             database_path=db_path,
             custom_model="custom_model",
             tessdata_path="/path/to/tessdata",
@@ -109,7 +109,7 @@ class TestExtractIconToFolder:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        config = ScannerSettings(database_path=db_path, extract_icons=True)
         coordinator = OCRCoordinator(config)
 
         mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
@@ -145,7 +145,7 @@ class TestExtractIconToFolder:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        config = ScannerSettings(database_path=db_path, extract_icons=True)
         coordinator = OCRCoordinator(config)
 
         # Create a test icon image (35x35 BGR as used in Foxhole)
@@ -186,7 +186,7 @@ class TestExtractIconToFolder:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        config = ScannerSettings(database_path=db_path, extract_icons=True)
         coordinator = OCRCoordinator(config)
 
         mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
@@ -222,7 +222,7 @@ class TestExtractIconToFolder:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        config = ScannerSettings(database_path=db_path, extract_icons=True)
         coordinator = OCRCoordinator(config)
 
         mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
@@ -249,7 +249,7 @@ class TestExtractIconToFolder:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path, extract_icons=True)
+        config = ScannerSettings(database_path=db_path, extract_icons=True)
         coordinator = OCRCoordinator(config)
 
         mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
@@ -274,7 +274,7 @@ class TestSaveScreenshot:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path, screenshots_folder="")
+        config = ScannerSettings(database_path=db_path, screenshots_folder="")
         coordinator = OCRCoordinator(config)
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -295,9 +295,7 @@ class TestSaveScreenshot:
         db_path.touch()
 
         screenshots_folder = tmp_path / "screenshots"
-        config = OCRCoordinatorConfig(
-            database_path=db_path, screenshots_folder=str(screenshots_folder)
-        )
+        config = ScannerSettings(database_path=db_path, screenshots_folder=str(screenshots_folder))
         coordinator = OCRCoordinator(config)
 
         from foxhole_stockpiles.enums.stockpile_type import StockpileType
@@ -343,19 +341,19 @@ class TestAnalyzeStockpile:
         return np.zeros((1080, 1920, 3), dtype=np.uint8)
 
     @pytest.fixture
-    def mock_config(self, tmp_path: Path) -> OCRCoordinatorConfig:
+    def mock_config(self, tmp_path: Path) -> ScannerSettings:
         """Create a mock config for testing.
 
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
 
         Returns:
-            OCRCoordinatorConfig: Mock configuration.
+            ScannerSettings: Mock configuration.
         """
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        return OCRCoordinatorConfig(
+        return ScannerSettings(
             database_path=db_path,
             early_exit_threshold=0.95,
         )
@@ -363,13 +361,13 @@ class TestAnalyzeStockpile:
     async def test_analyze_stockpile_success(
         self,
         mock_image: NDArray[np.uint8],
-        mock_config: OCRCoordinatorConfig,
+        mock_config: ScannerSettings,
     ) -> None:
         """Test successful stockpile analysis.
 
         Args:
             mock_image (NDArray[np.uint8]): Mock image from fixture.
-            mock_config (OCRCoordinatorConfig): Mock config from fixture.
+            mock_config (ScannerSettings): Mock config from fixture.
         """
         coordinator = OCRCoordinator(mock_config)
 
@@ -435,13 +433,13 @@ class TestAnalyzeStockpile:
     async def test_analyze_stockpile_no_icons(
         self,
         mock_image: NDArray[np.uint8],
-        mock_config: OCRCoordinatorConfig,
+        mock_config: ScannerSettings,
     ) -> None:
         """Test analysis when no icons are found.
 
         Args:
             mock_image (np.ndarray): Mock image from fixture.
-            mock_config (OCRCoordinatorConfig): Mock config from fixture.
+            mock_config (ScannerSettings): Mock config from fixture.
         """
         coordinator = OCRCoordinator(mock_config)
 
@@ -456,13 +454,13 @@ class TestAnalyzeStockpile:
     async def test_analyze_stockpile_detection_error(
         self,
         mock_image: NDArray[np.uint8],
-        mock_config: OCRCoordinatorConfig,
+        mock_config: ScannerSettings,
     ) -> None:
         """Test analysis when region detection fails.
 
         Args:
             mock_image (np.ndarray): Mock image from fixture.
-            mock_config (OCRCoordinatorConfig): Mock config from fixture.
+            mock_config (ScannerSettings): Mock config from fixture.
         """
         coordinator = OCRCoordinator(mock_config)
 
@@ -490,7 +488,7 @@ class TestDetectRegions:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path)
+        config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -516,7 +514,7 @@ class TestDetectRegions:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path, debug_mode=True)
+        config = ScannerSettings(database_path=db_path, debug_mode=True)
         coordinator = OCRCoordinator(config)
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -548,7 +546,7 @@ class TestExtractQuantities:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path)
+        config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
 
         mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
@@ -578,7 +576,7 @@ class TestExtractQuantities:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path)
+        config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
 
         mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
@@ -620,7 +618,7 @@ class TestPrepareImageForDetection:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path)
+        config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
         coordinator.scale_factor = 1.0
 
@@ -642,7 +640,7 @@ class TestPrepareImageForDetection:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path)
+        config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
         coordinator.scale_factor = 1.0
 
@@ -670,7 +668,7 @@ class TestProcessSingleIcon:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path)
+        config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
 
         mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
@@ -720,7 +718,7 @@ class TestProcessSingleIcon:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path)
+        config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
 
         mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
@@ -764,7 +762,7 @@ class TestProcessSingleIcon:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(
+        config = ScannerSettings(
             database_path=db_path,
             faction_filter=ItemFaction.COLONIALS,
         )
@@ -825,7 +823,7 @@ class TestCheckForDuplicates:
         """
         db_path = tmp_path / "test.pkl"
         db_path.touch()
-        config = OCRCoordinatorConfig(database_path=db_path)
+        config = ScannerSettings(database_path=db_path)
         return OCRCoordinator(config)
 
     @pytest.fixture
@@ -1275,7 +1273,7 @@ class TestDetectRegionsCriticalException:
         db_path = tmp_path / "test.pkl"
         db_path.touch()
 
-        config = OCRCoordinatorConfig(database_path=db_path)
+        config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -1303,7 +1301,7 @@ class TestDetectRegionsCriticalException:
         db_path.touch()
 
         # Set a screenshots folder
-        config = OCRCoordinatorConfig(
+        config = ScannerSettings(
             database_path=db_path, screenshots_folder=str(tmp_path / "screenshots")
         )
         coordinator = OCRCoordinator(config)
@@ -1375,7 +1373,7 @@ class TestOCRCoordinatorIntegration:
         """
         # Note: since confidence_threshold is removed, this test may need to be adjusted
         # to trigger Unknown items through other means if needed
-        config = OCRCoordinatorConfig(
+        config = ScannerSettings(
             database_path=real_database,
             early_exit_threshold=0.995,
         )
@@ -1407,7 +1405,7 @@ class TestOCRCoordinatorIntegration:
             tmp_path (Path): Temporary directory for test output.
         """
         # Use debug mode to trigger image save paths
-        config = OCRCoordinatorConfig(
+        config = ScannerSettings(
             database_path=real_database,
             debug_mode=True,
         )
@@ -1443,7 +1441,7 @@ class TestOCRCoordinatorIntegration:
             real_screenshot (NDArray[np.uint8]): Real screenshot fixture.
             real_database (Path): Path to template database.
         """
-        config = OCRCoordinatorConfig(
+        config = ScannerSettings(
             database_path=real_database,
         )
 

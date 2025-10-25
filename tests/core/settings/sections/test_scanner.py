@@ -1,6 +1,6 @@
-"""Tests for models.ocr_coordinator_config module.
+"""Tests for settings.sections.scanner module.
 
-This module contains comprehensive tests for the OCRCoordinatorConfig model,
+This module contains comprehensive tests for the ScannerSettings model,
 including field validation, model validation, and configuration retrieval.
 """
 
@@ -9,20 +9,20 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
-from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 
 
-class TestOCRCoordinatorConfigInitialization:
-    """Test suite for OCRCoordinatorConfig initialization.
+class TestScannerSettingsInitialization:
+    """Test suite for ScannerSettings initialization.
 
-    This class contains tests for creating OCRCoordinatorConfig instances
+    This class contains tests for creating ScannerSettings instances
     with various parameter combinations.
     """
 
     def test_initialization_with_defaults(self) -> None:
         """Test initialization with default values."""
-        config = OCRCoordinatorConfig()
+        config = ScannerSettings()
 
         assert config.database_path is None
         assert config.early_exit_threshold == 0.0
@@ -42,7 +42,7 @@ class TestOCRCoordinatorConfigInitialization:
         """
         db_file = tmp_path / "custom.pkl"
 
-        config = OCRCoordinatorConfig(
+        config = ScannerSettings(
             database_path=db_file,
             early_exit_threshold=0.98,
             faction_filter=ItemFaction.COLONIALS,
@@ -79,19 +79,19 @@ class TestDatabasePath:
         """
         db_file = tmp_path / "valid.pkl"
 
-        config = OCRCoordinatorConfig(database_path=db_file)
+        config = ScannerSettings(database_path=db_file)
 
         assert config.database_path == db_file
 
     def test_database_path_with_none(self) -> None:
         """Test database_path accepts None (for commands that don't use it)."""
-        config = OCRCoordinatorConfig(database_path=None)
+        config = ScannerSettings(database_path=None)
 
         assert config.database_path is None
 
     def test_database_path_default_is_none(self) -> None:
         """Test database_path defaults to None when not provided."""
-        config = OCRCoordinatorConfig()
+        config = ScannerSettings()
 
         assert config.database_path is None
 
@@ -106,55 +106,55 @@ class TestFieldConstraints:
     def test_early_exit_threshold_below_minimum(self) -> None:
         """Test early_exit_threshold validation fails below 0.0."""
         with pytest.raises(ValidationError) as exc_info:
-            OCRCoordinatorConfig(early_exit_threshold=-0.1)
+            ScannerSettings(early_exit_threshold=-0.1)
 
         assert "greater than or equal to 0" in str(exc_info.value)
 
     def test_early_exit_threshold_above_maximum(self) -> None:
         """Test early_exit_threshold validation fails above 1.0."""
         with pytest.raises(ValidationError) as exc_info:
-            OCRCoordinatorConfig(early_exit_threshold=1.5)
+            ScannerSettings(early_exit_threshold=1.5)
 
         assert "less than or equal to 1" in str(exc_info.value)
 
     def test_max_ncc_candidates_below_minimum(self) -> None:
         """Test max_ncc_candidates validation fails below 1."""
         with pytest.raises(ValidationError) as exc_info:
-            OCRCoordinatorConfig(max_ncc_candidates=0)
+            ScannerSettings(max_ncc_candidates=0)
 
         assert "greater than or equal to 1" in str(exc_info.value)
 
     def test_phash_threshold_below_minimum(self) -> None:
         """Test phash_threshold validation fails below 0."""
         with pytest.raises(ValidationError) as exc_info:
-            OCRCoordinatorConfig(phash_threshold=-1)
+            ScannerSettings(phash_threshold=-1)
 
         assert "greater than or equal to 0" in str(exc_info.value)
 
     def test_confidence_gap_below_minimum(self) -> None:
         """Test that confidence_gap below minimum (< 0.0) raises validation error."""
         with pytest.raises(ValidationError) as exc_info:
-            OCRCoordinatorConfig(confidence_gap=-0.1)
+            ScannerSettings(confidence_gap=-0.1)
 
         assert "greater than or equal to 0" in str(exc_info.value)
 
     def test_confidence_gap_above_maximum(self) -> None:
         """Test that confidence_gap above maximum (> 1.0) raises validation error."""
         with pytest.raises(ValidationError) as exc_info:
-            OCRCoordinatorConfig(confidence_gap=1.5)
+            ScannerSettings(confidence_gap=1.5)
 
         assert "less than or equal to 1" in str(exc_info.value)
 
     def test_confidence_gap_valid_values(self) -> None:
         """Test that valid confidence_gap values are accepted."""
         # Test boundary values
-        config_min = OCRCoordinatorConfig(confidence_gap=0.0)
+        config_min = ScannerSettings(confidence_gap=0.0)
         assert config_min.confidence_gap == 0.0
 
-        config_mid = OCRCoordinatorConfig(confidence_gap=0.15)
+        config_mid = ScannerSettings(confidence_gap=0.15)
         assert config_mid.confidence_gap == 0.15
 
-        config_max = OCRCoordinatorConfig(confidence_gap=1.0)
+        config_max = ScannerSettings(confidence_gap=1.0)
         assert config_max.confidence_gap == 1.0
 
 
@@ -167,20 +167,20 @@ class TestModelConfigSettings:
 
     def test_str_strip_whitespace(self) -> None:
         """Test that string fields have whitespace stripped."""
-        config = OCRCoordinatorConfig(custom_model="  my_model  ")
+        config = ScannerSettings(custom_model="  my_model  ")
 
         assert config.custom_model == "my_model"
 
     def test_extra_fields_forbidden(self) -> None:
         """Test that extra fields are forbidden."""
         with pytest.raises(ValidationError) as exc_info:
-            OCRCoordinatorConfig(unknown_field="value")  # type: ignore
+            ScannerSettings(unknown_field="value")  # type: ignore
 
         assert "Extra inputs are not permitted" in str(exc_info.value)
 
     def test_validate_assignment(self) -> None:
         """Test that assignment validation is enabled."""
-        config = OCRCoordinatorConfig()
+        config = ScannerSettings()
 
         # Try to assign invalid value after creation
         with pytest.raises(ValidationError):

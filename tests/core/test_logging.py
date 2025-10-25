@@ -11,7 +11,7 @@ from unittest.mock import patch
 import pytest
 
 from foxhole_stockpiles.core.logging import setup_logging
-from foxhole_stockpiles.core.settings import LoggingSettings
+from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 
 
 @pytest.fixture

@@ -12,11 +12,11 @@ import numpy as np
 
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
+from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.output_destination import OutputDestination
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
-from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
@@ -174,7 +174,7 @@ async def main() -> dict[str, Any] | None:
     language_filter = SupportedLanguage(args.language) if args.language else None
 
     try:
-        scanner_settings: OCRCoordinatorConfig = settings.scanner
+        scanner_settings: ScannerSettings = settings.scanner
         scanner_settings.database_path = database_path
         scanner_settings.faction_filter = faction_filter
         scanner_settings.mod_name = mod_filter

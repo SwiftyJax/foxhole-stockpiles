@@ -6,7 +6,7 @@ from collections.abc import Sequence
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
-from foxhole_stockpiles.core.settings import LoggingSettings
+from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 
 
 def setup_logging(settings: LoggingSettings) -> None:

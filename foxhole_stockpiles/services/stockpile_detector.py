@@ -6,7 +6,8 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from foxhole_stockpiles.core.settings import OCRSettings, get_settings
+from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
 
 type Coordinates = tuple[int, int]  # (x, y) coordinates of the top-left corner of a quantity box

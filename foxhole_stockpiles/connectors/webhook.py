@@ -9,7 +9,7 @@ from typing import Any, Final, TypeVar
 import httpx
 from httpx import AsyncClient, ConnectTimeout
 
-from foxhole_stockpiles.core.settings import WebhookOutputSettings
+from foxhole_stockpiles.core.settings.sections.output import WebhookOutputSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
 
 F = TypeVar("F", bound=Callable[..., Any])

@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from foxhole_stockpiles.connectors.webhook import WebhookConnector
-from foxhole_stockpiles.core.settings import WebhookOutputSettings
+from foxhole_stockpiles.core.settings.sections.output import WebhookOutputSettings
 from foxhole_stockpiles.handlers.base_handler import BaseOutputDestinationHandler
 from foxhole_stockpiles.models.stockpile import Stockpile
 

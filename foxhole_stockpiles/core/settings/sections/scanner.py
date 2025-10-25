@@ -1,4 +1,4 @@
-"""Settings needed for the OCR coordinator."""
+"""Scanner settings."""
 
 from pathlib import Path
 
@@ -8,7 +8,7 @@ from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 
 
-class OCRCoordinatorConfig(BaseModel):
+class ScannerSettings(BaseModel):
     """Configuration for stockpile analysis."""
 
     database_path: Path | None = Field(

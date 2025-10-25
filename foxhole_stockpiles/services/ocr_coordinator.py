@@ -10,11 +10,11 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
+from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.models.item_candidate import ItemCandidate
 from foxhole_stockpiles.models.match_result import MatchResult
-from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
@@ -29,11 +29,11 @@ class OCRCoordinator:
 
     TESSERACT_BINARY_THRESHOLD: ClassVar[int] = 127
 
-    def __init__(self, config: OCRCoordinatorConfig) -> None:
+    def __init__(self, config: ScannerSettings) -> None:
         """Initialize the model.
 
         Args:
-            config (OCRCoordinatorConfig): Configuration for the coordinator
+            config (ScannerSettings): Configuration for the coordinator
 
         Raises:
             ValueError: If database_path is None (required for OCRCoordinator)

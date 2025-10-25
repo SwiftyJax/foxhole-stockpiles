@@ -9,8 +9,8 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from foxhole_stockpiles.core.settings import (
-    AppSettings,
+from foxhole_stockpiles.core.settings import AppSettings
+from foxhole_stockpiles.core.settings.sections.output import (
     FileOutputSettings,
     OutputSettings,
     WebhookOutputSettings,

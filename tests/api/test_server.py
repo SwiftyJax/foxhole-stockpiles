@@ -696,7 +696,7 @@ class TestAPIAuthentication:
         """
         import cv2
 
-        from foxhole_stockpiles.core.settings import APIAuthSettings
+        from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 
         # Disable auth
         mock_settings.api_auth = APIAuthSettings(auth_type=None, auth_token=None)
@@ -730,7 +730,7 @@ class TestAPIAuthentication:
         """
         import cv2
 
-        from foxhole_stockpiles.core.settings import APIAuthSettings
+        from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 
         # Enable bearer auth
         mock_settings.api_auth = APIAuthSettings(
@@ -826,7 +826,7 @@ class TestAPIAuthentication:
         """
         import cv2
 
-        from foxhole_stockpiles.core.settings import APIAuthSettings
+        from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 
         # Enable basic auth
         mock_settings.api_auth = APIAuthSettings(
@@ -971,7 +971,7 @@ class TestMemoryMonitoringEndpoints:
             mock_settings (Mock): Mocked app settings.
             client (TestClient): FastAPI test client from fixture.
         """
-        from foxhole_stockpiles.core.settings import APIAuthSettings
+        from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 
         # Disable auth
         mock_settings.api_auth = APIAuthSettings(auth_type=None, auth_token=None)

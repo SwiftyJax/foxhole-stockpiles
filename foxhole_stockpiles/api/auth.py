@@ -5,7 +5,7 @@ from typing import Any
 
 from fastapi import Header, HTTPException, status
 
-from foxhole_stockpiles.core.settings import APIAuthSettings
+from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 
 
 def verify_auth(auth_settings: APIAuthSettings, auth_header: str | None) -> None:

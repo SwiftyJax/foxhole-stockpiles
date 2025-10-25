@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from foxhole_stockpiles.api.auth import verify_auth
-from foxhole_stockpiles.core.settings import APIAuthSettings
+from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
 
 

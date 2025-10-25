@@ -13,16 +13,15 @@ from pydantic import ValidationError
 from pydantic_settings import BaseSettings
 from pydantic_settings.sources import PydanticBaseSettingsSource
 
-from foxhole_stockpiles.core.settings import (
-    AppSettings,
+from foxhole_stockpiles.core.settings import AppSettings, get_settings
+from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
+from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
+from foxhole_stockpiles.core.settings.sections.output import (
     FileOutputSettings,
-    LoggingSettings,
-    OCRSettings,
     OutputSettings,
-    StockpileTypesSettings,
     WebhookOutputSettings,
-    get_settings,
 )
+from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.output_destination import OutputDestination
 from foxhole_stockpiles.enums.output_format import OutputFormat
@@ -74,16 +73,16 @@ class TestLoggingSettings:
         assert settings.rotate_logs is True
         assert settings.log_file == "app.log"
 
-    def test_logging_settings_extra_fields_ignored(self) -> None:
-        """Test that extra fields are ignored in logging settings.
+    def test_logging_settings_extra_fields_forbidden(self) -> None:
+        """Test that extra fields are forbidden in logging settings.
 
-        Verifies that LoggingSettings ignores unknown fields according to
-        Pydantic's extra='ignore' configuration.
+        Verifies that LoggingSettings rejects unknown fields according to
+        Pydantic's extra='forbid' configuration.
         """
-        settings = LoggingSettings(log_level="DEBUG", unknown_field="ignored")  # type: ignore[call-arg]
+        with pytest.raises(ValidationError) as exc_info:
+            LoggingSettings(log_level="DEBUG", unknown_field="ignored")  # type: ignore[call-arg]
 
-        assert settings.log_level == "DEBUG"
-        assert not hasattr(settings, "unknown_field")
+        assert "Extra inputs are not permitted" in str(exc_info.value)
 
 
 class TestOCRSettings:
@@ -378,6 +377,40 @@ class TestConfigMigration:
         """Test that default config is version 2."""
         settings = AppSettings()
         assert settings.config_version == 2
+
+    def test_migrate_v1_to_v2_with_scanner_fields_cleanup(self) -> None:
+        """Test migration removes deprecated scanner fields."""
+        # V1 config with old scanner fields that should be removed
+        v1_config = {
+            "output_format": {
+                "output_format": "json",
+                "output_destination": "return",
+            },
+            "scanner": {
+                "database_path": None,
+                "confidence_threshold": 0.8,  # Should be removed
+                "confidence_by_resolution": {"1080p": 0.85, "720p": 0.75},  # Should be removed
+                "early_exit_threshold": 0.95,
+            },
+        }
+
+        # Should auto-migrate to v2 and remove deprecated fields
+        settings = AppSettings(**v1_config)  # type: ignore[arg-type]
+
+        # Verify migration occurred
+        assert settings.config_version == 2
+        # Verify deprecated fields are not in scanner settings
+        assert not hasattr(settings.scanner, "confidence_threshold")
+        assert not hasattr(settings.scanner, "confidence_by_resolution")
+        # Verify valid fields remain
+        assert settings.scanner.early_exit_threshold == 0.95
+
+    def test_migrate_config_with_non_dict_data(self) -> None:
+        """Test that migration guard clause returns non-dict data unchanged."""
+        # The method has a guard clause for non-dict data (defensive programming)
+        # In practice, this should never happen since validators check before calling
+        result = AppSettings._apply_migrations(None)  # type: ignore[arg-type]
+        assert result is None
 
 
 class TestAppSettings:
