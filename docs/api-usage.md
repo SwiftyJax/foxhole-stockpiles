@@ -200,8 +200,8 @@ export FS_API_AUTH__AUTH_TOKEN=your-secret-token
 
 **Output Format (for webhook forwarding):**
 ```bash
-export FS_OUTPUT_FORMAT__OUTPUT_FORMAT=webhook
-export FS_OUTPUT_FORMAT__WEBHOOK_URL=https://api.example.com/stockpiles
+export FS_OUTPUT__FORMAT=webhook
+export FS_OUTPUT__WEBHOOK_URL=https://api.example.com/stockpiles
 ```
 
 ## Client Examples

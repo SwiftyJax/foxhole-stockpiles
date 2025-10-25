@@ -4,9 +4,6 @@ from enum import StrEnum
 
 
 class OutputFormat(StrEnum):
-    """Supported output formats for scanner results."""
+    """Supported data serialization formats."""
 
-    CONSOLE = "console"
-    FILE = "file"
     JSON = "json"
-    WEBHOOK = "webhook"

@@ -18,8 +18,8 @@ from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
-from foxhole_stockpiles.handlers.output_handler import OutputHandler
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
+from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
 
 
 class HealthResponse(BaseModel):
@@ -154,14 +154,16 @@ async def scan_stockpile(
         stockpile = await request_coordinator.analyze_stockpile(image_bgr)
 
         # Read the token from the specified header if configured
-        if app_settings.output_format.webhook_client_auth_header:
-            token = request.headers.get(app_settings.output_format.webhook_client_auth_header)
+        if app_settings.output.webhook.client_auth_header:
+            token = request.headers.get(app_settings.output.webhook.client_auth_header)
         else:
             token = None
 
-        output_handler = OutputHandler(settings=app_settings)
-        return await output_handler.handle_output(
-            stockpile=stockpile, output_format=app_settings.output_format.output_format, token=token
+        output_coordinator = OutputCoordinator(settings=app_settings)
+        return await output_coordinator.handle_output(
+            stockpile=stockpile,
+            destination=app_settings.output.destination,
+            token=token,
         )
 
     except ValueError as e:

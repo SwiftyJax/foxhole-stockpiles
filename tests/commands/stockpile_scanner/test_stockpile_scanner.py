@@ -71,12 +71,12 @@ class TestMainFunction:
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
-    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputHandler")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputCoordinator")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
     async def test_main_with_basic_args(
         self,
         mock_setup_logging: Mock,
-        mock_output_handler_class: Mock,
+        mock_output_coordinator_class: Mock,
         mock_coordinator_class: Mock,
         mock_imread: Mock,
         mock_args: Mock,
@@ -87,7 +87,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_output_handler_class (Mock): Mocked OutputHandler class.
+            mock_output_coordinator_class (Mock): Mocked OutputCoordinator class.
             mock_coordinator_class (Mock): Mocked OCRCoordinator class.
             mock_imread (Mock): Mocked cv2.imread function.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
@@ -118,6 +118,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -130,7 +132,7 @@ class TestMainFunction:
         # Mock output handler
         mock_handler = MagicMock()
         mock_handler.handle_output = AsyncMock(return_value=None)
-        mock_output_handler_class.return_value = mock_handler
+        mock_output_coordinator_class.return_value = mock_handler
 
         await main()
 
@@ -142,7 +144,7 @@ class TestMainFunction:
         assert mock_coordinator.analyze_stockpile.call_count > 0
 
         # Verify output handler was used
-        mock_output_handler_class.assert_called_once()
+        mock_output_coordinator_class.assert_called_once()
         assert mock_handler.handle_output.call_count > 0
 
     @patch("argparse.ArgumentParser.parse_args")
@@ -180,6 +182,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -195,12 +199,12 @@ class TestMainFunction:
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
-    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputHandler")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputCoordinator")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
     async def test_main_with_faction_filter(
         self,
         mock_setup_logging: Mock,
-        mock_output_handler_class: Mock,
+        mock_output_coordinator_class: Mock,
         mock_coordinator_class: Mock,
         mock_imread: Mock,
         mock_args: Mock,
@@ -211,7 +215,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_output_handler_class (Mock): Mocked OutputHandler class.
+            mock_output_coordinator_class (Mock): Mocked OutputCoordinator class.
             mock_coordinator_class (Mock): Mocked OCRCoordinator class.
             mock_imread (Mock): Mocked cv2.imread function.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
@@ -240,6 +244,8 @@ class TestMainFunction:
             verbose=True,
             quiet=False,
             output_format="json",
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -260,7 +266,7 @@ class TestMainFunction:
             return {"items": []}
 
         mock_handler.handle_output = mock_handle
-        mock_output_handler_class.return_value = mock_handler
+        mock_output_coordinator_class.return_value = mock_handler
 
         await main()
 
@@ -272,12 +278,12 @@ class TestMainFunction:
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
-    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputHandler")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputCoordinator")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
     async def test_main_with_custom_confidence(
         self,
         mock_setup_logging: Mock,
-        mock_output_handler_class: Mock,
+        mock_output_coordinator_class: Mock,
         mock_coordinator_class: Mock,
         mock_imread: Mock,
         mock_args: Mock,
@@ -288,7 +294,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_output_handler_class (Mock): Mocked OutputHandler class.
+            mock_output_coordinator_class (Mock): Mocked OutputCoordinator class.
             mock_coordinator_class (Mock): Mocked OCRCoordinator class.
             mock_imread (Mock): Mocked cv2.imread function.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
@@ -317,6 +323,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -337,7 +345,7 @@ class TestMainFunction:
             return None
 
         mock_handler.handle_output = mock_handle
-        mock_output_handler_class.return_value = mock_handler
+        mock_output_coordinator_class.return_value = mock_handler
 
         await main()
 
@@ -387,6 +395,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -409,12 +419,12 @@ class TestMainFunction:
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
-    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputHandler")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputCoordinator")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
     async def test_main_with_quiet_mode(
         self,
         mock_setup_logging: Mock,
-        mock_output_handler_class: Mock,
+        mock_output_coordinator_class: Mock,
         mock_coordinator_class: Mock,
         mock_imread: Mock,
         mock_args: Mock,
@@ -425,7 +435,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_output_handler_class (Mock): Mocked OutputHandler class.
+            mock_output_coordinator_class (Mock): Mocked OutputCoordinator class.
             mock_coordinator_class (Mock): Mocked OCRCoordinator class.
             mock_imread (Mock): Mocked cv2.imread function.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
@@ -454,6 +464,8 @@ class TestMainFunction:
             verbose=False,
             quiet=True,  # Quiet mode
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -466,7 +478,7 @@ class TestMainFunction:
         # Mock output handler
         mock_handler = MagicMock()
         mock_handler.handle_output = AsyncMock(return_value=None)
-        mock_output_handler_class.return_value = mock_handler
+        mock_output_coordinator_class.return_value = mock_handler
 
         await main()
 
@@ -509,6 +521,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -562,6 +576,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -624,6 +640,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -686,6 +704,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -708,12 +728,12 @@ class TestMainFunction:
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
-    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputHandler")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputCoordinator")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
     async def test_main_with_language_filter(
         self,
         mock_setup_logging: Mock,
-        mock_output_handler_class: Mock,
+        mock_output_coordinator_class: Mock,
         mock_coordinator_class: Mock,
         mock_imread: Mock,
         mock_args: Mock,
@@ -724,7 +744,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_output_handler_class (Mock): Mocked OutputHandler class.
+            mock_output_coordinator_class (Mock): Mocked OutputCoordinator class.
             mock_coordinator_class (Mock): Mocked OCRCoordinator class.
             mock_imread (Mock): Mocked cv2.imread function.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
@@ -753,6 +773,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             output_format=None,
+            output_destination=None,
+            output_file=None,
             config=None,
             token=None,
         )
@@ -765,7 +787,7 @@ class TestMainFunction:
         # Mock output handler
         mock_handler = MagicMock()
         mock_handler.handle_output = AsyncMock(return_value=None)
-        mock_output_handler_class.return_value = mock_handler
+        mock_output_coordinator_class.return_value = mock_handler
 
         await main()
 

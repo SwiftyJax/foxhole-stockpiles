@@ -210,14 +210,14 @@ class TestScanStockpileEndpoint:
         assert "Invalid image format" in detail or "Unexpected error" in detail
 
     @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputHandler")
+    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
     def test_scan_stockpile_success(
-        self, mock_output_handler: Mock, mock_coordinator: Mock, client: TestClient
+        self, mock_output_coordinator: Mock, mock_coordinator: Mock, client: TestClient
     ) -> None:
         """Test successful stockpile scanning.
 
         Args:
-            mock_output_handler (Mock): Mocked OutputHandler class.
+            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
             mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
@@ -236,7 +236,7 @@ class TestScanStockpileEndpoint:
         # Mock the output handler
         mock_handler_instance = Mock()
         mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_handler.return_value = mock_handler_instance
+        mock_output_coordinator.return_value = mock_handler_instance
 
         files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
         response = client.post("/ocr/scan_image", files=files)
@@ -265,7 +265,7 @@ class TestScanStockpileEndpoint:
         mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
         mock_coordinator.return_value = mock_instance
 
-        with patch("foxhole_stockpiles.api.server.OutputHandler") as mock_handler:
+        with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
             mock_handler_instance = Mock()
             mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
             mock_handler.return_value = mock_handler_instance
@@ -276,14 +276,14 @@ class TestScanStockpileEndpoint:
             assert response.status_code == 200
 
     @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputHandler")
+    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
     def test_scan_stockpile_with_neutral_faction_becomes_none(
-        self, mock_output_handler: Mock, mock_coordinator: Mock, client: TestClient
+        self, mock_output_coordinator: Mock, mock_coordinator: Mock, client: TestClient
     ) -> None:
         """Test that neutral faction is converted to None.
 
         Args:
-            mock_output_handler (Mock): Mocked OutputHandler class.
+            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
             mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
@@ -301,7 +301,7 @@ class TestScanStockpileEndpoint:
         # Mock the output handler
         mock_handler_instance = Mock()
         mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_handler.return_value = mock_handler_instance
+        mock_output_coordinator.return_value = mock_handler_instance
 
         files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
         response = client.post("/ocr/scan_image?faction=neutral", files=files)
@@ -332,7 +332,7 @@ class TestScanStockpileEndpoint:
         mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
         mock_coordinator.return_value = mock_instance
 
-        with patch("foxhole_stockpiles.api.server.OutputHandler") as mock_handler:
+        with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
             mock_handler_instance = Mock()
             mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
             mock_handler.return_value = mock_handler_instance
@@ -363,7 +363,7 @@ class TestScanStockpileEndpoint:
         mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
         mock_coordinator.return_value = mock_instance
 
-        with patch("foxhole_stockpiles.api.server.OutputHandler") as mock_handler:
+        with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
             mock_handler_instance = Mock()
             mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
             mock_handler.return_value = mock_handler_instance
@@ -430,14 +430,14 @@ class TestScanStockpileEndpoint:
         assert "vanilla" in detail or "test_mod" in detail
 
     @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputHandler")
+    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
     def test_scan_stockpile_with_supported_mod(
-        self, mock_output_handler: Mock, mock_coordinator: Mock, client: TestClient
+        self, mock_output_coordinator: Mock, mock_coordinator: Mock, client: TestClient
     ) -> None:
         """Test scanning with supported mod parameter.
 
         Args:
-            mock_output_handler (Mock): Mocked OutputHandler class.
+            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
             mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
@@ -455,7 +455,7 @@ class TestScanStockpileEndpoint:
         # Mock the output handler
         mock_handler_instance = Mock()
         mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_handler.return_value = mock_handler_instance
+        mock_output_coordinator.return_value = mock_handler_instance
 
         files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
         response = client.post("/ocr/scan_image?mod_name=vanilla", files=files)
@@ -463,14 +463,14 @@ class TestScanStockpileEndpoint:
         assert response.status_code == 200
 
     @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputHandler")
+    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
     def test_scan_stockpile_with_language(
-        self, mock_output_handler: Mock, mock_coordinator: Mock, client: TestClient
+        self, mock_output_coordinator: Mock, mock_coordinator: Mock, client: TestClient
     ) -> None:
         """Test scan with language parameter.
 
         Args:
-            mock_output_handler (Mock): Mocked OutputHandler class.
+            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
             mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
@@ -490,7 +490,7 @@ class TestScanStockpileEndpoint:
         # Mock the output handler
         mock_handler_instance = Mock()
         mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_handler.return_value = mock_handler_instance
+        mock_output_coordinator.return_value = mock_handler_instance
 
         files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
         response = client.post("/ocr/scan_image?language=fr", files=files)
@@ -634,12 +634,12 @@ class TestAuthHeaderHandling:
     """Test cases for authentication header handling."""
 
     @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputHandler")
+    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
     @patch("foxhole_stockpiles.api.server.app_settings")
     def test_auth_header_extraction(
         self,
         mock_settings: Mock,
-        mock_output_handler: Mock,
+        mock_output_coordinator: Mock,
         mock_coordinator: Mock,
         client: TestClient,
     ) -> None:
@@ -647,7 +647,7 @@ class TestAuthHeaderHandling:
 
         Args:
             mock_settings (Mock): Mocked app settings.
-            mock_output_handler (Mock): Mocked OutputHandler class.
+            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
             mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
@@ -658,8 +658,8 @@ class TestAuthHeaderHandling:
         image_bytes = buffer.tobytes()
 
         # Configure mock settings with auth header
-        mock_settings.output_format.webhook_client_auth_header = "X-API-Key"
-        mock_settings.output_format.output_format = "json"
+        mock_settings.output.webhook.client_auth_header = "X-API-Key"
+        mock_settings.output.format = "json"
 
         # Mock the coordinator
         mock_instance = Mock()
@@ -669,7 +669,7 @@ class TestAuthHeaderHandling:
         # Mock the output handler
         mock_handler_instance = Mock()
         mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_handler.return_value = mock_handler_instance
+        mock_output_coordinator.return_value = mock_handler_instance
 
         files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
         headers = {"X-API-Key": "test-token"}
@@ -710,7 +710,7 @@ class TestAPIAuthentication:
             mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
             mock_coordinator.return_value = mock_instance
 
-            with patch("foxhole_stockpiles.api.server.OutputHandler") as mock_handler:
+            with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
                 mock_handler_instance = Mock()
                 mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
                 mock_handler.return_value = mock_handler_instance
@@ -746,7 +746,7 @@ class TestAPIAuthentication:
             mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
             mock_coordinator.return_value = mock_instance
 
-            with patch("foxhole_stockpiles.api.server.OutputHandler") as mock_handler:
+            with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
                 mock_handler_instance = Mock()
                 mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
                 mock_handler.return_value = mock_handler_instance
@@ -842,7 +842,7 @@ class TestAPIAuthentication:
             mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
             mock_coordinator.return_value = mock_instance
 
-            with patch("foxhole_stockpiles.api.server.OutputHandler") as mock_handler:
+            with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
                 mock_handler_instance = Mock()
                 mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
                 mock_handler.return_value = mock_handler_instance

@@ -10,19 +10,22 @@ When configured with webhook output, the scanner sends a POST request with the s
 
 ### Basic Webhook Setup
 
-Set the output format to webhook and provide a URL:
+Set the output destination to webhook and provide a URL:
 
 ```bash
-export FS_OUTPUT_FORMAT__OUTPUT_FORMAT=webhook
-export FS_OUTPUT_FORMAT__WEBHOOK_URL=https://api.example.com/stockpiles
+export FS_OUTPUT__DESTINATION=webhook
+export FS_OUTPUT__WEBHOOK__URL=https://api.example.com/stockpiles
 ```
 
 Or in `~/.fs_config`:
 ```json
 {
-  "output_format": {
-    "output_format": "webhook",
-    "webhook_url": "https://api.example.com/stockpiles"
+  "output": {
+    "format": "json",
+    "destination": "webhook",
+    "webhook": {
+      "url": "https://api.example.com/stockpiles"
+    }
   }
 }
 ```
@@ -34,8 +37,8 @@ Webhooks support three authentication methods:
 #### 1. Bearer Token
 
 ```bash
-export FS_OUTPUT_FORMAT__WEBHOOK_AUTH_TYPE=bearer
-export FS_OUTPUT_FORMAT__WEBHOOK_TOKEN=your-webhook-token
+export FS_OUTPUT__WEBHOOK__AUTH_TYPE=bearer
+export FS_OUTPUT__WEBHOOK__TOKEN=your-webhook-token
 ```
 
 Sends: `Authorization: Bearer your-webhook-token`
@@ -43,8 +46,8 @@ Sends: `Authorization: Bearer your-webhook-token`
 #### 2. Basic Authentication
 
 ```bash
-export FS_OUTPUT_FORMAT__WEBHOOK_AUTH_TYPE=basic
-export FS_OUTPUT_FORMAT__WEBHOOK_TOKEN=$(echo -n "user:pass" | base64)
+export FS_OUTPUT__WEBHOOK__AUTH_TYPE=basic
+export FS_OUTPUT__WEBHOOK__TOKEN=$(echo -n "user:pass" | base64)
 ```
 
 Sends: `Authorization: Basic dXNlcjpwYXNz`
@@ -52,8 +55,8 @@ Sends: `Authorization: Basic dXNlcjpwYXNz`
 #### 3. Custom Header
 
 ```bash
-export FS_OUTPUT_FORMAT__WEBHOOK_AUTH_TYPE=X-API-Key
-export FS_OUTPUT_FORMAT__WEBHOOK_TOKEN=custom-api-key-123
+export FS_OUTPUT__WEBHOOK__AUTH_TYPE=X-API-Key
+export FS_OUTPUT__WEBHOOK__TOKEN=custom-api-key-123
 ```
 
 Sends: `X-API-Key: custom-api-key-123`
@@ -64,7 +67,7 @@ When using the API server, you can pass client authentication through to the web
 
 ```bash
 # Configure which header to forward
-export FS_OUTPUT_FORMAT__WEBHOOK_CLIENT_AUTH_HEADER=Authorization
+export FS_OUTPUT__WEBHOOK__CLIENT_AUTH_HEADER=Authorization
 ```
 
 Client request:
@@ -74,7 +77,7 @@ curl -X POST http://localhost:8000/ocr/scan_image \
   -F "image=@screenshot.png"
 ```
 
-The API will forward this token to the webhook, **overriding** the configured `webhook_token`.
+The API will forward this token to the webhook, **overriding** the configured `webhook.token`.
 
 ### Use Case: Multi-Tenant API
 
@@ -84,8 +87,8 @@ export FS_API_AUTH__AUTH_TYPE=bearer
 export FS_API_AUTH__AUTH_TOKEN=api-server-token
 
 # Each client's token is forwarded to webhook
-export FS_OUTPUT_FORMAT__WEBHOOK_CLIENT_AUTH_HEADER=X-Client-ID
-export FS_OUTPUT_FORMAT__WEBHOOK_URL=https://api.example.com/stockpiles
+export FS_OUTPUT__WEBHOOK__CLIENT_AUTH_HEADER=X-Client-ID
+export FS_OUTPUT__WEBHOOK__URL=https://api.example.com/stockpiles
 ```
 
 Clients send their own token:
@@ -168,7 +171,7 @@ The webhook connector includes automatic retry for connection timeouts:
 1. Create a temporary webhook URL at [RequestBin](https://requestbin.com/)
 2. Configure the scanner:
    ```bash
-   export FS_OUTPUT_FORMAT__WEBHOOK_URL=https://requestbin.com/r/your-bin-id
+   export FS_OUTPUT__WEBHOOK__URL=https://requestbin.com/r/your-bin-id
    ```
 3. Run a scan and check RequestBin to see the payload
 
@@ -179,7 +182,7 @@ The webhook connector includes automatic retry for connection timeouts:
 nc -l 5000
 
 # Configure scanner
-export FS_OUTPUT_FORMAT__WEBHOOK_URL=http://localhost:5000
+export FS_OUTPUT__WEBHOOK__URL=http://localhost:5000
 ```
 
 ### Testing with webhook.site
@@ -188,7 +191,7 @@ export FS_OUTPUT_FORMAT__WEBHOOK_URL=http://localhost:5000
 2. Copy your unique URL
 3. Configure:
    ```bash
-   export FS_OUTPUT_FORMAT__WEBHOOK_URL=https://webhook.site/your-unique-id
+   export FS_OUTPUT__WEBHOOK__URL=https://webhook.site/your-unique-id
    ```
 
 ## Error Handling
@@ -208,7 +211,7 @@ Error responses are logged and returned in the API response when using the API s
 ## Security Considerations
 
 1. **Use HTTPS:** Always use HTTPS URLs for webhooks in production
-2. **Authenticate requests:** Configure `webhook_auth_type` and `webhook_token`
+2. **Authenticate requests:** Configure `webhook.auth_type` and `webhook.token`
 3. **Validate incoming data:** Verify authentication on your webhook endpoint
 4. **Rate limiting:** Implement rate limiting on your webhook server
 5. **Timeout handling:** Set reasonable timeouts on your webhook endpoint
@@ -232,14 +235,14 @@ This will log:
 
 ### Webhook returns 401 Unauthorized
 
-Check that your `webhook_token` matches what the endpoint expects:
+Check that your `webhook.token` matches what the endpoint expects:
 ```bash
 # Verify token is set correctly
-echo $FS_OUTPUT_FORMAT__WEBHOOK_TOKEN
+echo $FS_OUTPUT__WEBHOOK__TOKEN
 
 # Test webhook manually
 curl -X POST https://your-webhook.com \
-  -H "Authorization: Bearer $FS_OUTPUT_FORMAT__WEBHOOK_TOKEN" \
+  -H "Authorization: Bearer $FS_OUTPUT__WEBHOOK__TOKEN" \
   -H "Content-Type: application/json" \
   -d '{"test": "data"}'
 ```
@@ -256,7 +259,7 @@ curl -X POST https://your-webhook.com \
 Check that the scanner successfully detected items:
 ```bash
 # Test scanner with console output first
-export FS_OUTPUT_FORMAT__OUTPUT_FORMAT=console
+export FS_OUTPUT__DESTINATION=console
 fs scanner --image screenshot.png
 ```
 

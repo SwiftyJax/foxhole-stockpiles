@@ -54,6 +54,12 @@ Debugging tool for inspecting database contents and testing icon recognition.
 ### fs server
 Starts the FastAPI server for processing screenshots via HTTP API.
 
+### fs add-icon
+Manually adds individual icons to existing template databases without rebuilding the entire database.
+
+### fs update-config
+Updates `.fs_config` configuration files to the latest format version with automatic migration.
+
 ## Requirements
 
 - Python 3.12 or higher
@@ -420,6 +426,8 @@ Each CLI tool has detailed documentation in its directory:
 - [Scanner](foxhole_stockpiles/commands/stockpile_scanner/README.md) - Analyze stockpile screenshots
 - [Inspector](foxhole_stockpiles/commands/candidate_inspector/README.md) - Debug and validate databases
 - [API Server](foxhole_stockpiles/commands/api_server/README.md) - HTTP API server
+- [Add Icon](foxhole_stockpiles/commands/add_icon/README.md) - Add individual icons to databases
+- [Update Config](foxhole_stockpiles/commands/update_config/README.md) - Migrate configuration files
 
 ### Guides
 

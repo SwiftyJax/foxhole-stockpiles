@@ -10,16 +10,21 @@ from unittest.mock import patch
 
 import pytest
 from pydantic import ValidationError
+from pydantic_settings import BaseSettings
+from pydantic_settings.sources import PydanticBaseSettingsSource
 
 from foxhole_stockpiles.core.settings import (
     AppSettings,
+    FileOutputSettings,
     LoggingSettings,
     OCRSettings,
-    OutputFormatSettings,
+    OutputSettings,
     StockpileTypesSettings,
+    WebhookOutputSettings,
     get_settings,
 )
 from foxhole_stockpiles.enums.auth_type import AuthType
+from foxhole_stockpiles.enums.output_destination import OutputDestination
 from foxhole_stockpiles.enums.output_format import OutputFormat
 
 
@@ -138,85 +143,127 @@ class TestOCRSettings:
         assert "greater than 0" in str(exc_info.value)
 
 
-class TestOutputFormatSettings:
-    """Test cases for OutputFormatSettings."""
+class TestFileOutputSettings:
+    """Test cases for FileOutputSettings."""
 
-    def test_output_format_settings_defaults(self) -> None:
-        """Test default output format settings."""
-        settings = OutputFormatSettings()
+    def test_file_output_defaults(self) -> None:
+        """Test default file output settings."""
+        settings = FileOutputSettings()
+        assert settings.path == "output.json"
 
-        assert settings.output_format == OutputFormat.JSON
-        assert settings.file_path == "output.json"
-        assert settings.webhook_auth_type is None
-        assert settings.webhook_token is None
-        assert settings.webhook_url is None
-        assert settings.webhook_client_auth_header is None
+    def test_file_output_custom_path(self) -> None:
+        """Test file output with custom path."""
+        settings = FileOutputSettings(path="custom.txt")
+        assert settings.path == "custom.txt"
 
-    def test_output_format_settings_custom_values(self) -> None:
-        """Test output format settings with custom values."""
-        settings = OutputFormatSettings(
-            output_format=OutputFormat.FILE,
-            file_path="custom.txt",
-            webhook_url="https://example.com/webhook",
-            webhook_auth_type=AuthType.BEARER,
-            webhook_token="secret_token",
+
+class TestWebhookOutputSettings:
+    """Test cases for WebhookOutputSettings."""
+
+    def test_webhook_output_defaults(self) -> None:
+        """Test default webhook output settings."""
+        settings = WebhookOutputSettings()
+        assert settings.url is None
+        assert settings.auth_type is None
+        assert settings.token is None
+        assert settings.client_auth_header is None
+
+    def test_webhook_output_custom_values(self) -> None:
+        """Test webhook output with custom values."""
+        settings = WebhookOutputSettings(
+            url="https://example.com/webhook",
+            auth_type=AuthType.BEARER,
+            token="secret_token",
         )
+        assert settings.url == "https://example.com/webhook"
+        assert settings.auth_type == AuthType.BEARER
+        assert settings.token == "secret_token"
 
-        assert settings.output_format == OutputFormat.FILE
-        assert settings.file_path == "custom.txt"
-        assert settings.webhook_url == "https://example.com/webhook"
-        assert settings.webhook_auth_type == AuthType.BEARER
-        assert settings.webhook_token == "secret_token"
-
-    def test_output_format_webhook_validation(self) -> None:
-        """Test webhook validation."""
-        # Should fail when webhook format is used without URL
+    def test_webhook_auth_bearer_validation(self) -> None:
+        """Test bearer auth validation."""
+        # Should fail when bearer auth_type is provided without token
         with pytest.raises(ValidationError) as exc_info:
-            OutputFormatSettings(output_format=OutputFormat.WEBHOOK)
-
-        assert "webhook_url must be provided" in str(exc_info.value)
-
-        # Should pass when URL is provided
-        settings = OutputFormatSettings(
-            output_format=OutputFormat.WEBHOOK, webhook_url="https://example.com/webhook"
-        )
-        assert settings.webhook_url == "https://example.com/webhook"
-
-    def test_output_format_file_validation(self) -> None:
-        """Test file output validation."""
-        # Should fail when file format is used without file_path
-        with pytest.raises(ValidationError) as exc_info:
-            OutputFormatSettings(output_format=OutputFormat.FILE, file_path="")
-
-        assert "file_path must be provided" in str(exc_info.value)
-
-    def test_auth_consistency_validation(self) -> None:
-        """Test webhook auth consistency validation."""
-        # Should fail when bearer/basic auth_type is provided without token
-        with pytest.raises(ValidationError) as exc_info:
-            OutputFormatSettings(webhook_auth_type=AuthType.BEARER)
-
-        assert "webhook_token must be set when webhook_auth_type is 'bearer'" in str(exc_info.value)
-
-        # Should fail when forward auth_type is provided without client header
-        with pytest.raises(ValidationError) as exc_info:
-            OutputFormatSettings(webhook_auth_type=AuthType.FORWARD)
-
-        assert "webhook_client_auth_header must be set when webhook_auth_type is 'forward'" in str(
-            exc_info.value
-        )
+            WebhookOutputSettings(auth_type=AuthType.BEARER)
+        assert "token must be set when auth_type is 'bearer'" in str(exc_info.value)
 
         # Should pass when bearer and token are provided
-        settings = OutputFormatSettings(webhook_auth_type=AuthType.BEARER, webhook_token="token")
-        assert settings.webhook_auth_type == AuthType.BEARER
-        assert settings.webhook_token == "token"
+        settings = WebhookOutputSettings(auth_type=AuthType.BEARER, token="token")
+        assert settings.auth_type == AuthType.BEARER
+        assert settings.token == "token"
+
+    def test_webhook_auth_forward_validation(self) -> None:
+        """Test forward auth validation."""
+        # Should fail when forward auth_type is provided without client header
+        with pytest.raises(ValidationError) as exc_info:
+            WebhookOutputSettings(auth_type=AuthType.FORWARD)
+        assert "client_auth_header must be set when auth_type is 'forward'" in str(exc_info.value)
 
         # Should pass when forward and client_auth_header are provided
-        settings = OutputFormatSettings(
-            webhook_auth_type=AuthType.FORWARD, webhook_client_auth_header="X-Auth"
+        settings = WebhookOutputSettings(auth_type=AuthType.FORWARD, client_auth_header="X-Auth")
+        assert settings.auth_type == AuthType.FORWARD
+        assert settings.client_auth_header == "X-Auth"
+
+
+class TestOutputSettings:
+    """Test cases for OutputSettings."""
+
+    def test_output_settings_defaults(self) -> None:
+        """Test default output settings."""
+        settings = OutputSettings()
+        assert settings.format == OutputFormat.JSON
+        assert settings.destination == OutputDestination.RETURN
+        assert settings.file.path == "output.json"
+        assert settings.webhook.url is None
+        assert settings.webhook.auth_type is None
+        assert settings.webhook.token is None
+        assert settings.webhook.client_auth_header is None
+
+    def test_output_settings_webhook_destination(self) -> None:
+        """Test webhook destination validation."""
+        # Should fail when webhook destination is used without URL
+        with pytest.raises(ValidationError) as exc_info:
+            OutputSettings(destination=OutputDestination.WEBHOOK)
+        assert "webhook.url must be provided when destination is 'webhook'" in str(exc_info.value)
+
+        # Should pass when URL is provided
+        settings = OutputSettings(
+            destination=OutputDestination.WEBHOOK,
+            webhook=WebhookOutputSettings(url="https://example.com/webhook"),
         )
-        assert settings.webhook_auth_type == AuthType.FORWARD
-        assert settings.webhook_client_auth_header == "X-Auth"
+        assert settings.webhook.url == "https://example.com/webhook"
+
+    def test_output_settings_file_destination(self) -> None:
+        """Test file destination validation."""
+        # Should fail when file destination is used without path
+        with pytest.raises(ValidationError) as exc_info:
+            OutputSettings(
+                destination=OutputDestination.FILE,
+                file=FileOutputSettings(path=""),
+            )
+        assert "file.path must be provided when destination is 'file'" in str(exc_info.value)
+
+        # Should pass when path is provided
+        settings = OutputSettings(
+            destination=OutputDestination.FILE,
+            file=FileOutputSettings(path="output.json"),
+        )
+        assert settings.file.path == "output.json"
+
+    def test_output_settings_preconfigure_all_destinations(self) -> None:
+        """Test that all destinations can be pre-configured."""
+        # All destinations configured, only webhook is active and validated
+        settings = OutputSettings(
+            destination=OutputDestination.WEBHOOK,
+            file=FileOutputSettings(path="/backup/output.json"),
+            webhook=WebhookOutputSettings(
+                url="https://example.com/webhook",
+                auth_type=AuthType.BEARER,
+                token="token123",
+            ),
+        )
+        assert settings.destination == OutputDestination.WEBHOOK
+        assert settings.file.path == "/backup/output.json"  # Pre-configured but not active
+        assert settings.webhook.url == "https://example.com/webhook"  # Active and validated
 
 
 class TestStockpileTypesSettings:
@@ -255,6 +302,84 @@ class TestStockpileTypesSettings:
         assert settings.undefined == ["Custom Undefined"]
 
 
+class TestConfigMigration:
+    """Test cases for config version migration."""
+
+    def test_migrate_v1_to_v2_with_output_format(self) -> None:
+        """Test migration from v1 (flat output) to v2 (nested output)."""
+        # V1 config with old flat structure
+        v1_config = {
+            "output_format": {
+                "output_format": "json",
+                "output_destination": "webhook",
+                "file_path": "/tmp/output.json",
+                "webhook_url": "https://example.com/webhook",
+                "webhook_auth_type": "bearer",
+                "webhook_token": "secret123",
+                "webhook_client_auth_header": "X-API-TOKEN",
+            }
+        }
+
+        # Should auto-migrate to v2
+        settings = AppSettings(**v1_config)  # type: ignore[arg-type]
+
+        # Verify migration occurred
+        assert settings.config_version == 2
+        assert settings.output.destination == OutputDestination.WEBHOOK
+        assert settings.output.file.path == "/tmp/output.json"
+        assert settings.output.webhook.url == "https://example.com/webhook"
+        assert settings.output.webhook.auth_type == AuthType.BEARER
+        assert settings.output.webhook.token == "secret123"
+        assert settings.output.webhook.client_auth_header == "X-API-TOKEN"
+
+    def test_v2_config_no_migration_needed(self) -> None:
+        """Test that v2 configs load without migration."""
+        import warnings
+
+        # V2 config with nested structure
+        v2_config = {
+            "config_version": 2,
+            "output": {
+                "format": "json",
+                "destination": "file",
+                "file": {"path": "/custom/output.json"},
+                "webhook": {"url": None},
+            },
+        }
+
+        # Mock the settings sources to avoid loading from ~/.fs_config
+
+        def mock_settings_customise_sources(
+            cls: type[BaseSettings],
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            # Only use init_settings (passed kwargs), ignore config file
+            return (init_settings,)
+
+        # Suppress the expected warning about json_file not being used
+        # (we're intentionally not loading from file in this test)
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Config key.*json_file.*will be ignored")
+            with patch.object(
+                AppSettings, "settings_customise_sources", mock_settings_customise_sources
+            ):
+                settings = AppSettings(**v2_config)  # type: ignore[arg-type]
+
+        # Should remain v2
+        assert settings.config_version == 2
+        assert settings.output.destination == OutputDestination.FILE
+        assert settings.output.file.path == "/custom/output.json"
+
+    def test_default_config_is_v2(self) -> None:
+        """Test that default config is version 2."""
+        settings = AppSettings()
+        assert settings.config_version == 2
+
+
 class TestAppSettings:
     """Test cases for main AppSettings class."""
 
@@ -264,27 +389,47 @@ class TestAppSettings:
 
         assert isinstance(settings.logging, LoggingSettings)
         assert isinstance(settings.ocr, OCRSettings)
-        assert isinstance(settings.output_format, OutputFormatSettings)
+        assert isinstance(settings.output, OutputSettings)
         assert isinstance(settings.stockpile_types, StockpileTypesSettings)
         # scanner field should exist
         assert hasattr(settings, "scanner")
 
     def test_app_settings_custom_values(self) -> None:
         """Test app settings with custom values."""
-        settings = AppSettings(
-            logging=LoggingSettings(log_level="DEBUG", rotate_logs=True),
-            ocr=OCRSettings(height=1080, box_width=100),
-            output_format=OutputFormatSettings(
-                output_format=OutputFormat.FILE, file_path="custom.txt"
-            ),
-        )
+        import warnings
+
+        # Mock settings sources to avoid loading from ~/.fs_config
+        def mock_settings_customise_sources(
+            cls: type[BaseSettings],
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            # Only use init_settings (passed kwargs), ignore file and env
+            return (init_settings,)
+
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Config key.*json_file.*will be ignored")
+            with patch.object(
+                AppSettings, "settings_customise_sources", mock_settings_customise_sources
+            ):
+                settings = AppSettings(
+                    logging=LoggingSettings(log_level="DEBUG", rotate_logs=True),
+                    ocr=OCRSettings(height=1080, box_width=100),
+                    output=OutputSettings(
+                        destination=OutputDestination.FILE,
+                        file=FileOutputSettings(path="custom.txt"),
+                    ),
+                )
 
         assert settings.logging.log_level == "DEBUG"
         assert settings.logging.rotate_logs is True
         assert settings.ocr.height == 1080
         assert settings.ocr.box_width == 100
-        assert settings.output_format.output_format == OutputFormat.FILE
-        assert settings.output_format.file_path == "custom.txt"
+        assert settings.output.destination == OutputDestination.FILE
+        assert settings.output.file.path == "custom.txt"
 
     def test_app_settings_nested_configuration(self) -> None:
         """Test app settings with nested configuration."""
@@ -302,20 +447,39 @@ class TestAppSettings:
 
     def test_app_settings_from_environment_variables(self) -> None:
         """Test loading app settings from environment variables."""
+        import warnings
+
         env_vars = {
-            "FS_OUTPUT_FORMAT__OUTPUT_FORMAT": "file",
-            "FS_OUTPUT_FORMAT__FILE_PATH": "env.txt",
+            "FS_OUTPUT__DESTINATION": "file",
+            "FS_OUTPUT__FILE__PATH": "env.txt",
             "FS_OCR__BOX_WIDTH": "100",
             "FS_LOGGING__LOG_LEVEL": "WARNING",
         }
 
-        with patch.dict(os.environ, env_vars, clear=True):
-            settings = AppSettings()
+        # Mock settings sources to use env but not file
+        def mock_settings_customise_sources(
+            cls: type[BaseSettings],
+            settings_cls: type[BaseSettings],
+            init_settings: PydanticBaseSettingsSource,
+            env_settings: PydanticBaseSettingsSource,
+            dotenv_settings: PydanticBaseSettingsSource,
+            file_secret_settings: PydanticBaseSettingsSource,
+        ) -> tuple[PydanticBaseSettingsSource, ...]:
+            # Use env_settings and init_settings, but not file
+            return (init_settings, env_settings)
 
-            assert settings.output_format.output_format == OutputFormat.FILE
-            assert settings.output_format.file_path == "env.txt"
-            assert settings.ocr.box_width == 100
-            assert settings.logging.log_level == "WARNING"
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Config key.*json_file.*will be ignored")
+            with patch.dict(os.environ, env_vars, clear=True):
+                with patch.object(
+                    AppSettings, "settings_customise_sources", mock_settings_customise_sources
+                ):
+                    settings = AppSettings()
+
+                    assert settings.output.destination == OutputDestination.FILE
+                    assert settings.output.file.path == "env.txt"
+                    assert settings.ocr.box_width == 100
+                    assert settings.logging.log_level == "WARNING"
 
 
 class TestGetSettings:
@@ -361,5 +525,5 @@ class TestGetSettings:
         assert isinstance(settings, AppSettings)
         assert hasattr(settings, "logging")
         assert hasattr(settings, "ocr")
-        assert hasattr(settings, "output_format")
+        assert hasattr(settings, "output")
         assert hasattr(settings, "stockpile_types")

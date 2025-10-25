@@ -58,6 +58,11 @@ class CLIDispatcher:
                 module="foxhole_stockpiles.commands.add_icon.add_icon",
                 aliases=["add"],
             ),
+            "update-config": CommandInfo(
+                description="Update .fs_config to the latest version",
+                module="foxhole_stockpiles.commands.update_config.update_config",
+                aliases=["update"],
+            ),
         }
 
     def resolve_command_alias(self, command: str) -> str | None:

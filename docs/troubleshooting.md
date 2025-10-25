@@ -324,13 +324,13 @@ Scanner completes but webhook doesn't receive the payload.
 **Solution:**
 1. Check webhook configuration:
    ```bash
-   echo $FS_OUTPUT_FORMAT__OUTPUT_FORMAT  # Should be "webhook"
-   echo $FS_OUTPUT_FORMAT__WEBHOOK_URL    # Should be valid URL
+   echo $FS_OUTPUT__FORMAT  # Should be "webhook"
+   echo $FS_OUTPUT__WEBHOOK_URL    # Should be valid URL
    ```
 
 2. Verify webhook URL is accessible:
    ```bash
-   curl -X POST $FS_OUTPUT_FORMAT__WEBHOOK_URL \
+   curl -X POST $FS_OUTPUT__WEBHOOK_URL \
      -H "Content-Type: application/json" \
      -d '{"test": "data"}'
    ```
@@ -349,15 +349,15 @@ Webhook receives request but rejects it.
 **Solution:**
 1. Verify webhook authentication is configured:
    ```bash
-   echo $FS_OUTPUT_FORMAT__WEBHOOK_AUTH_TYPE
-   echo $FS_OUTPUT_FORMAT__WEBHOOK_TOKEN
+   echo $FS_OUTPUT__WEBHOOK_AUTH_TYPE
+   echo $FS_OUTPUT__WEBHOOK_TOKEN
    ```
 
 2. Check authentication matches webhook expectations:
    ```bash
    # Test webhook manually
    curl -X POST https://your-webhook.com \
-     -H "Authorization: Bearer $FS_OUTPUT_FORMAT__WEBHOOK_TOKEN" \
+     -H "Authorization: Bearer $FS_OUTPUT__WEBHOOK_TOKEN" \
      -H "Content-Type: application/json" \
      -d '{"test": "data"}'
    ```

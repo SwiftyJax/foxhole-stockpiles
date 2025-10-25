@@ -68,7 +68,9 @@ python -m foxhole_stockpiles.commands.stockpile_scanner --database DATABASE --im
 - `--verbose`: Enable verbose logging (debug level)
 - `--quiet`: Suppress output except errors and warnings
 - `--log-file`: Path to log file (default: console only)
-- `--output-format`: Output format for results (console, file, json, webhook)
+- `--output-format`: Data serialization format (default: json)
+- `--output-destination`: Where to send output (return, file, webhook, console). Default: return
+- `--output-file`: File path when using file destination (supports {timestamp} placeholder)
 - `--config`: Path to configuration file
 - `--token`: Override the webhook token from the configuration file
 
@@ -94,13 +96,25 @@ fs scanner --database database/db.pkl --image stockpile.png \
 **Webhook output:**
 ```bash
 fs scanner --database database/db.pkl --image stockpile.png \
-  --output-format webhook --config config.json
+  --output-destination webhook --config config.json
 ```
 
 **JSON output to file:**
 ```bash
 fs scanner --database database/db.pkl --image stockpile.png \
-  --output-format json
+  --output-destination file --output-file results.json
+```
+
+**JSON output to file with timestamp:**
+```bash
+fs scanner --database database/db.pkl --image stockpile.png \
+  --output-destination file --output-file "scan_{timestamp}.json"
+```
+
+**Console output:**
+```bash
+fs scanner --database database/db.pkl --image stockpile.png \
+  --output-destination console
 ```
 
 **With mod filtering:**

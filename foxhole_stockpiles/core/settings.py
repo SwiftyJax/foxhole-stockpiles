@@ -14,6 +14,7 @@ from pydantic_settings import (
 )
 
 from foxhole_stockpiles.enums.auth_type import AuthType
+from foxhole_stockpiles.enums.output_destination import OutputDestination
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 
@@ -212,98 +213,127 @@ class APIAuthSettings(BaseModel):
         return self
 
 
-class OutputFormatSettings(BaseModel):
-    """Settings for output formats."""
+class FileOutputSettings(BaseModel):
+    """Settings for file output destination."""
 
-    output_format: OutputFormat = Field(
-        description="Output format to use", default=OutputFormat.JSON
+    path: str = Field(
+        description="Path to the output file (supports {timestamp} placeholder)",
+        default="output.json",
     )
-    file_path: str = Field(
-        description="Path to the output file when using file output format", default="output.json"
-    )
-    webhook_auth_type: AuthType | None = Field(
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class WebhookOutputSettings(BaseModel):
+    """Settings for webhook output destination."""
+
+    url: str | None = Field(description="Webhook URL for sending output", default=None)
+    auth_type: AuthType | None = Field(
         description=(
             "Authentication type to use when sending to webhook. "
             "Supported types: 'basic', 'bearer', or 'forward'."
         ),
         default=None,
     )
-    webhook_token: str | None = Field(
+    token: str | None = Field(
         description=(
             "Token to use for authentication when sending to webhook. "
             "For 'basic' auth_type, this should be base64 encoded 'username:password'. "
-            "Required when webhook_auth_type is 'basic' or 'bearer'."
+            "Required when auth_type is 'basic' or 'bearer'."
         ),
         default=None,
     )
-    webhook_url: str | None = Field(
-        description="Webhook URL for sending output when using webhook output format", default=None
-    )
-    webhook_client_auth_header: str | None = Field(
+    client_auth_header: str | None = Field(
         description=(
-            "Client header used from client to pass through to the webhook. "
-            "Required when webhook_auth_type is 'forward'."
+            "Client header name to pass through from API client to webhook. "
+            "Required when auth_type is 'forward'."
         ),
         default=None,
+    )
+
+    model_config = ConfigDict(extra="ignore")
+
+    @model_validator(mode="after")
+    def validate_auth_consistency(self) -> Self:
+        """Validate that webhook auth type and token are consistent.
+
+        Returns:
+            Self: The validated instance.
+
+        Raises:
+            ValueError: If webhook auth configuration is invalid.
+        """
+        auth = self.auth_type
+        if auth in (AuthType.BASIC, AuthType.BEARER):
+            if not self.token:
+                raise ValueError(f"token must be set when auth_type is '{auth}'")
+        elif auth == AuthType.FORWARD:
+            if not self.client_auth_header:
+                raise ValueError("client_auth_header must be set when auth_type is 'forward'")
+        return self
+
+
+class ConsoleOutputSettings(BaseModel):
+    """Settings for console output destination."""
+
+    model_config = ConfigDict(extra="ignore")
+
+
+class OutputSettings(BaseModel):
+    """Settings for output formats and destinations."""
+
+    format: OutputFormat = Field(description="Data serialization format", default=OutputFormat.JSON)
+    destination: OutputDestination = Field(
+        description="Output destination (return, file, webhook, console)",
+        default=OutputDestination.RETURN,
+    )
+    file: FileOutputSettings = Field(
+        description="File output settings",
+        default_factory=FileOutputSettings,
+    )
+    webhook: WebhookOutputSettings = Field(
+        description="Webhook output settings",
+        default_factory=WebhookOutputSettings,
+    )
+    console: ConsoleOutputSettings = Field(
+        description="Console output settings",
+        default_factory=ConsoleOutputSettings,
     )
 
     model_config = ConfigDict(
         extra="ignore",
         json_schema_extra={
             "example": {
-                "file_path": "output.txt",
-                "output_format": "file",
+                "format": "json",
+                "destination": "webhook",
+                "webhook": {
+                    "url": "https://api.example.com/stockpiles",
+                    "auth_type": "bearer",
+                    "token": "your-token",
+                },
+                "file": {
+                    "path": "output.json",
+                },
             }
         },
     )
 
-    def _validate_webhook_fields(self) -> None:
-        """Validate the webhook settings.
-
-        Raises:
-            ValueError: If webhook configuration is invalid.
-        """
-        if self.output_format == OutputFormat.WEBHOOK and not self.webhook_url:
-            raise ValueError("webhook_url must be provided when output_format is 'webhook'")
-
-    def _validate_auth_consistency(self) -> None:
-        """Validate that webhook auth type and token are consistent.
-
-        Raises:
-            ValueError: If webhook auth configuration is invalid.
-        """
-        auth = self.webhook_auth_type
-        if auth in (AuthType.BASIC, AuthType.BEARER):
-            if not self.webhook_token:
-                raise ValueError(f"webhook_token must be set when webhook_auth_type is '{auth}'")
-        elif auth == AuthType.FORWARD:
-            if not self.webhook_client_auth_header:
-                raise ValueError(
-                    "webhook_client_auth_header must be set when webhook_auth_type is 'forward'"
-                )
-
-    def _validate_file_fields(self) -> None:
-        """Validate the file output settings.
-
-        Raises:
-            ValueError: If file_path is not provided when output_format is file.
-        """
-        if self.output_format == OutputFormat.FILE and not self.file_path:
-            raise ValueError("file_path must be provided when output_format is 'file'")
-
     @model_validator(mode="after")
-    def validate_model(self) -> Self:
-        """Validate the model.
+    def validate_active_destination(self) -> Self:
+        """Validate only the active destination configuration.
 
         Returns:
             Self: The validated instance.
 
         Raises:
-            ValueError: If any of the fields is invalid
+            ValueError: If the active destination configuration is invalid.
         """
-        self._validate_webhook_fields()
-        self._validate_file_fields()
-        self._validate_auth_consistency()
+        if self.destination == OutputDestination.WEBHOOK:
+            if not self.webhook.url:
+                raise ValueError("webhook.url must be provided when destination is 'webhook'")
+        elif self.destination == OutputDestination.FILE:
+            if not self.file.path:
+                raise ValueError("file.path must be provided when destination is 'file'")
 
         return self
 
@@ -575,6 +605,10 @@ class TemplateSettings(BaseModel):
 class AppSettings(BaseSettings):
     """Application Settings."""
 
+    config_version: int = Field(
+        default=2,
+        description="Configuration format version for migration purposes",
+    )
     api_server: APIServerSettings = Field(
         description="API server settings", default_factory=APIServerSettings
     )
@@ -585,9 +619,7 @@ class AppSettings(BaseSettings):
         description="Logging settings", default_factory=LoggingSettings
     )
     ocr: OCRSettings = Field(description="OCR settings", default_factory=OCRSettings)
-    output_format: OutputFormatSettings = Field(
-        description="Output format settings", default_factory=OutputFormatSettings
-    )
+    output: OutputSettings = Field(description="Output settings", default_factory=OutputSettings)
     scanner: OCRCoordinatorConfig = Field(
         description="Stockpile scanner settings", default_factory=OCRCoordinatorConfig
     )
@@ -602,6 +634,74 @@ class AppSettings(BaseSettings):
         env_prefix="FS_",
         json_file=str(Path("~/.fs_config").expanduser()),
     )
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_config(cls, data: Any) -> Any:
+        """Migrate configuration from older versions to current version.
+
+        Args:
+            data: Raw configuration data
+
+        Returns:
+            Migrated configuration data
+        """
+        if not isinstance(data, dict):
+            return data
+
+        # Determine config version (default to 1 for old configs without version field)
+        version = data.get("config_version", 1)
+
+        # Apply migrations sequentially
+        if version == 1:
+            data = cls._migrate_v1_to_v2(data)
+            data["config_version"] = 2
+
+        # Future migrations would go here:
+        # if version == 2:
+        #     data = cls._migrate_v2_to_v3(data)
+        #     data["config_version"] = 3
+
+        return data
+
+    @staticmethod
+    def _migrate_v1_to_v2(data: dict[str, Any]) -> dict[str, Any]:
+        """Migrate from v1 (flat output structure) to v2 (nested output structure).
+
+        V1 had: output_format.{output_format, output_destination, file_path, webhook_url, ...}
+        V2 has: output.{format, destination, file.{path}, webhook.{url, auth_type, token, ...}}
+
+        Args:
+            data: V1 configuration data
+
+        Returns:
+            V2 configuration data
+        """
+        # Check if we have old output_format structure
+        if "output_format" in data and isinstance(data["output_format"], dict):
+            old_output = data["output_format"]
+
+            # Build new nested structure
+            new_output: dict[str, Any] = {
+                "format": old_output.get("output_format", "json"),
+                "destination": old_output.get("output_destination", "return"),
+                "file": {
+                    "path": old_output.get("file_path", "output.json"),
+                },
+                "webhook": {
+                    "url": old_output.get("webhook_url"),
+                    "auth_type": old_output.get("webhook_auth_type"),
+                    "token": old_output.get("webhook_token"),
+                    "client_auth_header": old_output.get("webhook_client_auth_header"),
+                },
+                "console": {},
+            }
+
+            # Replace with new structure
+            data["output"] = new_output
+            del data["output_format"]
+
+        return data
 
     @classmethod
     def settings_customise_sources(

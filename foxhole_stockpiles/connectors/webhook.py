@@ -9,7 +9,7 @@ from typing import Any, Final, TypeVar
 import httpx
 from httpx import AsyncClient, ConnectTimeout
 
-from foxhole_stockpiles.core.settings import OutputFormatSettings
+from foxhole_stockpiles.core.settings import WebhookOutputSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -85,11 +85,11 @@ class WebhookConnector:
     DEFAULT_MESSAGE_NO_URL: Final[str] = "FS: Webhook URL is not set"
     DEFAULT_ERROR_PREFIX: Final[str] = "FS: Error sending stockpile to the webhook"
 
-    def __init__(self, output_settings: OutputFormatSettings) -> None:
+    def __init__(self, output_settings: WebhookOutputSettings) -> None:
         """Initialize the WebhookConnector.
 
         Args:
-            output_settings (OutputFormatSettings): Webhook configuration
+            output_settings (WebhookOutputSettings): Webhook configuration
         """
         self._output_settings = output_settings
         self._logger = logging.getLogger(__name__)
@@ -105,23 +105,23 @@ class WebhookConnector:
         """
         headers: dict[str, str] = {}
 
-        auth_type = self._output_settings.webhook_auth_type
+        auth_type = self._output_settings.auth_type
 
         if auth_type is None:
             return headers
 
         match auth_type:
             case AuthType.BASIC:
-                token_to_use = token or self._output_settings.webhook_token
+                token_to_use = token or self._output_settings.token
                 if token_to_use:
                     headers["Authorization"] = f"Basic {token_to_use}"
             case AuthType.BEARER:
-                token_to_use = token or self._output_settings.webhook_token
+                token_to_use = token or self._output_settings.token
                 if token_to_use:
                     headers["Authorization"] = f"Bearer {token_to_use}"
             case AuthType.FORWARD:
-                if token and self._output_settings.webhook_client_auth_header:
-                    headers[self._output_settings.webhook_client_auth_header] = token
+                if token and self._output_settings.client_auth_header:
+                    headers[self._output_settings.client_auth_header] = token
 
         return headers
 
@@ -144,7 +144,7 @@ class WebhookConnector:
         if not payload:
             return {"message": self.DEFAULT_MESSAGE_EMPTY}
 
-        if not self._output_settings.webhook_url:
+        if not self._output_settings.url:
             self._logger.info("Webhook URL is not configured")
             return {"message": self.DEFAULT_MESSAGE_NO_URL}
 
@@ -153,7 +153,7 @@ class WebhookConnector:
 
         try:
             async with AsyncClient(headers=headers) as client:
-                response = await client.post(url=self._output_settings.webhook_url, json=payload)
+                response = await client.post(url=self._output_settings.url, json=payload)
 
             try:
                 response.raise_for_status()

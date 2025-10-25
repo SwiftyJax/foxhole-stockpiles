@@ -13,12 +13,13 @@ import numpy as np
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
+from foxhole_stockpiles.enums.output_destination import OutputDestination
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
-from foxhole_stockpiles.handlers.output_handler import OutputHandler
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
+from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
 
 
 def get_app_settings(config_file: str | None = None) -> AppSettings:
@@ -91,7 +92,19 @@ async def main() -> dict[str, Any] | None:
         "--output-format",
         type=str,
         choices=[fmt.value for fmt in OutputFormat],
-        help="Output format for the results (default: console)",
+        help="Data serialization format (default: json)",
+    )
+    parser.add_argument(
+        "--output-destination",
+        type=str,
+        choices=[dest.value for dest in OutputDestination],
+        default=None,
+        help="Output destination (default: return)",
+    )
+    parser.add_argument(
+        "--output-file",
+        type=Path,
+        help="File path when using file destination (supports {timestamp} placeholder)",
     )
     parser.add_argument(
         "--config",
@@ -128,10 +141,12 @@ async def main() -> dict[str, Any] | None:
 
     # Image is already in BGR format (OpenCV default), which is what OCRCoordinator expects
     image = np.asarray(_image, dtype=np.uint8)
-    output_format = (
-        OutputFormat(args.output_format)
-        if args.output_format
-        else settings.output_format.output_format
+
+    # Determine output destination
+    output_destination = (
+        OutputDestination(args.output_destination)
+        if args.output_destination
+        else settings.output.destination
     )
 
     logging_settings = settings.logging
@@ -170,9 +185,17 @@ async def main() -> dict[str, Any] | None:
 
         coordinator = OCRCoordinator(scanner_settings)
         stockpile: Stockpile = await coordinator.analyze_stockpile(image)
-        output_handler = OutputHandler(settings=settings)
-        return await output_handler.handle_output(
-            stockpile=stockpile, output_format=output_format, token=args.token
+        output_coordinator = OutputCoordinator(settings=settings)
+
+        # Prepare kwargs for output coordinator
+        output_kwargs: dict[str, Any] = {}
+        if args.token:
+            output_kwargs["token"] = args.token
+        if args.output_file:
+            output_kwargs["file_path"] = args.output_file
+
+        return await output_coordinator.handle_output(
+            stockpile=stockpile, destination=output_destination, **output_kwargs
         )
 
     except FileNotFoundError as e:

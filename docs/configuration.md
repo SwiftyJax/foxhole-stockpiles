@@ -17,9 +17,10 @@ export FS_API_AUTH__AUTH_TOKEN=your-secret-token
 export FS_SCANNER__DATABASE_PATH=/path/to/database.pkl
 export FS_SCANNER__FACTION_FILTER=colonials
 
-# Output format
-export FS_OUTPUT_FORMAT__OUTPUT_FORMAT=webhook
-export FS_OUTPUT_FORMAT__WEBHOOK_URL=https://example.com/webhook
+# Output destination and format
+export FS_OUTPUT__FORMAT=json
+export FS_OUTPUT__DESTINATION=webhook
+export FS_OUTPUT__WEBHOOK__URL=https://example.com/webhook
 
 # Logging
 export FS_LOGGING__LOG_LEVEL=DEBUG
@@ -30,8 +31,11 @@ export FS_LOGGING__LOG_FILE=/var/log/foxhole-scanner.log
 
 Create a file at `~/.fs_config` with JSON configuration:
 
+**Note on Config Versioning:** The configuration includes a `config_version` field (current: **2**). Old V1 configs are automatically migrated to V2 when loaded - no manual action required. V1 had a flat `output_format` structure; V2 has nested `output.{file, webhook, console}` structure.
+
 ```json
 {
+  "config_version": 2,
   "api_server": {
     "cors_allow_origins": ["*"]
   },
@@ -44,13 +48,19 @@ Create a file at `~/.fs_config` with JSON configuration:
     "faction_filter": null,
     "screenshots_folder": ""
   },
-  "output_format": {
-    "output_format": "json",
-    "file_path": "output.json",
-    "webhook_url": null,
-    "webhook_auth_type": null,
-    "webhook_token": null,
-    "webhook_client_auth_header": null
+  "output": {
+    "format": "json",
+    "destination": "return",
+    "file": {
+      "path": "output.json"
+    },
+    "webhook": {
+      "url": null,
+      "auth_type": null,
+      "token": null,
+      "client_auth_header": null
+    },
+    "console": {}
   },
   "logging": {
     "log_level": "INFO",
@@ -145,18 +155,33 @@ Settings for the stockpile scanner.
 | `max_ncc_candidates` | integer | `25` | Maximum number of NCC candidates to consider for matching |
 | `phash_threshold` | integer | `12` | Maximum Hamming distance for pHash filtering |
 
-### Output Format (`output_format`)
+### Output (`output`)
 
-Controls how scanner results are output.
+Controls how scanner results are formatted and where they are sent. All destinations can be pre-configured; only the active destination (specified by `destination`) will be validated.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `output_format` | string | `"json"` | Output format. Valid values: `"console"`, `"file"`, `"json"`, `"webhook"` |
-| `file_path` | string | `"output.json"` | Path for file output (supports `{timestamp}` placeholder) |
-| `webhook_url` | string\|null | `null` | Webhook URL for sending results |
-| `webhook_auth_type` | string\|null | `null` | Webhook authentication. Valid values: `"basic"`, `"bearer"`, `"forward"`, or `null` |
-| `webhook_token` | string\|null | `null` | Token for webhook authentication (required when auth_type is `"basic"` or `"bearer"`) |
-| `webhook_client_auth_header` | string\|null | `null` | Header name to pass through from API client to webhook (required when auth_type is `"forward"`) |
+| `format` | string | `"json"` | Data serialization format. Currently only `"json"` is supported |
+| `destination` | string | `"return"` | Active output destination. Valid values: `"return"` (to caller), `"file"`, `"webhook"`, `"console"` |
+
+#### File Output Settings (`output.file`)
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `path` | string | `"output.json"` | File path for output (supports `{timestamp}` placeholder). Required when `destination` is `"file"` |
+
+#### Webhook Output Settings (`output.webhook`)
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `url` | string\|null | `null` | Webhook URL for sending results. Required when `destination` is `"webhook"` |
+| `auth_type` | string\|null | `null` | Webhook authentication method. Valid values: `"basic"`, `"bearer"`, `"forward"`, or `null` |
+| `token` | string\|null | `null` | Token for webhook authentication (required when `auth_type` is `"basic"` or `"bearer"`) |
+| `client_auth_header` | string\|null | `null` | Header name to pass through from API client to webhook (required when `auth_type` is `"forward"`) |
+
+#### Console Output Settings (`output.console`)
+
+No additional settings required.
 
 See [Webhooks](webhooks.md) for webhook configuration details.
 
@@ -246,10 +271,10 @@ export FS_API_AUTH__AUTH_TOKEN=my-secret-token-123
 ### Scanner with Webhook Output
 
 ```bash
-export FS_OUTPUT_FORMAT__OUTPUT_FORMAT=webhook
-export FS_OUTPUT_FORMAT__WEBHOOK_URL=https://api.example.com/stockpiles
-export FS_OUTPUT_FORMAT__WEBHOOK_AUTH_TYPE=bearer
-export FS_OUTPUT_FORMAT__WEBHOOK_TOKEN=webhook-token-456
+export FS_OUTPUT__DESTINATION=webhook
+export FS_OUTPUT__WEBHOOK__URL=https://api.example.com/stockpiles
+export FS_OUTPUT__WEBHOOK__AUTH_TYPE=bearer
+export FS_OUTPUT__WEBHOOK__TOKEN=webhook-token-456
 ```
 
 ### Debug Mode with File Logging
@@ -289,8 +314,9 @@ export FS_SCANNER__SCREENSHOTS_FOLDER=screenshots
   "scanner": {
     "database_path": "/opt/foxhole/templates.pkl"
   },
-  "output_format": {
-    "output_format": "webhook",
+  "output": {
+    "format": "json",
+    "destination": "webhook",
     "webhook_url": "https://api.myapp.com/stockpiles",
     "webhook_auth_type": "bearer",
     "webhook_token": "internal-webhook-secret"
@@ -346,8 +372,9 @@ This example shows all available settings with their default values:
     "gray_upper": 98,
     "pixel_diff_tolerance": 2
   },
-  "output_format": {
-    "output_format": "json",
+  "output": {
+    "format": "json",
+    "destination": "return",
     "file_path": "output.json",
     "webhook_auth_type": null,
     "webhook_token": null,
@@ -428,13 +455,14 @@ This table lists all available environment variables with their default values:
 | `FS_OCR__GRAY_LOWER` | integer | `15` | Quantity box dark threshold |
 | `FS_OCR__GRAY_UPPER` | integer | `98` | Quantity box bright threshold |
 | `FS_OCR__PIXEL_DIFF_TOLERANCE` | integer | `2` | Pixel error tolerance |
-| **Output Format** | | | |
-| `FS_OUTPUT_FORMAT__OUTPUT_FORMAT` | string | `"json"` | Output format (`"console"`, `"file"`, `"json"`, `"webhook"`) |
-| `FS_OUTPUT_FORMAT__FILE_PATH` | string | `"output.json"` | File output path |
-| `FS_OUTPUT_FORMAT__WEBHOOK_AUTH_TYPE` | string\|null | `null` | Webhook auth type (`"basic"`, `"bearer"`, `"forward"`, or `null`) |
-| `FS_OUTPUT_FORMAT__WEBHOOK_TOKEN` | string\|null | `null` | Webhook auth token |
-| `FS_OUTPUT_FORMAT__WEBHOOK_URL` | string\|null | `null` | Webhook URL |
-| `FS_OUTPUT_FORMAT__WEBHOOK_CLIENT_AUTH_HEADER` | string\|null | `null` | Client auth header to pass through |
+| **Output** | | | |
+| `FS_OUTPUT__FORMAT` | string | `"json"` | Data serialization format (currently only `"json"` supported) |
+| `FS_OUTPUT__DESTINATION` | string | `"return"` | Active output destination (`"return"`, `"file"`, `"webhook"`, `"console"`) |
+| `FS_OUTPUT__FILE__PATH` | string | `"output.json"` | File output path (required when destination is `"file"`) |
+| `FS_OUTPUT__WEBHOOK__URL` | string\|null | `null` | Webhook URL (required when destination is `"webhook"`) |
+| `FS_OUTPUT__WEBHOOK__AUTH_TYPE` | string\|null | `null` | Webhook auth type (`"basic"`, `"bearer"`, `"forward"`, or `null`) |
+| `FS_OUTPUT__WEBHOOK__TOKEN` | string\|null | `null` | Webhook auth token |
+| `FS_OUTPUT__WEBHOOK__CLIENT_AUTH_HEADER` | string\|null | `null` | Client auth header to pass through |
 | **Scanner** | | | |
 | `FS_SCANNER__DATABASE_PATH` | string | `"database.pkl"` | Template database path |
 | `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.0` | Early exit threshold |
