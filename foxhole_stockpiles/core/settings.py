@@ -747,6 +747,10 @@ class AppSettings(BaseSettings):
             data["output"] = new_output
             del data["output_format"]
 
+        if "scanner" in data:
+            data["scanner"].pop("confidence_threshold", None)
+            data["scanner"].pop("confidence_by_resolution", None)
+
         return data
 
     @classmethod
