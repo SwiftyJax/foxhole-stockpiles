@@ -1,5 +1,6 @@
 """FastAPI server for Foxhole stockpile scanning."""
 
+import gc
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -14,10 +15,12 @@ from pydantic import BaseModel, Field
 
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.auth import create_auth_dependency
+from foxhole_stockpiles.api.memory_middleware import MemoryMonitorMiddleware
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
+from foxhole_stockpiles.services.memory_monitor import MemoryMonitor
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
 
@@ -31,6 +34,9 @@ class HealthResponse(BaseModel):
 
 # Global settings
 app_settings: AppSettings = get_settings()
+
+# Global memory monitor
+memory_monitor = MemoryMonitor(history_size=1000, snapshot_interval=100)
 
 
 @asynccontextmanager
@@ -70,6 +76,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add memory monitoring middleware
+app.add_middleware(MemoryMonitorMiddleware, monitor=memory_monitor)
 
 # Create authentication dependency
 auth_dependency = create_auth_dependency(app_settings.api_auth)
@@ -188,3 +197,74 @@ async def scan_stockpile(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Unexpected error: {str(e)}"
         ) from None
+
+
+@app.get("/memory/stats")
+async def memory_stats() -> dict[str, Any]:
+    """Get memory usage statistics.
+
+    Returns:
+        dict[str, Any]: Memory statistics including current usage, trends, and history
+    """
+    return memory_monitor.get_statistics()
+
+
+@app.post("/memory/gc")
+async def force_garbage_collection() -> dict[str, Any]:
+    """Force garbage collection and return statistics.
+
+    Returns:
+        dict[str, Any]: Garbage collection results including freed memory
+    """
+    return memory_monitor.force_garbage_collection()
+
+
+@app.get("/memory/current")
+async def current_memory() -> dict[str, Any]:
+    """Get current memory snapshot.
+
+    Returns:
+        dict[str, Any]: Current memory usage snapshot
+    """
+    snapshot = memory_monitor.get_current_memory()
+    return {
+        "timestamp": snapshot.timestamp.isoformat(),
+        "rss_mb": round(snapshot.rss_mb, 2),
+        "vms_mb": round(snapshot.vms_mb, 2),
+        "percent": round(snapshot.percent, 2),
+        "available_mb": round(snapshot.available_mb, 2),
+    }
+
+
+@app.get("/memory/gc-stats")
+async def garbage_collection_stats() -> dict[str, Any]:
+    """Get garbage collector statistics.
+
+    Returns:
+        dict[str, Any]: Garbage collector statistics and object counts
+    """
+    gc_stats = gc.get_stats()
+    gc_count = gc.get_count()
+
+    # Get count of tracked objects by type
+    objects = gc.get_objects()
+    type_counts: dict[str, int] = {}
+
+    for obj in objects[:1000]:  # Limit to first 1000 for performance
+        obj_type = type(obj).__name__
+        type_counts[obj_type] = type_counts.get(obj_type, 0) + 1
+
+    # Sort by count
+    sorted_types = sorted(type_counts.items(), key=lambda x: x[1], reverse=True)[:20]
+
+    return {
+        "gc_enabled": gc.isenabled(),
+        "generation_counts": {
+            "generation_0": gc_count[0],
+            "generation_1": gc_count[1],
+            "generation_2": gc_count[2],
+        },
+        "total_tracked_objects": len(objects),
+        "top_object_types": [{"type": t, "count": c} for t, c in sorted_types],
+        "gc_stats": gc_stats,
+    }

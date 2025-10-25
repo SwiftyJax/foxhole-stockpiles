@@ -39,6 +39,9 @@ server = [
     "fastapi>=0.119.0",
     "uvicorn[standard]>=0.37.0",
     "python-multipart>=0.0.20",
+    # Memory profiling
+    "psutil>=6.1.1",
+    "memory-profiler>=0.61.0",
 ]
 dev = [
     # Testing
@@ -51,6 +54,7 @@ dev = [
     "ruff>=0.14.1",
     "pre-commit>=3.5.0",
     "types-requests",
+    "types-psutil",
 
     # Developer Tools
     "PyQt6>=6.9.1",

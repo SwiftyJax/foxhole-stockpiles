@@ -1,0 +1,68 @@
+"""Memory monitoring middleware for FastAPI."""
+
+import time
+from collections.abc import Awaitable, Callable
+from typing import Any
+
+from fastapi import Request, Response
+from starlette.middleware.base import BaseHTTPMiddleware
+
+from foxhole_stockpiles.services.memory_monitor import MemoryMonitor
+
+
+class MemoryMonitorMiddleware(BaseHTTPMiddleware):
+    """Middleware to track memory usage per request."""
+
+    def __init__(self, app: Any, monitor: MemoryMonitor) -> None:
+        """Initialize middleware.
+
+        Args:
+            app: FastAPI application
+            monitor: MemoryMonitor instance
+        """
+        super().__init__(app)
+        self.monitor = monitor
+
+    async def dispatch(
+        self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
+    ) -> Response:
+        """Process request and track memory.
+
+        Args:
+            request: FastAPI request
+            call_next: Next middleware/handler
+
+        Returns:
+            Response: FastAPI response
+        """
+        # Skip memory monitoring for monitoring endpoints themselves
+        if request.url.path.startswith("/memory"):
+            return await call_next(request)
+
+        # Get memory before request
+        memory_before = self.monitor.get_current_memory()
+        start_time = time.perf_counter()
+
+        # Process request
+        response = await call_next(request)
+
+        # Get memory after request
+        duration_ms = (time.perf_counter() - start_time) * 1000
+        memory_after = self.monitor.get_current_memory()
+
+        # Record statistics
+        self.monitor.request_count += 1
+        self.monitor.record_request(
+            path=request.url.path,
+            method=request.method,
+            duration_ms=duration_ms,
+            memory_before_mb=memory_before.rss_mb,
+            memory_after_mb=memory_after.rss_mb,
+            status_code=response.status_code,
+        )
+
+        # Take periodic snapshots
+        if self.monitor.request_count % self.monitor.snapshot_interval == 0:
+            self.monitor._take_snapshot()
+
+        return response
