@@ -14,6 +14,7 @@ from foxhole_stockpiles.core.settings.sections import (
     APIAuthSettings,
     APIServerSettings,
     LoggingSettings,
+    NotificationsSettings,
     OCRSettings,
     OutputSettings,
     ScannerSettings,
@@ -48,6 +49,9 @@ class AppSettings(BaseSettings):
     )
     templates: TemplateSettings = Field(
         description="Template generation settings", default_factory=TemplateSettings
+    )
+    notifications: NotificationsSettings = Field(
+        description="Notifications settings", default_factory=NotificationsSettings
     )
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",

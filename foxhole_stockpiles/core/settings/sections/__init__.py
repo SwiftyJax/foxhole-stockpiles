@@ -2,6 +2,7 @@
 
 from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings, APIServerSettings
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
+from foxhole_stockpiles.core.settings.sections.notifications import NotificationsSettings
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.core.settings.sections.output import (
     ConsoleOutputSettings,
@@ -19,6 +20,7 @@ __all__ = [
     "ConsoleOutputSettings",
     "FileOutputSettings",
     "LoggingSettings",
+    "NotificationsSettings",
     "OCRSettings",
     "OutputSettings",
     "ScannerSettings",

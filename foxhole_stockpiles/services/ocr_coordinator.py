@@ -10,8 +10,10 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
+from foxhole_stockpiles.core.events import EventBus, get_event_bus
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
+from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.models.item_candidate import ItemCandidate
 from foxhole_stockpiles.models.match_result import MatchResult
@@ -29,11 +31,12 @@ class OCRCoordinator:
 
     TESSERACT_BINARY_THRESHOLD: ClassVar[int] = 127
 
-    def __init__(self, config: ScannerSettings) -> None:
+    def __init__(self, config: ScannerSettings, event_bus: EventBus | None = None) -> None:
         """Initialize the model.
 
         Args:
             config (ScannerSettings): Configuration for the coordinator
+            event_bus (EventBus | None): Event bus for notifications (defaults to singleton)
 
         Raises:
             ValueError: If database_path is None (required for OCRCoordinator)
@@ -42,6 +45,7 @@ class OCRCoordinator:
             raise ValueError("database_path is required for OCRCoordinator")
 
         self.config = config
+        self.event_bus = event_bus or get_event_bus()
         self.logger = logging.getLogger(__name__)
         self.threshold_value: float = 0.0
         self.scale_factor: float = 1.0
@@ -147,6 +151,11 @@ class OCRCoordinator:
 
         start_time = time.perf_counter()
 
+        # Emit scan started event
+        self.event_bus.emit(
+            EventType.STOCKPILE_SCAN_STARTED, {"timestamp": datetime.now().isoformat()}
+        )
+
         detector = self._detect_regions(image)
         self.scale_factor = detector.scale_factor
         stockpile_images = self._extract_stockpile_images(detector)
@@ -184,6 +193,22 @@ class OCRCoordinator:
             unmatched_items,
             avg_confidence,
             elapsed_time,
+        )
+
+        # Emit scan completed event
+        self.event_bus.emit(
+            EventType.STOCKPILE_SCANNED,
+            {
+                "stockpile_name": stockpile_name,
+                "stockpile_type": stockpile_type,
+                "resolution": scanned_stockpile.resolution,
+                "item_count": total_items,
+                "matched_items": len(matched_items),
+                "unmatched_items": unmatched_items,
+                "avg_confidence": avg_confidence,
+                "duration": elapsed_time,
+                "timestamp": datetime.now().isoformat(),
+            },
         )
 
         return scanned_stockpile

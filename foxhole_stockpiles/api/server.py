@@ -15,7 +15,9 @@ from pydantic import BaseModel, Field
 
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.auth import create_auth_dependency
+from foxhole_stockpiles.api.dependencies import get_event_bus_dependency, get_notification_service
 from foxhole_stockpiles.api.memory_middleware import MemoryMonitorMiddleware
+from foxhole_stockpiles.core.events import EventBus
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
@@ -53,6 +55,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger = logging.getLogger(__name__)
     logger.info("Starting Foxhole Stockpile Scanner API")
     logger.info("Database path: %s", app_settings.scanner.database_path)
+
+    # Initialize notification service if enabled
+    if app_settings.notifications.enabled:
+        notification_service = get_notification_service()
+        logger.info(
+            "Notification service initialized with %d notifier(s)",
+            len(notification_service.notifiers),
+        )
 
     yield
 
@@ -111,6 +121,7 @@ async def health_check() -> HealthResponse:
 async def scan_stockpile(
     image: UploadFile,
     request: Request,
+    event_bus: Annotated[EventBus, Depends(get_event_bus_dependency)],
     faction: Annotated[
         ItemFaction | None, Query(description="Faction filter (Colonials or Wardens)")
     ] = None,
@@ -127,6 +138,7 @@ async def scan_stockpile(
     Args:
         image (UploadFile): Screenshot image file (PNG, JPG, JPEG supported)
         request (Request): FastAPI request object
+        event_bus (EventBus): Event bus for notifications (injected)
         faction (ItemFaction | None): Optional faction filter to limit detection to specific
             faction items
         mod_name (str | None): Optional mod name filter (max 50 chars)
@@ -159,7 +171,7 @@ async def scan_stockpile(
         config.mod_name = mod_name
         config.language = language
 
-        request_coordinator = OCRCoordinator(config)
+        request_coordinator = OCRCoordinator(config, event_bus=event_bus)
         stockpile = await request_coordinator.analyze_stockpile(image_bgr)
 
         # Read the token from the specified header if configured

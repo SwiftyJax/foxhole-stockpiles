@@ -297,6 +297,78 @@ The API exposes endpoints for:
 
 For more details, see the [API Server Documentation](foxhole_stockpiles/commands/api_server/README.md) and [API Usage Guide](docs/api-usage.md).
 
+### Notifications
+
+The API server includes a notification system that can send alerts to Discord channels when stockpile scans occur, server events happen, or errors are encountered.
+
+**Configuration:**
+
+Add notifications to your `.fs_config` or environment variables:
+
+```json
+{
+  "notifications": {
+    "enabled": true,
+    "notifiers": [
+      {
+        "type": "discord",
+        "name": "Main Server",
+        "webhook_url": "https://discord.com/api/webhooks/YOUR_WEBHOOK_ID/YOUR_WEBHOOK_TOKEN",
+        "username": "Stockpile Bot",
+        "events": [
+          "stockpile.scanned",
+          "stockpile.scan_failed"
+        ]
+      },
+      {
+        "type": "discord",
+        "name": "Admin Channel",
+        "webhook_url": "https://discord.com/api/webhooks/ADMIN_WEBHOOK_ID/ADMIN_WEBHOOK_TOKEN",
+        "username": "Admin Bot",
+        "events": [
+          "stockpile.scan_failed",
+          "server.started",
+          "server.stopped"
+        ]
+      }
+    ]
+  }
+}
+```
+
+**Environment Variables:**
+
+```bash
+# Enable notifications
+FS_NOTIFICATIONS__ENABLED=true
+
+# Configure Discord notifiers (JSON array)
+FS_NOTIFICATIONS__NOTIFIERS='[{"type":"discord","name":"Main","webhook_url":"https://discord.com/...","events":["stockpile.scanned"]}]'
+```
+
+**Available Event Types:**
+- `stockpile.scan_started` - Scan has started
+- `stockpile.scanned` - Successful scan with item details
+- `stockpile.scan_failed` - Scan failed with error message
+- `server.started` - API server started
+- `server.stopped` - API server stopped
+- `api.request_received` - API request received
+- `api.request_completed` - API request completed
+- `api.request_failed` - API request failed
+
+**Discord Webhook Setup:**
+1. In Discord, go to Server Settings → Integrations → Webhooks
+2. Click "New Webhook" or "Create Webhook"
+3. Set a name and choose the channel
+4. Copy the Webhook URL
+5. Add the URL to your configuration
+
+**Multiple Notifiers:**
+You can configure multiple Discord webhooks to send different events to different channels. For example:
+- Main channel: successful scans
+- Admin channel: errors and server events
+- Dev channel: all events for debugging
+
 ### Docker Deployment
 
 The easiest way to run the API server is using Docker:
