@@ -199,7 +199,7 @@ async def scan_stockpile(
         ) from None
 
 
-@app.get("/memory/stats")
+@app.get("/memory/stats", dependencies=[Depends(auth_dependency)])
 async def memory_stats() -> dict[str, Any]:
     """Get memory usage statistics.
 
@@ -209,7 +209,7 @@ async def memory_stats() -> dict[str, Any]:
     return memory_monitor.get_statistics()
 
 
-@app.post("/memory/gc")
+@app.post("/memory/gc", dependencies=[Depends(auth_dependency)])
 async def force_garbage_collection() -> dict[str, Any]:
     """Force garbage collection and return statistics.
 
@@ -219,7 +219,7 @@ async def force_garbage_collection() -> dict[str, Any]:
     return memory_monitor.force_garbage_collection()
 
 
-@app.get("/memory/current")
+@app.get("/memory/current", dependencies=[Depends(auth_dependency)])
 async def current_memory() -> dict[str, Any]:
     """Get current memory snapshot.
 
@@ -236,7 +236,7 @@ async def current_memory() -> dict[str, Any]:
     }
 
 
-@app.get("/memory/gc-stats")
+@app.get("/memory/gc-stats", dependencies=[Depends(auth_dependency)])
 async def garbage_collection_stats() -> dict[str, Any]:
     """Get garbage collector statistics.
 

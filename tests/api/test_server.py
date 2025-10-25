@@ -961,13 +961,21 @@ class TestMemoryMonitoringEndpoints:
         assert data["total_tracked_objects"] > 0
         assert isinstance(data["top_object_types"], list)
 
-    def test_memory_endpoints_no_auth_required(self, client: TestClient) -> None:
-        """Test that memory endpoints don't require authentication.
+    @patch("foxhole_stockpiles.api.server.app_settings")
+    def test_memory_endpoints_with_auth_disabled(
+        self, mock_settings: Mock, client: TestClient
+    ) -> None:
+        """Test that memory endpoints work when auth is disabled.
 
         Args:
+            mock_settings (Mock): Mocked app settings.
             client (TestClient): FastAPI test client from fixture.
         """
-        # Even with auth enabled, memory endpoints should work
+        from foxhole_stockpiles.core.settings import APIAuthSettings
+
+        # Disable auth
+        mock_settings.api_auth = APIAuthSettings(auth_type=None, auth_token=None)
+
         endpoints = [
             ("/memory/stats", "GET"),
             ("/memory/current", "GET"),
@@ -981,5 +989,58 @@ class TestMemoryMonitoringEndpoints:
             else:
                 response = client.post(endpoint)
 
-            # Should not return 401/403
             assert response.status_code == 200, f"Failed on {method} {endpoint}"
+
+    def test_memory_endpoints_require_auth_when_enabled(self, client: TestClient) -> None:
+        """Test that memory endpoints require auth when it's enabled.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        from foxhole_stockpiles.api.server import auth_dependency
+
+        endpoints = [
+            ("/memory/stats", "GET"),
+            ("/memory/current", "GET"),
+            ("/memory/gc", "POST"),
+            ("/memory/gc-stats", "GET"),
+        ]
+
+        # Override auth dependency to require auth
+        async def require_auth() -> None:
+            raise HTTPException(status_code=401, detail="Authentication required")
+
+        app.dependency_overrides[auth_dependency] = require_auth
+
+        try:
+            # Without auth - should fail with 401
+            for endpoint, method in endpoints:
+                if method == "GET":
+                    response = client.get(endpoint)
+                else:
+                    response = client.post(endpoint)
+
+                assert response.status_code == 401, f"Expected 401 for {method} {endpoint}"
+                assert "Authentication required" in response.json()["detail"]
+
+        finally:
+            app.dependency_overrides.clear()
+
+        # Reset to allow access (simulate successful auth)
+        async def allow_auth() -> None:
+            return None
+
+        app.dependency_overrides[auth_dependency] = allow_auth
+
+        try:
+            # With auth - should succeed
+            for endpoint, method in endpoints:
+                if method == "GET":
+                    response = client.get(endpoint)
+                else:
+                    response = client.post(endpoint)
+
+                assert response.status_code == 200, f"Expected 200 for {method} {endpoint}"
+
+        finally:
+            app.dependency_overrides.clear()
