@@ -852,3 +852,134 @@ class TestAPIAuthentication:
                 response = client.post("/ocr/scan_image", files=files, headers=headers)
 
                 assert response.status_code == 200
+
+
+class TestMemoryMonitoringEndpoints:
+    """Test cases for memory monitoring endpoints."""
+
+    def test_memory_stats_endpoint(self, client: TestClient) -> None:
+        """Test /memory/stats endpoint returns statistics.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        response = client.get("/memory/stats")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check required keys
+        assert "current_memory" in data
+        assert "trends" in data
+        assert "history_stats" in data
+        assert "top_memory_requests" in data
+
+        # Check current memory structure
+        assert "rss_mb" in data["current_memory"]
+        assert "vms_mb" in data["current_memory"]
+        assert "percent" in data["current_memory"]
+        assert "available_mb" in data["current_memory"]
+
+        # Check trends structure
+        assert "memory_growth_mb" in data["trends"]
+        assert "growth_rate_mb_per_hour" in data["trends"]
+        assert "total_requests" in data["trends"]
+
+    def test_memory_current_endpoint(self, client: TestClient) -> None:
+        """Test /memory/current endpoint returns current snapshot.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        response = client.get("/memory/current")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check required keys
+        assert "timestamp" in data
+        assert "rss_mb" in data
+        assert "vms_mb" in data
+        assert "percent" in data
+        assert "available_mb" in data
+
+        # Check values are reasonable
+        assert data["rss_mb"] > 0
+        assert data["vms_mb"] > 0
+        assert 0 <= data["percent"] <= 100
+
+    def test_memory_gc_endpoint(self, client: TestClient) -> None:
+        """Test /memory/gc endpoint forces garbage collection.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        response = client.post("/memory/gc")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check required keys
+        assert "objects_collected" in data
+        assert "memory_before_mb" in data
+        assert "memory_after_mb" in data
+        assert "memory_freed_mb" in data
+
+        # Check types and reasonable values
+        assert isinstance(data["objects_collected"], int)
+        assert data["objects_collected"] >= 0
+        assert data["memory_before_mb"] > 0
+        assert data["memory_after_mb"] > 0
+
+    def test_memory_gc_stats_endpoint(self, client: TestClient) -> None:
+        """Test /memory/gc-stats endpoint returns GC statistics.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        response = client.get("/memory/gc-stats")
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Check required keys
+        assert "gc_enabled" in data
+        assert "generation_counts" in data
+        assert "total_tracked_objects" in data
+        assert "top_object_types" in data
+        assert "gc_stats" in data
+
+        # Check GC enabled
+        assert isinstance(data["gc_enabled"], bool)
+
+        # Check generation counts
+        assert "generation_0" in data["generation_counts"]
+        assert "generation_1" in data["generation_counts"]
+        assert "generation_2" in data["generation_counts"]
+
+        # Check object counts
+        assert data["total_tracked_objects"] > 0
+        assert isinstance(data["top_object_types"], list)
+
+    def test_memory_endpoints_no_auth_required(self, client: TestClient) -> None:
+        """Test that memory endpoints don't require authentication.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        # Even with auth enabled, memory endpoints should work
+        endpoints = [
+            ("/memory/stats", "GET"),
+            ("/memory/current", "GET"),
+            ("/memory/gc", "POST"),
+            ("/memory/gc-stats", "GET"),
+        ]
+
+        for endpoint, method in endpoints:
+            if method == "GET":
+                response = client.get(endpoint)
+            else:
+                response = client.post(endpoint)
+
+            # Should not return 401/403
+            assert response.status_code == 200, f"Failed on {method} {endpoint}"
