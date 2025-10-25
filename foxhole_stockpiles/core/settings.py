@@ -8,6 +8,7 @@ from typing import Any, Self
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from pydantic_settings import (
     BaseSettings,
+    InitSettingsSource,
     JsonConfigSettingsSource,
     PydanticBaseSettingsSource,
     SettingsConfigDict,
@@ -17,6 +18,21 @@ from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.output_destination import OutputDestination
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.models.ocr_coordinator_config import OCRCoordinatorConfig
+
+
+class MigratingInitSettingsSource(InitSettingsSource):
+    """Init settings source that applies migrations before validation."""
+
+    def __call__(self) -> dict[str, Any]:
+        """Get init settings with migrations applied.
+
+        Returns:
+            dict[str, Any]: Settings dictionary with migrations applied
+        """
+        data = super().__call__()
+        if data and isinstance(data, dict):
+            return AppSettings._apply_migrations(data)
+        return data
 
 
 class Utf8JsonConfigSettingsSource(JsonConfigSettingsSource):
@@ -29,11 +45,23 @@ class Utf8JsonConfigSettingsSource(JsonConfigSettingsSource):
             file_path: Path to the JSON file
 
         Returns:
-            dict[str, Any]: The parsed JSON data
+            dict[str, Any]: The parsed JSON data with migrations applied
         """
         with file_path.open("r", encoding="utf-8") as f:
             data: dict[str, Any] = json.load(f)
-            return data
+            # Apply migrations before returning
+            return AppSettings._apply_migrations(data)
+
+    def __call__(self) -> dict[str, Any]:
+        """Get settings from JSON file with migrations applied.
+
+        Returns:
+            dict[str, Any]: Settings dictionary with migrations applied
+        """
+        data = super().__call__()
+        if data:
+            return AppSettings._apply_migrations(data)
+        return data
 
 
 class LoggingSettings(BaseModel):
@@ -635,10 +663,9 @@ class AppSettings(BaseSettings):
         json_file=str(Path("~/.fs_config").expanduser()),
     )
 
-    @model_validator(mode="before")
     @classmethod
-    def migrate_config(cls, data: Any) -> Any:
-        """Migrate configuration from older versions to current version.
+    def _apply_migrations(cls, data: dict[str, Any]) -> dict[str, Any]:
+        """Apply configuration migrations.
 
         Args:
             data: Raw configuration data
@@ -648,6 +675,9 @@ class AppSettings(BaseSettings):
         """
         if not isinstance(data, dict):
             return data
+
+        # Make a copy to avoid modifying the original
+        data = dict(data)
 
         # Determine config version (default to 1 for old configs without version field)
         version = data.get("config_version", 1)
@@ -663,6 +693,22 @@ class AppSettings(BaseSettings):
         #     data["config_version"] = 3
 
         return data
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_config(cls, data: Any) -> Any:
+        """Migrate configuration from older versions to current version.
+
+        Args:
+            data: Raw configuration data
+
+        Returns:
+            Migrated configuration data
+        """
+        if not isinstance(data, dict):
+            return data
+
+        return cls._apply_migrations(data)
 
     @staticmethod
     def _migrate_v1_to_v2(data: dict[str, Any]) -> dict[str, Any]:
@@ -724,8 +770,17 @@ class AppSettings(BaseSettings):
         Returns:
             tuple: Settings sources in priority order (highest to lowest)
         """
+        # Replace init_settings with migrating version
+        # Get init_kwargs from the init_settings instance
+        migrating_init: PydanticBaseSettingsSource
+        if isinstance(init_settings, InitSettingsSource):
+            migrating_init = MigratingInitSettingsSource(settings_cls, init_settings.init_kwargs)
+        else:
+            # Fallback to original if not InitSettingsSource
+            migrating_init = init_settings
+
         return (
-            init_settings,
+            migrating_init,
             env_settings,
             dotenv_settings,
             Utf8JsonConfigSettingsSource(settings_cls),
