@@ -14,16 +14,23 @@ logger = logging.getLogger(__name__)
 class DiscordNotifier(BaseNotifier):
     """Send notifications to Discord via webhooks."""
 
-    def __init__(self, webhook_url: str, username: str | None = None) -> None:
+    def __init__(
+        self,
+        webhook_url: str,
+        username: str | None = None,
+        message_templates: dict[str, str] | None = None,
+    ) -> None:
         """Initialize Discord notifier.
 
         Args:
             webhook_url (str): Discord webhook URL
             username (str | None): Optional custom username for webhook messages
+            message_templates (dict[str, str] | None): Custom message templates per event type
         """
         super().__init__("Discord")
         self.webhook_url = webhook_url
         self.username = username or "Foxhole Stockpiles"
+        self.message_templates = message_templates or {}
 
     async def send(self, event_type: str, data: dict[str, Any]) -> None:
         """Send notification to Discord.
@@ -74,34 +81,35 @@ class DiscordNotifier(BaseNotifier):
         Returns:
             str: Formatted message
         """
-        # Map event types to emoji and message format
-        if event_type == EventType.STOCKPILE_SCANNED:
-            stockpile_name = data.get("stockpile_name", "Unknown")
-            stockpile_type = data.get("stockpile_type", "Unknown")
-            duration = data.get("duration", 0)
-            item_count = data.get("item_count", 0)
-            return (
-                f"✅ Stockpile **{stockpile_name}** ({stockpile_type}) scanned in "
-                f"{duration:.2f}s - {item_count} items"
-            )
+        # Import default templates
+        from foxhole_stockpiles.core.settings.sections.notifications import DEFAULT_TEMPLATES
 
-        elif event_type == EventType.STOCKPILE_SCAN_FAILED:
-            error = data.get("error", "Unknown error")
-            return f"❌ Stockpile scan failed: {error}"
+        # Use custom template if provided, otherwise use default
+        template = self.message_templates.get(event_type) or DEFAULT_TEMPLATES.get(
+            event_type, f"Event: {event_type}"
+        )
 
-        elif event_type == EventType.STOCKPILE_SCAN_STARTED:
-            return "🔄 Stockpile scan started..."
+        # Prepare replacement values with safe defaults and formatting
+        replacements = {
+            "STOCKPILE_NAME": data.get("stockpile_name", "Unknown"),
+            "STOCKPILE_TYPE": data.get("stockpile_type", "Unknown"),
+            "SHARD": data.get("shard", "Unknown"),
+            "TIME": data.get("time", "Unknown"),
+            "ITEM_COUNT": str(data.get("item_count", 0)),
+            "MATCHED_ITEMS": str(data.get("matched_items", 0)),
+            "UNMATCHED_ITEMS": str(data.get("unmatched_items", 0)),
+            "AVG_CONFIDENCE": f"{data.get('avg_confidence', 0.0):.1%}",
+            "DURATION": f"{data.get('duration', 0.0):.2f}s",
+            "RESOLUTION": data.get("resolution", "Unknown"),
+            "ERROR": data.get("error", "Unknown error"),
+        }
 
-        elif event_type == EventType.SERVER_STARTED:
-            host = data.get("host", "unknown")
-            port = data.get("port", 0)
-            return f"🚀 Server started at {host}:{port}"
+        # Perform string replacement (sorted by length descending to avoid partial replacements)
+        message = template
+        for placeholder in sorted(replacements.keys(), key=len, reverse=True):
+            message = message.replace(placeholder, replacements[placeholder])
 
-        elif event_type == EventType.SERVER_STOPPED:
-            return "🛑 Server stopped"
-
-        # Default format
-        return super().format_message(event_type, data)
+        return message
 
     def _create_embed(self, event_type: str, data: dict[str, Any]) -> DiscordEmbed | None:
         """Create Discord embed for rich formatting.

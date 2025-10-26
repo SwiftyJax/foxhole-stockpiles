@@ -4,6 +4,17 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from foxhole_stockpiles.enums.notifier_type import NotifierType
 
+# Default message templates for each event type
+DEFAULT_TEMPLATES = {
+    "stockpile.scanned": (
+        "✅ Stockpile **STOCKPILE_NAME** (STOCKPILE_TYPE) scanned in DURATION - ITEM_COUNT items"
+    ),
+    "stockpile.scan_failed": "❌ Stockpile scan failed: ERROR",
+    "stockpile.scan_started": "🔄 Stockpile scan started...",
+    "server.started": "🚀 Server started",
+    "server.stopped": "🛑 Server stopped",
+}
+
 
 class DiscordNotifierSettings(BaseModel):
     """Settings for Discord notifier."""
@@ -21,6 +32,13 @@ class DiscordNotifierSettings(BaseModel):
             "stockpile.scan_failed",
         ],
     )
+    message_templates: dict[str, str] = Field(
+        description="Custom message templates per event type. Available placeholders: "
+        "STOCKPILE_NAME, STOCKPILE_TYPE, SHARD, TIME, ITEM_COUNT, "
+        "MATCHED_ITEMS, UNMATCHED_ITEMS, AVG_CONFIDENCE, DURATION, "
+        "RESOLUTION, ERROR",
+        default_factory=dict,
+    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -31,6 +49,12 @@ class DiscordNotifierSettings(BaseModel):
                 "webhook_url": "https://discord.com/api/webhooks/123456789/abcdef",
                 "username": "Stockpile Bot",
                 "events": ["stockpile.scanned", "stockpile.scan_failed"],
+                "message_templates": {
+                    "stockpile.scanned": (
+                        "📦 STOCKPILE_NAME @ SHARD [TIME] - ITEM_COUNT items "
+                        "(UNMATCHED_ITEMS unknown) - AVG_CONFIDENCE confidence"
+                    )
+                },
             }
         },
     )

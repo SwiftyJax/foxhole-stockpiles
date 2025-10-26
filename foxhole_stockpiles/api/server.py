@@ -17,9 +17,10 @@ from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.auth import create_auth_dependency
 from foxhole_stockpiles.api.dependencies import get_event_bus_dependency, get_notification_service
 from foxhole_stockpiles.api.memory_middleware import MemoryMonitorMiddleware
-from foxhole_stockpiles.core.events import EventBus
+from foxhole_stockpiles.core.events import EventBus, get_event_bus
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
+from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.services.memory_monitor import MemoryMonitor
@@ -64,7 +65,14 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             len(notification_service.notifiers),
         )
 
+    # Emit server started event
+    event_bus = get_event_bus()
+    event_bus.emit(EventType.SERVER_STARTED, {})
+
     yield
+
+    # Emit server stopped event
+    event_bus.emit(EventType.SERVER_STOPPED, {})
 
     # Shutdown
     logger.info("Shutting down Foxhole Stockpile Scanner API")

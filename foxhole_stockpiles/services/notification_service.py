@@ -44,6 +44,7 @@ class NotificationService:
                     discord_notifier = DiscordNotifier(
                         webhook_url=notifier_config.webhook_url,
                         username=notifier_config.username,
+                        message_templates=notifier_config.message_templates,
                     )
                     # Override the default name with the config name
                     discord_notifier.name = notifier_config.name

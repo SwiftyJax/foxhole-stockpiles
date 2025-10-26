@@ -14,8 +14,3 @@ class EventType(str, Enum):
     # Server events
     SERVER_STARTED = "server.started"
     SERVER_STOPPED = "server.stopped"
-
-    # API events
-    API_REQUEST_RECEIVED = "api.request_received"
-    API_REQUEST_COMPLETED = "api.request_completed"
-    API_REQUEST_FAILED = "api.request_failed"

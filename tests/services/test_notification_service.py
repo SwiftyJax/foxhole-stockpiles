@@ -94,7 +94,9 @@ class TestInitialize:
             service.initialize()
 
             mock_cls.assert_called_once_with(
-                webhook_url="https://discord.com/api/webhooks/123/abc", username="Test Bot"
+                webhook_url="https://discord.com/api/webhooks/123/abc",
+                username="Test Bot",
+                message_templates={},
             )
             assert service._initialized is True
             assert len(service.notifiers) == 1

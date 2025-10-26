@@ -318,7 +318,10 @@ Add notifications to your `.fs_config` or environment variables:
         "events": [
           "stockpile.scanned",
           "stockpile.scan_failed"
-        ]
+        ],
+        "message_templates": {
+          "stockpile.scanned": "📦 STOCKPILE_NAME @ SHARD [TIME] - ITEM_COUNT items (UNMATCHED_ITEMS unknown) - AVG_CONFIDENCE confidence"
+        }
       },
       {
         "type": "discord",
@@ -336,6 +339,38 @@ Add notifications to your `.fs_config` or environment variables:
 }
 ```
 
+**Message Templates:**
+
+Customize notification messages using placeholders. If not specified, default templates are used.
+
+Placeholders are replaced with actual values - just use them as-is in your message template.
+
+Available placeholders:
+- `STOCKPILE_NAME` - Name of the stockpile
+- `STOCKPILE_TYPE` - Type of stockpile (Public, Private, etc.)
+- `SHARD` - Shard/server name
+- `TIME` - In-game time
+- `ITEM_COUNT` - Total number of items
+- `MATCHED_ITEMS` - Number of successfully matched items
+- `UNMATCHED_ITEMS` - Number of unknown/unmatched items
+- `AVG_CONFIDENCE` - Average confidence (formatted as percentage, e.g., "85.6%")
+- `DURATION` - Scan duration (formatted as seconds, e.g., "2.34s")
+- `RESOLUTION` - Screenshot resolution
+- `ERROR` - Error message (for failed events)
+
+Example templates:
+```json
+"message_templates": {
+  "stockpile.scanned": "✅ STOCKPILE_NAME (STOCKPILE_TYPE) - ITEM_COUNT items in DURATION",
+  "stockpile.scan_failed": "❌ Scan failed: ERROR",
+  "stockpile.scan_started": "🔄 Scanning stockpile...",
+  "server.started": "🚀 API server is now online",
+  "server.stopped": "🛑 API server is shutting down"
+}
+```
+
+**Note:** Placeholders are case-sensitive and will be replaced exactly as written. Any text not matching a placeholder will remain unchanged, so typos like `{stockpile_name` won't cause errors.
+
 **Environment Variables:**
 
 ```bash
@@ -352,9 +387,6 @@ FS_NOTIFICATIONS__NOTIFIERS='[{"type":"discord","name":"Main","webhook_url":"htt
 - `stockpile.scan_failed` - Scan failed with error message
 - `server.started` - API server started
 - `server.stopped` - API server stopped
-- `api.request_received` - API request received
-- `api.request_completed` - API request completed
-- `api.request_failed` - API request failed
 
 **Discord Webhook Setup:**
 1. In Discord, go to Server Settings → Integrations → Webhooks

@@ -138,6 +138,31 @@ class TestSend:
                 mock_logger.error.assert_called()
 
 
+class TestInitializationWithTemplates:
+    """Test suite for DiscordNotifier initialization with custom templates.
+
+    This class contains tests for initializing with custom message templates.
+    """
+
+    def test_init_with_custom_templates(self) -> None:
+        """Test initializing with custom message templates."""
+        templates = {
+            "stockpile.scanned": "Custom: STOCKPILE_NAME - ITEM_COUNT items",
+            "stockpile.scan_failed": "Error: ERROR",
+        }
+        notifier = DiscordNotifier(
+            webhook_url="https://discord.com/api/webhooks/123/abc", message_templates=templates
+        )
+
+        assert notifier.message_templates == templates
+
+    def test_init_without_templates_uses_empty_dict(self) -> None:
+        """Test that init without templates uses empty dict."""
+        notifier = DiscordNotifier(webhook_url="https://discord.com/api/webhooks/123/abc")
+
+        assert notifier.message_templates == {}
+
+
 class TestFormatMessage:
     """Test suite for DiscordNotifier.format_message method.
 
@@ -185,12 +210,11 @@ class TestFormatMessage:
     def test_format_server_started_message(self) -> None:
         """Test formatting a SERVER_STARTED event message."""
         notifier = DiscordNotifier(webhook_url="https://discord.com/api/webhooks/123/abc")
-        data = {"host": "localhost", "port": 8000}
+        data: dict[str, Any] = {}
 
         message = notifier.format_message(EventType.SERVER_STARTED, data)
 
-        assert "localhost:8000" in message
-        assert "🚀" in message
+        assert "🚀 Server started" == message
 
     def test_format_server_stopped_message(self) -> None:
         """Test formatting a SERVER_STOPPED event message."""
@@ -211,6 +235,64 @@ class TestFormatMessage:
 
         # Should fall back to base class format_message
         assert isinstance(message, str)
+
+    def test_format_with_custom_template(self) -> None:
+        """Test formatting with a custom template."""
+        templates = {
+            "stockpile.scanned": (
+                "📦 STOCKPILE_NAME @ SHARD - ITEM_COUNT items (UNMATCHED_ITEMS unknown)"
+            )
+        }
+        notifier = DiscordNotifier(
+            webhook_url="https://discord.com/api/webhooks/123/abc", message_templates=templates
+        )
+        data = {
+            "stockpile_name": "Test Stockpile",
+            "shard": "Able",
+            "item_count": 25,
+            "unmatched_items": 3,
+        }
+
+        message = notifier.format_message(EventType.STOCKPILE_SCANNED, data)
+
+        assert message == "📦 Test Stockpile @ Able - 25 items (3 unknown)"
+
+    def test_format_with_confidence_percentage(self) -> None:
+        """Test that AVG_CONFIDENCE is formatted as percentage."""
+        templates = {"stockpile.scanned": "Confidence: AVG_CONFIDENCE"}
+        notifier = DiscordNotifier(
+            webhook_url="https://discord.com/api/webhooks/123/abc", message_templates=templates
+        )
+        data = {"avg_confidence": 0.856}
+
+        message = notifier.format_message(EventType.STOCKPILE_SCANNED, data)
+
+        assert message == "Confidence: 85.6%"
+
+    def test_format_uses_default_for_missing_data(self) -> None:
+        """Test that missing data uses default values."""
+        templates = {"stockpile.scanned": "STOCKPILE_NAME - SHARD - ITEM_COUNT"}
+        notifier = DiscordNotifier(
+            webhook_url="https://discord.com/api/webhooks/123/abc", message_templates=templates
+        )
+        data: dict[str, Any] = {}  # No data provided
+
+        message = notifier.format_message(EventType.STOCKPILE_SCANNED, data)
+
+        assert message == "Unknown - Unknown - 0"
+
+    def test_format_handles_partial_placeholder_safely(self) -> None:
+        """Test that incomplete placeholders like {stockpile_name are left as-is."""
+        templates = {"stockpile.scanned": "Test {stockpile_name STOCKPILE_NAME}"}
+        notifier = DiscordNotifier(
+            webhook_url="https://discord.com/api/webhooks/123/abc", message_templates=templates
+        )
+        data = {"stockpile_name": "MyStockpile"}
+
+        message = notifier.format_message(EventType.STOCKPILE_SCANNED, data)
+
+        # The {stockpile_name part is left unchanged, STOCKPILE_NAME is replaced
+        assert message == "Test {stockpile_name MyStockpile}"
 
 
 class TestCreateEmbed:

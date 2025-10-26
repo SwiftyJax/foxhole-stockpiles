@@ -88,6 +88,24 @@ class TestDiscordNotifierSettings:
         # Pydantic allows None since it's specified in the type annotation
         assert settings.username is None
 
+    def test_discord_notifier_with_message_templates(self) -> None:
+        """Test Discord notifier with custom message templates."""
+        templates = {
+            "stockpile.scanned": "Custom: STOCKPILE_NAME - ITEM_COUNT",
+            "stockpile.scan_failed": "Error: ERROR",
+        }
+        settings = DiscordNotifierSettings(
+            webhook_url="https://discord.com/api/webhooks/123/abc", message_templates=templates
+        )
+
+        assert settings.message_templates == templates
+
+    def test_discord_notifier_empty_templates_by_default(self) -> None:
+        """Test Discord notifier has empty templates by default."""
+        settings = DiscordNotifierSettings(webhook_url="https://discord.com/api/webhooks/123/abc")
+
+        assert settings.message_templates == {}
+
 
 class TestNotificationsSettings:
     """Test suite for NotificationsSettings.
