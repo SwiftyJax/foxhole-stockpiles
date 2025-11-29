@@ -698,8 +698,7 @@ class TestProcessSingleIcon:
                 quantity=100,
                 category=None,
                 crated=None,
-                mod=None,
-                detected={"category": [], "crated": [], "mod": []},
+                detected={"category": [], "crated": []},
             )
 
             assert result is not None
@@ -746,8 +745,7 @@ class TestProcessSingleIcon:
                 quantity=100,
                 category=None,
                 crated=None,
-                mod=None,
-                detected={"category": [], "crated": [], "mod": []},
+                detected={"category": [], "crated": []},
             )
 
             assert result is None
@@ -795,8 +793,7 @@ class TestProcessSingleIcon:
                 quantity=100,
                 category=ItemCategory.Item,
                 crated=True,
-                mod="vanilla",
-                detected={"category": [], "crated": [], "mod": []},
+                detected={"category": [], "crated": []},
             )
 
             # Verify match_icon was called with proper filters
@@ -805,7 +802,6 @@ class TestProcessSingleIcon:
             assert call_kwargs["faction"] == ItemFaction.COLONIALS
             assert call_kwargs["category"] == ItemCategory.Item
             assert call_kwargs["crated"] is True
-            assert call_kwargs["mod"] == "vanilla"
 
 
 class TestCheckForDuplicates:

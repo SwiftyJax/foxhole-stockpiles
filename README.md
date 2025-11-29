@@ -214,9 +214,6 @@ Optional filters:
 ```bash
 # Filter by faction
 fs scanner --database foxhole_templates.pkl --image screenshot.png --faction colonials
-
-# Filter by mod
-fs scanner --database foxhole_templates.pkl --image screenshot.png --mod my_mod_name
 ```
 
 The scanner will automatically:

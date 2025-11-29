@@ -133,9 +133,6 @@ async def scan_stockpile(
     faction: Annotated[
         ItemFaction | None, Query(description="Faction filter (Colonials or Wardens)")
     ] = None,
-    mod_name: Annotated[
-        str | None, Query(max_length=50, description="Mod name filter (max 50 chars)")
-    ] = None,
     language: Annotated[
         SupportedLanguage | None,
         Query(description="Language for text detection (en, pt, fr, de, ru, zh)"),
@@ -149,7 +146,6 @@ async def scan_stockpile(
         event_bus (EventBus): Event bus for notifications (injected)
         faction (ItemFaction | None): Optional faction filter to limit detection to specific
             faction items
-        mod_name (str | None): Optional mod name filter (max 50 chars)
         language (SupportedLanguage | None): Optional language for text detection. If None,
             uses all supported languages.
 
@@ -176,7 +172,6 @@ async def scan_stockpile(
         config = copy(app_settings.scanner)
         # Set faction filter, treating NEUTRAL as None (no filter)
         config.faction_filter = faction if faction != ItemFaction.NEUTRAL else None
-        config.mod_name = mod_name
         config.language = language
 
         request_coordinator = OCRCoordinator(config, event_bus=event_bus)

@@ -314,35 +314,6 @@ class TestScanStockpileEndpoint:
         assert config.faction_filter is None
 
     @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    def test_scan_stockpile_with_mod_name(self, mock_coordinator: Mock, client: TestClient) -> None:
-        """Test scanning with mod_name parameter.
-
-        Args:
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
-            client (TestClient): FastAPI test client from fixture.
-        """
-        import cv2
-
-        img = np.zeros((100, 100, 3), dtype=np.uint8)
-        _, buffer = cv2.imencode(".png", img)
-        image_bytes = buffer.tobytes()
-
-        # Mock the coordinator
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-        mock_coordinator.return_value = mock_instance
-
-        with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
-            mock_handler_instance = Mock()
-            mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-            mock_handler.return_value = mock_handler_instance
-
-            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-            response = client.post("/ocr/scan_image?mod_name=test_mod", files=files)
-
-            assert response.status_code == 200
-
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
     def test_scan_stockpile_with_all_parameters(
         self, mock_coordinator: Mock, client: TestClient
     ) -> None:
@@ -370,7 +341,7 @@ class TestScanStockpileEndpoint:
 
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
             response = client.post(
-                "/ocr/scan_image?faction=Wardens&mod_name=my_mod",
+                "/ocr/scan_image?faction=Wardens",
                 files=files,
             )
 
@@ -394,73 +365,6 @@ class TestScanStockpileEndpoint:
         assert response.status_code == 422
         detail = response.json()["detail"]
         assert any("faction" in str(error).lower() for error in detail)
-
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    def test_scan_stockpile_with_unsupported_mod(
-        self, mock_coordinator: Mock, client: TestClient
-    ) -> None:
-        """Test scanning with unsupported mod parameter.
-
-        Args:
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
-            client (TestClient): FastAPI test client from fixture.
-        """
-        import cv2
-
-        img = np.zeros((100, 100, 3), dtype=np.uint8)
-        _, buffer = cv2.imencode(".png", img)
-        image_bytes = buffer.tobytes()
-
-        # Mock the coordinator to raise ValueError for unsupported mod
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(
-            side_effect=ValueError(
-                "Mod 'unsupported_mod' is not supported. Available mods: ['vanilla', 'test_mod']"
-            )
-        )
-        mock_coordinator.return_value = mock_instance
-
-        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-        response = client.post("/ocr/scan_image?mod_name=unsupported_mod", files=files)
-
-        assert response.status_code == 422
-        detail = response.json()["detail"]
-        assert "unsupported_mod" in detail
-        assert "not supported" in detail
-        assert "vanilla" in detail or "test_mod" in detail
-
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
-    def test_scan_stockpile_with_supported_mod(
-        self, mock_output_coordinator: Mock, mock_coordinator: Mock, client: TestClient
-    ) -> None:
-        """Test scanning with supported mod parameter.
-
-        Args:
-            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
-            client (TestClient): FastAPI test client from fixture.
-        """
-        import cv2
-
-        img = np.zeros((100, 100, 3), dtype=np.uint8)
-        _, buffer = cv2.imencode(".png", img)
-        image_bytes = buffer.tobytes()
-
-        # Mock the coordinator - it will validate internally
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-        mock_coordinator.return_value = mock_instance
-
-        # Mock the output handler
-        mock_handler_instance = Mock()
-        mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_coordinator.return_value = mock_handler_instance
-
-        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-        response = client.post("/ocr/scan_image?mod_name=vanilla", files=files)
-
-        assert response.status_code == 200
 
     @patch("foxhole_stockpiles.api.server.OCRCoordinator")
     @patch("foxhole_stockpiles.api.server.OutputCoordinator")

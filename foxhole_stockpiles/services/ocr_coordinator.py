@@ -135,17 +135,8 @@ class OCRCoordinator:
             Stockpile: Stockpile with the detected items and metadata
 
         Raises:
-            ValueError: If image analysis fails or mod_name is not supported
+            ValueError: If image analysis fails
         """
-        # Validate mod_name if provided
-        if self.config.mod_name:
-            supported_mods = await self._template_manager.get_supported_mods()
-            if self.config.mod_name not in supported_mods:
-                raise ValueError(
-                    f"Mod '{self.config.mod_name}' is not supported. "
-                    f"Available mods: {sorted(supported_mods)}"
-                )
-
         start_time = time.perf_counter()
 
         # Emit scan started event
@@ -355,8 +346,6 @@ class OCRCoordinator:
         """
         stockpile = Stockpile(resolution=stockpile_images.resolution)
 
-        mod: str | None = None
-
         for group_index, (group_amount, group_start_index) in enumerate(stockpile_images.groups):
             self.logger.debug(
                 "Processing group %d with %d icons starting at index %d",
@@ -367,7 +356,7 @@ class OCRCoordinator:
 
             category: ItemCategory | None = None
             crated: bool | None = None
-            detected: dict[str, list[Any]] = {"category": [], "crated": [], "mod": []}
+            detected: dict[str, list[Any]] = {"category": [], "crated": []}
             current_icons: list[StockpileItem] = []
 
             for icon_index in range(group_start_index, group_start_index + group_amount):
@@ -379,12 +368,10 @@ class OCRCoordinator:
                         quantity=quantity,
                         category=category,
                         crated=crated,
-                        mod=mod,
                         detected=detected,
                     )
 
                     if stockpile_item is None:
-                        mod_text = f", mod: {mod}" if mod else ""
                         category_text = f", category: {category.value}" if category else ""
 
                         # Include best match information if available
@@ -400,7 +387,7 @@ class OCRCoordinator:
                         stockpile.errors.append(
                             f"Group {group_index}, index {icon_index}: No match found. "
                             f"Quantity: {quantity}, crated: "
-                            f"{crated}{mod_text}{category_text}.{best_match_text}"
+                            f"{crated}{category_text}.{best_match_text}"
                         )
                         unkown_item = StockpileItem(
                             code="Unknown",
@@ -419,14 +406,7 @@ class OCRCoordinator:
                     if category is None and len(detected["category"]) >= expected_length:
                         category = most_frequent(detected["category"])
                         crated = most_frequent(detected["crated"])
-                        if mod is None:
-                            mod = most_frequent(detected["mod"])
-                        self.logger.debug(
-                            "Detected category: %s, crated: %s, mod: %s",
-                            category,
-                            crated,
-                            mod,
-                        )
+                        self.logger.debug("Detected category: %s, crated: %s", category, crated)
 
                         # Make sure all the icons have the correct crated status
                         if crated is not None:
@@ -559,8 +539,7 @@ class OCRCoordinator:
                 quantity=quantity,
                 category=None,
                 crated=None,
-                mod=None,
-                detected={"category": [], "crated": [], "mod": []},
+                detected={"category": [], "crated": []},
                 excluded_codes=excluded_codes,
             )
 
@@ -611,7 +590,6 @@ class OCRCoordinator:
         quantity: int,
         category: ItemCategory | None,
         crated: bool | None,
-        mod: str | None,
         detected: dict[str, list[Any]],
         excluded_codes: list[str] | None = None,
     ) -> tuple[StockpileItem | None, MatchResult]:
@@ -623,7 +601,6 @@ class OCRCoordinator:
             quantity (int): Quantity value for this icon
             category (ItemCategory | None): Current category filter for matching
             crated (bool | None): Current crated filter for matching
-            mod (str | None): Current mod filter for matching
             detected (dict[str, list[Any]]): Accumulator for detected properties
             excluded_codes (list[str] | None): Optional list of item codes to exclude from matching
 
@@ -652,7 +629,6 @@ class OCRCoordinator:
             faction=self.config.faction_filter,
             category=category,
             crated=crated,
-            mod=mod,
             excluded_codes=excluded_codes,
         )
 
@@ -679,7 +655,6 @@ class OCRCoordinator:
         # Update detected properties for future matching
         detected["category"].append(icon_match.category)
         detected["crated"].append(icon_match.crated)
-        detected["mod"].append(icon_match.mod)
 
         self.logger.debug(
             "[%d] '%s%s', quantity: %d (confidence: %.2f) after testing %d candidates",

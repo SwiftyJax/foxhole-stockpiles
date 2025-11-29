@@ -41,11 +41,6 @@ class ScannerSettings(BaseModel):
     faction_filter: ItemFaction | None = Field(
         description="Optional faction filter for icon matching", default=None
     )
-    mod_name: str | None = Field(
-        description="Optional mod name filter for icon matching (max 50 chars)",
-        default=None,
-        max_length=50,
-    )
     language: SupportedLanguage | None = Field(
         description="Optional language for text detection (stockpile name, type, hex_name). "
         "If None, uses all supported languages. Number detection always uses the custom model.",
@@ -84,7 +79,6 @@ class ScannerSettings(BaseModel):
                 "early_exit_threshold": 0.0,
                 "confidence_gap": 0.0,
                 "faction_filter": "colonial",
-                "mod_name": "my_mod",
                 "language": "eng",
                 "custom_model": "custom",
                 "tessdata_path": "./tessdata",

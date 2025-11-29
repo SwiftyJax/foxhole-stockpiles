@@ -65,11 +65,6 @@ async def main() -> dict[str, Any] | None:
         help=ItemFaction.get_cli_help_text(),
     )
     parser.add_argument(
-        "--mod",
-        type=str,
-        help="Mod filter. If not specified, all mods will be included.",
-    )
-    parser.add_argument(
         "--language",
         type=str,
         choices=[lang.value for lang in SupportedLanguage],
@@ -167,9 +162,6 @@ async def main() -> dict[str, Any] | None:
     # Parse faction filter
     faction_filter = ItemFaction.from_string(args.faction)
 
-    # Parse mod filter
-    mod_filter = args.mod.strip() if args.mod else None
-
     # Parse language filter
     language_filter = SupportedLanguage(args.language) if args.language else None
 
@@ -177,7 +169,6 @@ async def main() -> dict[str, Any] | None:
         scanner_settings: ScannerSettings = settings.scanner
         scanner_settings.database_path = database_path
         scanner_settings.faction_filter = faction_filter
-        scanner_settings.mod_name = mod_filter
         scanner_settings.language = language_filter
         scanner_settings.debug_mode = args.debug_image
         if args.early_exit:

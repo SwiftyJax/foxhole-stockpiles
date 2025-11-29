@@ -90,18 +90,6 @@ class TemplateManager:
 
         return database
 
-    async def get_supported_mods(self) -> set[str]:
-        """Get all mods supported in the database.
-
-        Uses 1080p resolution as the reference since all resolutions
-        should have the same set of mods.
-
-        Returns:
-            set[str]: Set of supported mod names
-        """
-        database = await self.load_database(SupportedResolution.R_1080)
-        return database.get_available_mods()
-
     async def set_active_resolution(self, screenshot_height: int) -> SupportedResolution:
         """Set active resolution based on screenshot dimensions.
 

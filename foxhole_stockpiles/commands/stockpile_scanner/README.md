@@ -61,7 +61,6 @@ python -m foxhole_stockpiles.commands.stockpile_scanner --database DATABASE --im
 #### Optional
 - `--image`: Path to the input screenshot image file
 - `--faction`: Faction filter (Colonial: 'c'/'colonials', Warden: 'w'/'wardens')
-- `--mod`: Mod filter to limit detection to specific mod items
 - `--language`: Language for text detection (en, pt, fr, de, ru, zh). If not specified, uses all supported languages
 - `--early_exit`: Early exit threshold for icon matching (0.0 = disabled, test all candidates)
 - `--debug_image`: Save debug image showing detected regions and matches
@@ -115,12 +114,6 @@ fs scanner --database database/db.pkl --image stockpile.png \
 ```bash
 fs scanner --database database/db.pkl --image stockpile.png \
   --output-destination console
-```
-
-**With mod filtering:**
-```bash
-fs scanner --database database/db.pkl --image stockpile.png \
-  --mod custom_mod_name
 ```
 
 **With specific language for text detection:**
