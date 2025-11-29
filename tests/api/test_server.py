@@ -209,136 +209,142 @@ class TestScanStockpileEndpoint:
         detail = response.json().get("detail", "")
         assert "Invalid image format" in detail or "Unexpected error" in detail
 
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
-    def test_scan_stockpile_success(
-        self, mock_output_coordinator: Mock, mock_coordinator: Mock, client: TestClient
-    ) -> None:
+    def test_scan_stockpile_success(self, client: TestClient) -> None:
         """Test successful stockpile scanning.
 
         Args:
-            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
         # Create a simple valid PNG image
         import cv2
 
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
+        from foxhole_stockpiles.api.server import app
+
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        # Mock the coordinator
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-        mock_coordinator.return_value = mock_instance
+        # Mock the OCR coordinator dependency
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
-        # Mock the output handler
-        mock_handler_instance = Mock()
-        mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_coordinator.return_value = mock_handler_instance
+        # Mock the output coordinator dependency
+        mock_output_coordinator = Mock()
+        mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
 
-        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-        response = client.post("/ocr/scan_image", files=files)
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            response = client.post("/ocr/scan_image", files=files)
 
-        assert response.status_code == 200
-        assert response.json() == {"result": "success"}
+            assert response.status_code == 200
+            assert response.json() == {"result": "success"}
+        finally:
+            # Clean up override
+            app.dependency_overrides.clear()
 
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    def test_scan_stockpile_with_faction_filter(
-        self, mock_coordinator: Mock, client: TestClient
-    ) -> None:
+    def test_scan_stockpile_with_faction_filter(self, client: TestClient) -> None:
         """Test scanning with faction filter parameter.
 
         Args:
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
         import cv2
 
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
+        from foxhole_stockpiles.api.server import app
+
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        # Mock the coordinator
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-        mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
-        with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
-            mock_handler_instance = Mock()
-            mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-            mock_handler.return_value = mock_handler_instance
+        # Mock the output handler
+        # Mock the output coordinator dependency
+        mock_output_coordinator = Mock()
+        mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
 
+        try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
             response = client.post("/ocr/scan_image?faction=Colonials", files=files)
 
             assert response.status_code == 200
+        finally:
+            app.dependency_overrides.clear()
 
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
-    def test_scan_stockpile_with_neutral_faction_becomes_none(
-        self, mock_output_coordinator: Mock, mock_coordinator: Mock, client: TestClient
-    ) -> None:
+    def test_scan_stockpile_with_neutral_faction_becomes_none(self, client: TestClient) -> None:
         """Test that neutral faction is converted to None.
 
         Args:
-            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
         import cv2
+
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
+        from foxhole_stockpiles.api.server import app
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        # Mock the coordinator
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-        mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
         # Mock the output handler
-        mock_handler_instance = Mock()
-        mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_coordinator.return_value = mock_handler_instance
+        # Mock the output coordinator dependency
+        mock_output_coordinator = Mock()
+        mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
 
-        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-        response = client.post("/ocr/scan_image?faction=neutral", files=files)
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            response = client.post("/ocr/scan_image?faction=neutral", files=files)
 
-        assert response.status_code == 200
+            assert response.status_code == 200
 
-        # Verify that analyze_stockpile was called with faction=None (neutral converted to None)
-        mock_instance.analyze_stockpile.assert_called_once()
-        call_kwargs = mock_instance.analyze_stockpile.call_args[1]
-        assert call_kwargs["faction"] is None
+            # Verify that analyze_stockpile was called with faction=None (neutral converted to None)
+            mock_coordinator.analyze_stockpile.assert_called_once()
+            call_kwargs = mock_coordinator.analyze_stockpile.call_args[1]
+            assert call_kwargs["faction"] is None
+        finally:
+            app.dependency_overrides.clear()
 
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    def test_scan_stockpile_with_all_parameters(
-        self, mock_coordinator: Mock, client: TestClient
-    ) -> None:
+    def test_scan_stockpile_with_all_parameters(self, client: TestClient) -> None:
         """Test scanning with all parameters.
 
         Args:
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
         import cv2
+
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
+        from foxhole_stockpiles.api.server import app
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        # Mock the coordinator
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-        mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
-        with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
-            mock_handler_instance = Mock()
-            mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-            mock_handler.return_value = mock_handler_instance
+        # Mock the output handler
+        # Mock the output coordinator dependency
+        mock_output_coordinator = Mock()
+        mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
 
+        try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
             response = client.post(
                 "/ocr/scan_image?faction=Wardens",
@@ -346,6 +352,8 @@ class TestScanStockpileEndpoint:
             )
 
             assert response.status_code == 200
+        finally:
+            app.dependency_overrides.clear()
 
     def test_scan_stockpile_with_invalid_faction(self, client: TestClient) -> None:
         """Test scanning with invalid faction parameter.
@@ -366,45 +374,45 @@ class TestScanStockpileEndpoint:
         detail = response.json()["detail"]
         assert any("faction" in str(error).lower() for error in detail)
 
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
-    def test_scan_stockpile_with_language(
-        self, mock_output_coordinator: Mock, mock_coordinator: Mock, client: TestClient
-    ) -> None:
+    def test_scan_stockpile_with_language(self, client: TestClient) -> None:
         """Test scan with language parameter.
 
         Args:
-            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
         import cv2
 
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
+        from foxhole_stockpiles.api.server import app
         from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        # Mock the coordinator
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-        mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
         # Mock the output handler
-        mock_handler_instance = Mock()
-        mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_coordinator.return_value = mock_handler_instance
+        # Mock the output coordinator dependency
+        mock_output_coordinator = Mock()
+        mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
 
-        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-        response = client.post("/ocr/scan_image?language=fr", files=files)
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            response = client.post("/ocr/scan_image?language=fr", files=files)
 
-        assert response.status_code == 200
+            assert response.status_code == 200
 
-        # Verify analyze_stockpile was called with French language parameter
-        mock_instance.analyze_stockpile.assert_called_once()
-        call_kwargs = mock_instance.analyze_stockpile.call_args[1]
-        assert call_kwargs.get("language") == SupportedLanguage.FRENCH
+            # Verify analyze_stockpile was called with French language parameter
+            mock_coordinator.analyze_stockpile.assert_called_once()
+            call_kwargs = mock_coordinator.analyze_stockpile.call_args[1]
+            assert call_kwargs.get("language") == SupportedLanguage.FRENCH
+        finally:
+            app.dependency_overrides.clear()
 
     def test_scan_stockpile_with_invalid_language(self, client: TestClient) -> None:
         """Test scan with invalid language parameter.
@@ -424,59 +432,63 @@ class TestScanStockpileEndpoint:
         # FastAPI validation should return 422 for invalid enum value
         assert response.status_code == 422
 
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    def test_scan_stockpile_processing_error(
-        self, mock_coordinator: Mock, client: TestClient
-    ) -> None:
+    def test_scan_stockpile_processing_error(self, client: TestClient) -> None:
         """Test handling of processing errors during scan.
 
         Args:
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
         import cv2
+
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator
+        from foxhole_stockpiles.api.server import app
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        # Mock the coordinator to raise ValueError
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(side_effect=ValueError("Processing failed"))
-        mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency to raise ValueError
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(side_effect=ValueError("Processing failed"))
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
-        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-        response = client.post("/ocr/scan_image", files=files)
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            response = client.post("/ocr/scan_image", files=files)
 
-        assert response.status_code == 400
-        assert "Processing error" in response.json()["detail"]
+            assert response.status_code == 400
+            assert "Processing error" in response.json()["detail"]
+        finally:
+            app.dependency_overrides.clear()
 
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    def test_scan_stockpile_unexpected_error(
-        self, mock_coordinator: Mock, client: TestClient
-    ) -> None:
+    def test_scan_stockpile_unexpected_error(self, client: TestClient) -> None:
         """Test handling of unexpected errors during scan.
 
         Args:
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
         import cv2
+
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator
+        from foxhole_stockpiles.api.server import app
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        # Mock the coordinator to raise generic exception
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(side_effect=RuntimeError("Unexpected"))
-        mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency to raise generic exception
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(side_effect=RuntimeError("Unexpected"))
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
-        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-        response = client.post("/ocr/scan_image", files=files)
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            response = client.post("/ocr/scan_image", files=files)
 
-        assert response.status_code == 500
-        assert "Unexpected error" in response.json()["detail"]
+            assert response.status_code == 500
+            assert "Unexpected error" in response.json()["detail"]
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestLifespan:
@@ -537,25 +549,22 @@ class TestLifespan:
 class TestAuthHeaderHandling:
     """Test cases for authentication header handling."""
 
-    @patch("foxhole_stockpiles.api.server.OCRCoordinator")
-    @patch("foxhole_stockpiles.api.server.OutputCoordinator")
     @patch("foxhole_stockpiles.api.server.app_settings")
     def test_auth_header_extraction(
         self,
         mock_settings: Mock,
-        mock_output_coordinator: Mock,
-        mock_coordinator: Mock,
         client: TestClient,
     ) -> None:
         """Test extraction of auth header from request.
 
         Args:
             mock_settings (Mock): Mocked app settings.
-            mock_output_coordinator (Mock): Mocked OutputCoordinator class.
-            mock_coordinator (Mock): Mocked OCRCoordinator class.
             client (TestClient): FastAPI test client from fixture.
         """
         import cv2
+
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
+        from foxhole_stockpiles.api.server import app
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
@@ -565,26 +574,30 @@ class TestAuthHeaderHandling:
         mock_settings.output.webhook.client_auth_header = "X-API-Key"
         mock_settings.output.format = "json"
 
-        # Mock the coordinator
-        mock_instance = Mock()
-        mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-        mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
         # Mock the output handler
-        mock_handler_instance = Mock()
-        mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-        mock_output_coordinator.return_value = mock_handler_instance
+        # Mock the output coordinator dependency
+        mock_output_coordinator = Mock()
+        mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
 
-        files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-        headers = {"X-API-Key": "test-token"}
-        response = client.post("/ocr/scan_image", files=files, headers=headers)
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            headers = {"X-API-Key": "test-token"}
+            response = client.post("/ocr/scan_image", files=files, headers=headers)
 
-        assert response.status_code == 200
+            assert response.status_code == 200
 
-        # Verify handle_output was called with token
-        mock_handler_instance.handle_output.assert_called_once()
-        call_kwargs = mock_handler_instance.handle_output.call_args[1]
-        assert call_kwargs["token"] == "test-token"
+            # Verify handle_output was called with token
+            mock_output_coordinator.handle_output.assert_called_once()
+            call_kwargs = mock_output_coordinator.handle_output.call_args[1]
+            assert call_kwargs["token"] == "test-token"
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestAPIAuthentication:
@@ -600,6 +613,8 @@ class TestAPIAuthentication:
         """
         import cv2
 
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
+        from foxhole_stockpiles.api.server import app
         from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 
         # Disable auth
@@ -609,20 +624,23 @@ class TestAPIAuthentication:
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        with patch("foxhole_stockpiles.api.server.OCRCoordinator") as mock_coordinator:
-            mock_instance = Mock()
-            mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-            mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
-            with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
-                mock_handler_instance = Mock()
-                mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-                mock_handler.return_value = mock_handler_instance
+        # Mock the output coordinator dependency
+        mock_output_coord = Mock()
+        mock_output_coord.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coord
 
-                files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-                response = client.post("/ocr/scan_image", files=files)
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            response = client.post("/ocr/scan_image", files=files)
 
-                assert response.status_code == 200
+            assert response.status_code == 200
+        finally:
+            app.dependency_overrides.clear()
 
     @patch("foxhole_stockpiles.api.server.app_settings")
     def test_bearer_auth_success(self, mock_settings: Mock, client: TestClient) -> None:
@@ -634,6 +652,8 @@ class TestAPIAuthentication:
         """
         import cv2
 
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
+        from foxhole_stockpiles.api.server import app
         from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 
         # Enable bearer auth
@@ -645,21 +665,24 @@ class TestAPIAuthentication:
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        with patch("foxhole_stockpiles.api.server.OCRCoordinator") as mock_coordinator:
-            mock_instance = Mock()
-            mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-            mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
-            with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
-                mock_handler_instance = Mock()
-                mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-                mock_handler.return_value = mock_handler_instance
+        # Mock the output coordinator dependency
+        mock_output_coord = Mock()
+        mock_output_coord.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coord
 
-                files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-                headers = {"Authorization": "Bearer test-token-123"}
-                response = client.post("/ocr/scan_image", files=files, headers=headers)
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            headers = {"Authorization": "Bearer test-token-123"}
+            response = client.post("/ocr/scan_image", files=files, headers=headers)
 
-                assert response.status_code == 200
+            assert response.status_code == 200
+        finally:
+            app.dependency_overrides.clear()
 
     def test_bearer_auth_failure_wrong_token(self, client: TestClient) -> None:
         """Test bearer auth fails with wrong token.
@@ -730,6 +753,8 @@ class TestAPIAuthentication:
         """
         import cv2
 
+        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
+        from foxhole_stockpiles.api.server import app
         from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 
         # Enable basic auth
@@ -741,21 +766,24 @@ class TestAPIAuthentication:
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        with patch("foxhole_stockpiles.api.server.OCRCoordinator") as mock_coordinator:
-            mock_instance = Mock()
-            mock_instance.analyze_stockpile = AsyncMock(return_value=Mock())
-            mock_coordinator.return_value = mock_instance
+        # Mock the coordinator dependency
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
-            with patch("foxhole_stockpiles.api.server.OutputCoordinator") as mock_handler:
-                mock_handler_instance = Mock()
-                mock_handler_instance.handle_output = AsyncMock(return_value={"result": "success"})
-                mock_handler.return_value = mock_handler_instance
+        # Mock the output coordinator dependency
+        mock_output_coord = Mock()
+        mock_output_coord.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coord
 
-                files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
-                headers = {"Authorization": "Basic dXNlcjpwYXNz"}
-                response = client.post("/ocr/scan_image", files=files, headers=headers)
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            headers = {"Authorization": "Basic dXNlcjpwYXNz"}
+            response = client.post("/ocr/scan_image", files=files, headers=headers)
 
-                assert response.status_code == 200
+            assert response.status_code == 200
+        finally:
+            app.dependency_overrides.clear()
 
 
 class TestMemoryMonitoringEndpoints:

@@ -4,7 +4,6 @@ import gc
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from copy import copy
 from typing import Annotated, Any
 
 import cv2
@@ -15,9 +14,13 @@ from pydantic import BaseModel, Field
 
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.auth import create_auth_dependency
-from foxhole_stockpiles.api.dependencies import get_event_bus_dependency, get_notification_service
+from foxhole_stockpiles.api.dependencies import (
+    get_notification_service,
+    get_ocr_coordinator,
+    get_output_coordinator,
+)
 from foxhole_stockpiles.api.memory_middleware import MemoryMonitorMiddleware
-from foxhole_stockpiles.core.events import EventBus, get_event_bus
+from foxhole_stockpiles.core.events import get_event_bus
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.enums.event_type import EventType
@@ -39,7 +42,7 @@ class HealthResponse(BaseModel):
 app_settings: AppSettings = get_settings()
 
 # Global memory monitor
-memory_monitor = MemoryMonitor(history_size=1000, snapshot_interval=100)
+memory_monitor = MemoryMonitor(history_size=100, snapshot_interval=50)
 
 
 @asynccontextmanager
@@ -129,7 +132,8 @@ async def health_check() -> HealthResponse:
 async def scan_stockpile(
     image: UploadFile,
     request: Request,
-    event_bus: Annotated[EventBus, Depends(get_event_bus_dependency)],
+    coordinator: Annotated[OCRCoordinator, Depends(get_ocr_coordinator)],
+    output_coordinator: Annotated[OutputCoordinator, Depends(get_output_coordinator)],
     faction: Annotated[
         ItemFaction | None, Query(description="Faction filter (Colonials or Wardens)")
     ] = None,
@@ -143,7 +147,8 @@ async def scan_stockpile(
     Args:
         image (UploadFile): Screenshot image file (PNG, JPG, JPEG supported)
         request (Request): FastAPI request object
-        event_bus (EventBus): Event bus for notifications (injected)
+        coordinator (OCRCoordinator): OCR coordinator singleton (injected)
+        output_coordinator (OutputCoordinator): Output coordinator singleton (injected)
         faction (ItemFaction | None): Optional faction filter to limit detection to specific
             faction items
         language (SupportedLanguage | None): Optional language for text detection. If None,
@@ -169,12 +174,10 @@ async def scan_stockpile(
 
         image_bgr = np.asarray(img, dtype=np.uint8)
 
-        config = copy(app_settings.scanner)
-
-        request_coordinator = OCRCoordinator(config, event_bus=event_bus)
         # Treat NEUTRAL as None (no faction filter)
         faction_filter = faction if faction != ItemFaction.NEUTRAL else None
-        stockpile = await request_coordinator.analyze_stockpile(
+
+        stockpile = await coordinator.analyze_stockpile(
             image=image_bgr, language=language, faction=faction_filter
         )
 
@@ -184,7 +187,6 @@ async def scan_stockpile(
         else:
             token = None
 
-        output_coordinator = OutputCoordinator(settings=app_settings)
         return await output_coordinator.handle_output(
             stockpile=stockpile,
             destination=app_settings.output.destination,
