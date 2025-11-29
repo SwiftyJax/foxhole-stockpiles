@@ -45,11 +45,8 @@ class OCRCoordinator:
             raise ValueError("database_path is required for OCRCoordinator")
 
         self.config = config
-        self.event_bus = event_bus or get_event_bus()
+        self._event_bus = event_bus or get_event_bus()
         self.logger = logging.getLogger(__name__)
-        self.threshold_value: float = 0.0
-        self.scale_factor: float = 1.0
-        self._screenshot_data: tuple[NDArray[np.uint8], str] | None = None
 
         # Initialize services
         self._text_extractor = StockpileTextExtractor(
@@ -152,17 +149,19 @@ class OCRCoordinator:
         start_time = time.perf_counter()
 
         # Emit scan started event
-        self.event_bus.emit(
+        self._event_bus.emit(
             EventType.STOCKPILE_SCAN_STARTED, {"timestamp": datetime.now().isoformat()}
         )
 
         detector = self._detect_regions(image)
-        self.scale_factor = detector.scale_factor
+        scale_factor = detector.scale_factor
         stockpile_images = self._extract_stockpile_images(detector)
         quantities = await self._extract_quantities(stockpile_images)
         await self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
         scanned_stockpile = await self._match_icons_and_build_result(
-            stockpile_images=stockpile_images, quantities=quantities
+            stockpile_images=stockpile_images,
+            quantities=quantities,
+            scale_factor=scale_factor,
         )
 
         elapsed_time = time.perf_counter() - start_time
@@ -196,7 +195,7 @@ class OCRCoordinator:
         )
 
         # Emit scan completed event
-        self.event_bus.emit(
+        self._event_bus.emit(
             EventType.STOCKPILE_SCANNED,
             {
                 "stockpile_name": stockpile_name,
@@ -291,30 +290,36 @@ class OCRCoordinator:
         return flat_quantities
 
     def _prepare_image_for_detection(
-        self, image: NDArray[np.uint8], use_inv: bool = True
+        self,
+        image: NDArray[np.uint8],
+        scale_factor: float,
+        use_inv: bool = True,
     ) -> NDArray[np.uint8]:
         """Apply preprocessing to the image for better text detection.
 
+        Calculates region-specific threshold from pixel distribution for optimal OCR accuracy.
+        Each region (name, shard, type) gets its own threshold based on its characteristics.
+
         Args:
-            image (NDArray[np.uint8]): Image to preprocess
+            image (NDArray[np.uint8]): Image region to preprocess
+            scale_factor (float): Resolution scale factor from detector
             use_inv (bool): Whether to use inverted thresholding
 
-        Return:
-            NDArray[np.uint8]: processed image
+        Returns:
+            NDArray[np.uint8]: Processed image ready for OCR
         """
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-        upscale_factor = 2 / self.scale_factor
+        upscale_factor = 2 / scale_factor
 
         upscaled = cv2.resize(
             gray, None, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_CUBIC
         )
 
-        if not self.threshold_value:
-            unique_values, counts = np.unique(upscaled, return_counts=True)
-            most_common_value = unique_values[np.argmax(counts)]
-            self.threshold_value = most_common_value + 120 * (1 - most_common_value / 255)
+        # Calculate threshold from this region's pixel distribution
+        unique_values, counts = np.unique(upscaled, return_counts=True)
+        most_common_value = unique_values[np.argmax(counts)]
+        threshold_value = most_common_value + 120 * (1 - most_common_value / 255)
 
-        threshold_value = self.threshold_value
         if use_inv:
             threshold_mode = cv2.THRESH_BINARY_INV
         else:
@@ -333,16 +338,20 @@ class OCRCoordinator:
         return np.asarray(post_cleaned, dtype=np.uint8)
 
     async def _match_icons_and_build_result(
-        self, stockpile_images: StockpileImageRegions, quantities: list[int]
+        self,
+        stockpile_images: StockpileImageRegions,
+        quantities: list[int],
+        scale_factor: float,
     ) -> Stockpile:
         """Match icons against templates and build the final result.
 
         Args:
             stockpile_images (StockpileImageRegions): Image regions containing icons
             quantities (list[int]): Extracted quantities for each icon
+            scale_factor (float): Resolution scale factor for image preprocessing
 
         Returns:
-            dict[str, Any]: Complete stockpile analysis result with items and metadata
+            Stockpile: Complete stockpile analysis result with items and metadata
         """
         stockpile = Stockpile(resolution=stockpile_images.resolution)
 
@@ -440,7 +449,10 @@ class OCRCoordinator:
         # detect the stockpile metadata from the other regions
         name_image = stockpile_images.stockpile_name
         if name_image is not None:
-            source_image = self._prepare_image_for_detection(image=name_image)
+            source_image = self._prepare_image_for_detection(
+                image=name_image,
+                scale_factor=scale_factor,
+            )
             if self.config.debug_mode:
                 cv2.imwrite("stockpile_name_region.png", source_image)
 
@@ -451,7 +463,11 @@ class OCRCoordinator:
 
         shard_image = stockpile_images.shard
         if shard_image is not None:
-            source_image = self._prepare_image_for_detection(image=shard_image, use_inv=False)
+            source_image = self._prepare_image_for_detection(
+                image=shard_image,
+                scale_factor=scale_factor,
+                use_inv=False,
+            )
             if self.config.debug_mode:
                 cv2.imwrite("stockpile_shard.png", source_image)
 
@@ -465,7 +481,10 @@ class OCRCoordinator:
 
         type_image = stockpile_images.stockpile_type
         if type_image is not None:
-            source_image = self._prepare_image_for_detection(image=type_image)
+            source_image = self._prepare_image_for_detection(
+                image=type_image,
+                scale_factor=scale_factor,
+            )
             if self.config.debug_mode:
                 cv2.imwrite("stockpile_type_region.png", source_image)
 

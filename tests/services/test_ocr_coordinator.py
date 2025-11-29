@@ -71,8 +71,6 @@ class TestOCRCoordinatorInitialization:
         coordinator = OCRCoordinator(config)
 
         assert coordinator.config == config
-        assert coordinator.threshold_value == 0.0
-        assert coordinator.scale_factor == 1.0
         assert coordinator._text_extractor is not None
         assert coordinator._template_manager is not None
         assert coordinator._stockpile_type_classifier is not None
@@ -620,12 +618,11 @@ class TestPrepareImageForDetection:
 
         config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
-        coordinator.scale_factor = 1.0
 
         # Create a simple test image
         test_image = np.full((100, 100, 3), 128, dtype=np.uint8)
 
-        result = coordinator._prepare_image_for_detection(test_image)
+        result = coordinator._prepare_image_for_detection(test_image, scale_factor=1.0)
 
         assert result.shape[:2] == (200, 200)  # 2x upscale
         assert result.dtype == np.uint8
@@ -642,12 +639,15 @@ class TestPrepareImageForDetection:
 
         config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
-        coordinator.scale_factor = 1.0
 
         test_image = np.full((100, 100, 3), 128, dtype=np.uint8)
 
-        result_inv = coordinator._prepare_image_for_detection(test_image, use_inv=True)
-        result_no_inv = coordinator._prepare_image_for_detection(test_image, use_inv=False)
+        result_inv = coordinator._prepare_image_for_detection(
+            test_image, scale_factor=1.0, use_inv=True
+        )
+        result_no_inv = coordinator._prepare_image_for_detection(
+            test_image, scale_factor=1.0, use_inv=False
+        )
 
         # Both should produce valid outputs, but potentially different
         assert result_inv.shape == result_no_inv.shape
