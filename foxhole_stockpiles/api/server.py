@@ -172,10 +172,9 @@ async def scan_stockpile(
         config = copy(app_settings.scanner)
         # Set faction filter, treating NEUTRAL as None (no filter)
         config.faction_filter = faction if faction != ItemFaction.NEUTRAL else None
-        config.language = language
 
         request_coordinator = OCRCoordinator(config, event_bus=event_bus)
-        stockpile = await request_coordinator.analyze_stockpile(image_bgr)
+        stockpile = await request_coordinator.analyze_stockpile(image=image_bgr, language=language)
 
         # Read the token from the specified header if configured
         if app_settings.output.webhook.client_auth_header:

@@ -15,6 +15,7 @@ from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
 from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.enums.item_category import ItemCategory
+from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.models.item_candidate import ItemCandidate
 from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.models.stockpile import Stockpile
@@ -52,7 +53,6 @@ class OCRCoordinator:
         self._text_extractor = StockpileTextExtractor(
             custom_model=config.custom_model,
             tessdata_path=config.tessdata_path,
-            language=config.language,
         )
         self._template_manager = TemplateManager(database_path=config.database_path)
         self._stockpile_type_classifier = StockpileTypeClassifier()
@@ -125,11 +125,17 @@ class OCRCoordinator:
         except Exception as e:
             self.logger.error("Failed to save screenshot: %s", e)
 
-    async def analyze_stockpile(self, image: NDArray[np.uint8]) -> Stockpile:
+    async def analyze_stockpile(
+        self,
+        image: NDArray[np.uint8],
+        language: SupportedLanguage | None = None,
+    ) -> Stockpile:
         """Analyze a stockpile image and return detected items with quantities.
 
         Args:
             image (NDArray[np.uint8]): Image data as numpy array (BGR format)
+            language (SupportedLanguage | None): Language for text detection (stockpile name,
+                type, hex_name). If None, uses all supported languages.
 
         Returns:
             Stockpile: Stockpile with the detected items and metadata
@@ -153,6 +159,7 @@ class OCRCoordinator:
             stockpile_images=stockpile_images,
             quantities=quantities,
             scale_factor=scale_factor,
+            language=language,
         )
 
         elapsed_time = time.perf_counter() - start_time
@@ -333,6 +340,7 @@ class OCRCoordinator:
         stockpile_images: StockpileImageRegions,
         quantities: list[int],
         scale_factor: float,
+        language: SupportedLanguage | None,
     ) -> Stockpile:
         """Match icons against templates and build the final result.
 
@@ -340,6 +348,7 @@ class OCRCoordinator:
             stockpile_images (StockpileImageRegions): Image regions containing icons
             quantities (list[int]): Extracted quantities for each icon
             scale_factor (float): Resolution scale factor for image preprocessing
+            language (SupportedLanguage | None): Language for text detection
 
         Returns:
             Stockpile: Complete stockpile analysis result with items and metadata
@@ -437,7 +446,7 @@ class OCRCoordinator:
                 cv2.imwrite("stockpile_name_region.png", source_image)
 
             text = await self._text_extractor.extract_raw_text(
-                image=source_image, numbers_only=False
+                image=source_image, numbers_only=False, language=language
             )
             stockpile.name = text.strip()
 
@@ -452,7 +461,7 @@ class OCRCoordinator:
                 cv2.imwrite("stockpile_shard.png", source_image)
 
             text = await self._text_extractor.extract_raw_text(
-                image=source_image, numbers_only=False
+                image=source_image, numbers_only=False, language=language
             )
             text = text.strip() + "\n\n"
             lines = text.splitlines()
@@ -469,7 +478,7 @@ class OCRCoordinator:
                 cv2.imwrite("stockpile_type_region.png", source_image)
 
             text = await self._text_extractor.extract_raw_text(
-                image=source_image, numbers_only=False
+                image=source_image, numbers_only=False, language=language
             )
             stockpile.type = self._stockpile_type_classifier.classify_from_text(text)
 

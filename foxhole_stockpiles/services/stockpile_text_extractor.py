@@ -21,7 +21,6 @@ class StockpileTextExtractor:
         self,
         tessdata_path: str | None = None,
         custom_model: str | None = None,
-        language: SupportedLanguage | None = None,
     ) -> None:
         """Initialize the OCR extractor.
 
@@ -29,27 +28,30 @@ class StockpileTextExtractor:
             tessdata_path (str | None): Path to tessdata directory for custom models (optional)
             custom_model (str | None): Name of the custom trained model to use for number
                 recognition (e.g., renner_numbers). This replaces English for numbers.
-            language (SupportedLanguage | None): Language for text detection (stockpile name,
-                type, hex_name). If None, uses all supported languages. Note: number detection
-                always uses the custom model regardless of this setting.
         """
         self._logger = logging.getLogger(__name__)
         self.tessdata_path = os.path.abspath(tessdata_path) if tessdata_path else None
         self.custom_model = custom_model
-        self.language = language
 
-    async def extract_raw_text(self, image: NDArray[np.uint8], numbers_only: bool = True) -> str:
+    async def extract_raw_text(
+        self,
+        image: NDArray[np.uint8],
+        numbers_only: bool = True,
+        language: SupportedLanguage | None = None,
+    ) -> str:
         """Extract raw text using custom trained model.
 
         Args:
             image (NDArray[np.uint8]): Processed image
             numbers_only (bool): Limit caracter detection to quantities (True) or all chars (False)
+            language (SupportedLanguage | None): Language for text detection. If None, uses all
+                supported languages. Only used when numbers_only=False.
 
         Returns:
             str: Raw OCR text output
         """
         # Use custom trained model for better Renner font recognition
-        config = self.get_tesseract_config(numbers_only=numbers_only)
+        config = self.get_tesseract_config(numbers_only=numbers_only, language=language)
         result = await asyncio.to_thread(pytesseract.image_to_string, image, config=config)
         if result is None:
             return ""
@@ -124,11 +126,14 @@ class StockpileTextExtractor:
         self._logger.debug("Successfully parsed %d rows from text", len(result))
         return result
 
-    def get_tesseract_config(self, numbers_only: bool = True) -> str:
+    def get_tesseract_config(
+        self, numbers_only: bool = True, language: SupportedLanguage | None = None
+    ) -> str:
         """Get the Tesseract configuration string used.
 
         Args:
             numbers_only (bool): Detect quantities (numbers, k+)
+            language (SupportedLanguage | None): Language for text detection
 
         Returns:
             str: Tesseract configuration string
@@ -152,10 +157,10 @@ class StockpileTextExtractor:
             numbers = "-c tessedit_char_whitelist=0123456789k+"
         else:
             # For text detection (stockpile name, type, hex_name)
-            if self.language:
+            if language:
                 # Use specified language for text detection
                 # Convert i18n code to Tesseract code
-                model = f"-l {self.language.get_tesseract_code()}"
+                model = f"-l {language.get_tesseract_code()}"
             else:
                 # Default to all supported languages for text detection
                 model = f"-l {SupportedLanguage.get_all_languages_string()}"

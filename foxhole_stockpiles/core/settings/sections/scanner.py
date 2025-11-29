@@ -5,7 +5,6 @@ from pathlib import Path
 from pydantic import BaseModel, ConfigDict, Field
 
 from foxhole_stockpiles.enums.item_faction import ItemFaction
-from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 
 
 class ScannerSettings(BaseModel):
@@ -41,11 +40,6 @@ class ScannerSettings(BaseModel):
     faction_filter: ItemFaction | None = Field(
         description="Optional faction filter for icon matching", default=None
     )
-    language: SupportedLanguage | None = Field(
-        description="Optional language for text detection (stockpile name, type, hex_name). "
-        "If None, uses all supported languages. Number detection always uses the custom model.",
-        default=None,
-    )
     custom_model: str = Field(description="Custom OCR model name", default="renner_numbers")
     tessdata_path: str = Field(description="Path to tessdata directory", default="./tessdata")
     debug_mode: bool = Field(description="Enable debug mode to save debug images", default=False)
@@ -79,7 +73,6 @@ class ScannerSettings(BaseModel):
                 "early_exit_threshold": 0.0,
                 "confidence_gap": 0.0,
                 "faction_filter": "colonial",
-                "language": "eng",
                 "custom_model": "custom",
                 "tessdata_path": "./tessdata",
                 "debug_mode": False,

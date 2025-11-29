@@ -717,11 +717,13 @@ class TestMainFunction:
 
         await main()
 
-        # Verify coordinator was configured with language filter
-        mock_coordinator_class.assert_called()
-        call_args = mock_coordinator_class.call_args[0][0]
-        assert call_args.language is not None
-        assert call_args.language.value == "fr"
+        # Verify analyze_stockpile was called with French language parameter
+        mock_coordinator.analyze_stockpile.assert_called_once()
+        call_kwargs = mock_coordinator.analyze_stockpile.call_args[1]
+        from foxhole_stockpiles.enums.supported_language import SupportedLanguage
+
+        assert call_kwargs.get("language") is not None
+        assert call_kwargs.get("language") == SupportedLanguage.FRENCH
 
     async def test_main_with_invalid_language(
         self,

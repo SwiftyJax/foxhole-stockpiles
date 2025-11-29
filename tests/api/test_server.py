@@ -401,10 +401,10 @@ class TestScanStockpileEndpoint:
 
         assert response.status_code == 200
 
-        # Verify coordinator was called with French language
-        mock_coordinator.assert_called_once()
-        config = mock_coordinator.call_args[0][0]
-        assert config.language == SupportedLanguage.FRENCH
+        # Verify analyze_stockpile was called with French language parameter
+        mock_instance.analyze_stockpile.assert_called_once()
+        call_kwargs = mock_instance.analyze_stockpile.call_args[1]
+        assert call_kwargs.get("language") == SupportedLanguage.FRENCH
 
     def test_scan_stockpile_with_invalid_language(self, client: TestClient) -> None:
         """Test scan with invalid language parameter.
