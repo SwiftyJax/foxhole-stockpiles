@@ -699,6 +699,7 @@ class TestProcessSingleIcon:
                 category=None,
                 crated=None,
                 detected={"category": [], "crated": []},
+                faction=None,
             )
 
             assert result is not None
@@ -746,6 +747,7 @@ class TestProcessSingleIcon:
                 category=None,
                 crated=None,
                 detected={"category": [], "crated": []},
+                faction=None,
             )
 
             assert result is None
@@ -762,7 +764,6 @@ class TestProcessSingleIcon:
 
         config = ScannerSettings(
             database_path=db_path,
-            faction_filter=ItemFaction.COLONIALS,
         )
         coordinator = OCRCoordinator(config)
 
@@ -794,6 +795,7 @@ class TestProcessSingleIcon:
                 category=ItemCategory.Item,
                 crated=True,
                 detected={"category": [], "crated": []},
+                faction=ItemFaction.COLONIALS,
             )
 
             # Verify match_icon was called with proper filters
@@ -854,7 +856,7 @@ class TestCheckForDuplicates:
             StockpileItem(code="Ammo", quantity=200, crated=False, confidence=0.88),
         ]
 
-        coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+        coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # Items should remain unchanged
         assert len(stockpile.items) == 3
@@ -893,7 +895,7 @@ class TestCheckForDuplicates:
         with patch.object(
             coordinator._template_manager, "match_icon", return_value=mock_match_result
         ):
-            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # Lower confidence item (index 0) should be re-matched
         assert stockpile.items[0].code == "Ammo"
@@ -932,7 +934,7 @@ class TestCheckForDuplicates:
         with patch.object(
             coordinator._template_manager, "match_icon", return_value=mock_match_result
         ):
-            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # Item with None confidence (treated as 0.0) should be re-matched
         assert stockpile.items[0].code == "Ammo"
@@ -953,7 +955,7 @@ class TestCheckForDuplicates:
             StockpileItem(code="Rifle", quantity=200, crated=True, confidence=0.85),
         ]
 
-        coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+        coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # Both should remain unchanged
         assert stockpile.items[0].code == "Rifle"
@@ -990,7 +992,7 @@ class TestCheckForDuplicates:
         with patch.object(
             coordinator._template_manager, "match_icon", return_value=mock_match_result
         ):
-            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # Lower confidence item should be marked as Unknown
         assert stockpile.items[0].code == "Unknown"
@@ -1032,7 +1034,7 @@ class TestCheckForDuplicates:
         with patch.object(
             coordinator._template_manager, "match_icon", return_value=mock_match_result
         ):
-            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # Lower confidence item should be marked as Unknown
         assert stockpile.items[0].code == "Unknown"
@@ -1062,7 +1064,7 @@ class TestCheckForDuplicates:
             StockpileItem(code="Bandages", quantity=75, crated=False, confidence=0.88),
         ]
 
-        coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+        coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # Unknown items should not trigger duplicate detection
         assert stockpile.items[0].code == "Unknown"
@@ -1145,7 +1147,7 @@ class TestCheckForDuplicates:
                 1, StockpileItem(code="Ammo", quantity=150, crated=False, confidence=0.90)
             )
 
-            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # Verify exclusion list grew and final result
         assert call_count >= 1
@@ -1204,7 +1206,7 @@ class TestCheckForDuplicates:
         with patch.object(
             coordinator._template_manager, "match_icon", side_effect=mock_match_side_effect
         ):
-            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # Both duplicates should be resolved
         assert stockpile.items[0].code == "Ammo"
@@ -1248,7 +1250,7 @@ class TestCheckForDuplicates:
         with patch.object(
             coordinator._template_manager, "match_icon", side_effect=mock_match_side_effect
         ):
-            coordinator._check_for_duplicates(stockpile, mock_stockpile_images)
+            coordinator._check_for_duplicates(stockpile, mock_stockpile_images, faction=None)
 
         # First call should have "Rifle" in exclusion list
         assert len(excluded_lists) >= 1

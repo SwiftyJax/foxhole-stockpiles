@@ -308,10 +308,10 @@ class TestScanStockpileEndpoint:
 
         assert response.status_code == 200
 
-        # Verify that OCRCoordinator was called with faction_filter=None
-        mock_coordinator.assert_called_once()
-        config = mock_coordinator.call_args[0][0]
-        assert config.faction_filter is None
+        # Verify that analyze_stockpile was called with faction=None (neutral converted to None)
+        mock_instance.analyze_stockpile.assert_called_once()
+        call_kwargs = mock_instance.analyze_stockpile.call_args[1]
+        assert call_kwargs["faction"] is None
 
     @patch("foxhole_stockpiles.api.server.OCRCoordinator")
     def test_scan_stockpile_with_all_parameters(

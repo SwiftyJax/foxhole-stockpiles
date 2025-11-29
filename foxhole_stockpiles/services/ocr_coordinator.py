@@ -15,6 +15,7 @@ from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
 from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.enums.item_category import ItemCategory
+from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.models.item_candidate import ItemCandidate
 from foxhole_stockpiles.models.match_result import MatchResult
@@ -129,6 +130,7 @@ class OCRCoordinator:
         self,
         image: NDArray[np.uint8],
         language: SupportedLanguage | None = None,
+        faction: ItemFaction | None = None,
     ) -> Stockpile:
         """Analyze a stockpile image and return detected items with quantities.
 
@@ -136,6 +138,8 @@ class OCRCoordinator:
             image (NDArray[np.uint8]): Image data as numpy array (BGR format)
             language (SupportedLanguage | None): Language for text detection (stockpile name,
                 type, hex_name). If None, uses all supported languages.
+            faction (ItemFaction | None): Faction filter for icon matching. If None, no faction
+                filtering is applied.
 
         Returns:
             Stockpile: Stockpile with the detected items and metadata
@@ -160,6 +164,7 @@ class OCRCoordinator:
             quantities=quantities,
             scale_factor=scale_factor,
             language=language,
+            faction=faction,
         )
 
         elapsed_time = time.perf_counter() - start_time
@@ -341,6 +346,7 @@ class OCRCoordinator:
         quantities: list[int],
         scale_factor: float,
         language: SupportedLanguage | None,
+        faction: ItemFaction | None,
     ) -> Stockpile:
         """Match icons against templates and build the final result.
 
@@ -349,6 +355,7 @@ class OCRCoordinator:
             quantities (list[int]): Extracted quantities for each icon
             scale_factor (float): Resolution scale factor for image preprocessing
             language (SupportedLanguage | None): Language for text detection
+            faction (ItemFaction | None): Faction filter for icon matching
 
         Returns:
             Stockpile: Complete stockpile analysis result with items and metadata
@@ -378,6 +385,7 @@ class OCRCoordinator:
                         category=category,
                         crated=crated,
                         detected=detected,
+                        faction=faction,
                     )
 
                     if stockpile_item is None:
@@ -433,7 +441,9 @@ class OCRCoordinator:
                     if self.logger.isEnabledFor(logging.DEBUG):
                         self.logger.exception("Full error details:")
 
-        self._check_for_duplicates(stockpile=stockpile, stockpile_images=stockpile_images)
+        self._check_for_duplicates(
+            stockpile=stockpile, stockpile_images=stockpile_images, faction=faction
+        )
 
         # detect the stockpile metadata from the other regions
         name_image = stockpile_images.stockpile_name
@@ -485,13 +495,17 @@ class OCRCoordinator:
         return stockpile
 
     def _check_for_duplicates(
-        self, stockpile: Stockpile, stockpile_images: StockpileImageRegions
+        self,
+        stockpile: Stockpile,
+        stockpile_images: StockpileImageRegions,
+        faction: ItemFaction | None,
     ) -> None:
         """Check for duplicate items in the stockpile and attempt to re-match them.
 
         Args:
             stockpile (Stockpile): Stockpile to check for duplicates
             stockpile_images (StockpileImageRegions): Image regions containing the icons
+            faction (ItemFaction | None): Faction filter for icon matching
         """
         # stockpiles can't repeat a code more than once with the same crated status
         unique_items = {(item.code, item.crated) for item in stockpile.items}
@@ -549,6 +563,7 @@ class OCRCoordinator:
                 category=None,
                 crated=None,
                 detected={"category": [], "crated": []},
+                faction=faction,
                 excluded_codes=excluded_codes,
             )
 
@@ -600,6 +615,7 @@ class OCRCoordinator:
         category: ItemCategory | None,
         crated: bool | None,
         detected: dict[str, list[Any]],
+        faction: ItemFaction | None,
         excluded_codes: list[str] | None = None,
     ) -> tuple[StockpileItem | None, MatchResult]:
         """Process a single icon and return its code if matched.
@@ -611,6 +627,7 @@ class OCRCoordinator:
             category (ItemCategory | None): Current category filter for matching
             crated (bool | None): Current crated filter for matching
             detected (dict[str, list[Any]]): Accumulator for detected properties
+            faction (ItemFaction | None): Faction filter for icon matching
             excluded_codes (list[str] | None): Optional list of item codes to exclude from matching
 
         Returns:
@@ -635,7 +652,7 @@ class OCRCoordinator:
             confidence_gap=self.config.confidence_gap,
             max_ncc_candidates=self.config.max_ncc_candidates,
             phash_threshold=self.config.phash_threshold,
-            faction=self.config.faction_filter,
+            faction=faction,
             category=category,
             crated=crated,
             excluded_codes=excluded_codes,

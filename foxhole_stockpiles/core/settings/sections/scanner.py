@@ -4,8 +4,6 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from foxhole_stockpiles.enums.item_faction import ItemFaction
-
 
 class ScannerSettings(BaseModel):
     """Configuration for stockpile analysis."""
@@ -36,9 +34,6 @@ class ScannerSettings(BaseModel):
         default=0.0,
         ge=0.0,
         le=1.0,
-    )
-    faction_filter: ItemFaction | None = Field(
-        description="Optional faction filter for icon matching", default=None
     )
     custom_model: str = Field(description="Custom OCR model name", default="renner_numbers")
     tessdata_path: str = Field(description="Path to tessdata directory", default="./tessdata")
@@ -72,7 +67,6 @@ class ScannerSettings(BaseModel):
                 "database_path": "database.pkl",
                 "early_exit_threshold": 0.0,
                 "confidence_gap": 0.0,
-                "faction_filter": "colonial",
                 "custom_model": "custom",
                 "tessdata_path": "./tessdata",
                 "debug_mode": False,

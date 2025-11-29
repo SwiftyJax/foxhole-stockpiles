@@ -168,13 +168,14 @@ async def main() -> dict[str, Any] | None:
     try:
         scanner_settings: ScannerSettings = settings.scanner
         scanner_settings.database_path = database_path
-        scanner_settings.faction_filter = faction_filter
         scanner_settings.debug_mode = args.debug_image
         if args.early_exit:
             scanner_settings.early_exit_threshold = args.early_exit
 
         coordinator = OCRCoordinator(scanner_settings)
-        stockpile: Stockpile = await coordinator.analyze_stockpile(image, language=language_filter)
+        stockpile: Stockpile = await coordinator.analyze_stockpile(
+            image, language=language_filter, faction=faction_filter
+        )
         output_coordinator = OutputCoordinator(settings=settings)
 
         # Prepare kwargs for output coordinator

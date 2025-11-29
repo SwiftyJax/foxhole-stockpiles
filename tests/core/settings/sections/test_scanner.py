@@ -10,7 +10,6 @@ import pytest
 from pydantic import ValidationError
 
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
-from foxhole_stockpiles.enums.item_faction import ItemFaction
 
 
 class TestScannerSettingsInitialization:
@@ -26,7 +25,6 @@ class TestScannerSettingsInitialization:
 
         assert config.database_path is None
         assert config.early_exit_threshold == 0.0
-        assert config.faction_filter is None
         assert config.custom_model == "renner_numbers"
         assert config.tessdata_path == "./tessdata"
         assert config.debug_mode is False
@@ -45,7 +43,6 @@ class TestScannerSettingsInitialization:
         config = ScannerSettings(
             database_path=db_file,
             early_exit_threshold=0.98,
-            faction_filter=ItemFaction.COLONIALS,
             custom_model="my_model",
             tessdata_path="/custom/tessdata",
             debug_mode=True,
@@ -56,7 +53,6 @@ class TestScannerSettingsInitialization:
 
         assert config.database_path == db_file
         assert config.early_exit_threshold == 0.98
-        assert config.faction_filter == ItemFaction.COLONIALS
         assert config.custom_model == "my_model"
         assert config.tessdata_path == "/custom/tessdata"
         assert config.debug_mode is True

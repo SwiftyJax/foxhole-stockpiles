@@ -249,28 +249,20 @@ class TestMainFunction:
 
         # Mock OCR coordinator
         mock_coordinator = MagicMock()
-
-        async def mock_analyze(*args: Any, **kwargs: Any) -> MagicMock:
-            return mock_stockpile
-
-        mock_coordinator.analyze_stockpile = mock_analyze
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=mock_stockpile)
         mock_coordinator_class.return_value = mock_coordinator
 
         # Mock output handler
         mock_handler = MagicMock()
-
-        async def mock_handle(*args: Any, **kwargs: Any) -> dict[str, Any]:
-            return {"items": []}
-
-        mock_handler.handle_output = mock_handle
+        mock_handler.handle_output = AsyncMock(return_value={"items": []})
         mock_output_coordinator_class.return_value = mock_handler
 
         await main()
 
-        # Verify coordinator was configured with faction filter
-        mock_coordinator_class.assert_called()
-        call_args = mock_coordinator_class.call_args[0][0]
-        assert call_args.faction_filter == ItemFaction.WARDENS
+        # Verify analyze_stockpile was called with faction parameter
+        mock_coordinator.analyze_stockpile.assert_called_once()
+        call_kwargs = mock_coordinator.analyze_stockpile.call_args[1]
+        assert call_kwargs["faction"] == ItemFaction.WARDENS
 
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
