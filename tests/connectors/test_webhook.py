@@ -71,6 +71,22 @@ class TestWebhookConnector:
         connector = WebhookConnector(output_settings)
         assert isinstance(connector, WebhookConnector)
         assert connector._output_settings == output_settings
+        # Verify persistent AsyncClient is created
+        assert hasattr(connector, "_client")
+        assert connector._client is not None
+
+    @pytest.mark.asyncio
+    async def test_webhook_connector_close(self, output_settings: WebhookOutputSettings) -> None:
+        """Test webhook connector cleanup.
+
+        Args:
+            output_settings (WebhookOutputSettings): Output settings fixture.
+        """
+        connector = WebhookConnector(output_settings)
+        assert not connector._client.is_closed
+
+        await connector.close()
+        assert connector._client.is_closed
 
     def test_build_auth_headers_bearer(self, output_settings: WebhookOutputSettings) -> None:
         """Test building bearer auth headers.
@@ -161,7 +177,9 @@ class TestWebhookConnector:
 
             assert result == {"status": "success", "id": "12345"}
             mock_post.assert_called_once_with(
-                url="https://example.com/webhook", json=sample_payload
+                url="https://example.com/webhook",
+                json=sample_payload,
+                headers={"Authorization": "Bearer test_token_123"},
             )
 
     @pytest.mark.asyncio

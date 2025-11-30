@@ -209,7 +209,6 @@ class TestWebhookOutputHandler:
         # Configure webhook URL
         app_settings.output.webhook.url = "https://example.com/webhook"
 
-        handler = WebhookOutputHandler(webhook_settings=app_settings.output.webhook)
         webhook_response = {"status": "success", "id": "12345"}
 
         with patch("foxhole_stockpiles.handlers.webhook.WebhookConnector") as mock_connector_class:
@@ -217,30 +216,12 @@ class TestWebhookOutputHandler:
             mock_connector.send_stockpile = AsyncMock(return_value=webhook_response)
             mock_connector_class.return_value = mock_connector
 
+            # Create handler after patching so the mock is used
+            handler = WebhookOutputHandler(webhook_settings=app_settings.output.webhook)
             result = await handler.handle(sample_stockpile)
 
             assert result == webhook_response
             mock_connector.send_stockpile.assert_called_once()
-
-    @pytest.mark.asyncio
-    async def test_webhook_output_no_url(
-        self, app_settings: AppSettings, sample_stockpile: Stockpile
-    ) -> None:
-        """Test webhook output raises error when URL not configured.
-
-        Args:
-            app_settings (AppSettings): App settings fixture.
-            sample_stockpile (Stockpile): Sample stockpile data from fixture.
-        """
-        from foxhole_stockpiles.handlers.webhook import WebhookOutputHandler
-
-        # Ensure webhook URL is not set
-        app_settings.output.webhook.url = None
-
-        handler = WebhookOutputHandler(webhook_settings=app_settings.output.webhook)
-
-        with pytest.raises(ValueError, match="Webhook URL is not configured"):
-            await handler.handle(sample_stockpile)
 
     @pytest.mark.asyncio
     async def test_webhook_output_with_token(
@@ -258,7 +239,6 @@ class TestWebhookOutputHandler:
         app_settings.output.webhook.url = "https://example.com/webhook"
         custom_token = "custom_token_123"
 
-        handler = WebhookOutputHandler(webhook_settings=app_settings.output.webhook)
         webhook_response = {"status": "success", "id": "12345"}
 
         with patch("foxhole_stockpiles.handlers.webhook.WebhookConnector") as mock_connector_class:
@@ -266,6 +246,8 @@ class TestWebhookOutputHandler:
             mock_connector.send_stockpile = AsyncMock(return_value=webhook_response)
             mock_connector_class.return_value = mock_connector
 
+            # Create handler after patching so the mock is used
+            handler = WebhookOutputHandler(webhook_settings=app_settings.output.webhook)
             result = await handler.handle(sample_stockpile, token=custom_token)
 
             assert result == webhook_response

@@ -19,7 +19,8 @@ class WebhookOutputHandler(BaseOutputDestinationHandler):
             webhook_settings (WebhookOutputSettings): Webhook configuration settings
         """
         self.logger = logging.getLogger(__name__)
-        self.webhook_settings = webhook_settings
+        self._url = webhook_settings.url
+        self._webhook_connector = WebhookConnector(webhook_settings)
 
     async def handle(self, stockpile: Stockpile, **kwargs: Any) -> dict[str, Any]:
         """Send stockpile data to webhook endpoint.
@@ -31,17 +32,13 @@ class WebhookOutputHandler(BaseOutputDestinationHandler):
 
         Returns:
             dict[str, Any]: Webhook response data
-
-        Raises:
-            ValueError: If webhook URL is not configured
         """
-        if not self.webhook_settings.url:
-            raise ValueError("Webhook URL is not configured")
+        if not self._url:
+            return {"message": "URL not configured"}
 
-        webhook_connector = WebhookConnector(self.webhook_settings)
         payload = stockpile.model_dump(mode="json")
         token = kwargs.get("token")
 
-        response = await webhook_connector.send_stockpile(payload=payload, token=token)
+        response = await self._webhook_connector.send_stockpile(payload=payload, token=token)
         self.logger.debug("Webhook response: %s", response)
         return response

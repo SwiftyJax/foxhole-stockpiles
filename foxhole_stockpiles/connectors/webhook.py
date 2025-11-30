@@ -93,6 +93,7 @@ class WebhookConnector:
         """
         self._output_settings = output_settings
         self._logger = logging.getLogger(__name__)
+        self._client = AsyncClient(timeout=30.0)
 
     def _build_auth_headers(self, token: str | None = None) -> dict[str, str]:
         """Build authentication headers based on configured auth method.
@@ -152,8 +153,9 @@ class WebhookConnector:
         return_data: dict[str, str] = {}
 
         try:
-            async with AsyncClient(headers=headers) as client:
-                response = await client.post(url=self._output_settings.url, json=payload)
+            response = await self._client.post(
+                url=self._output_settings.url, json=payload, headers=headers
+            )
 
             try:
                 response.raise_for_status()
@@ -171,3 +173,11 @@ class WebhookConnector:
             return_data = {"message": error_message}
 
         return return_data
+
+    async def close(self) -> None:
+        """Close the persistent HTTP client.
+
+        This should be called when the connector is no longer needed to free resources.
+        """
+        if not self._client.is_closed:
+            await self._client.aclose()
