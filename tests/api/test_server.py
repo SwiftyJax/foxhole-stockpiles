@@ -5,6 +5,7 @@ including health checks, error handling, and middleware functionality.
 """
 
 import io
+from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
@@ -16,6 +17,41 @@ from fastapi.testclient import TestClient
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.server import app
 from foxhole_stockpiles.enums.auth_type import AuthType
+
+
+@pytest.fixture(autouse=True)
+def clear_dependency_cache() -> Generator[None, None, None]:
+    """Clear lru_cache from all dependency functions before and after each test.
+
+    This ensures that mocked settings are picked up by the dependencies.
+
+    Yields:
+        None: Control to the test function
+    """
+    from foxhole_stockpiles.api.dependencies import (
+        get_notification_service,
+        get_ocr_coordinator,
+        get_output_coordinator,
+    )
+    from foxhole_stockpiles.core.settings import get_settings
+
+    # Clear all caches before test
+    get_settings.cache_clear()
+    get_notification_service.cache_clear()
+    get_ocr_coordinator.cache_clear()
+    get_output_coordinator.cache_clear()
+
+    # Clear any dependency overrides
+    app.dependency_overrides.clear()
+
+    yield
+
+    # Clean up after test
+    get_settings.cache_clear()
+    get_notification_service.cache_clear()
+    get_ocr_coordinator.cache_clear()
+    get_output_coordinator.cache_clear()
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
@@ -36,8 +72,14 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     mock_settings.scanner.database_path = tmp_path / "test_db.h5"
     mock_settings.api.auth_type = None
     mock_settings.api.auth_token = None
+    mock_settings.api_auth.auth_type = None
+    mock_settings.api_auth.auth_token = None
 
+    # Patch get_settings everywhere it's imported
+    monkeypatch.setattr("foxhole_stockpiles.core.settings.get_settings", lambda: mock_settings)
+    monkeypatch.setattr("foxhole_stockpiles.api.dependencies.get_settings", lambda: mock_settings)
     monkeypatch.setattr("foxhole_stockpiles.api.server.get_settings", lambda: mock_settings)
+    monkeypatch.setattr("foxhole_stockpiles.api.server.app_settings", mock_settings)
 
     return TestClient(app)
 
