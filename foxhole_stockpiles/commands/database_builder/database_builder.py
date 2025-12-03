@@ -3,7 +3,6 @@
 import argparse
 import asyncio
 import logging
-import pickle
 from copy import copy
 from pathlib import Path
 
@@ -17,6 +16,7 @@ from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.catalog_item import CatalogItem
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.services.template_database import TemplateDatabase
+from foxhole_stockpiles.services.template_manager import TemplateManager
 
 
 class DatabaseBuilder:
@@ -182,7 +182,6 @@ class DatabaseBuilder:
                     category=item.category,
                     mod=mod_name,
                 )
-                template.compute_optimization_data()
                 templates.append(template)
             except Exception as e:
                 self._logger.error("Failed to create template for %s: %s", item_code, e)
@@ -321,24 +320,16 @@ class DatabaseBuilder:
     async def _save_databases(
         self, databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
     ) -> None:
-        """Save all databases to binary file.
+        """Save all databases to HDF5 file.
 
         Args:
             databases (dict[SupportedResolution, TemplateDatabase]): Built databases
             output_path (Path): Output file path
         """
-        self._logger.debug("Saving databases to %s", output_path)
+        self._logger.debug("Saving databases to HDF5 file: %s", output_path)
 
-        # Ensure output directory exists
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-
-        # Save as pickle file
-        def write_file() -> None:
-            """Write databases to pickle file synchronously."""
-            with open(output_path, "wb") as f:
-                pickle.dump(databases, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-        await asyncio.to_thread(write_file)
+        # Save using centralized method
+        await asyncio.to_thread(TemplateManager.save_databases_to_hdf5, databases, output_path)
 
         # Log statistics
         total_templates = sum(len(db.templates) for db in databases.values())

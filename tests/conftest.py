@@ -186,3 +186,22 @@ def mock_catalog_file(temp_dir: Path, sample_catalog_data: list[dict[str, Any]])
         json.dump(sample_catalog_data, f)
 
     return catalog_path
+
+
+@pytest.fixture
+def test_db_v1_fixture() -> Path:
+    """Provide path to the v1 pickle test database fixture.
+
+    Returns:
+        Path: Path to the committed test database fixture (v1 pickle format).
+    """
+    fixtures_dir = Path(__file__).parent / "fixtures"
+    db_path = fixtures_dir / "test_db_v1.pkl"
+
+    if not db_path.exists():
+        raise FileNotFoundError(
+            f"Test database fixture not found: {db_path}\n"
+            f"Run: python tests/fixtures/create_test_db.py"
+        )
+
+    return db_path

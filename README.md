@@ -57,6 +57,9 @@ Starts the FastAPI server for processing screenshots via HTTP API.
 ### fs add-icon
 Manually adds individual icons to existing template databases without rebuilding the entire database.
 
+### fs update-db
+Migrates template databases to the latest format version with automatic sequential migration (v1→v2→v3). Converts legacy pickle databases to HDF5 format for better memory efficiency and faster loading.
+
 ### fs update-config
 Updates `.fs_config` configuration files to the latest format version with automatic migration.
 

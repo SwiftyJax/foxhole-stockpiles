@@ -9,6 +9,7 @@ from threading import Lock
 from typing import ClassVar, cast
 
 import cv2
+import h5py
 import numpy as np
 from numpy.typing import NDArray
 
@@ -18,7 +19,7 @@ from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.match_result import MatchResult
-from foxhole_stockpiles.services.template_database import TemplateDatabase
+from foxhole_stockpiles.services.template_database import DATABASE_VERSION, TemplateDatabase
 
 logger = logging.getLogger(__name__)
 
@@ -40,14 +41,47 @@ class TemplateManager:
         self.active_database: TemplateDatabase | None = None
         self.current_resolution: SupportedResolution | None = None
 
+    def _check_database_version(self, file_path: Path) -> int:
+        """Check database format and return version number.
+
+        Args:
+            file_path (Path): Path to database file
+
+        Returns:
+            int: Version number (0=invalid/unknown, 1=pickle, 2+=HDF5 with version)
+        """
+        try:
+            # Try to open as HDF5
+            with h5py.File(str(file_path), "r") as f:
+                # If it's a valid HDF5 file, check for version attribute
+                if "version" in f.attrs:
+                    return int(f.attrs["version"])  # type: ignore[arg-type]
+                # Valid HDF5 but no version attribute (shouldn't happen, but treat as v2)
+                return 2
+        except (OSError, Exception):
+            # Not HDF5, check if it's pickle
+            try:
+                with open(file_path, "rb") as f:
+                    pickle.load(f)
+                return 1  # Pickle format is version 1
+            except Exception:
+                return 0  # Invalid or unknown format
+
     async def load_database(self, resolution: SupportedResolution) -> TemplateDatabase:
         """Load or get cached database for specific resolution.
+
+        Supports HDF5 format (version 2). Old pickle formats (version 1) must be migrated
+        using 'fs update-db' command.
 
         Args:
             resolution (SupportedResolution): Target resolution
 
         Returns:
             TemplateDatabase: Loaded template database
+
+        Raises:
+            FileNotFoundError: If database file not found
+            ValueError: If database format is invalid or needs migration
         """
         # Use shared cache key
         cache_key = (self.database_path, resolution)
@@ -57,26 +91,58 @@ class TemplateManager:
             if cache_key in self._shared_databases:
                 return self._shared_databases[cache_key]
 
-        # Load from file if not in cache
+        # Check if database exists
+        if not self.database_path.exists():
+            raise FileNotFoundError(
+                f"Template database not found: {self.database_path}\n\n"
+                f"Please build a database first:\n"
+                f"  fs database-builder --catalog catalog.json --templates templates/ "
+                f"--database {self.database_path}"
+            )
+
+        # Check database format and version
+        db_version = self._check_database_version(self.database_path)
+
+        if db_version == 0:
+            raise ValueError(
+                f"Database file format is not recognized: {self.database_path}\n"
+                f"File may be corrupted or in an unsupported format."
+            )
+
+        if db_version != DATABASE_VERSION:
+            raise ValueError(
+                f"Database version {db_version} does not match expected version {DATABASE_VERSION}."
+                f"Please migrate your database using: "
+                f"fs update-db --database-path {self.database_path}"
+            )
+
+        # Load from HDF5 file
         logger.debug(
             "Loading template database for resolution %s from %s",
             resolution,
             self.database_path,
         )
 
-        # Load from binary file
-        def load_pickle() -> dict[SupportedResolution, TemplateDatabase]:
-            """Load pickle file synchronously."""
-            with open(self.database_path, "rb") as f:
-                data = pickle.load(f)
-                return cast(dict[SupportedResolution, TemplateDatabase], data)
+        def load_hdf5() -> TemplateDatabase:
+            """Load HDF5 file synchronously."""
+            with h5py.File(str(self.database_path), "r") as f:
+                # Check if resolution exists
+                if resolution.value not in f:
+                    available = list(f.keys())
+                    raise ValueError(
+                        f"Resolution {resolution.value} not found in database.\n"
+                        f"Available resolutions: {', '.join(available)}"
+                    )
 
-        all_databases = await asyncio.to_thread(load_pickle)
+                # Load the specific resolution group
+                group = f[resolution.value]
+                database = TemplateDatabase.load_from_hdf5_group(
+                    group=cast(h5py.Group, group), resolution=resolution
+                )
 
-        if resolution not in all_databases:
-            raise ValueError(f"Resolution {resolution} not found in database")
+            return database
 
-        database = all_databases[resolution]
+        database = await asyncio.to_thread(load_hdf5)
 
         # Cache in shared cache
         with self._shared_lock:
@@ -308,6 +374,163 @@ class TemplateManager:
             tested_candidates=candidates_tested,
             top_matches=top_matches,
             gap_candidates=gap_candidates,
+        )
+
+    @staticmethod
+    def save_databases_to_hdf5(
+        databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
+    ) -> None:
+        """Save multiple resolution databases to a single HDF5 file.
+
+        Args:
+            databases (dict[SupportedResolution, TemplateDatabase]): Databases to save
+            output_path (Path): Output file path
+
+        Raises:
+            ValueError: If databases dict is empty
+        """
+        if not databases:
+            raise ValueError("Cannot save empty databases dictionary")
+
+        logger.debug("Saving %d resolution(s) to HDF5 file: %s", len(databases), output_path)
+
+        # Ensure output directory exists
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+
+        with h5py.File(str(output_path), "w") as f:
+            # Store database-level metadata
+            f.attrs["version"] = DATABASE_VERSION
+            f.attrs["format"] = "hdf5"
+            f.attrs["resolutions"] = [r.value for r in databases.keys()]
+
+            # Save each resolution as a group
+            for resolution, database in databases.items():
+                group = f.create_group(resolution.value)
+                database.save_to_hdf5_group(group)
+
+        logger.debug(
+            "Saved %d resolution(s) to %s (%.1f MB)",
+            len(databases),
+            output_path,
+            output_path.stat().st_size / (1024 * 1024),
+        )
+
+    def needs_migration(self) -> bool:
+        """Check if database needs to be migrated to current version.
+
+        Returns:
+            bool: True if database exists and is not at the current version
+        """
+        if not self.database_path.exists():
+            return False
+
+        db_version = self._check_database_version(self.database_path)
+        # Version 0 means invalid/corrupted, not a migration case
+        return db_version != 0 and db_version != DATABASE_VERSION
+
+    def migrate_database(self, output_path: Path | None = None) -> None:
+        """Migrate database from current version to latest version.
+
+        Applies all necessary migrations sequentially (e.g., v1→v2→v3→v4).
+
+        Args:
+            output_path (Path | None): Output path for migrated database. If None, uses
+                database_path with appropriate extension
+
+        Raises:
+            FileNotFoundError: If database_path doesn't exist
+            ValueError: If database is corrupted or migration fails
+        """
+        if not self.database_path.exists():
+            raise FileNotFoundError(f"Database file not found: {self.database_path}")
+
+        # Get current version
+        current_version = self._check_database_version(self.database_path)
+
+        if current_version == 0:
+            raise ValueError("Database file is corrupted or in an unrecognized format")
+
+        if current_version == DATABASE_VERSION:
+            raise ValueError(f"Database is already at version {DATABASE_VERSION}")
+
+        logger.info(
+            "Starting migration from version %d to version %d", current_version, DATABASE_VERSION
+        )
+
+        while current_version < DATABASE_VERSION:
+            next_version = current_version + 1
+            logger.info("Applying migration: v%d → v%d", current_version, next_version)
+
+            match current_version:
+                case 1:
+                    self._migrate_v1_to_v2(input_path=self.database_path, output_path=output_path)
+                case _:
+                    logger.warning(
+                        f"No migration path from version {current_version} to {next_version}"
+                    )
+
+            current_version = next_version
+
+        logger.info("Migration complete: now at version %d", DATABASE_VERSION)
+
+    def _migrate_v1_to_v2(self, input_path: Path, output_path: Path | None = None) -> None:
+        """Migrate v1 (pickle) database to v2 (HDF5) format.
+
+        Args:
+            input_path (Path): Input pickle database path
+            output_path (Path | None): Output path for HDF5 file. If None, uses
+                input_path with .h5 extension
+
+        Raises:
+            FileNotFoundError: If input_path doesn't exist
+            ValueError: If file is not a valid pickle database
+        """
+        import time
+
+        if not input_path.exists():
+            raise FileNotFoundError(f"Database file not found: {input_path}")
+
+        # Determine output path
+        _output_path = output_path or input_path.with_suffix(".h5")
+
+        # Load pickle file
+        load_start = time.perf_counter()
+        with open(input_path, "rb") as f:
+            try:
+                all_databases = pickle.load(f)
+            except Exception as e:
+                raise ValueError(f"Failed to load pickle database: {e}") from e
+        load_time = time.perf_counter() - load_start
+        logger.info("Pickle load time: %.2f seconds", load_time)
+
+        if not isinstance(all_databases, dict):
+            raise ValueError(f"Expected dict of databases, got {type(all_databases).__name__}")
+
+        # Get pickle file size before conversion
+        pickle_size_mb = input_path.stat().st_size / (1024 * 1024)
+
+        # Convert to HDF5 using centralized method
+        logger.debug("Converting %d resolution(s)...", len(all_databases))
+        convert_start = time.perf_counter()
+        self.save_databases_to_hdf5(databases=all_databases, output_path=_output_path)
+        convert_time = time.perf_counter() - convert_start
+        logger.info("HDF5 conversion time: %.2f seconds", convert_time)
+
+        # Get HDF5 file size after conversion
+        hdf5_size_mb = _output_path.stat().st_size / (1024 * 1024)
+
+        logger.info(
+            "Migration complete: %d resolutions, %.1f MB -> %.1f MB (%.1f%% of original)",
+            len(all_databases),
+            pickle_size_mb,
+            hdf5_size_mb,
+            (hdf5_size_mb / pickle_size_mb * 100) if pickle_size_mb > 0 else 0,
+        )
+        logger.info(
+            "Total time: %.2f seconds (load: %.2f, convert: %.2f)",
+            load_time + convert_time,
+            load_time,
+            convert_time,
         )
 
     def __repr__(self) -> str:

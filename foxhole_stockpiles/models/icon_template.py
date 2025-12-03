@@ -21,18 +21,7 @@ class IconTemplate(BaseModel):
     mod: str = Field(description="Mod this template comes from", min_length=1)
     resolution: SupportedResolution = Field(description="Target resolution for this template")
 
-    # Computed optimization fields - calculated automatically on creation
-    template_mean: float = Field(
-        default=0.0, exclude=True, description="Pre-computed template mean for NCC optimization"
-    )
-    template_std: float = Field(
-        default=0.0, exclude=True, description="Pre-computed template std for NCC optimization"
-    )
-    normalized_image: NDArray[np.float32] = Field(
-        default_factory=lambda: np.array([], dtype=np.float32),
-        exclude=True,
-        description="Pre-computed normalized template for fast NCC",
-    )
+    # Computed optimization field - calculated automatically on creation
     phash: int = Field(default=0, exclude=True, description="Perceptual hash for fast filtering")
 
     model_config = ConfigDict(
@@ -52,40 +41,19 @@ class IconTemplate(BaseModel):
         },
     )
 
-    def __post_init__(self) -> None:
-        """Automatically compute optimization data after model creation."""
-        self.compute_optimization_data()
+    def model_post_init(self, __context: object) -> None:
+        """Automatically compute perceptual hash after model creation.
 
-    def compute_optimization_data(self) -> None:
-        """Compute NCC normalization data and perceptual hash for optimized matching.
+        The perceptual hash (pHash) is used to quickly filter out dissimilar templates
+        before running the more expensive OpenCV template matching.
 
-        This handles gamma variations by working with grayscale data and computing
-        statistics that are robust to gamma changes in the lower-right crate region.
-
-        Optimizations:
-        - Single grayscale conversion
-        - Vectorized operations for hash computation
-        - Early exit for zero std deviation
-        - Memory-efficient float conversion
+        Args:
+            __context (object): Pydantic context (unused)
         """
-        # Convert to grayscale once - use optimized weights for better contrast
+        # Convert to grayscale for hash computation
         img_gray = np.asarray(cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY), dtype=np.uint8)
 
-        # Convert to float32 for statistical computations
-        img_float = img_gray.astype(np.float32)
-
-        # Compute template statistics using vectorized numpy operations
-        self.template_mean = float(img_float.mean())
-        self.template_std = float(img_float.std(ddof=0))  # Use population std for consistency
-
-        # Pre-compute normalized template for fast NCC
-        if self.template_std > 1e-6:  # Use small epsilon instead of 0 for numerical stability
-            self.normalized_image = (img_float - self.template_mean) / self.template_std
-        else:
-            # For near-constant images, create zero-centered array
-            self.normalized_image = np.zeros_like(img_float, dtype=np.float32)
-
-        # Compute perceptual hash using vectorized operations
+        # Compute perceptual hash
         self._compute_phash(img_gray)
 
     def _compute_phash(self, img_gray: NDArray[np.uint8]) -> None:

@@ -5,15 +5,36 @@ which handles template database loading, caching, and management for
 different screen resolutions.
 """
 
-import pickle
 from pathlib import Path
 from unittest.mock import patch
 
+import h5py
 import pytest
 
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
-from foxhole_stockpiles.services.template_database import TemplateDatabase
+from foxhole_stockpiles.services.template_database import DATABASE_VERSION, TemplateDatabase
 from foxhole_stockpiles.services.template_manager import TemplateManager
+
+
+def create_hdf5_database(
+    db_path: Path, databases: dict[SupportedResolution, TemplateDatabase]
+) -> None:
+    """Create an HDF5 database file for testing.
+
+    Args:
+        db_path (Path): Path where the HDF5 database will be created.
+        databases (dict[SupportedResolution, TemplateDatabase]): Dict of resolution to database.
+    """
+    with h5py.File(str(db_path), "w") as f:
+        # Set root-level attributes
+        f.attrs["version"] = DATABASE_VERSION
+        f.attrs["format"] = "hdf5"
+        f.attrs["resolutions"] = [res.value for res in databases.keys()]
+
+        # Save each resolution's database
+        for resolution, db in databases.items():
+            group = f.create_group(resolution.value)
+            db.save_to_hdf5_group(group)
 
 
 class TestTemplateManagerInitialization:
@@ -29,7 +50,7 @@ class TestTemplateManagerInitialization:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         manager = TemplateManager(db_path)
 
         assert manager.database_path == db_path
@@ -42,7 +63,7 @@ class TestTemplateManagerInitialization:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         manager = TemplateManager(db_path)
 
         assert manager.active_database is None
@@ -62,13 +83,12 @@ class TestLoadDatabase:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create a real database file
         real_db = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: real_db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
 
@@ -84,15 +104,14 @@ class TestLoadDatabase:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create a real database
         real_db = TemplateDatabase(SupportedResolution.R_1080)
 
         # Create database file
         databases = {SupportedResolution.R_1080: real_db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
 
@@ -111,13 +130,12 @@ class TestLoadDatabase:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create database with only one resolution
         real_db = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: real_db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
 
@@ -131,13 +149,13 @@ class TestLoadDatabase:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "corrupted.pkl"
+        db_path = tmp_path / "corrupted.h5"
         db_path.write_text("corrupted data")
 
         manager = TemplateManager(db_path)
 
-        # Should raise an exception for corrupted pickle file
-        with pytest.raises((pickle.UnpicklingError, EOFError, ValueError)):
+        # Should raise ValueError for corrupted/invalid database file
+        with pytest.raises(ValueError):
             await manager.load_database(SupportedResolution.R_1080)
 
 
@@ -154,13 +172,12 @@ class TestSetActiveResolution:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create a real database
         real_db = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: real_db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
 
@@ -177,7 +194,7 @@ class TestSetActiveResolution:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create databases for multiple resolutions
         db_1080 = TemplateDatabase(SupportedResolution.R_1080)
@@ -186,8 +203,7 @@ class TestSetActiveResolution:
             SupportedResolution.R_1080: db_1080,
             SupportedResolution.R_720: db_720,
         }
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
 
@@ -206,13 +222,12 @@ class TestSetActiveResolution:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create a real database
         real_db = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: real_db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
 
@@ -240,7 +255,7 @@ class TestFindBestResolution:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         manager = TemplateManager(db_path)
 
         # Test exact matches
@@ -254,7 +269,7 @@ class TestFindBestResolution:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         manager = TemplateManager(db_path)
 
         # Test closest matches - 992 is closest to 1000
@@ -270,7 +285,7 @@ class TestFindBestResolution:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         manager = TemplateManager(db_path)
 
         # Very low resolution - 664 is closest to 480
@@ -299,7 +314,7 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         manager = TemplateManager(db_path)
 
         # Should raise ValueError when no database is loaded
@@ -318,7 +333,7 @@ class TestMatchIcon:
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
 
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create database with a template
         db = TemplateDatabase(SupportedResolution.R_1080)
@@ -335,8 +350,7 @@ class TestMatchIcon:
         db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -360,7 +374,7 @@ class TestMatchIcon:
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
 
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create test image
         test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
@@ -380,8 +394,7 @@ class TestMatchIcon:
         db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -406,7 +419,7 @@ class TestMatchIcon:
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
 
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create database with multiple templates
         db = TemplateDatabase(SupportedResolution.R_1080)
@@ -438,8 +451,7 @@ class TestMatchIcon:
         db.add_template(template2)
 
         databases = {SupportedResolution.R_1080: db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -464,7 +476,7 @@ class TestMatchIcon:
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
 
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create database with many templates (>25 to trigger pHash filtering)
         db = TemplateDatabase(SupportedResolution.R_1080)
@@ -483,8 +495,7 @@ class TestMatchIcon:
             db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -509,7 +520,7 @@ class TestMatchIcon:
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
 
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create test image
         test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
@@ -545,8 +556,7 @@ class TestMatchIcon:
             db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -573,7 +583,7 @@ class TestMatchIcon:
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
 
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create test image with distinct pattern
         test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
@@ -655,8 +665,7 @@ class TestMatchIcon:
         db.add_template(template5)
 
         databases = {SupportedResolution.R_1080: db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -697,7 +706,7 @@ class TestMatchIcon:
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
 
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
 
         # Create test image
         test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
@@ -717,8 +726,7 @@ class TestMatchIcon:
         db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        with open(db_path, "wb") as f:
-            pickle.dump(databases, f)
+        create_hdf5_database(db_path, databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -741,7 +749,7 @@ class TestTemplateManagerRepr:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         manager = TemplateManager(db_path)
 
         repr_str = repr(manager)

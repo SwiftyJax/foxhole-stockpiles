@@ -24,7 +24,7 @@ Adds individual icons to existing template databases:
 - **Resolution targeting**: Add icons for specific resolutions
 - **Multi-resolution support**: Add the same icon to multiple resolutions in one command
 - **Complete metadata**: Specify faction, category, mod, and crated variant information
-- **Automatic optimization**: Computes optimization data via `compute_optimization_data()`
+- **Automatic optimization**: Computes perceptual hash automatically when templates are created
 - **Safe operations**: Creates backup before modifying database
 
 ### Database Management

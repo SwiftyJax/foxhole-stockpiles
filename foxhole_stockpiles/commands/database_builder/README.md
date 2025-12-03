@@ -22,7 +22,7 @@ Builds resolution-specific template databases from extracted game assets:
 - **Multi-resolution support**: Creates templates for all supported game resolutions (664p to 2160p)
 - **Template metadata**: Stores item code, faction, category, mod, and crated variant information
 - **Image data**: Resizes and stores icon images for each resolution
-- **Optimization data**: Computes optimization features for each template via `compute_optimization_data()`
+- **Optimization data**: Computes perceptual hash automatically when templates are created
 - **Async processing**: Parallel processing with semaphore-limited concurrency (8 concurrent operations)
 
 ### Binary Database Creation

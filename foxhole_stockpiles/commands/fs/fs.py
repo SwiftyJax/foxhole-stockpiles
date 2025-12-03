@@ -58,6 +58,11 @@ class CLIDispatcher:
                 module="foxhole_stockpiles.commands.add_icon.add_icon",
                 aliases=["add"],
             ),
+            "update-db": CommandInfo(
+                description="Migrate template database to latest format",
+                module="foxhole_stockpiles.commands.update_db.update_db",
+                aliases=["migrate-db"],
+            ),
             "update-config": CommandInfo(
                 description="Update .fs_config to the latest version",
                 module="foxhole_stockpiles.commands.update_config.update_config",

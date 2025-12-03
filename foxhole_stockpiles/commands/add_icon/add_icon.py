@@ -162,7 +162,6 @@ class IconAdder:
             category=category,
             mod=mod,
         )
-        template.compute_optimization_data()
 
         # Add to database
         database.add_template(template=template)
