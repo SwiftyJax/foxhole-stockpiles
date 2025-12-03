@@ -82,6 +82,13 @@ The server must be restarted after running this command.
         help="Path to log file (default: console only)",
     )
 
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="Number of worker processes for parallel migration (default: CPU count)",
+    )
+
     args = parser.parse_args()
 
     # Setup logging
@@ -135,7 +142,7 @@ The server must be restarted after running this command.
     logger.info("Output: %s", output_path)
 
     try:
-        manager.migrate_database(output_path=output_path)
+        manager.migrate_database(output_path=output_path, workers=args.workers)
     except Exception as e:
         logger.error("Migration failed: %s", e, exc_info=True)
         return 1

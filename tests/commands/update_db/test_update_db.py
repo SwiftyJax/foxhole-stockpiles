@@ -523,3 +523,105 @@ class TestUpdateDbEdgeCases:
         assert migrated_template.category == ItemCategory.Vehicle
         assert migrated_template.mod == "test_mod"
         assert np.array_equal(migrated_template.image, image)
+
+
+class TestMultiprocessingMigration:
+    """Test multiprocessing functionality in migrations."""
+
+    async def test_migration_with_workers(self, tmp_path: Path) -> None:
+        """Test migration with multiple workers.
+
+        Args:
+            tmp_path (Path): Temporary directory from pytest fixture.
+        """
+        # Create v1 pickle database with multiple resolutions
+        db_path = tmp_path / "templates.pkl"
+        create_v1_pickle_database(db_path)
+
+        # Run migration with 2 workers
+        with patch("sys.argv", ["update-db", "--database-path", str(db_path), "--workers", "2"]):
+            with patch("foxhole_stockpiles.commands.update_db.update_db.setup_logging"):
+                result = await main()
+
+        assert result == 0
+
+        # Verify output file exists
+        output_path = db_path.with_suffix(".h5")
+        assert output_path.exists()
+
+        # Verify database can be loaded and has correct data
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        manager = TemplateManager(database_path=output_path)
+
+        # Check both resolutions
+        for resolution in [SupportedResolution.R_1080, SupportedResolution.R_1440]:
+            db = await manager.load_database(resolution)
+            assert len(db.templates) == 3
+
+    async def test_migration_with_single_worker(self, tmp_path: Path) -> None:
+        """Test migration with single worker (no multiprocessing).
+
+        Args:
+            tmp_path (Path): Temporary directory from pytest fixture.
+        """
+        # Create v1 pickle database
+        db_path = tmp_path / "templates.pkl"
+        create_v1_pickle_database(db_path)
+
+        # Run migration with 1 worker (disables multiprocessing)
+        with patch("sys.argv", ["update-db", "--database-path", str(db_path), "--workers", "1"]):
+            with patch("foxhole_stockpiles.commands.update_db.update_db.setup_logging"):
+                result = await main()
+
+        assert result == 0
+
+        # Verify output file exists
+        output_path = db_path.with_suffix(".h5")
+        assert output_path.exists()
+
+    async def test_migration_multiprocessing_vs_single_thread(self, tmp_path: Path) -> None:
+        """Test that multiprocessing and single-threaded produce same results.
+
+        Args:
+            tmp_path (Path): Temporary directory from pytest fixture.
+        """
+        # Create v1 pickle database
+        db_path = tmp_path / "templates.pkl"
+        create_v1_pickle_database(db_path)
+
+        # Create two output paths
+        output_multi = tmp_path / "multi.h5"
+        output_single = tmp_path / "single.h5"
+
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        # Load pickle database
+        with open(db_path, "rb") as f:
+            all_databases = pickle.load(f)
+
+        # Save with multiprocessing
+        TemplateManager.save_databases_to_hdf5(all_databases, output_multi, workers=2)
+
+        # Save without multiprocessing
+        TemplateManager.save_databases_to_hdf5(all_databases, output_single, workers=1)
+
+        # Load both and compare
+        manager_multi = TemplateManager(database_path=output_multi)
+        manager_single = TemplateManager(database_path=output_single)
+
+        for resolution in [SupportedResolution.R_1080, SupportedResolution.R_1440]:
+            db_multi = await manager_multi.load_database(resolution)
+            db_single = await manager_single.load_database(resolution)
+
+            # Should have same number of templates
+            assert len(db_multi.templates) == len(db_single.templates)
+
+            # Compare each template
+            for t1, t2 in zip(db_multi.templates, db_single.templates, strict=True):
+                assert t1.code == t2.code
+                assert t1.crated == t2.crated
+                assert t1.faction == t2.faction
+                assert t1.category == t2.category
+                assert t1.mod == t2.mod
+                assert np.array_equal(t1.image, t2.image)

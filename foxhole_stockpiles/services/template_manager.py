@@ -2,11 +2,13 @@
 
 import asyncio
 import logging
+import os
 import pickle
 import time
+from multiprocessing import Pool
 from pathlib import Path
 from threading import Lock
-from typing import ClassVar, cast
+from typing import Any, ClassVar, cast
 
 import cv2
 import h5py
@@ -22,6 +24,152 @@ from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.services.template_database import DATABASE_VERSION, TemplateDatabase
 
 logger = logging.getLogger(__name__)
+
+
+def _prepare_resolution_data(
+    resolution: SupportedResolution, database: TemplateDatabase
+) -> dict[str, Any]:
+    """Prepare resolution data for HDF5 writing (worker function for multiprocessing).
+
+    This function extracts all data from templates into numpy arrays,
+    which can then be written to HDF5 by the main process.
+
+    Args:
+        resolution (SupportedResolution): Resolution being processed
+        database (TemplateDatabase): Database to prepare
+
+    Returns:
+        dict[str, Any]: Dictionary containing prepared numpy arrays and metadata
+            (various numpy dtypes including uint8, uint64, bool, object)
+    """
+    start_time = time.perf_counter()
+    n_templates = len(database.templates)
+
+    if n_templates == 0:
+        # Return minimal data for empty database
+        return {
+            "resolution": resolution.value,
+            "template_count": 0,
+            "icon_size": 0,
+            "empty": True,
+        }
+
+    logger.debug("Worker: Preparing %d templates for resolution %s", n_templates, resolution.value)
+
+    # Get image dimensions from first template
+    first_image = database.templates[0].image
+    img_h, img_w, img_c = first_image.shape
+
+    # Preallocate numpy arrays
+    images = np.empty((n_templates, img_h, img_w, img_c), dtype=np.uint8)
+    codes = np.empty(n_templates, dtype=object)
+    mods = np.empty(n_templates, dtype=object)
+    crated = np.empty(n_templates, dtype=bool)
+    faction = np.empty(n_templates, dtype=np.uint8)
+    category = np.empty(n_templates, dtype=np.uint8)
+    phash = np.empty(n_templates, dtype=np.uint64)
+
+    # Fill arrays
+    for i, template in enumerate(database.templates):
+        images[i] = template.image
+        codes[i] = template.code
+        mods[i] = template.mod
+        crated[i] = template.crated
+        faction[i] = list(ItemFaction).index(template.faction)
+        category[i] = list(ItemCategory).index(template.category)
+        phash[i] = template.phash
+
+    elapsed = time.perf_counter() - start_time
+    logger.debug(
+        "Worker: Prepared %d templates for %s in %.2f seconds",
+        n_templates,
+        resolution.value,
+        elapsed,
+    )
+
+    return {
+        "resolution": resolution.value,
+        "template_count": n_templates,
+        "icon_size": img_h,
+        "empty": False,
+        "images": images,
+        "codes": codes,
+        "mods": mods,
+        "crated": crated,
+        "faction": faction,
+        "category": category,
+        "phash": phash,
+    }
+
+
+def _write_prepared_data_to_group(group: h5py.Group, prepared_data: dict[str, Any]) -> None:
+    """Write prepared data to an HDF5 group.
+
+    Args:
+        group (h5py.Group): HDF5 group to write to
+        prepared_data (dict[str, Any]): Prepared data from _prepare_resolution_data
+    """
+    start_time = time.perf_counter()
+
+    # Handle empty database
+    if cast(bool, prepared_data.get("empty", False)):
+        group.attrs["resolution"] = prepared_data["resolution"]
+        group.attrs["template_count"] = 0
+        group.attrs["icon_size"] = 0
+        group.attrs["version"] = DATABASE_VERSION
+        group.attrs["format"] = "hdf5"
+        logger.warning("Saved empty database for resolution %s", prepared_data["resolution"])
+        return
+
+    n_templates = cast(int, prepared_data["template_count"])
+    img_h = cast(int, prepared_data["icon_size"])
+    images = cast(NDArray[np.uint8], prepared_data["images"])
+    img_w = images.shape[2]
+
+    # Create datasets with compression
+    str_dtype = h5py.string_dtype(encoding="utf-8")
+
+    group.create_dataset(
+        "images",
+        data=images,
+        compression="gzip",
+        compression_opts=4,
+    )
+    group.create_dataset(
+        "codes", data=cast(NDArray[np.object_], prepared_data["codes"]), dtype=str_dtype
+    )
+    group.create_dataset(
+        "mods", data=cast(NDArray[np.object_], prepared_data["mods"]), dtype=str_dtype
+    )
+    group.create_dataset(
+        "crated", data=cast(NDArray[np.bool_], prepared_data["crated"]), dtype=bool
+    )
+    group.create_dataset(
+        "faction", data=cast(NDArray[np.uint8], prepared_data["faction"]), dtype=np.uint8
+    )
+    group.create_dataset(
+        "category", data=cast(NDArray[np.uint8], prepared_data["category"]), dtype=np.uint8
+    )
+    group.create_dataset(
+        "phash", data=cast(NDArray[np.uint64], prepared_data["phash"]), dtype=np.uint64
+    )
+
+    # Store metadata as attributes
+    group.attrs["resolution"] = prepared_data["resolution"]
+    group.attrs["template_count"] = n_templates
+    group.attrs["icon_size"] = img_h
+    group.attrs["version"] = DATABASE_VERSION
+    group.attrs["format"] = "hdf5"
+
+    elapsed = time.perf_counter() - start_time
+    logger.info(
+        "Saved %d templates (%dx%d) to HDF5 group %s in %.2f seconds",
+        n_templates,
+        img_h,
+        img_w,
+        group.name,
+        elapsed,
+    )
 
 
 class TemplateManager:
@@ -378,13 +526,17 @@ class TemplateManager:
 
     @staticmethod
     def save_databases_to_hdf5(
-        databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
+        databases: dict[SupportedResolution, TemplateDatabase],
+        output_path: Path,
+        workers: int | None = None,
     ) -> None:
         """Save multiple resolution databases to a single HDF5 file.
 
         Args:
             databases (dict[SupportedResolution, TemplateDatabase]): Databases to save
             output_path (Path): Output file path
+            workers (int | None): Number of worker processes for parallel data preparation.
+                If None, uses os.cpu_count(). Set to 1 to disable multiprocessing.
 
         Raises:
             ValueError: If databases dict is empty
@@ -394,19 +546,44 @@ class TemplateManager:
 
         logger.debug("Saving %d resolution(s) to HDF5 file: %s", len(databases), output_path)
 
+        # Determine number of workers
+        if workers is None:
+            workers = os.cpu_count() or 1
+        workers = max(1, min(workers, len(databases)))  # Cap at number of databases
+
         # Ensure output directory exists
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
+        # Prepare data (in parallel if multiple workers, sequentially otherwise)
+        prep_start = time.perf_counter()
+        items = list(databases.items())
+
+        if workers > 1 and len(databases) > 1:
+            logger.debug("Preparing data with %d worker processes", workers)
+            with Pool(processes=workers) as pool:
+                prepared_data = pool.starmap(_prepare_resolution_data, items)
+        else:
+            logger.debug("Preparing data with single worker")
+            prepared_data = [_prepare_resolution_data(res, db) for res, db in items]
+
+        prep_time = time.perf_counter() - prep_start
+        logger.info("Data preparation time: %.2f seconds", prep_time)
+
+        # Write prepared data to HDF5 sequentially (always use efficient bulk write)
+        write_start = time.perf_counter()
         with h5py.File(str(output_path), "w") as f:
             # Store database-level metadata
             f.attrs["version"] = DATABASE_VERSION
             f.attrs["format"] = "hdf5"
             f.attrs["resolutions"] = [r.value for r in databases.keys()]
 
-            # Save each resolution as a group
-            for resolution, database in databases.items():
+            # Write each resolution's prepared data
+            for (resolution, _), prep_data in zip(items, prepared_data, strict=True):
                 group = f.create_group(resolution.value)
-                database.save_to_hdf5_group(group)
+                _write_prepared_data_to_group(group, prep_data)
+
+        write_time = time.perf_counter() - write_start
+        logger.info("HDF5 write time: %.2f seconds", write_time)
 
         logger.debug(
             "Saved %d resolution(s) to %s (%.1f MB)",
@@ -428,7 +605,7 @@ class TemplateManager:
         # Version 0 means invalid/corrupted, not a migration case
         return db_version != 0 and db_version != DATABASE_VERSION
 
-    def migrate_database(self, output_path: Path | None = None) -> None:
+    def migrate_database(self, output_path: Path | None = None, workers: int | None = None) -> None:
         """Migrate database from current version to latest version.
 
         Applies all necessary migrations sequentially (e.g., v1→v2→v3→v4).
@@ -436,6 +613,8 @@ class TemplateManager:
         Args:
             output_path (Path | None): Output path for migrated database. If None, uses
                 database_path with appropriate extension
+            workers (int | None): Number of worker processes for parallel data preparation.
+                If None, uses os.cpu_count(). Set to 1 to disable multiprocessing.
 
         Raises:
             FileNotFoundError: If database_path doesn't exist
@@ -463,7 +642,9 @@ class TemplateManager:
 
             match current_version:
                 case 1:
-                    self._migrate_v1_to_v2(input_path=self.database_path, output_path=output_path)
+                    self._migrate_v1_to_v2(
+                        input_path=self.database_path, output_path=output_path, workers=workers
+                    )
                 case _:
                     logger.warning(
                         f"No migration path from version {current_version} to {next_version}"
@@ -473,20 +654,22 @@ class TemplateManager:
 
         logger.info("Migration complete: now at version %d", DATABASE_VERSION)
 
-    def _migrate_v1_to_v2(self, input_path: Path, output_path: Path | None = None) -> None:
+    def _migrate_v1_to_v2(
+        self, input_path: Path, output_path: Path | None = None, workers: int | None = None
+    ) -> None:
         """Migrate v1 (pickle) database to v2 (HDF5) format.
 
         Args:
             input_path (Path): Input pickle database path
             output_path (Path | None): Output path for HDF5 file. If None, uses
                 input_path with .h5 extension
+            workers (int | None): Number of worker processes for parallel data preparation.
+                If None, uses os.cpu_count(). Set to 1 to disable multiprocessing.
 
         Raises:
             FileNotFoundError: If input_path doesn't exist
             ValueError: If file is not a valid pickle database
         """
-        import time
-
         if not input_path.exists():
             raise FileNotFoundError(f"Database file not found: {input_path}")
 
@@ -512,7 +695,9 @@ class TemplateManager:
         # Convert to HDF5 using centralized method
         logger.debug("Converting %d resolution(s)...", len(all_databases))
         convert_start = time.perf_counter()
-        self.save_databases_to_hdf5(databases=all_databases, output_path=_output_path)
+        self.save_databases_to_hdf5(
+            databases=all_databases, output_path=_output_path, workers=workers
+        )
         convert_time = time.perf_counter() - convert_start
         logger.info("HDF5 conversion time: %.2f seconds", convert_time)
 
