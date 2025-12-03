@@ -144,8 +144,9 @@ class TestUpdateDbCommand:
 
         # Verify log messages
         assert "Migration completed successfully!" in caplog.text
-        assert "1080: 2 templates" in caplog.text
-        assert "1440: 2 templates" in caplog.text
+        assert "Saved 2 templates" in caplog.text
+        assert "/1080" in caplog.text
+        assert "/1440" in caplog.text
 
     @pytest.mark.asyncio
     async def test_already_at_latest_version(self, tmp_path: Path, caplog: Any) -> None:
@@ -317,8 +318,8 @@ class TestUpdateDbCommand:
         # Verify command succeeded
         assert result == 0
 
-        # Verbose mode enables debug logging - check for debug messages
-        assert "Applying migrations from version" in caplog.text
+        # Verbose mode enables debug logging - check for migration messages
+        assert "Applying migration: v1 → v2" in caplog.text
 
     @pytest.mark.asyncio
     async def test_quiet_mode(self, tmp_path: Path, caplog: Any) -> None:

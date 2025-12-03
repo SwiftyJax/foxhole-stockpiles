@@ -5,6 +5,7 @@ including health checks, error handling, and middleware functionality.
 """
 
 import io
+from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
 import numpy as np
@@ -18,12 +19,26 @@ from foxhole_stockpiles.enums.auth_type import AuthType
 
 
 @pytest.fixture
-def client() -> TestClient:
+def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     """Create a test client for the FastAPI app.
+
+    Args:
+        tmp_path: Temporary directory from pytest fixture.
+        monkeypatch: Pytest monkeypatch fixture for mocking.
 
     Returns:
         TestClient: A configured test client for making HTTP requests to the app.
     """
+    from unittest.mock import MagicMock
+
+    # Mock settings to provide a test database path
+    mock_settings = MagicMock()
+    mock_settings.scanner.database_path = tmp_path / "test_db.h5"
+    mock_settings.api.auth_type = None
+    mock_settings.api.auth_token = None
+
+    monkeypatch.setattr("foxhole_stockpiles.api.server.get_settings", lambda: mock_settings)
+
     return TestClient(app)
 
 

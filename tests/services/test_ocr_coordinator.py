@@ -1324,10 +1324,10 @@ class TestOCRCoordinatorIntegration:
 
     @pytest.fixture
     def real_screenshot(self) -> NDArray[np.uint8]:
-        """Load the real test screenshot in BGR format.
+        """Load the real test screenshot in BGR format, resized to 1080p.
 
         Returns:
-            NDArray[np.uint8]: Real screenshot in BGR format for testing.
+            NDArray[np.uint8]: Real screenshot in BGR format for testing at 1080p resolution.
         """
         import cv2
 
@@ -1340,19 +1340,23 @@ class TestOCRCoordinatorIntegration:
         if image_bgr is None:
             pytest.skip("Failed to load test.png")
 
+        # Resize to 1080p to match test database resolutions (1080p and 1440p available)
+        # Using 1080p as it's a common resolution in the test database
+        resized = cv2.resize(image_bgr, (1920, 1080), interpolation=cv2.INTER_AREA)
+
         # Cast to proper type for type checking
-        return image_bgr.astype(np.uint8)
+        return resized.astype(np.uint8)
 
     @pytest.fixture
     def real_database(self) -> Path:
-        """Get path to real template database.
+        """Get path to test template database.
 
         Returns:
             Path: Path to the template database file.
         """
-        db_path = Path(__file__).parent.parent.parent / "data" / "foxhole_templates.pkl"
+        db_path = Path(__file__).parent.parent / "fixtures" / "test_db_v1.h5"
         if not db_path.exists():
-            pytest.skip("foxhole_templates.pkl database not found")
+            pytest.skip("test_db_v1.h5 database not found")
         return db_path
 
     @pytest.mark.asyncio
