@@ -55,7 +55,9 @@ class OCRCoordinator:
             custom_model=config.custom_model,
             tessdata_path=config.tessdata_path,
         )
-        self._template_manager = TemplateManager(database_path=config.database_path)
+        self._template_manager = TemplateManager(
+            database_path=config.database_path, cache_size=config.template_cache_size
+        )
         self._stockpile_type_classifier = StockpileTypeClassifier()
 
     def _extract_icon_to_folder(

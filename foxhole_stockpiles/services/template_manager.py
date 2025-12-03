@@ -5,6 +5,7 @@ import logging
 import os
 import pickle
 import time
+from collections import OrderedDict
 from multiprocessing import Pool
 from pathlib import Path
 from threading import Lock
@@ -175,19 +176,54 @@ def _write_prepared_data_to_group(group: h5py.Group, prepared_data: dict[str, An
 class TemplateManager:
     """Manages multiple resolution-specific template databases."""
 
-    # Class-level shared cache (shared across all instances)
-    _shared_databases: ClassVar[dict[tuple[Path, SupportedResolution], TemplateDatabase]] = {}
+    # Class-level shared LRU cache (shared across all instances)
+    _shared_databases: ClassVar[OrderedDict[tuple[Path, SupportedResolution], TemplateDatabase]] = (
+        OrderedDict()
+    )
     _shared_lock: ClassVar[Lock] = Lock()
+    _cache_size: ClassVar[int] = 16  # Default cache size
 
-    def __init__(self, database_path: Path) -> None:
+    def __init__(self, database_path: Path, cache_size: int | None = None) -> None:
         """Initialize template manager.
 
         Args:
             database_path (Path): Path to the binary database file
+            cache_size (int | None): Maximum number of resolution databases to cache.
+                If None, uses the class-level default (16). Set to 0 to disable caching.
         """
         self.database_path = database_path
         self.active_database: TemplateDatabase | None = None
         self.current_resolution: SupportedResolution | None = None
+
+        # Store instance-level cache size (for this instance's operations)
+        self.cache_size = cache_size if cache_size is not None else 16
+
+        # Update class-level cache size if provided (for shared cache)
+        if cache_size is not None and isinstance(cache_size, int):
+            with self._shared_lock:
+                TemplateManager._cache_size = cache_size
+                # If reducing cache size, evict excess entries
+                self._evict_to_size(cache_size)
+
+    @classmethod
+    def _evict_to_size(cls, max_size: int) -> None:
+        """Evict least recently used entries to fit within max_size.
+
+        Must be called with _shared_lock held.
+
+        Args:
+            max_size (int): Maximum number of entries to keep
+        """
+        # Protect against non-int values (e.g., mocks in tests)
+        if not isinstance(max_size, int):
+            return
+
+        while len(cls._shared_databases) > max_size:
+            # Remove oldest (least recently used) entry
+            cls._shared_databases.popitem(last=False)
+            logger.debug(
+                "Evicted LRU database from cache (cache size: %d)", len(cls._shared_databases)
+            )
 
     def _check_database_version(self, file_path: Path) -> int:
         """Check database format and return version number.
@@ -221,6 +257,10 @@ class TemplateManager:
         Supports HDF5 format (version 2). Old pickle formats (version 1) must be migrated
         using 'fs update-db' command.
 
+        Uses LRU cache based on template_cache_size setting:
+        - cache_size = 0: No caching, always load from disk
+        - cache_size > 0: LRU cache with specified maximum size
+
         Args:
             resolution (SupportedResolution): Target resolution
 
@@ -231,13 +271,19 @@ class TemplateManager:
             FileNotFoundError: If database file not found
             ValueError: If database format is invalid or needs migration
         """
-        # Use shared cache key
         cache_key = (self.database_path, resolution)
 
-        # Check shared cache (thread-safe)
-        with self._shared_lock:
-            if cache_key in self._shared_databases:
-                return self._shared_databases[cache_key]
+        # Get effective cache size (handle mocked values in tests)
+        effective_cache_size = self.cache_size if isinstance(self.cache_size, int) else 16
+
+        # If caching is enabled, check cache first
+        if effective_cache_size > 0:
+            with self._shared_lock:
+                if cache_key in self._shared_databases:
+                    # Move to end (mark as recently used)
+                    self._shared_databases.move_to_end(cache_key)
+                    logger.debug("Cache hit for resolution %s", resolution)
+                    return self._shared_databases[cache_key]
 
         # Check if database exists
         if not self.database_path.exists():
@@ -292,14 +338,29 @@ class TemplateManager:
 
         database = await asyncio.to_thread(load_hdf5)
 
-        # Cache in shared cache
-        with self._shared_lock:
-            self._shared_databases[cache_key] = database
+        # Cache if caching is enabled
+        if effective_cache_size > 0:
+            with self._shared_lock:
+                # Add to cache
+                self._shared_databases[cache_key] = database
+                self._shared_databases.move_to_end(cache_key)  # Mark as most recently used
+
+                # Evict if over limit
+                if len(self._shared_databases) > effective_cache_size:
+                    evicted_key = next(iter(self._shared_databases))
+                    self._shared_databases.pop(evicted_key)
+                    logger.debug(
+                        "Evicted %s from cache (size: %d/%d)",
+                        evicted_key[1],
+                        len(self._shared_databases),
+                        effective_cache_size,
+                    )
 
         logger.debug(
-            "Loaded database with %d templates for resolution %s",
+            "Loaded database with %d templates for resolution %s%s",
             len(database.templates),
             resolution,
+            " (cached)" if effective_cache_size > 0 else " (no cache)",
         )
 
         return database

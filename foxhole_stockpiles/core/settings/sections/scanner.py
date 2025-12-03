@@ -14,6 +14,18 @@ class ScannerSettings(BaseModel):
         ),
         default=None,
     )
+    template_cache_size: int = Field(
+        description=(
+            "Maximum number of resolution databases to cache in memory (LRU cache). "
+            "0 = No caching (load from disk each time, minimal memory ~150-200 MB). "
+            "1 = Cache only last used resolution (good for single-resolution servers). "
+            "2-4 = Cache a few common resolutions (balanced approach). "
+            "16 = Cache all resolutions (maximum performance, ~200-250 MB). "
+            "Each cached resolution uses ~5-15 MB depending on template count and image size."
+        ),
+        default=16,
+        ge=0,
+    )
     early_exit_threshold: float = Field(
         description=(
             "Early exit threshold for icon matching. "
@@ -65,6 +77,7 @@ class ScannerSettings(BaseModel):
         json_schema_extra={
             "example": {
                 "database_path": "database.pkl",
+                "template_cache_size": 16,
                 "early_exit_threshold": 0.0,
                 "confidence_gap": 0.0,
                 "custom_model": "custom",

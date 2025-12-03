@@ -757,3 +757,207 @@ class TestTemplateManagerRepr:
         assert "TemplateManager" in repr_str
         assert str(db_path) in repr_str
         assert "current_resolution" in repr_str
+
+
+class TestLRUCache:
+    """Test suite for TemplateManager LRU cache functionality."""
+
+    @pytest.fixture(autouse=True)
+    def clear_cache(self) -> None:
+        """Clear the shared cache before each test."""
+        TemplateManager._shared_databases.clear()
+        TemplateManager._cache_size = 16  # Reset to default
+
+    async def test_no_caching_with_size_zero(self, tmp_path: Path) -> None:
+        """Test that cache_size=0 disables caching completely.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create database with two resolutions
+        db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        db_1440 = TemplateDatabase(SupportedResolution.R_1440)
+        databases = {
+            SupportedResolution.R_1080: db_1080,
+            SupportedResolution.R_1440: db_1440,
+        }
+        create_hdf5_database(db_path, databases)
+
+        # Create manager with cache_size=0
+        manager = TemplateManager(db_path, cache_size=0)
+
+        # Load first resolution
+        db1 = await manager.load_database(SupportedResolution.R_1080)
+        assert db1 is not None
+
+        # Cache should be empty
+        assert len(TemplateManager._shared_databases) == 0
+
+        # Load second resolution
+        db2 = await manager.load_database(SupportedResolution.R_1440)
+        assert db2 is not None
+
+        # Cache should still be empty
+        assert len(TemplateManager._shared_databases) == 0
+
+    async def test_lru_cache_with_size_one(self, tmp_path: Path) -> None:
+        """Test that cache_size=1 keeps only the most recently used resolution.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create database with three resolutions
+        db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        db_1440 = TemplateDatabase(SupportedResolution.R_1440)
+        db_2160 = TemplateDatabase(SupportedResolution.R_2160)
+        databases = {
+            SupportedResolution.R_1080: db_1080,
+            SupportedResolution.R_1440: db_1440,
+            SupportedResolution.R_2160: db_2160,
+        }
+        create_hdf5_database(db_path, databases)
+
+        # Create manager with cache_size=1
+        manager = TemplateManager(db_path, cache_size=1)
+
+        # Load first resolution
+        await manager.load_database(SupportedResolution.R_1080)
+        assert len(TemplateManager._shared_databases) == 1
+        assert (db_path, SupportedResolution.R_1080) in TemplateManager._shared_databases
+
+        # Load second resolution - should evict first
+        await manager.load_database(SupportedResolution.R_1440)
+        assert len(TemplateManager._shared_databases) == 1
+        assert (db_path, SupportedResolution.R_1080) not in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_1440) in TemplateManager._shared_databases
+
+        # Load third resolution - should evict second
+        await manager.load_database(SupportedResolution.R_2160)
+        assert len(TemplateManager._shared_databases) == 1
+        assert (db_path, SupportedResolution.R_1440) not in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_2160) in TemplateManager._shared_databases
+
+    async def test_lru_cache_with_size_two(self, tmp_path: Path) -> None:
+        """Test that cache_size=2 keeps the two most recently used resolutions.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create database with three resolutions
+        db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        db_1440 = TemplateDatabase(SupportedResolution.R_1440)
+        db_2160 = TemplateDatabase(SupportedResolution.R_2160)
+        databases = {
+            SupportedResolution.R_1080: db_1080,
+            SupportedResolution.R_1440: db_1440,
+            SupportedResolution.R_2160: db_2160,
+        }
+        create_hdf5_database(db_path, databases)
+
+        # Create manager with cache_size=2
+        manager = TemplateManager(db_path, cache_size=2)
+
+        # Load first two resolutions
+        await manager.load_database(SupportedResolution.R_1080)
+        await manager.load_database(SupportedResolution.R_1440)
+        assert len(TemplateManager._shared_databases) == 2
+
+        # Load third resolution - should evict first (LRU)
+        await manager.load_database(SupportedResolution.R_2160)
+        assert len(TemplateManager._shared_databases) == 2
+        assert (db_path, SupportedResolution.R_1080) not in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_1440) in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_2160) in TemplateManager._shared_databases
+
+        # Access R_1440 again to make it most recently used
+        await manager.load_database(SupportedResolution.R_1440)
+        assert len(TemplateManager._shared_databases) == 2
+
+        # Load R_1080 - should evict R_2160 (now LRU)
+        await manager.load_database(SupportedResolution.R_1080)
+        assert len(TemplateManager._shared_databases) == 2
+        assert (db_path, SupportedResolution.R_2160) not in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_1440) in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_1080) in TemplateManager._shared_databases
+
+    async def test_default_cache_size(self, tmp_path: Path) -> None:
+        """Test that default cache_size allows caching all resolutions.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create database with four resolutions
+        db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        db_1440 = TemplateDatabase(SupportedResolution.R_1440)
+        db_2160 = TemplateDatabase(SupportedResolution.R_2160)
+        db_1536 = TemplateDatabase(SupportedResolution.R_1536)
+        databases = {
+            SupportedResolution.R_1080: db_1080,
+            SupportedResolution.R_1440: db_1440,
+            SupportedResolution.R_2160: db_2160,
+            SupportedResolution.R_1536: db_1536,
+        }
+        create_hdf5_database(db_path, databases)
+
+        # Create manager with default cache_size (16)
+        manager = TemplateManager(db_path)
+
+        # Load all four resolutions
+        await manager.load_database(SupportedResolution.R_1080)
+        await manager.load_database(SupportedResolution.R_1440)
+        await manager.load_database(SupportedResolution.R_2160)
+        await manager.load_database(SupportedResolution.R_1536)
+
+        # All should be cached
+        assert len(TemplateManager._shared_databases) == 4
+        assert (db_path, SupportedResolution.R_1080) in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_1440) in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_2160) in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_1536) in TemplateManager._shared_databases
+
+    async def test_cache_hit_updates_lru_order(self, tmp_path: Path) -> None:
+        """Test that accessing a cached entry moves it to most recently used.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create database with three resolutions
+        db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        db_1440 = TemplateDatabase(SupportedResolution.R_1440)
+        db_2160 = TemplateDatabase(SupportedResolution.R_2160)
+        databases = {
+            SupportedResolution.R_1080: db_1080,
+            SupportedResolution.R_1440: db_1440,
+            SupportedResolution.R_2160: db_2160,
+        }
+        create_hdf5_database(db_path, databases)
+
+        # Create manager with cache_size=2
+        manager = TemplateManager(db_path, cache_size=2)
+
+        # Load R_1080 and R_1440
+        await manager.load_database(SupportedResolution.R_1080)
+        await manager.load_database(SupportedResolution.R_1440)
+
+        # Access R_1080 again (cache hit, should move to most recently used)
+        with patch("logging.Logger.debug") as mock_log:
+            await manager.load_database(SupportedResolution.R_1080)
+            # Should log cache hit
+            assert any("Cache hit" in str(call) for call in mock_log.call_args_list)
+
+        # Load R_2160 - should evict R_1440 (LRU), not R_1080
+        await manager.load_database(SupportedResolution.R_2160)
+        assert len(TemplateManager._shared_databases) == 2
+        assert (db_path, SupportedResolution.R_1080) in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_1440) not in TemplateManager._shared_databases
+        assert (db_path, SupportedResolution.R_2160) in TemplateManager._shared_databases
