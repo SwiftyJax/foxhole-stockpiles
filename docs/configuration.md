@@ -14,7 +14,7 @@ export FS_API_AUTH__AUTH_TYPE=bearer
 export FS_API_AUTH__AUTH_TOKEN=your-secret-token
 
 # Scanner settings
-export FS_SCANNER__DATABASE_PATH=/path/to/database.pkl
+export FS_SCANNER__DATABASE_PATH=/path/to/database.h5
 export FS_SCANNER__FACTION_FILTER=colonials
 
 # Output destination and format
@@ -44,7 +44,7 @@ Create a file at `~/.fs_config` with JSON configuration:
     "auth_token": "your-secret-token"
   },
   "scanner": {
-    "database_path": "/path/to/database.pkl",
+    "database_path": "/path/to/database.h5",
     "faction_filter": null,
     "screenshots_folder": ""
   },
@@ -144,7 +144,7 @@ Settings for the stockpile scanner.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `database_path` | string | `"database.pkl"` | Path to the template database file |
+| `database_path` | string | `"database.h5"` | Path to the template database file |
 | `early_exit_threshold` | float | `0.0` | Early exit threshold for icon matching (0.0-1.0). Set to 0.0 to disable early exit |
 | `confidence_gap` | float | `0.0` | Confidence gap for returning alternative candidates (0.0-1.0). Returns candidates within `(best_confidence - confidence_gap)` range that have the same category, crated status, and mod. Set to 0.0 to disable |
 | `faction_filter` | string\|null | `null` | Filter items by faction. Valid values: `"neutral"`, `"Colonials"`, `"Wardens"`, or `null` for all |
@@ -312,14 +312,16 @@ export FS_SCANNER__SCREENSHOTS_FOLDER=screenshots
     "rotate_logs": true
   },
   "scanner": {
-    "database_path": "/opt/foxhole/templates.pkl"
+    "database_path": "/opt/foxhole/templates.h5"
   },
   "output": {
     "format": "json",
     "destination": "webhook",
-    "webhook_url": "https://api.myapp.com/stockpiles",
-    "webhook_auth_type": "bearer",
-    "webhook_token": "internal-webhook-secret"
+    "webhook": {
+      "url": "https://api.myapp.com/stockpiles",
+      "auth_type": "bearer",
+      "token": "internal-webhook-secret"
+    }
   }
 }
 ```
@@ -375,14 +377,19 @@ This example shows all available settings with their default values:
   "output": {
     "format": "json",
     "destination": "return",
-    "file_path": "output.json",
-    "webhook_auth_type": null,
-    "webhook_token": null,
-    "webhook_url": null,
-    "webhook_client_auth_header": null
+    "file": {
+      "path": "output.json"
+    },
+    "webhook": {
+      "url": null,
+      "auth_type": null,
+      "token": null,
+      "client_auth_header": null
+    },
+    "console": {}
   },
   "scanner": {
-    "database_path": "database.pkl",
+    "database_path": "database.h5",
     "early_exit_threshold": 0.0,
     "confidence_gap": 0.0,
     "faction_filter": null,
@@ -464,7 +471,7 @@ This table lists all available environment variables with their default values:
 | `FS_OUTPUT__WEBHOOK__TOKEN` | string\|null | `null` | Webhook auth token |
 | `FS_OUTPUT__WEBHOOK__CLIENT_AUTH_HEADER` | string\|null | `null` | Client auth header to pass through |
 | **Scanner** | | | |
-| `FS_SCANNER__DATABASE_PATH` | string | `"database.pkl"` | Template database path |
+| `FS_SCANNER__DATABASE_PATH` | string | `"database.h5"` | Template database path |
 | `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.0` | Early exit threshold |
 | `FS_SCANNER__CONFIDENCE_GAP` | float | `0.0` | Confidence gap for alternative candidates |
 | `FS_SCANNER__FACTION_FILTER` | string\|null | `null` | Faction filter (`"neutral"`, `"Colonials"`, `"Wardens"`, or `null`) |

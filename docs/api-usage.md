@@ -74,7 +74,6 @@ Upload and analyze a stockpile screenshot.
 **Parameters:**
 - `image` (file, required): Stockpile screenshot (PNG, JPG, JPEG)
 - `faction` (query, optional): Filter by faction (`colonials` or `wardens`)
-- `mod_name` (query, optional): Filter by mod name (max 50 characters)
 - `language` (query, optional): Language for text detection (`en`, `pt`, `fr`, `de`, `ru`, `zh`)
 
 **Request Example:**
@@ -88,20 +87,15 @@ curl -X POST http://localhost:8000/ocr/scan_image \
   -F "image=@screenshot.png" \
   -G -d "faction=colonials"
 
-# With mod filter
-curl -X POST http://localhost:8000/ocr/scan_image \
-  -F "image=@screenshot.png" \
-  -G -d "mod_name=vanilla"
-
 # With language filter (French stockpile)
 curl -X POST http://localhost:8000/ocr/scan_image \
   -F "image=@screenshot.png" \
   -G -d "language=fr"
 
-# With all filters
+# With both filters
 curl -X POST http://localhost:8000/ocr/scan_image \
   -F "image=@screenshot.png" \
-  -G -d "faction=wardens&mod_name=vanilla&language=en"
+  -G -d "faction=wardens&language=en"
 
 # With authentication
 curl -X POST http://localhost:8000/ocr/scan_image \
@@ -217,7 +211,6 @@ headers = {"Authorization": "Bearer your-token"}
 # Optional query parameters
 params = {
     "faction": "colonials",  # Optional: colonials or wardens
-    "mod_name": "vanilla",   # Optional: filter by mod
     "language": "en"         # Optional: en, pt, fr, de, ru, zh
 }
 
@@ -247,7 +240,6 @@ form.append('image', fs.createReadStream('screenshot.png'));
 // Build URL with optional query parameters
 const params = new URLSearchParams({
   faction: 'colonials',  // Optional: colonials or wardens
-  mod_name: 'vanilla',   // Optional: filter by mod
   language: 'en'         // Optional: en, pt, fr, de, ru, zh
 });
 

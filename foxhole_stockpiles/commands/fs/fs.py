@@ -135,7 +135,7 @@ class CLIDispatcher:
             lines.append("")
 
         lines.append("Examples:")
-        lines.append("  fs scanner --database db.pkl --image screenshot.png")
+        lines.append("  fs scanner --database db.h5 --image screenshot.png")
         lines.append("  fs scan --help")
         lines.append("  fs database-builder --catalog catalog.json --templates templates/")
         lines.append("  fs extract-assets --catalog catalog.json --pak game.pak")
@@ -203,7 +203,7 @@ def main() -> None:
     #     "fs",
     #     "scanner",
     #     "--database",
-    #     "data/foxhole_templates.pkl",
+    #     "data/foxhole_templates.h5",
     #     "--image",
     #     "test.png",
     #     "--debug_image",

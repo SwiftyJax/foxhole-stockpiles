@@ -15,8 +15,8 @@ This tool provides two main functionalities:
 The inspector is available through the unified Foxhole Stockpiles CLI:
 
 ```bash
-fs inspect --database templates.pkl --resolution 1080
-fs debug --database templates.pkl --resolution 1080    # Short alias
+fs inspect --database templates.h5 --resolution 1080
+fs debug --database templates.h5 --resolution 1080    # Short alias
 ```
 
 ### Development Interface
@@ -37,7 +37,7 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector
 
 ### Database Argument
 
-- `--database`: Path to the template database file (`.pkl` format). If not provided, uses the value from configuration file
+- `--database`: Path to the template database file (`.h5` format). If not provided, uses the value from configuration file
 
 ### Optional Filtering Arguments
 
@@ -67,7 +67,7 @@ python -m foxhole_stockpiles.commands.candidate_inspector.candidate_inspector
 List all templates for a specific resolution:
 
 ```bash
-fs inspect --database templates.pkl --resolution 1080
+fs inspect --database templates.h5 --resolution 1080
 ```
 
 ### 2. Filter by Item Code
@@ -75,7 +75,7 @@ fs inspect --database templates.pkl --resolution 1080
 Search for items containing "Rifle" in their code:
 
 ```bash
-fs inspect --database templates.pkl --code Rifle --resolution 1080 --print
+fs inspect --database templates.h5 --code Rifle --resolution 1080 --print
 ```
 
 ### 3. Filter by Faction and Category
@@ -83,7 +83,7 @@ fs inspect --database templates.pkl --code Rifle --resolution 1080 --print
 Find all Colonial items:
 
 ```bash
-fs inspect --database templates.pkl --faction c --category item --resolution 1080 --print
+fs inspect --database templates.h5 --faction c --category item --resolution 1080 --print
 ```
 
 ### 4. Filter Crated Items Only
@@ -91,7 +91,7 @@ fs inspect --database templates.pkl --faction c --category item --resolution 108
 Show only crated items for debugging:
 
 ```bash
-fs inspect --database templates.pkl --crated true --resolution 1080 --print
+fs inspect --database templates.h5 --crated true --resolution 1080 --print
 ```
 
 ### 5. Test Icon Matching
@@ -99,13 +99,13 @@ fs inspect --database templates.pkl --crated true --resolution 1080 --print
 Test icon recognition against all candidates:
 
 ```bash
-fs inspect --database templates.pkl --resolution 1080 --icon screenshot_icon.png
+fs inspect --database templates.h5 --resolution 1080 --icon screenshot_icon.png
 ```
 
 **View top matches** to debug confidence scores:
 
 ```bash
-fs inspect --database templates.pkl --resolution 1080 --icon screenshot_icon.png --top 10
+fs inspect --database templates.h5 --resolution 1080 --icon screenshot_icon.png --top 10
 ```
 
 ### 6. Test Icon Matching with Filters
@@ -113,7 +113,7 @@ fs inspect --database templates.pkl --resolution 1080 --icon screenshot_icon.png
 Test icon matching against specific faction and category:
 
 ```bash
-fs inspect --database templates.pkl --faction c --category item --resolution 1080 \
+fs inspect --database templates.h5 --faction c --category item --resolution 1080 \
   --icon unknown_item.png --verbose
 ```
 
@@ -122,7 +122,7 @@ fs inspect --database templates.pkl --faction c --category item --resolution 108
 Full debugging with all filters and verbose output:
 
 ```bash
-fs inspect --database templates.pkl --code "7.92mm" --faction w --crated false \
+fs inspect --database templates.h5 --code "7.92mm" --faction w --crated false \
   --resolution 2160 --icon ammo_icon.png --verbose --log-file debug.log
 ```
 
@@ -162,36 +162,36 @@ Use the numeric value (e.g., '1080', '2160') with the `--resolution` parameter.
 ### Database Validation
 ```bash
 # Check if database loaded correctly
-fs inspect --database templates.pkl --resolution 1080
+fs inspect --database templates.h5 --resolution 1080
 
 # Verify specific item exists
-fs inspect --database templates.pkl --code "SoldierSupplies" --resolution 1080 --print
+fs inspect --database templates.h5 --code "SoldierSupplies" --resolution 1080 --print
 
 # Check faction distribution
-fs inspect --database templates.pkl --faction c --resolution 1080
-fs inspect --database templates.pkl --faction w --resolution 1080
+fs inspect --database templates.h5 --faction c --resolution 1080
+fs inspect --database templates.h5 --faction w --resolution 1080
 ```
 
 ### Icon Recognition Issues
 ```bash
 # Test problematic icon and view top matches
-fs inspect --database templates.pkl --resolution 1080 --icon failing_icon.png --verbose --top 10
+fs inspect --database templates.h5 --resolution 1080 --icon failing_icon.png --verbose --top 10
 
 # Check similar items
-fs inspect --database templates.pkl --code "Rifle" --resolution 1080 --print
+fs inspect --database templates.h5 --code "Rifle" --resolution 1080 --print
 ```
 
 ### Template Database Analysis
 ```bash
 # List all crated variants
-fs inspect --database templates.pkl --crated true --resolution 1080 --print
+fs inspect --database templates.h5 --crated true --resolution 1080 --print
 
 # Find items in specific mod
-fs inspect --database templates.pkl --mod vanilla --resolution 1080 --print
+fs inspect --database templates.h5 --mod vanilla --resolution 1080 --print
 
 # Category breakdown
-fs inspect --database templates.pkl --category item --resolution 1080
-fs inspect --database templates.pkl --category vehicle --resolution 1080
+fs inspect --database templates.h5 --category item --resolution 1080
+fs inspect --database templates.h5 --category vehicle --resolution 1080
 ```
 
 ## Integration
@@ -200,16 +200,16 @@ This command is part of the Foxhole Stockpiles CLI tool suite. It's typically us
 
 ```bash
 # 1. Build database
-fs database-builder --catalog catalog.json --templates templates/ --database test.pkl
+fs database-builder --catalog catalog.json --templates templates/ --database test.h5
 
 # 2. Inspect database contents
-fs inspect --database test.pkl --resolution 1080 --print
+fs inspect --database test.h5 --resolution 1080 --print
 
 # 3. Test specific icon recognition
-fs inspect --database test.pkl --resolution 1080 --icon problem_icon.png --verbose
+fs inspect --database test.h5 --resolution 1080 --icon problem_icon.png --verbose
 
 # 4. Debug faction-specific issues
-fs inspect --database test.pkl --faction warden --category vehicle --resolution 1080
+fs inspect --database test.h5 --faction warden --category vehicle --resolution 1080
 ```
 
 For more help:
@@ -297,7 +297,7 @@ Found 45 matching candidates
 
 **Error: "Invalid resolution"**
 - Check that the resolution exists in the database
-- Use `fs inspect --database db.pkl --resolution 1080` without other args to list available data
+- Use `fs inspect --database db.h5 --resolution 1080` without other args to list available data
 
 **No candidates found**
 - Try broader search criteria

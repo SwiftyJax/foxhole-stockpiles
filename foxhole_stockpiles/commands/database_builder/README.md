@@ -26,9 +26,9 @@ Builds resolution-specific template databases from extracted game assets:
 - **Async processing**: Parallel processing with semaphore-limited concurrency (8 concurrent operations)
 
 ### Binary Database Creation
-- **Pickle format**: Uses Python's pickle with HIGHEST_PROTOCOL for efficient serialization
-- **Fast loading**: Optimized for runtime performance
-- **Resolution mapping**: Dictionary structure mapping SupportedResolution → TemplateDatabase
+- **HDF5 format**: Uses HDF5 for efficient storage and fast loading
+- **Fast loading**: Optimized for runtime performance with memory-mapped access
+- **Resolution mapping**: Hierarchical structure with groups for each resolution
 - **Metadata inclusion**: Resolution info, mods, items, faction, category data
 
 ## Performance Characteristics
@@ -36,7 +36,7 @@ Builds resolution-specific template databases from extracted game assets:
 ### Database Efficiency
 - **Template capacity**: Supports all catalog items across all resolutions
 - **Memory usage**: Varies based on number of items and resolutions
-- **File size**: Typically 35-75MB for full game databases
+- **File size**: Typically 5-15MB for full game databases (compressed HDF5)
 - **Processing**: Async/await with concurrent processing for speed
 
 ## Usage
@@ -66,7 +66,7 @@ python -m foxhole_stockpiles.commands.database_builder.database_builder --catalo
 
 - `--catalog` (required): Path to catalog.json file for validation
 - `--templates` (required): Path to directory containing training images
-- `--database` (required): Path for output binary database file (.pkl format)
+- `--database` (required): Path for output binary database file (.h5 format)
 - `--use-scaling` (optional): Scale from largest available size when exact size not found (better quality)
 - `--verbose` (optional): Enable verbose logging (debug level)
 - `--quiet` (optional): Suppress all output except errors and warnings
@@ -77,19 +77,19 @@ python -m foxhole_stockpiles.commands.database_builder.database_builder --catalo
 
 **Basic usage:**
 ```bash
-fs database-builder --catalog catalog.json --templates training_images/ --database icons.pkl
+fs database-builder --catalog catalog.json --templates training_images/ --database icons.h5
 ```
 
 **With scaling, logging, and verbose output:**
 ```bash
 fs database-builder --catalog catalog.json --templates training_images/ \
-  --database icons.pkl --use-scaling --verbose --log-file build.log
+  --database icons.h5 --use-scaling --verbose --log-file build.log
 ```
 
 **Build specific resolutions only:**
 ```bash
 fs database-builder --catalog catalog.json --templates training_images/ \
-  --database icons.pkl --resolution 1080 --resolution 1440
+  --database icons.h5 --resolution 1080 --resolution 1440
 ```
 
 ## Input Requirements
@@ -125,18 +125,23 @@ Same JSON catalog used by template generator for validation:
 ## Output Format
 
 ### Binary Database Structure
-The `.pkl` file contains:
+The `.h5` file contains:
 
 ```
-Pickle format (HIGHEST_PROTOCOL):
-- Dictionary mapping SupportedResolution → TemplateDatabase
-- Each TemplateDatabase contains:
-  - Resolution metadata
-  - List of IconTemplate objects with:
-    - Image data (numpy arrays)
-    - Item metadata (code, faction, category, mod)
-    - Crated variant flag
-    - Optimization data (computed features)
+HDF5 format (hierarchical structure):
+- /metadata group:
+  - version: Database format version
+  - created_at: Timestamp
+  - python_version: Python version used to create database
+- /<resolution> groups (e.g., /1080, /1440, /2160):
+  - images: 4D array of icon images (N, H, W, C)
+  - codes: Array of item codes (strings)
+  - mods: Array of mod names (strings)
+  - crated: Boolean array for crated variants
+  - faction: Integer array (faction enum indices)
+  - category: Integer array (category enum indices)
+  - phash: Array of perceptual hash values
+  - Attributes: resolution metadata (icon_size, template_count)
 ```
 
 ### Runtime Loading
@@ -144,16 +149,15 @@ The database is designed for fast runtime loading:
 
 ```python
 # Pseudo-code for runtime usage
-import pickle
+from foxhole_stockpiles.services.template_manager import TemplateManager
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 
-# Load database
-with open("icons.pkl", "rb") as f:
-    databases = pickle.load(f)
+# Initialize template manager
+manager = TemplateManager(database_path="icons.h5")
 
-# Get templates for specific resolution
+# Load specific resolution (automatically cached)
 resolution = SupportedResolution("1080")
-database = databases[resolution]
+database = await manager.load_database(resolution)
 
 # Access templates
 for template in database.templates:
@@ -196,7 +200,7 @@ for template in database.templates:
 
 ### Memory Usage
 - **Peak memory**: ~100-300MB during processing
-- **Disk usage**: 35-75MB for typical game databases
+- **Disk usage**: 5-15MB for typical game databases (HDF5 compressed)
 
 ## Technical Details
 
@@ -222,7 +226,7 @@ Screenshot → Stockpile Detection → Icon Extraction → Database Lookup → T
 ```
 
 The scanner loads the database and uses templates for recognition:
-1. Loads pickle file containing all resolution databases
+1. Loads HDF5 file containing all resolution databases
 2. Selects appropriate resolution database based on screenshot
 3. Iterates through templates to find best matches
 
@@ -255,7 +259,7 @@ For each resolution, it logs:
 
 **Error: "Failed to save database"**
 - Verify output directory is writable
-- Check available disk space (database can be 50-100MB)
+- Check available disk space (database can be 5-15MB)
 
 **Warning: "NO templates found - skipping"**
 - This resolution will be excluded from the database
@@ -278,7 +282,7 @@ For each resolution, it logs:
 - **OpenCV (cv2)**: Image loading and resizing
 - **NumPy**: Efficient array operations for image data
 - **Python 3.12+**: Modern Python features including async/await
-- **Pickle**: Database serialization (standard library)
+- **h5py**: HDF5 database format support
 
 See `pyproject.toml` for exact version requirements.
 
@@ -294,10 +298,10 @@ fs extract-assets --catalog catalog.json --pak game.pak --output raw_assets/
 fs generate-templates --catalog catalog.json --assets raw_assets/ --templates processed_templates/
 
 # 3. Build database (this tool)
-fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.pkl
+fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.h5
 
 # 4. Scan stockpiles
-fs scanner --database templates.pkl --image screenshot.png
+fs scanner --database templates.h5 --image screenshot.png
 ```
 
 For more help:

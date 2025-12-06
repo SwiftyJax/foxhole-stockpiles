@@ -92,7 +92,7 @@ fs server
 Specify the template database to use:
 
 ```bash
-export FS_SCANNER__DATABASE_PATH=/path/to/templates.pkl
+export FS_SCANNER__DATABASE_PATH=/path/to/templates.h5
 fs server
 ```
 
@@ -128,7 +128,7 @@ User=www-data
 WorkingDirectory=/opt/foxhole-stockpiles
 Environment="FS_API_AUTH__AUTH_TYPE=bearer"
 Environment="FS_API_AUTH__AUTH_TOKEN=your-secret-token"
-Environment="FS_SCANNER__DATABASE_PATH=/opt/foxhole-stockpiles/templates.pkl"
+Environment="FS_SCANNER__DATABASE_PATH=/opt/foxhole-stockpiles/templates.h5"
 ExecStart=/usr/local/bin/fs server --host 127.0.0.1 --port 8000 --workers 4
 Restart=always
 

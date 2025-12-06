@@ -56,7 +56,7 @@ python -m foxhole_stockpiles.commands.stockpile_scanner --database DATABASE --im
 ### Arguments
 
 #### Database
-- `--database`: Path to the template database file (.pkl format). If not provided, uses the value from configuration file
+- `--database`: Path to the template database file (.h5 format). If not provided, uses the value from configuration file
 
 #### Optional
 - `--image`: Path to the input screenshot image file
@@ -77,53 +77,53 @@ python -m foxhole_stockpiles.commands.stockpile_scanner --database DATABASE --im
 
 **Basic stockpile scanning:**
 ```bash
-fs scanner --database database/db.pkl --image screenshot.png
+fs scanner --database database/db.h5 --image screenshot.png
 ```
 
 **With faction filtering and debug output:**
 ```bash
-fs scanner --database database/db.pkl --image stockpile_screenshot.png \
+fs scanner --database database/db.h5 --image stockpile_screenshot.png \
   --faction colonial --debug_image --verbose
 ```
 
 **With logging:**
 ```bash
-fs scanner --database database/db.pkl --image stockpile.png \
+fs scanner --database database/db.h5 --image stockpile.png \
   --log-file scan_results.log
 ```
 
 **Webhook output:**
 ```bash
-fs scanner --database database/db.pkl --image stockpile.png \
+fs scanner --database database/db.h5 --image stockpile.png \
   --output-destination webhook --config config.json
 ```
 
 **JSON output to file:**
 ```bash
-fs scanner --database database/db.pkl --image stockpile.png \
+fs scanner --database database/db.h5 --image stockpile.png \
   --output-destination file --output-file results.json
 ```
 
 **JSON output to file with timestamp:**
 ```bash
-fs scanner --database database/db.pkl --image stockpile.png \
+fs scanner --database database/db.h5 --image stockpile.png \
   --output-destination file --output-file "scan_{timestamp}.json"
 ```
 
 **Console output:**
 ```bash
-fs scanner --database database/db.pkl --image stockpile.png \
+fs scanner --database database/db.h5 --image stockpile.png \
   --output-destination console
 ```
 
 **With specific language for text detection:**
 ```bash
 # French stockpile
-fs scanner --database database/db.pkl --image stockpile.png \
+fs scanner --database database/db.h5 --image stockpile.png \
   --language fr
 
 # Portuguese stockpile
-fs scanner --database database/db.pkl --image stockpile.png \
+fs scanner --database database/db.h5 --image stockpile.png \
   --language pt
 ```
 
@@ -136,9 +136,9 @@ fs scanner --database database/db.pkl --image stockpile.png \
 - **Quality**: Clear, unobstructed view of stockpile items
 
 ### Database File
-- **Format**: Binary database file (.pkl) created by `fs database-builder`
+- **Format**: Binary database file (.h5) created by `fs database-builder`
 - **Content**: Pre-computed templates and lookup tables for target resolution
-- **Size**: Typically 35-75MB for full game item databases
+- **Size**: Typically 5-15MB for full game item databases
 
 ### Supported Resolutions
 The scanner automatically detects and supports:
@@ -280,10 +280,10 @@ fs extract-assets --catalog catalog.json --pak game.pak --output raw_assets/
 fs generate-templates --catalog catalog.json --assets raw_assets/ --templates processed_templates/
 
 # 3. Build database
-fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.pkl
+fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.h5
 
 # 4. Scan stockpiles
-fs scanner --database templates.pkl --image screenshot.png
+fs scanner --database templates.h5 --image screenshot.png
 ```
 
 For more help:

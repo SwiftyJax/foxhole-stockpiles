@@ -58,7 +58,7 @@ python -m foxhole_stockpiles.commands.add_icon.add_icon --database DATABASE --ic
 
 ### Required Arguments
 
-- `--database`: Path to existing template database (.pkl file)
+- `--database`: Path to existing template database (.h5 file)
 - `--icon`: Path to icon image file (PNG format recommended)
 - `--code`: Item code name (e.g., Rifle, LightTank, Medkit)
 - `--faction`: Item faction - Valid inputs: 'c', 'colonials' for Colonials; 'w', 'wardens' for Wardens; 'n', 'neutral' for Neutral
@@ -78,28 +78,28 @@ python -m foxhole_stockpiles.commands.add_icon.add_icon --database DATABASE --ic
 
 **Add a normal Colonial rifle icon at 1080p:**
 ```bash
-fs add-icon --database data/templates.pkl --icon rifle.png \
+fs add-icon --database data/templates.h5 --icon rifle.png \
   --code Rifle --faction c --category item \
   --mod vanilla --resolution 1080
 ```
 
 **Add a crated Warden shippable icon at 2160p:**
 ```bash
-fs add-icon --database data/templates.pkl --icon crate_crated.png \
+fs add-icon --database data/templates.h5 --icon crate_crated.png \
   --code ShippableCrate --faction w --category shippable \
   --crated --mod vanilla --resolution 2160
 ```
 
 **Add a neutral item at multiple resolutions:**
 ```bash
-fs add-icon --database data/templates.pkl --icon medkit.png \
+fs add-icon --database data/templates.h5 --icon medkit.png \
   --code Medkit --faction n --category item \
   --mod vanilla --resolution 1080 --resolution 1440 --resolution 2160
 ```
 
 **Add a custom mod icon with verbose logging:**
 ```bash
-fs add-icon --database data/templates.pkl --icon custom_item.png \
+fs add-icon --database data/templates.h5 --icon custom_item.png \
   --code CustomItem --faction n --category item \
   --mod my_custom_mod --resolution 1080 --verbose
 ```
@@ -111,7 +111,7 @@ An existing template database file created by `fs database-builder`:
 
 ```
 data/
-└── templates.pkl    # Existing database with resolution-specific templates
+└── templates.h5    # Existing database with resolution-specific templates
 ```
 
 ### Icon File
@@ -242,18 +242,18 @@ The add-icon command fits into the database management workflow:
 
 ```bash
 # 1. Build initial database
-fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.pkl
+fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.h5
 
 # 2. Add custom/new icons as needed
-fs add-icon --database templates.pkl --icon new_item.png \
+fs add-icon --database templates.h5 --icon new_item.png \
   --code NewItem --faction n --category item --mod vanilla --resolution 1080
 
 # 3. Continue adding more icons
-fs add-icon --database templates.pkl --icon another_item.png \
+fs add-icon --database templates.h5 --icon another_item.png \
   --code AnotherItem --faction c --category shippable --mod vanilla --resolution 1080
 
 # 4. Use updated database for scanning
-fs scanner --database templates.pkl --image screenshot.png
+fs scanner --database templates.h5 --image screenshot.png
 ```
 
 ### Use Cases
@@ -261,7 +261,7 @@ fs scanner --database templates.pkl --image screenshot.png
 **Adding new game items:**
 ```bash
 # New item added in game update
-fs add-icon --database templates.pkl --icon new_weapon.png \
+fs add-icon --database templates.h5 --icon new_weapon.png \
   --code NewWeapon --faction n --category item \
   --mod vanilla --resolution 1080 --resolution 1440 --resolution 2160
 ```
@@ -269,7 +269,7 @@ fs add-icon --database templates.pkl --icon new_weapon.png \
 **Adding mod-specific icons:**
 ```bash
 # Custom mod items
-fs add-icon --database templates.pkl --icon mod_tank.png \
+fs add-icon --database templates.h5 --icon mod_tank.png \
   --code CustomTank --faction w --category vehicle \
   --mod awesome_vehicles_mod --resolution 1080
 ```
@@ -277,7 +277,7 @@ fs add-icon --database templates.pkl --icon mod_tank.png \
 **Fixing incorrect icons:**
 ```bash
 # Replace existing icon by adding with same metadata and --replace flag
-fs add-icon --database templates.pkl --icon corrected_icon.png \
+fs add-icon --database templates.h5 --icon corrected_icon.png \
   --code ExistingItem --faction n --category item \
   --mod vanilla --resolution 1080 --replace
 ```
@@ -285,7 +285,7 @@ fs add-icon --database templates.pkl --icon corrected_icon.png \
 **Adding crated variants:**
 ```bash
 # Add crated version of existing item
-fs add-icon --database templates.pkl --icon item_crated.png \
+fs add-icon --database templates.h5 --icon item_crated.png \
   --code ItemName --faction n --category item \
   --crated --mod vanilla --resolution 1080
 ```
@@ -306,7 +306,7 @@ fs add-icon --database templates.pkl --icon item_crated.png \
 
 **Error: "Resolution X not found in database"**
 - Check which resolutions exist in your database
-- Use `fs inspect --database templates.pkl` to see available resolutions
+- Use `fs inspect --database templates.h5` to see available resolutions
 - Rebuild database with target resolution if needed
 
 **Error: "Failed to load icon image"**
@@ -324,7 +324,7 @@ fs add-icon --database templates.pkl --icon item_crated.png \
 - An icon with the same code, faction, category, crated status, and mod already exists
 - Use `--replace` flag if you want to replace the existing icon
 - Or change the metadata if this is actually a different icon
-- Check existing templates with: `fs inspect --database templates.pkl --code ItemName`
+- Check existing templates with: `fs inspect --database templates.h5 --code ItemName`
 
 **Warning: "Database saved" but no changes visible**
 - Verify templates were added with `fs inspect`
@@ -379,15 +379,15 @@ See `pyproject.toml` for exact version requirements.
 ```bash
 # Game added 3 new items, extract their icons manually
 # Then add them to existing database
-fs add-icon --database templates.pkl --icon new_item1.png \
+fs add-icon --database templates.h5 --icon new_item1.png \
   --code NewItem1 --faction n --category item \
   --mod vanilla --resolution 1080 --resolution 1440
 
-fs add-icon --database templates.pkl --icon new_item2.png \
+fs add-icon --database templates.h5 --icon new_item2.png \
   --code NewItem2 --faction c --category vehicle \
   --mod vanilla --resolution 1080 --resolution 1440
 
-fs add-icon --database templates.pkl --icon new_item3.png \
+fs add-icon --database templates.h5 --icon new_item3.png \
   --code NewItem3 --faction w --category shippable \
   --mod vanilla --resolution 1080 --resolution 1440
 ```
@@ -395,11 +395,11 @@ fs add-icon --database templates.pkl --icon new_item3.png \
 ### Mod Development Workflow
 ```bash
 # Adding custom mod items to database
-fs add-icon --database templates.pkl --icon mod_icon1.png \
+fs add-icon --database templates.h5 --icon mod_icon1.png \
   --code ModItem1 --faction n --category item \
   --mod my_awesome_mod --resolution 1080
 
-fs add-icon --database templates.pkl --icon mod_icon2.png \
+fs add-icon --database templates.h5 --icon mod_icon2.png \
   --code ModItem2 --faction n --category vehicle \
   --crated --mod my_awesome_mod --resolution 1080
 ```
@@ -407,7 +407,7 @@ fs add-icon --database templates.pkl --icon mod_icon2.png \
 ### Testing Workflow
 ```bash
 # Add test icons with verbose logging for debugging
-fs add-icon --database test_db.pkl --icon test_icon.png \
+fs add-icon --database test_db.h5 --icon test_icon.png \
   --code TestItem --faction n --category item \
   --mod test --resolution 1080 --verbose --log-file add_icon.log
 ```

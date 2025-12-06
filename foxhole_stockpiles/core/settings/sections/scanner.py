@@ -76,7 +76,7 @@ class ScannerSettings(BaseModel):
         extra="forbid",
         json_schema_extra={
             "example": {
-                "database_path": "database.pkl",
+                "database_path": "database.h5",
                 "template_cache_size": 16,
                 "early_exit_threshold": 0.0,
                 "confidence_gap": 0.0,

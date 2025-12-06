@@ -128,9 +128,6 @@ Checking database migrations for: /path/to/templates.pkl
 Migration needed: Convert pickle database (v1) to HDF5 format (v2)
 Output: /path/to/templates.h5
 
-Creating backup: /path/to/templates.pkl.backup
-Backup created successfully
-
 Applying migrations from version 1 to version 2...
 Applying migration: v1 → v2
 Migrating pickle database to HDF5: templates.pkl -> templates.h5

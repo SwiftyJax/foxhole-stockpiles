@@ -290,21 +290,21 @@ async def main() -> None:
         epilog="""
 Examples:
   # Add a normal Colonial rifle icon at 1080p (icon must be 32x32)
-  fs add-icon --database data/templates.pkl --icon rifle_32x32.png \\
+  fs add-icon --database data/templates.h5 --icon rifle_32x32.png \\
     --code Rifle --faction c --category item \\
     --mod vanilla --resolution 1080
 
   # Add a crated Warden shippable icon at 2160p (icon must be 64x64)
-  fs add-icon --database data/templates.pkl --icon crate_64x64.png \\
+  fs add-icon --database data/templates.h5 --icon crate_64x64.png \\
     --code ShippableCrate --faction w --category shippable \\
     --crated --mod vanilla --resolution 2160
 
   # Add a neutral item at multiple resolutions (need separate sized icons)
-  fs add-icon --database data/templates.pkl --icon medkit_32x32.png \\
+  fs add-icon --database data/templates.h5 --icon medkit_32x32.png \\
     --code Medkit --faction n --category item \\
     --mod vanilla --resolution 1080
 
-  fs add-icon --database data/templates.pkl --icon medkit_43x43.png \\
+  fs add-icon --database data/templates.h5 --icon medkit_43x43.png \\
     --code Medkit --faction n --category item \\
     --mod vanilla --resolution 1440
 
@@ -316,7 +316,7 @@ Note: Icon dimensions must exactly match the target resolution requirements.
     parser.add_argument(
         "--database",
         type=Path,
-        help="Path to existing template database (.pkl file)",
+        help="Path to existing template database (.h5 file)",
     )
     parser.add_argument(
         "--icon",

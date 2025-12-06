@@ -54,15 +54,15 @@ python -m foxhole_stockpiles.commands.generate_templates
 **Usage**:
 ```bash
 # Primary interface
-fs database-builder --catalog catalog.json --templates processed_templates/ --database foxhole_templates.pkl
-fs build --catalog catalog.json --templates processed_templates/ --database foxhole_templates.pkl
+fs database-builder --catalog catalog.json --templates processed_templates/ --database foxhole_templates.h5
+fs build --catalog catalog.json --templates processed_templates/ --database foxhole_templates.h5
 
 # Development interface
 python -m foxhole_stockpiles.commands.database_builder
 ```
 
 **Input**: Processed templates from generate-templates, catalog.json
-**Output**: Binary database file (.pkl) containing all templates and metadata
+**Output**: Binary database file (.h5) containing all templates and metadata
 
 [📖 Detailed Documentation](database_builder/README.md)
 
@@ -74,8 +74,8 @@ python -m foxhole_stockpiles.commands.database_builder
 **Usage**:
 ```bash
 # Primary interface
-fs inspect --database foxhole_templates.pkl --resolution 1080 --print
-fs debug --database foxhole_templates.pkl --resolution 1080 --print
+fs inspect --database foxhole_templates.h5 --resolution 1080 --print
+fs debug --database foxhole_templates.h5 --resolution 1080 --print
 
 # Development interface
 python -m foxhole_stockpiles.commands.candidate_inspector
@@ -94,8 +94,8 @@ python -m foxhole_stockpiles.commands.candidate_inspector
 **Usage**:
 ```bash
 # Primary interface
-fs scanner --database foxhole_templates.pkl --image screenshot.png
-fs scan --database foxhole_templates.pkl --image screenshot.png
+fs scanner --database foxhole_templates.h5 --image screenshot.png
+fs scan --database foxhole_templates.h5 --image screenshot.png
 
 # Development interface
 python -m foxhole_stockpiles.commands.stockpile_scanner
@@ -129,17 +129,17 @@ fs generate-templates \
 fs database-builder \
   --catalog catalog.json \
   --templates processed_templates/ \
-  --database foxhole_templates.pkl
+  --database foxhole_templates.h5
 
 # Step 4: Test and validate the database
 fs inspect \
-  --database foxhole_templates.pkl \
+  --database foxhole_templates.h5 \
   --resolution 1080 \
   --print
 
 # Step 5: Scan stockpiles
 fs scanner \
-  --database foxhole_templates.pkl \
+  --database foxhole_templates.h5 \
   --image screenshot.png
 ```
 
@@ -159,13 +159,13 @@ fs generate-templates \
 fs database-builder \
   --catalog catalog.json \
   --templates test_templates/ \
-  --database test_db.pkl \
+  --database test_db.h5 \
   --resolution 1080 \
   --resolution 2160
 
 # Test specific scenarios
 fs inspect \
-  --database test_db.pkl \
+  --database test_db.h5 \
   --resolution 1080 \
   --faction c \
   --category item \
@@ -221,7 +221,7 @@ The complete pipeline produces these important files:
 
 - **`raw_assets/`** - Extracted PNG files organized by mod
 - **`processed_templates/`** - Resolution-specific templates with variants
-- **`foxhole_templates.pkl`** - Final binary database (30-100MB)
+- **`foxhole_templates.h5`** - Final binary database (5-15MB)
 - **Log files** - Detailed processing logs for debugging
 
 ## Performance Notes

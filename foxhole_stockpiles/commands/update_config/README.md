@@ -278,7 +278,7 @@ fs update-config
 cat ~/.fs_config | head -20
 
 # 5. Continue using Foxhole Stockpiles normally
-fs scanner --database db.pkl --image screenshot.png
+fs scanner --database db.h5 --image screenshot.png
 ```
 
 ### Use Cases

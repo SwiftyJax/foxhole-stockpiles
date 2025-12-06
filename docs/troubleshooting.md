@@ -76,7 +76,7 @@ The scanner automatically detects the `tessdata/` directory in the project root.
 
 **Problem:**
 ```
-FileNotFoundError: Database file not found: foxhole_templates.pkl
+FileNotFoundError: Database file not found: foxhole_templates.h5
 ```
 
 **Solution:**
@@ -85,17 +85,17 @@ FileNotFoundError: Database file not found: foxhole_templates.pkl
    fs database-builder \
      --catalog catalog.json \
      --templates processed_templates/ \
-     --database foxhole_templates.pkl
+     --database foxhole_templates.h5
    ```
 
 2. Or specify the correct path:
    ```bash
-   fs scanner --database /path/to/database.pkl --image screenshot.png
+   fs scanner --database /path/to/database.h5 --image screenshot.png
    ```
 
 3. Or set via environment variable:
    ```bash
-   export FS_SCANNER__DATABASE_PATH=/path/to/database.pkl
+   export FS_SCANNER__DATABASE_PATH=/path/to/database.h5
    ```
 
 ### No Items Detected
@@ -107,7 +107,7 @@ Scanner completes but finds 0 items in the screenshot.
 
 1. **Wrong resolution database**
    - Verify your screenshot resolution matches the database
-   - Check database resolutions: `fs inspect --database templates.pkl`
+   - Check database resolutions: `fs inspect --database templates.h5`
    - Rebuild database with correct resolution
 
 2. **Screenshot quality**
@@ -125,7 +125,7 @@ Scanner completes but finds 0 items in the screenshot.
    - Try lowering it to detect more items:
      ```bash
      export FS_SCANNER__CONFIDENCE_THRESHOLD=0.75
-     fs scanner --database templates.pkl --image screenshot.png
+     fs scanner --database templates.h5 --image screenshot.png
      ```
    - Or set resolution-specific thresholds:
      ```bash
@@ -138,7 +138,7 @@ Scanner completes but finds 0 items in the screenshot.
    ```bash
    export FS_SCANNER__DEBUG_OUTPUT_PATH=/tmp/debug/
    export FS_LOGGING__LOG_LEVEL=DEBUG
-   fs scanner --database templates.pkl --image screenshot.png
+   fs scanner --database templates.h5 --image screenshot.png
    ```
    Check `/tmp/debug/` for intermediate detection images.
 
@@ -164,7 +164,7 @@ Scanner detects most items but misses some specific ones.
 
 3. **Verify the item exists in database**
    ```bash
-   fs inspect --database templates.pkl --code ItemCode
+   fs inspect --database templates.h5 --code ItemCode
    ```
 
 4. **Screenshot quality issues**
@@ -177,7 +177,7 @@ Scanner detects most items but misses some specific ones.
    - Supported resolutions: 720p, 1080p, 1440p, 2160p
    - Check what resolutions are in your database:
      ```bash
-     fs inspect --database templates.pkl
+     fs inspect --database templates.h5
      ```
 
 **Finding the right threshold:**
@@ -212,7 +212,7 @@ Items detected but with low confidence scores (below 0.85).
 
 4. Check template quality:
    ```bash
-   fs inspect --database templates.pkl --code ItemCode
+   fs inspect --database templates.h5 --code ItemCode
    ```
 
 ### Incorrect Quantities Detected

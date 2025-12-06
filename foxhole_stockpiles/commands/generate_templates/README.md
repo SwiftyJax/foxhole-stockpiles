@@ -188,10 +188,10 @@ fs extract-assets --catalog catalog.json --pak game.pak --output raw_assets/
 fs generate-templates --catalog catalog.json --assets raw_assets/ --templates processed_templates/
 
 # 3. Build database
-fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.pkl
+fs database-builder --catalog catalog.json --templates processed_templates/ --database templates.h5
 
 # 4. Scan stockpiles
-fs scanner --database templates.pkl --image screenshot.png
+fs scanner --database templates.h5 --image screenshot.png
 ```
 
 For more help:

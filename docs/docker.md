@@ -10,7 +10,7 @@ This guide explains how to deploy the Foxhole Stockpile Scanner API server using
    ```bash
    mkdir -p data
    # Copy your template database to data/
-   cp foxhole_templates.pkl data/
+   cp foxhole_templates.h5 data/
    ```
 
 2. **Start the server:**
@@ -41,8 +41,8 @@ docker build -t foxhole-stockpiles:latest .
 docker run -d \
   --name foxhole-api \
   -p 8000:8000 \
-  -v $(pwd)/data:/data:ro \
-  -e FS_SCANNER__DATABASE_PATH=/data/foxhole_templates.pkl \
+  -v $(pwd)/data:/app/data:ro \
+  -e FS_SCANNER__DATABASE_PATH=/app/data/foxhole_templates.h5 \
   foxhole-stockpiles:latest
 ```
 
@@ -73,7 +73,7 @@ Configure the server using environment variables:
 
 **Scanner:**
 ```bash
--e FS_SCANNER__DATABASE_PATH=/data/foxhole_templates.pkl
+-e FS_SCANNER__DATABASE_PATH=/app/data/foxhole_templates.h5
 -e FS_SCANNER__CONFIDENCE_THRESHOLD=0.85
 -e FS_SCANNER__EARLY_EXIT_THRESHOLD=0.95
 -e FS_SCANNER__MAX_NCC_CANDIDATES=25
@@ -87,7 +87,7 @@ See [Configuration Guide](configuration.md) for all available options.
 ### Volume Mounts
 
 **Required:**
-- `-v /path/to/data:/data:ro` - Template database directory (read-only)
+- `-v /path/to/data:/app/data:ro` - Template database directory (read-only)
 
 **Optional:**
 - `-v /path/to/tessdata:/app/tessdata:ro` - Custom Tesseract models (read-only)
@@ -108,7 +108,7 @@ nano .env
 ```bash
 # Database configuration (required)
 FS_DATA_DIR=./data
-FS_DATABASE_PATH=/data/foxhole_templates.pkl
+FS_SCANNER__DATABASE_PATH=/app/data/foxhole_templates.h5
 
 # Scanner settings (optional)
 FS_CONFIDENCE_THRESHOLD=0.85
@@ -209,15 +209,15 @@ docker-compose logs api
 **Ensure the database file exists:**
 ```bash
 # Check local file exists
-ls -lh data/foxhole_templates.pkl
+ls -lh data/foxhole_templates.h5
 
 # Copy database if needed
-cp database/db.pkl data/foxhole_templates.pkl
+cp database/db.h5 data/foxhole_templates.h5
 ```
 
 **Verify volume mount:**
 ```bash
-docker exec foxhole-api ls -la /data
+docker exec foxhole-api ls -la /app/data
 ```
 
 **Check environment variable:**
