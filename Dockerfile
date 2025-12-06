@@ -40,6 +40,7 @@ RUN apt-get update && \
     tesseract-ocr-rus \
     tesseract-ocr-chi-sim \
     tesseract-ocr-por \
+    libjemalloc2 \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
@@ -56,6 +57,10 @@ ENV PATH="/opt/venv/bin:$PATH"
 
 # Add /app to PYTHONPATH so imports work
 ENV PYTHONPATH=/app
+
+# Use jemalloc for better memory management
+# Set to empty string to disable: ENV LD_PRELOAD=
+ENV LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libjemalloc.so.2
 
 # Create non-root user for security
 RUN useradd -m -u 1000 appuser && \

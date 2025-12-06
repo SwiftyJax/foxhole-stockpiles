@@ -12,6 +12,9 @@ services:
       - FS_API_SERVER__HOST=0.0.0.0
       - FS_API_SERVER__PORT=8000
 
+      # Memory optimization - Use jemalloc (set to empty to disable)
+      - LD_PRELOAD=${LD_PRELOAD:-/usr/lib/x86_64-linux-gnu/libjemalloc.so.2}
+
       # Database path - REQUIRED
       - FS_SCANNER__DATABASE_PATH=${FS_DATABASE_PATH:-/data/foxhole_templates.pkl}
     volumes:
@@ -41,6 +44,9 @@ services:
       - FS_API_SERVER__HOST=0.0.0.0
       - FS_API_SERVER__PORT=8000
       - FS_API_SERVER__WORKERS=2
+
+      # Memory optimization
+      - LD_PRELOAD=${LD_PRELOAD:-/usr/lib/x86_64-linux-gnu/libjemalloc.so.2}
 
       # Authentication enabled
       - FS_API_AUTH__AUTH_TYPE=bearer
