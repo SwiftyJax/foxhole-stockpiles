@@ -1,5 +1,7 @@
 # Multi-stage build for smaller final image
-FROM python:3.12-slim AS builder
+# Build with: docker build --build-arg PYTHON_VERSION=3.13 .
+ARG PYTHON_VERSION=3.12
+FROM python:${PYTHON_VERSION}-slim AS builder
 
 # Install build dependencies
 RUN apt-get update && \
@@ -26,7 +28,8 @@ RUN pip install --no-cache-dir --upgrade pip && \
 
 
 # Final stage - minimal runtime image
-FROM python:3.12-slim
+ARG PYTHON_VERSION=3.12
+FROM python:${PYTHON_VERSION}-slim
 
 # Install runtime dependencies
 RUN apt-get update && \

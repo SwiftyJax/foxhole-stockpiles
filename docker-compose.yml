@@ -3,6 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
     image: foxhole-stockpiles:latest
     container_name: foxhole-stockpiles-api
     ports:
@@ -36,6 +38,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
     image: foxhole-stockpiles:latest
     container_name: foxhole-stockpiles-api-secure
     ports:
