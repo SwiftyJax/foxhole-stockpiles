@@ -251,6 +251,56 @@ class TemplateManager:
             except Exception:
                 return 0  # Invalid or unknown format
 
+    def get_available_resolutions(self) -> list[SupportedResolution]:
+        """Get list of available resolutions in the database file.
+
+        Returns:
+            list[SupportedResolution]: List of available resolutions, sorted by value
+
+        Raises:
+            FileNotFoundError: If database file not found
+            ValueError: If database format is invalid
+        """
+        if not self.database_path.exists():
+            raise FileNotFoundError(
+                f"Template database not found: {self.database_path}\n\n"
+                f"Please build a database first:\n"
+                f"  fs database-builder --catalog catalog.json --templates templates/ "
+                f"--database {self.database_path}"
+            )
+
+        # Check database format and version
+        db_version = self._check_database_version(self.database_path)
+
+        if db_version == 0:
+            raise ValueError(
+                f"Database file format is not recognized: {self.database_path}\n"
+                f"File may be corrupted or in an unsupported format."
+            )
+
+        if db_version != DATABASE_VERSION:
+            raise ValueError(
+                f"Database version {db_version} does not match expected version {DATABASE_VERSION}."
+                f" Please migrate your database using: "
+                f"fs update-db --database-path {self.database_path}"
+            )
+
+        # Get available resolutions from HDF5 file
+        available_resolutions = []
+        with h5py.File(str(self.database_path), "r") as f:
+            for resolution_key in f.keys():
+                try:
+                    resolution = SupportedResolution(resolution_key)
+                    available_resolutions.append(resolution)
+                except ValueError:
+                    logger.warning("Skipping invalid resolution key: %s", resolution_key)
+                    continue
+
+        # Sort by resolution value
+        available_resolutions.sort(key=lambda r: int(r.value))
+
+        return available_resolutions
+
     async def load_database(self, resolution: SupportedResolution) -> TemplateDatabase:
         """Load or get cached database for specific resolution.
 
@@ -364,6 +414,62 @@ class TemplateManager:
         )
 
         return database
+
+    async def load_all_resolutions(self) -> dict[SupportedResolution, TemplateDatabase]:
+        """Load all available resolutions from the database.
+
+        Automatically sets cache size to hold all resolutions in memory.
+        Useful for tools that need to browse/inspect all resolutions at once.
+
+        Returns:
+            dict[SupportedResolution, TemplateDatabase]: Dictionary mapping resolutions to databases
+
+        Raises:
+            FileNotFoundError: If database file not found
+            ValueError: If database format is invalid or needs migration
+        """
+        import time
+
+        start_time = time.perf_counter()
+
+        # Get available resolutions
+        available_resolutions = self.get_available_resolutions()
+
+        # Increase cache size if needed to hold all resolutions
+        # (but don't decrease it if it's already larger)
+        num_resolutions = len(available_resolutions)
+        if self.cache_size < num_resolutions:
+            logger.debug(
+                "Increasing cache size from %d to %d to hold all resolutions",
+                self.cache_size,
+                num_resolutions,
+            )
+            self.cache_size = num_resolutions
+
+        logger.info(
+            "Loading all %d resolutions from %s (cache size: %d)",
+            len(available_resolutions),
+            self.database_path,
+            self.cache_size,
+        )
+
+        # Load all resolutions
+        all_databases: dict[SupportedResolution, TemplateDatabase] = {}
+        for resolution in available_resolutions:
+            database = await self.load_database(resolution)
+            all_databases[resolution] = database
+
+        elapsed = time.perf_counter() - start_time
+        total_templates = sum(len(db.templates) for db in all_databases.values())
+
+        logger.info(
+            "Loaded all %d resolutions (%d total templates) in %.2f seconds",
+            len(all_databases),
+            total_templates,
+            elapsed,
+        )
+
+        return all_databases
 
     async def set_active_resolution(self, screenshot_height: int) -> SupportedResolution:
         """Set active resolution based on screenshot dimensions.

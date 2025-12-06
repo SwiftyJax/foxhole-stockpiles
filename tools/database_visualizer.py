@@ -2,7 +2,7 @@
 """Visual template database browser with filtering and zoom capabilities."""
 
 import argparse
-import pickle
+import asyncio
 import sys
 from pathlib import Path
 
@@ -34,6 +34,7 @@ from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.services.template_database import TemplateDatabase
+from foxhole_stockpiles.services.template_manager import TemplateManager
 
 
 class DatabaseLoader(QThread):
@@ -59,8 +60,11 @@ class DatabaseLoader(QThread):
             error: Signal with error message on failure.
         """
         try:
-            with open(self.database_path, "rb") as f:
-                all_databases = pickle.load(f)
+            # Create TemplateManager and load all resolutions
+            manager = TemplateManager(database_path=self.database_path)
+
+            # Load all resolutions using TemplateManager (runs async in sync context)
+            all_databases = asyncio.run(manager.load_all_resolutions())
 
             self.finished.emit(all_databases)
 
