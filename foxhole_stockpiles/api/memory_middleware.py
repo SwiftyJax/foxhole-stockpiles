@@ -1,5 +1,6 @@
 """Memory monitoring middleware for FastAPI."""
 
+import gc
 import time
 from collections.abc import Awaitable, Callable
 from typing import Any
@@ -7,21 +8,25 @@ from typing import Any
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from foxhole_stockpiles.core.utils import malloc_trim
 from foxhole_stockpiles.services.memory_monitor import MemoryMonitor
 
 
 class MemoryMonitorMiddleware(BaseHTTPMiddleware):
     """Middleware to track memory usage per request."""
 
-    def __init__(self, app: Any, monitor: MemoryMonitor) -> None:
+    def __init__(self, app: Any, monitor: MemoryMonitor, auto_trim_after_scan: bool = True) -> None:
         """Initialize middleware.
 
         Args:
             app: FastAPI application
             monitor: MemoryMonitor instance
+            auto_trim_after_scan: If True, automatically call malloc_trim() after scan requests
+                to release memory back to OS (default: True)
         """
         super().__init__(app)
         self.monitor = monitor
+        self.auto_trim_after_scan = auto_trim_after_scan
 
     async def dispatch(
         self, request: Request, call_next: Callable[[Request], Awaitable[Response]]
@@ -60,6 +65,11 @@ class MemoryMonitorMiddleware(BaseHTTPMiddleware):
             memory_after_mb=memory_after.rss_mb,
             status_code=response.status_code,
         )
+
+        # Auto-trim memory after scan requests to prevent fragmentation
+        if self.auto_trim_after_scan and request.url.path == "/ocr/scan_image":
+            gc.collect()
+            malloc_trim()
 
         # Take periodic snapshots
         if self.monitor.request_count % self.monitor.snapshot_interval == 0:

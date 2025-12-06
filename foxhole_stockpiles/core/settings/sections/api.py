@@ -37,6 +37,14 @@ class APIServerSettings(BaseModel):
         description="Server log level",
         default="info",
     )
+    auto_trim_memory: bool = Field(
+        description=(
+            "Automatically call malloc_trim() after each scan request to release freed memory "
+            "back to the operating system. This helps prevent memory fragmentation from keeping "
+            "process memory high."
+        ),
+        default=True,
+    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -48,6 +56,7 @@ class APIServerSettings(BaseModel):
                 "workers": 4,
                 "reload": False,
                 "log_level": "info",
+                "auto_trim_memory": True,
             }
         },
     )

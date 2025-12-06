@@ -1,6 +1,5 @@
 """Memory monitoring service for tracking memory usage and detecting leaks."""
 
-import gc
 import logging
 from collections import deque
 from datetime import datetime
@@ -8,6 +7,7 @@ from typing import Any
 
 import psutil
 
+from foxhole_stockpiles.core.utils import force_memory_release
 from foxhole_stockpiles.models.memory_snapshot import MemorySnapshot
 from foxhole_stockpiles.models.request_memory_stats import RequestMemoryStats
 
@@ -170,26 +170,33 @@ class MemoryMonitor:
     def force_garbage_collection(self) -> dict[str, Any]:
         """Force garbage collection and return statistics.
 
+        This performs full garbage collection and also calls malloc_trim() to release
+        freed memory back to the operating system, helping to reduce memory fragmentation.
+
         Returns:
-            dict[str, Any]: Garbage collection statistics
+            dict[str, Any]: Garbage collection statistics including malloc_trim results
         """
         before = self.get_current_memory()
 
-        # Force full garbage collection
-        collected = gc.collect()
+        # Force full garbage collection and malloc_trim
+        release_stats = force_memory_release()
+        collected = release_stats["gc_collected"]
+        malloc_trimmed = release_stats["malloc_trimmed"]
 
         after = self.get_current_memory()
 
         freed_mb = before.rss_mb - after.rss_mb
 
         self.logger.info(
-            "Forced garbage collection: collected %d objects, freed %.2f MB",
+            "Forced memory release: collected %d objects, malloc_trim=%d, freed %.2f MB",
             collected,
+            malloc_trimmed,
             freed_mb,
         )
 
         return {
             "objects_collected": collected,
+            "malloc_trimmed": malloc_trimmed,
             "memory_before_mb": round(before.rss_mb, 2),
             "memory_after_mb": round(after.rss_mb, 2),
             "memory_freed_mb": round(freed_mb, 2),
