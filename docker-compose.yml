@@ -5,64 +5,28 @@ services:
       dockerfile: Dockerfile
       args:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
-    image: foxhole-stockpiles:latest
-    container_name: foxhole-stockpiles-api
+    image: fs:latest
+    container_name: fs
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     environment:
-      # Server configuration (required for Docker)
-      - FS_API_SERVER__HOST=0.0.0.0
-      - FS_API_SERVER__PORT=8000
-
       # Memory optimization - Use jemalloc (set to empty to disable)
       - LD_PRELOAD=${LD_PRELOAD:-/usr/lib/x86_64-linux-gnu/libjemalloc.so.2}
-
-      # Database path - REQUIRED
-      - FS_SCANNER__DATABASE_PATH=${FS_DATABASE_PATH:-/data/foxhole_templates.pkl}
     volumes:
-      # Mount your template database - REQUIRED: Ensure the database file exists
-      # Default mounts ./data directory, change if your database is elsewhere
-      - ${FS_DATA_DIR:-./data}:/data:ro
-      # Optional: Mount tessdata for custom models
-      - ./tessdata:/app/tessdata:ro
+      # User configuration file
+      - ${FS_CONFIG_FILE:-./.fs_config}:/home/appuser/.fs_config:ro
+      # Template database directory (required)
+      - ${FS_DATA_DIR:-./data}:/app/data:ro
+      # Screenshots directory
+      - ${FS_SCREENSHOTS_DIR:-./screenshots}:/app/screenshots
+      # Logs directory
+      - ${FS_LOGS_DIR:-./logs}:/app/logs
+      # Optional: Custom tessdata models
+      - ${FS_TESSDATA_DIR:-./tessdata}:/app/tessdata:ro
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
+      test: [ "CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')" ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 5s
-
-  # Example: API with authentication enabled
-  api-secure:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
-    image: foxhole-stockpiles:latest
-    container_name: foxhole-stockpiles-api-secure
-    ports:
-      - "8001:8000"
-    environment:
-      - FS_API_SERVER__HOST=0.0.0.0
-      - FS_API_SERVER__PORT=8000
-      - FS_API_SERVER__WORKERS=2
-
-      # Memory optimization
-      - LD_PRELOAD=${LD_PRELOAD:-/usr/lib/x86_64-linux-gnu/libjemalloc.so.2}
-
-      # Authentication enabled
-      - FS_API_AUTH__AUTH_TYPE=bearer
-      - FS_API_AUTH__AUTH_TOKEN=${API_TOKEN:-change-me-in-production}
-
-      # Restricted CORS
-      - FS_API_SERVER__CORS_ALLOW_ORIGINS=["https://yourdomain.com"]
-
-      - FS_SCANNER__DATABASE_PATH=/data/foxhole_templates.pkl
-    volumes:
-      - ./data:/data:ro
-      - ./tessdata:/app/tessdata:ro
-    restart: unless-stopped
-    profiles:
-      - secure
