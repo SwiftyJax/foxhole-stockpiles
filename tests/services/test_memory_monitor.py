@@ -213,12 +213,14 @@ class TestMemoryMonitor:
         self, monitor: MemoryMonitor, mock_process: MagicMock, mock_virtual_memory: MagicMock
     ) -> None:
         """Test forcing garbage collection."""
-        # Mock gc.collect to return a number
+        # Mock force_memory_release to return expected values
         with (
-            patch("foxhole_stockpiles.services.memory_monitor.gc.collect") as mock_gc,
+            patch(
+                "foxhole_stockpiles.services.memory_monitor.force_memory_release"
+            ) as mock_release,
             patch("foxhole_stockpiles.services.memory_monitor.psutil.virtual_memory") as mock_vm,
         ):
-            mock_gc.return_value = 42
+            mock_release.return_value = {"gc_collected": 42, "malloc_trimmed": 1}
             mock_vm.return_value = mock_virtual_memory
 
             # Simulate memory change (first call returns 100MB, second returns 95MB)
@@ -230,10 +232,11 @@ class TestMemoryMonitor:
             result = monitor.force_garbage_collection()
 
             assert result["objects_collected"] == 42
+            assert result["malloc_trimmed"] == 1
             assert result["memory_before_mb"] == 100.0
             assert result["memory_after_mb"] == 95.0
             assert result["memory_freed_mb"] == 5.0
-            mock_gc.assert_called_once()
+            mock_release.assert_called_once()
 
     def test_history_max_size(
         self, mock_process: MagicMock, mock_virtual_memory: MagicMock
