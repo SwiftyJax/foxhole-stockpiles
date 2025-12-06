@@ -295,7 +295,20 @@ The API exposes endpoints for:
 - `/ocr/scan_image` - Upload and analyze stockpile screenshots
 - `/health` - Health check endpoint
 
-For more details, see the [API Server Documentation](foxhole_stockpiles/commands/api_server/README.md) and [API Usage Guide](docs/api-usage.md).
+**Configuration:**
+Quick start with example configs:
+```bash
+# Copy minimal config example
+cp .fs_config.example .fs_config
+
+# Or use Docker-optimized config
+cp docs/examples/fs_config.docker .fs_config
+```
+
+For more details, see:
+- [Configuration Examples](docs/examples/README.md) - Ready-to-use config files for different scenarios
+- [API Server Documentation](foxhole_stockpiles/commands/api_server/README.md)
+- [API Usage Guide](docs/api-usage.md)
 
 ### Notifications
 
@@ -560,6 +573,7 @@ Each CLI tool has detailed documentation in its directory:
 
 ### Guides
 
+- [Configuration Examples](docs/examples/README.md) - Ready-to-use config files (minimal, Docker, production)
 - [Configuration Guide](docs/configuration.md) - Environment variables and settings
 - [API Usage](docs/api-usage.md) - HTTP API endpoints and examples
 - [Docker Deployment](docs/docker.md) - Docker and docker-compose setup
