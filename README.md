@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/xurxogr/foxhole-stockpiles/workflows/CI/badge.svg)](https://github.com/xurxogr/foxhole-stockpiles/actions)
 [![codecov](https://codecov.io/gh/xurxogr/foxhole-stockpiles/branch/main/graph/badge.svg)](https://codecov.io/gh/xurxogr/foxhole-stockpiles)
-[![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.12+](https://img.shields.io/badge/python-3.12%20%7C%203.13-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A command-line toolset for processing Foxhole game screenshots to automatically extract stockpile information from game assets.
@@ -406,8 +406,11 @@ You can configure multiple Discord webhooks to send different events to differen
 The easiest way to run the API server is using Docker:
 
 ```bash
-# Build the image
+# Build the image (Python 3.12 by default)
 docker build -t foxhole-stockpiles .
+
+# Build with Python 3.13
+docker build --build-arg PYTHON_VERSION=3.13 -t foxhole-stockpiles:py313 .
 
 # Run with docker-compose (recommended)
 docker-compose up -d
@@ -422,8 +425,30 @@ docker run -d \
   foxhole-stockpiles
 ```
 
+**Build Options:**
+
+- `PYTHON_VERSION` - Choose Python version (default: `3.12`, supports: `3.13`)
+  ```bash
+  docker build --build-arg PYTHON_VERSION=3.13 -t foxhole-stockpiles .
+  ```
+
+**Runtime Configuration:**
+
+The Docker image includes **jemalloc** for better memory management (enabled by default). To disable:
+```bash
+docker run -d -e LD_PRELOAD= foxhole-stockpiles
+# Or in docker-compose.yml:
+# environment:
+#   - LD_PRELOAD=
+```
+
+**Memory Optimization:**
+
+The image includes jemalloc which reduces memory fragmentation by ~20-40 MB. Python 3.13 provides an additional ~10-20 MB savings.
+
 The Docker image includes:
-- Python 3.12 runtime
+- Python 3.12 runtime (or 3.13 via build arg)
+- jemalloc for improved memory management
 - All required dependencies
 - Tesseract OCR
 - Non-root user for security
