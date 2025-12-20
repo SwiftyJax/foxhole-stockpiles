@@ -198,6 +198,18 @@ export FS_OUTPUT__FORMAT=webhook
 export FS_OUTPUT__WEBHOOK_URL=https://api.example.com/stockpiles
 ```
 
+**Memory Management:**
+```bash
+# Enable memory monitoring and statistics (disabled by default)
+export FS_API_SERVER__ENABLE_MEMORY_MONITORING=true
+
+# Automatically trim memory after scan requests (enabled by default)
+export FS_API_SERVER__AUTO_TRIM_MEMORY=true
+```
+
+- `enable_memory_monitoring`: Tracks memory usage per request and exposes `/memory/*` endpoints. Adds slight overhead. Leave disabled unless debugging.
+- `auto_trim_memory`: Calls `malloc_trim()` after scans to release memory back to the OS. Prevents memory fragmentation.
+
 ## Client Examples
 
 ### Python

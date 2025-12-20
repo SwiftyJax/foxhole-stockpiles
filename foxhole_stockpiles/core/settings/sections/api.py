@@ -37,6 +37,14 @@ class APIServerSettings(BaseModel):
         description="Server log level",
         default="info",
     )
+    enable_memory_monitoring: bool = Field(
+        description=(
+            "Enable memory monitoring to track memory usage per request. "
+            "When enabled, exposes /memory/* endpoints for statistics and provides "
+            "automatic memory snapshots."
+        ),
+        default=False,
+    )
     auto_trim_memory: bool = Field(
         description=(
             "Automatically call malloc_trim() after each scan request to release freed memory "
@@ -56,6 +64,7 @@ class APIServerSettings(BaseModel):
                 "workers": 4,
                 "reload": False,
                 "log_level": "info",
+                "enable_memory_monitoring": False,
                 "auto_trim_memory": True,
             }
         },

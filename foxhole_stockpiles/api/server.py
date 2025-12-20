@@ -98,12 +98,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Add memory monitoring middleware
-app.add_middleware(
-    MemoryMonitorMiddleware,
-    monitor=memory_monitor,
-    auto_trim_after_scan=app_settings.api_server.auto_trim_memory,
-)
+# Add memory middleware if either monitoring or auto-trimming is enabled
+if app_settings.api_server.enable_memory_monitoring or app_settings.api_server.auto_trim_memory:
+    app.add_middleware(
+        MemoryMonitorMiddleware,
+        monitor=memory_monitor,
+        auto_trim_after_scan=app_settings.api_server.auto_trim_memory,
+        enable_monitoring=app_settings.api_server.enable_memory_monitoring,
+    )
 
 # Create authentication dependency
 auth_dependency = create_auth_dependency(app_settings.api_auth)

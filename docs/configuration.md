@@ -37,7 +37,9 @@ Create a file at `~/.fs_config` with JSON configuration:
 {
   "config_version": 2,
   "api_server": {
-    "cors_allow_origins": ["*"]
+    "cors_allow_origins": ["*"],
+    "enable_memory_monitoring": false,
+    "auto_trim_memory": true
   },
   "api_auth": {
     "auth_type": "bearer",
@@ -110,6 +112,8 @@ Settings for the API server.
 | `workers` | integer | `1` | Number of worker processes |
 | `reload` | boolean | `false` | Enable auto-reload on code changes (development only) |
 | `log_level` | string | `"info"` | Server log level (`"debug"`, `"info"`, `"warning"`, `"error"`) |
+| `enable_memory_monitoring` | boolean | `false` | Enable memory monitoring to track memory usage per request and expose `/memory/*` endpoints |
+| `auto_trim_memory` | boolean | `true` | Automatically call `malloc_trim()` after scan requests to release freed memory back to OS |
 
 **Examples:**
 ```bash
@@ -300,7 +304,9 @@ export FS_SCANNER__SCREENSHOTS_FOLDER=screenshots
 ```json
 {
   "api_server": {
-    "cors_allow_origins": ["https://myapp.com", "https://app.myapp.com"]
+    "cors_allow_origins": ["https://myapp.com", "https://app.myapp.com"],
+    "enable_memory_monitoring": false,
+    "auto_trim_memory": true
   },
   "api_auth": {
     "auth_type": "bearer",
@@ -345,7 +351,9 @@ This example shows all available settings with their default values:
 ```json
 {
   "api_server": {
-    "cors_allow_origins": ["*"]
+    "cors_allow_origins": ["*"],
+    "enable_memory_monitoring": false,
+    "auto_trim_memory": true
   },
   "api_auth": {
     "auth_type": null,
@@ -437,6 +445,8 @@ This table lists all available environment variables with their default values:
 | `FS_API_SERVER__WORKERS` | integer | `1` | Number of worker processes |
 | `FS_API_SERVER__RELOAD` | boolean | `false` | Enable auto-reload |
 | `FS_API_SERVER__LOG_LEVEL` | string | `"info"` | Server log level (`"debug"`, `"info"`, `"warning"`, `"error"`) |
+| `FS_API_SERVER__ENABLE_MEMORY_MONITORING` | boolean | `false` | Enable memory monitoring and `/memory/*` endpoints |
+| `FS_API_SERVER__AUTO_TRIM_MEMORY` | boolean | `true` | Auto-trim memory after scans to prevent fragmentation |
 | **API Authentication** | | | |
 | `FS_API_AUTH__AUTH_TYPE` | string\|null | `null` | API auth type (`"basic"`, `"bearer"`, or `null`) |
 | `FS_API_AUTH__AUTH_TOKEN` | string\|null | `null` | API authentication token |
