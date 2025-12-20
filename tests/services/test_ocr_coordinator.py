@@ -4,10 +4,12 @@ This module contains comprehensive tests for the OCRCoordinator class,
 which orchestrates the entire stockpile detection and analysis process.
 """
 
+import os
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
+import cv2
 import numpy as np
 import pytest
 from numpy.typing import NDArray
@@ -113,8 +115,6 @@ class TestExtractIconToFolder:
         mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
 
         # Change to tmp_path so icons folder is created there
-        import os
-
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
@@ -151,7 +151,6 @@ class TestExtractIconToFolder:
         mock_icon[10:25, 10:25] = [255, 0, 0]  # Add some blue color
 
         # Change to tmp_path so icons folder is created there
-        import os
 
         original_cwd = os.getcwd()
         try:
@@ -189,8 +188,6 @@ class TestExtractIconToFolder:
 
         mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
 
-        import os
-
         original_cwd = os.getcwd()
         try:
             os.chdir(tmp_path)
@@ -224,8 +221,6 @@ class TestExtractIconToFolder:
         coordinator = OCRCoordinator(config)
 
         mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
-
-        import os
 
         original_cwd = os.getcwd()
         try:
@@ -1329,8 +1324,6 @@ class TestOCRCoordinatorIntegration:
         Returns:
             NDArray[np.uint8]: Real screenshot in BGR format for testing at 1080p resolution.
         """
-        import cv2
-
         test_image_path = Path(__file__).parent.parent / "test.png"
         if not test_image_path.exists():
             pytest.skip("test.png not found")
@@ -1415,7 +1408,6 @@ class TestOCRCoordinatorIntegration:
         coordinator = OCRCoordinator(config)
 
         # Change to tmp_path so debug images are saved there
-        import os
 
         original_cwd = os.getcwd()
         try:

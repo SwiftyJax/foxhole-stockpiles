@@ -4,7 +4,7 @@ This module contains comprehensive tests for the EventBus class,
 which handles pub/sub event management for the notification system.
 """
 
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from foxhole_stockpiles.core.events.bus import EventBus
 from foxhole_stockpiles.enums.event_type import EventType
@@ -88,6 +88,19 @@ class TestUnsubscribe:
         # Should not raise an exception
         bus.unsubscribe(EventType.STOCKPILE_SCANNED, handler)
 
+    def test_unsubscribe_handler_not_subscribed_logs_warning(self) -> None:
+        """Test that unsubscribing a non-subscribed handler logs a warning."""
+        bus = EventBus()
+        handler1 = MagicMock(__name__="handler1")
+        handler2 = MagicMock(__name__="handler2")
+
+        # Subscribe handler1, then try to unsubscribe handler2
+        bus.subscribe(EventType.STOCKPILE_SCANNED, handler1)
+
+        with patch("foxhole_stockpiles.core.events.bus.logger") as mock_logger:
+            bus.unsubscribe(EventType.STOCKPILE_SCANNED, handler2)
+            mock_logger.warning.assert_called_once()
+
     def test_unsubscribe_one_of_multiple_handlers(self) -> None:
         """Test unsubscribing one handler when multiple are subscribed."""
         bus = EventBus()
@@ -169,3 +182,42 @@ class TestEmit:
 
         handler1.assert_called_once_with(test_data)
         handler2.assert_not_called()
+
+
+class TestClear:
+    """Test suite for EventBus.clear method.
+
+    This class contains tests for clearing all subscriptions.
+    """
+
+    def test_clear_removes_all_subscriptions(self) -> None:
+        """Test that clear removes all subscriptions."""
+        bus = EventBus()
+        handler1 = MagicMock(__name__="handler1")
+        handler2 = MagicMock(__name__="handler2")
+
+        bus.subscribe(EventType.STOCKPILE_SCANNED, handler1)
+        bus.subscribe(EventType.STOCKPILE_SCAN_FAILED, handler2)
+
+        bus.clear()
+
+        assert len(bus._subscribers) == 0
+
+    def test_clear_logs_debug_message(self) -> None:
+        """Test that clear logs a debug message."""
+        bus = EventBus()
+        handler = MagicMock(__name__="handler")
+        bus.subscribe(EventType.STOCKPILE_SCANNED, handler)
+
+        with patch("foxhole_stockpiles.core.events.bus.logger") as mock_logger:
+            bus.clear()
+            mock_logger.debug.assert_called()
+
+    def test_clear_on_empty_bus(self) -> None:
+        """Test that clear works on an empty bus."""
+        bus = EventBus()
+
+        # Should not raise
+        bus.clear()
+
+        assert len(bus._subscribers) == 0

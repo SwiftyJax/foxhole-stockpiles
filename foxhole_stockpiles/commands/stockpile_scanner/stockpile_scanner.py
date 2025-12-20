@@ -198,11 +198,3 @@ async def main() -> dict[str, Any] | None:
     except Exception as e:
         print(f"Unexpected error: {e}", file=sys.stderr)
         sys.exit(1)
-
-    return None
-
-
-if __name__ == "__main__":
-    stockpile = asyncio.run(main())
-    print(stockpile)
-    sys.exit(0)

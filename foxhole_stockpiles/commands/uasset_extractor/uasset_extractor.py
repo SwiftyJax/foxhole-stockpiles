@@ -461,7 +461,3 @@ async def main() -> None:
         exit(1)
     else:
         print("\nAll operations completed successfully!")
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

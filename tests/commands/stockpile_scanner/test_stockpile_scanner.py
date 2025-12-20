@@ -5,6 +5,7 @@ including image loading, OCR coordination, and output handling.
 """
 
 import argparse
+import sys
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -735,8 +736,6 @@ class TestMainFunction:
         database_path.touch()
 
         # Test with invalid language argument - argparse will handle the validation
-        import sys
-
         sys.argv = [
             "test",
             "--image",
@@ -754,3 +753,282 @@ class TestMainFunction:
         assert exc_info.value.code == 2
         captured = capsys.readouterr()
         assert "invalid choice" in captured.err.lower()
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.get_app_settings")
+    async def test_main_missing_database_path(
+        self,
+        mock_get_settings: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when database path is not provided.
+
+        Args:
+            mock_get_settings (Mock): Mocked get_app_settings function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        # Mock settings with no database path
+        mock_settings = MagicMock()
+        mock_settings.scanner.database_path = None
+        mock_get_settings.return_value = mock_settings
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=None,  # No database provided
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            language=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            output_destination=None,
+            output_file=None,
+            config=None,
+            token=None,
+        )
+
+        # Should exit with code 2 for argparse error
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2
+
+    @patch("argparse.ArgumentParser.parse_args")
+    async def test_main_database_file_not_exists(
+        self,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when database file does not exist.
+
+        Args:
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "nonexistent.pkl"  # Doesn't exist
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            language=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            output_destination=None,
+            output_file=None,
+            config=None,
+            token=None,
+        )
+
+        # Should exit with code 1
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    async def test_main_database_path_is_directory(
+        self,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when database path is a directory instead of a file.
+
+        Args:
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "database_dir"
+        database_path.mkdir()  # Create directory instead of file
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            language=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            output_destination=None,
+            output_file=None,
+            config=None,
+            token=None,
+        )
+
+        # Should exit with code 1
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
+    async def test_main_with_token_argument(
+        self,
+        mock_setup_logging: Mock,
+        mock_output_coordinator_class: Mock,
+        mock_coordinator_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        mock_stockpile: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with token argument for webhook output.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_output_coordinator_class (Mock): Mocked OutputCoordinator class.
+            mock_coordinator_class (Mock): Mocked OCRCoordinator class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            mock_stockpile (MagicMock): Mock stockpile from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            language=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            output_destination=None,
+            output_file=None,
+            config=None,
+            token="test_webhook_token_123",  # Token provided
+        )
+
+        # Mock OCR coordinator
+        mock_coordinator = MagicMock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=mock_stockpile)
+        mock_coordinator_class.return_value = mock_coordinator
+
+        # Mock output handler
+        mock_handler = MagicMock()
+        mock_handler.handle_output = AsyncMock(return_value=None)
+        mock_output_coordinator_class.return_value = mock_handler
+
+        await main()
+
+        # Verify handle_output was called with token
+        mock_handler.handle_output.assert_called_once()
+        call_kwargs = mock_handler.handle_output.call_args[1]
+        assert "token" in call_kwargs
+        assert call_kwargs["token"] == "test_webhook_token_123"
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
+    async def test_main_with_output_file_argument(
+        self,
+        mock_setup_logging: Mock,
+        mock_output_coordinator_class: Mock,
+        mock_coordinator_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        mock_stockpile: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with output file argument.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_output_coordinator_class (Mock): Mocked OutputCoordinator class.
+            mock_coordinator_class (Mock): Mocked OCRCoordinator class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            mock_stockpile (MagicMock): Mock stockpile from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        image_path = tmp_path / "test_screenshot.png"
+        image_path.touch()
+
+        database_path = tmp_path / "test.pkl"
+        database_path.touch()
+
+        output_file = tmp_path / "output.json"
+
+        mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        mock_imread.return_value = mock_image
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            language=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            output_destination=None,
+            output_file=output_file,  # Output file provided
+            config=None,
+            token=None,
+        )
+
+        # Mock OCR coordinator
+        mock_coordinator = MagicMock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=mock_stockpile)
+        mock_coordinator_class.return_value = mock_coordinator
+
+        # Mock output handler
+        mock_handler = MagicMock()
+        mock_handler.handle_output = AsyncMock(return_value=None)
+        mock_output_coordinator_class.return_value = mock_handler
+
+        await main()
+
+        # Verify handle_output was called with file_path
+        mock_handler.handle_output.assert_called_once()
+        call_kwargs = mock_handler.handle_output.call_args[1]
+        assert "file_path" in call_kwargs
+        assert call_kwargs["file_path"] == output_file
+
+
+def test_main_module_importable() -> None:
+    """Test that __main__ module can be imported without errors."""
+    import foxhole_stockpiles.commands.stockpile_scanner.__main__  # noqa: F401

@@ -250,7 +250,3 @@ def main() -> None:
     finally:
         # Restore original argv
         sys.argv = original_argv
-
-
-if __name__ == "__main__":
-    main()

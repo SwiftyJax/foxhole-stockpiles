@@ -4,6 +4,7 @@ This module contains comprehensive tests for the NotificationService class,
 which manages notification handlers and subscribes them to events.
 """
 
+import asyncio
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -230,7 +231,6 @@ class TestCreateHandler:
         handler(test_data)
 
         # Give asyncio time to execute
-        import asyncio
 
         await asyncio.sleep(0.1)
 
@@ -255,7 +255,6 @@ class TestCreateHandler:
             handler(test_data)
 
             # Give asyncio time to execute and log
-            import asyncio
 
             await asyncio.sleep(0.1)
 
@@ -318,6 +317,5 @@ class TestIntegration:
             event_bus.emit(EventType.STOCKPILE_SCANNED, test_data)
 
             # Give asyncio time to execute
-            import asyncio
 
             await asyncio.sleep(0.1)

@@ -7,14 +7,17 @@ and perceptual hash computation for images.
 
 import json
 from pathlib import Path
+from unittest.mock import patch
 
 import numpy as np
 
 from foxhole_stockpiles.core.utils import (
     compute_icon_phash,
     extract_day_and_hour,
+    force_memory_release,
     hamming_distance,
     load_catalog,
+    malloc_trim,
     most_frequent,
 )
 
@@ -120,6 +123,37 @@ class TestLoadCatalog:
         assert items[0].code == "ValidItem"
         assert items[1].code == ""  # Invalid item gets empty code
         assert items[2].code == "AnotherValid"
+
+    def test_load_catalog_logs_warning_on_failed_items(self, tmp_path: Path) -> None:
+        """Test that loading logs warning when items fail to convert.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_data = [
+            {
+                "CodeName": "ValidItem",
+                "FactionVariant": "",
+                "ItemCategory": "item",
+                "Icon": "icons/valid.png",
+            },
+        ]
+
+        catalog_file = tmp_path / "catalog.json"
+        catalog_file.write_text(json.dumps(catalog_data))
+
+        # Mock from_catalog to return None for some items
+        with patch("foxhole_stockpiles.core.utils.CatalogItem.from_catalog") as mock_from:
+            mock_from.return_value = None  # Simulate failed conversion
+
+            with patch("foxhole_stockpiles.core.utils.logging.getLogger") as mock_logger_get:
+                mock_logger = patch.object(mock_logger_get.return_value, "warning")
+                with mock_logger:
+                    items = load_catalog(catalog_file)
+
+                    # Should have logged a warning
+                    mock_logger_get.return_value.warning.assert_called()
+                    assert items == []
 
     def test_load_empty_catalog(self, tmp_path: Path) -> None:
         """Test loading an empty catalog file.
@@ -518,3 +552,44 @@ class TestExtractDayAndHour:
         result = extract_day_and_hour(text)
         # "5,678" and "1425" are joined -> "5,6781425"
         assert result == "5,6781425"
+
+
+class TestMallocTrim:
+    """Test suite for the malloc_trim function."""
+
+    def test_malloc_trim_success(self) -> None:
+        """Test malloc_trim when libc is available."""
+        result = malloc_trim()
+        assert isinstance(result, int)
+        assert result in (-1, 0, 1)
+
+    def test_malloc_trim_with_pad(self) -> None:
+        """Test malloc_trim with custom pad value."""
+        result = malloc_trim(pad=1024)
+        assert isinstance(result, int)
+
+    def test_malloc_trim_handles_unavailable_libc(self) -> None:
+        """Test malloc_trim when libc is not available."""
+        with patch("foxhole_stockpiles.core.utils.ctypes.CDLL") as mock_cdll:
+            mock_cdll.side_effect = OSError("libc not found")
+            result = malloc_trim()
+            assert result == -1
+
+
+class TestForceMemoryRelease:
+    """Test suite for the force_memory_release function."""
+
+    def test_force_memory_release_returns_stats(self) -> None:
+        """Test that force_memory_release returns statistics."""
+        result = force_memory_release()
+        assert isinstance(result, dict)
+        assert "gc_collected" in result
+        assert "malloc_trimmed" in result
+
+    def test_force_memory_release_calls_gc_collect(self) -> None:
+        """Test that force_memory_release calls gc.collect."""
+        with patch("foxhole_stockpiles.core.utils.gc.collect") as mock_collect:
+            mock_collect.return_value = 42
+            result = force_memory_release()
+            mock_collect.assert_called_once()
+            assert result["gc_collected"] == 42

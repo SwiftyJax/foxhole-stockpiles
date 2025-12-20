@@ -156,9 +156,3 @@ The server must be restarted after running this command.
     logger.info("  3. Verify everything works correctly")
 
     return 0
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    exit(asyncio.run(main()))

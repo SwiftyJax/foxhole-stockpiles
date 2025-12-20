@@ -21,6 +21,8 @@ from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.catalog_item import CatalogItem
+from foxhole_stockpiles.models.icon_template import IconTemplate
+from foxhole_stockpiles.services.template_database import TemplateDatabase
 
 
 class TestDatabaseBuilderInitialization:
@@ -333,13 +335,6 @@ class TestDatabaseBuilderMethods:
             builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        import numpy as np
-
-        from foxhole_stockpiles.enums.item_category import ItemCategory
-        from foxhole_stockpiles.enums.item_faction import ItemFaction
-        from foxhole_stockpiles.models.icon_template import IconTemplate
-        from foxhole_stockpiles.services.template_database import TemplateDatabase
-
         output_path = tmp_path / "subdir" / "output.pkl"
 
         # Create a database with a template

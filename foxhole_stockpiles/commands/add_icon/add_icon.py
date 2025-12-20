@@ -464,7 +464,3 @@ Note: Icon dimensions must exactly match the target resolution requirements.
 
     # Save updated database
     await adder.save_databases()
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

@@ -681,7 +681,3 @@ async def main() -> None:
         logger.exception("Template generation failed")
         print(f"❌ Template generation failed: {e}")
         exit(1)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

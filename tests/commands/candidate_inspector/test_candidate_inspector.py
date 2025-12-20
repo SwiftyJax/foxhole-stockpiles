@@ -1273,3 +1273,212 @@ class TestCandidateInspectorMain:
 
         # Result should be None since no match above threshold
         assert result is None
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.get_settings")
+    async def test_main_missing_database_path(
+        self,
+        mock_get_settings: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when database path is not provided.
+
+        Args:
+            mock_get_settings (Mock): Mocked get_settings function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Mock settings with no database path
+        mock_settings = MagicMock()
+        mock_settings.scanner.database_path = None
+        mock_get_settings.return_value = mock_settings
+
+        mock_args.return_value = argparse.Namespace(
+            database=None,  # No database provided
+            code=None,
+            faction=None,
+            category=None,
+            crated=None,
+            mod=None,
+            exclude_code=None,
+            resolution="1080",
+            icon=None,
+            confidence=0.85,
+            log_file=None,
+            verbose=False,
+            print=False,
+            quiet=False,
+            top=5,
+        )
+
+        # Should exit with code 2 for argparse error
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2
+
+    @patch("argparse.ArgumentParser.parse_args")
+    async def test_main_database_path_is_directory(
+        self,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when database path is a directory instead of a file.
+
+        Args:
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        database_path = tmp_path / "database_dir"
+        database_path.mkdir()  # Create directory instead of file
+
+        mock_args.return_value = argparse.Namespace(
+            database=database_path,
+            code=None,
+            faction=None,
+            category=None,
+            crated=None,
+            mod=None,
+            exclude_code=None,
+            resolution="1080",
+            icon=None,
+            confidence=0.85,
+            log_file=None,
+            verbose=False,
+            print=False,
+            quiet=False,
+            top=5,
+        )
+
+        # Should exit with code 1
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.TemplateManager")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.setup_logging")
+    async def test_main_database_file_not_found_error(
+        self,
+        mock_setup_logging: Mock,
+        mock_manager_class: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when FileNotFoundError is raised loading database.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_manager_class (Mock): Mocked TemplateManager class.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        mock_args.return_value = argparse.Namespace(
+            database=db_path,
+            code=None,
+            faction=None,
+            category=None,
+            crated=None,
+            mod=None,
+            exclude_code=None,
+            resolution="1080",
+            icon=None,
+            confidence=0.85,
+            log_file=None,
+            verbose=False,
+            print=False,
+            quiet=False,
+            top=5,
+        )
+
+        # Mock template manager to raise FileNotFoundError when loading database
+        manager = MagicMock()
+
+        async def mock_load_database(resolution: SupportedResolution) -> MagicMock:
+            raise FileNotFoundError("Database file not found")
+
+        manager.load_database = mock_load_database
+        mock_manager_class.return_value = manager
+
+        # Should exit with code 1
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.cv2.imread")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.TemplateManager")
+    @patch("foxhole_stockpiles.commands.candidate_inspector.candidate_inspector.setup_logging")
+    async def test_main_with_corrupted_icon_file(
+        self,
+        mock_setup_logging: Mock,
+        mock_manager_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when icon file exists but imread fails to load it.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_manager_class (Mock): Mocked TemplateManager class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        icon_path = tmp_path / "corrupted.png"
+        icon_path.touch()  # File exists
+
+        mock_args.return_value = argparse.Namespace(
+            database=db_path,
+            code=None,
+            faction=None,
+            category=None,
+            crated=None,
+            mod=None,
+            exclude_code=None,
+            resolution="1080",
+            icon=icon_path,
+            confidence=0.85,
+            log_file=None,
+            verbose=False,
+            print=False,
+            quiet=False,
+            top=5,
+        )
+
+        # imread returns None for corrupted/invalid image files
+        mock_imread.return_value = None
+
+        # Mock template manager with async methods
+        manager = MagicMock()
+
+        async def mock_load_database(resolution: SupportedResolution) -> MagicMock:
+            return MagicMock()
+
+        async def mock_set_active_resolution(resolution: int) -> None:
+            pass
+
+        manager.load_database = mock_load_database
+        manager.set_active_resolution = mock_set_active_resolution
+        mock_manager_class.return_value = manager
+
+        # Should exit with code 1 for corrupted icon
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+
+def test_main_module_importable() -> None:
+    """Test that __main__ module can be imported without errors."""
+    import foxhole_stockpiles.commands.candidate_inspector.__main__  # noqa: F401

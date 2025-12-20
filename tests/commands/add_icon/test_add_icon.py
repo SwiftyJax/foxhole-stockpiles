@@ -817,3 +817,263 @@ class TestMainFunction:
             # Verify add_icon was called with correct faction
             call_kwargs = mock_adder.add_icon.call_args[1]
             assert call_kwargs["faction"].value == expected_faction_values[faction]
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.get_settings")
+    async def test_main_missing_database_path(
+        self,
+        mock_get_settings: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when database path is not provided.
+
+        Args:
+            mock_get_settings (Mock): Mocked get_settings function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        icon_path = tmp_path / "icon.png"
+        icon_path.touch()
+
+        # Mock settings with no database path
+        mock_settings = MagicMock()
+        mock_settings.scanner.database_path = None
+        mock_get_settings.return_value = mock_settings
+
+        mock_args.return_value = argparse.Namespace(
+            database=None,  # No database provided
+            icon=icon_path,
+            code="TestItem",
+            name="Test Item",
+            faction="w",
+            category="item",
+            crated=False,
+            mod="vanilla",
+            resolution=["1080"],
+            replace=False,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+        )
+
+        # Should exit with code 2 for argparse error
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2
+
+    @patch("argparse.ArgumentParser.parse_args")
+    async def test_main_database_file_not_exists(
+        self,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when database file does not exist.
+
+        Args:
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        icon_path = tmp_path / "icon.png"
+        icon_path.touch()
+
+        database_path = tmp_path / "nonexistent.pkl"  # Doesn't exist
+
+        mock_args.return_value = argparse.Namespace(
+            database=database_path,
+            icon=icon_path,
+            code="TestItem",
+            name="Test Item",
+            faction="w",
+            category="item",
+            crated=False,
+            mod="vanilla",
+            resolution=["1080"],
+            replace=False,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+        )
+
+        # Should exit with code 1
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    async def test_main_database_path_is_directory(
+        self,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function when database path is a directory instead of a file.
+
+        Args:
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        icon_path = tmp_path / "icon.png"
+        icon_path.touch()
+
+        database_path = tmp_path / "database_dir"
+        database_path.mkdir()  # Create directory instead of file
+
+        mock_args.return_value = argparse.Namespace(
+            database=database_path,
+            icon=icon_path,
+            code="TestItem",
+            name="Test Item",
+            faction="w",
+            category="item",
+            crated=False,
+            mod="vanilla",
+            resolution=["1080"],
+            replace=False,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+        )
+
+        # Should exit with code 1
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 1
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconAdder")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.setup_logging")
+    async def test_main_with_quiet_mode(
+        self,
+        mock_setup_logging: Mock,
+        mock_adder_class: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with quiet mode enabled.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_adder_class (Mock): Mocked IconAdder class.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        icon_path = tmp_path / "icon.png"
+        icon_path.touch()
+
+        mock_args.return_value = argparse.Namespace(
+            database=db_path,
+            icon=icon_path,
+            code="TestItem",
+            name="Test Item",
+            faction="w",
+            category="item",
+            crated=False,
+            mod="vanilla",
+            resolution=["1080"],
+            replace=False,
+            verbose=False,
+            quiet=True,  # Quiet mode
+            log_file=None,
+        )
+
+        # Mock adder instance
+        mock_adder = MagicMock()
+        mock_adder.add_icon = AsyncMock(return_value=None)
+        mock_adder.save_databases = AsyncMock(return_value=None)
+        mock_adder_class.return_value = mock_adder
+
+        await main()
+
+        # Verify setup_logging was called
+        mock_setup_logging.assert_called_once()
+
+    @patch("argparse.ArgumentParser.parse_args")
+    async def test_main_with_invalid_faction(
+        self,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with invalid faction that becomes NEUTRAL.
+
+        Args:
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        icon_path = tmp_path / "icon.png"
+        icon_path.touch()
+
+        mock_args.return_value = argparse.Namespace(
+            database=db_path,
+            icon=icon_path,
+            code="TestItem",
+            name="Test Item",
+            faction="invalid_faction",  # Invalid faction
+            category="item",
+            crated=False,
+            mod="vanilla",
+            resolution=["1080"],
+            replace=False,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+        )
+
+        # Should exit with code 2 for argparse error
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2
+
+    @patch("argparse.ArgumentParser.parse_args")
+    async def test_main_with_invalid_category(
+        self,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main function with Invalid category value.
+
+        Args:
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        icon_path = tmp_path / "icon.png"
+        icon_path.touch()
+
+        mock_args.return_value = argparse.Namespace(
+            database=db_path,
+            icon=icon_path,
+            code="TestItem",
+            name="Test Item",
+            faction="w",
+            category="invalid",  # Invalid category (ItemCategory.Invalid)
+            crated=False,
+            mod="vanilla",
+            resolution=["1080"],
+            replace=False,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+        )
+
+        # Should exit with code 2 for argparse error
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2
+
+
+def test_main_module_importable() -> None:
+    """Test that __main__ module can be imported without errors."""
+    import foxhole_stockpiles.commands.add_icon.__main__  # noqa: F401

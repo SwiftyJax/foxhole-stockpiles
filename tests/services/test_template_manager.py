@@ -9,6 +9,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import h5py
+import numpy as np
 import pytest
 
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
@@ -327,8 +328,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        import numpy as np
-
         from foxhole_stockpiles.enums.item_category import ItemCategory
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
@@ -368,8 +367,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        import numpy as np
-
         from foxhole_stockpiles.enums.item_category import ItemCategory
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
@@ -413,8 +410,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        import numpy as np
-
         from foxhole_stockpiles.enums.item_category import ItemCategory
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
@@ -470,8 +465,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        import numpy as np
-
         from foxhole_stockpiles.enums.item_category import ItemCategory
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
@@ -514,8 +507,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        import numpy as np
-
         from foxhole_stockpiles.enums.item_category import ItemCategory
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
@@ -577,8 +568,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        import numpy as np
-
         from foxhole_stockpiles.enums.item_category import ItemCategory
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
@@ -700,8 +689,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        import numpy as np
-
         from foxhole_stockpiles.enums.item_category import ItemCategory
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate
@@ -1238,8 +1225,6 @@ class TestLoadAllResolutions:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        import numpy as np
-
         from foxhole_stockpiles.enums.item_category import ItemCategory
         from foxhole_stockpiles.enums.item_faction import ItemFaction
         from foxhole_stockpiles.models.icon_template import IconTemplate

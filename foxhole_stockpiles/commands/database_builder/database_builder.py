@@ -417,7 +417,3 @@ async def main() -> None:
     await builder.build_all_databases(
         output_path=database_path, target_resolutions=target_resolutions
     )
-
-
-if __name__ == "__main__":
-    asyncio.run(main())

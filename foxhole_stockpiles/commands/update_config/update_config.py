@@ -144,9 +144,3 @@ overrides will continue to work as expected.
     print(f"   - Updated config written to: {config_path}")
     print(f"   - Config version: {updated_data['config_version']}")
     print("\n📝 Note: Environment variables will continue to override file settings.")
-
-
-if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(main())

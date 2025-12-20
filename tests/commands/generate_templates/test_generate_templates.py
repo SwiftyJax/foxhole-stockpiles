@@ -6,6 +6,7 @@ template generation for multiple resolutions.
 """
 
 import argparse
+import json
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -796,8 +797,6 @@ class TestTemplateGeneratorMethods:
             mock_catalog_file (Path): Mock catalog file from fixture.
         """
         # Create a custom catalog with valid items
-        import json
-
         catalog_data = [
             {
                 "CodeName": "TestRifle",

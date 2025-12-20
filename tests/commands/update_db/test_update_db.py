@@ -23,6 +23,11 @@ from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.services.template_database import DATABASE_VERSION, TemplateDatabase
 
 
+def test_main_module_importable() -> None:
+    """Test that __main__ module can be imported without errors."""
+    import foxhole_stockpiles.commands.update_db.__main__  # noqa: F401
+
+
 def create_v1_pickle_database(db_path: Path) -> None:
     """Create a v1 pickle database for testing.
 

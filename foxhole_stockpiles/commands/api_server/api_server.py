@@ -80,7 +80,3 @@ def main() -> int:
     except Exception as e:
         print(f"Error starting server: {e}", file=sys.stderr)
         return 1
-
-
-if __name__ == "__main__":
-    sys.exit(main())

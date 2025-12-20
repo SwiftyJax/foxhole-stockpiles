@@ -388,12 +388,3 @@ async def main() -> dict[str, Any] | None:
     data = icon_match.model_dump(mode="json", exclude={"image"})
     data["confidence"] = match_result.confidence
     return data
-
-
-if __name__ == "__main__":
-    result = asyncio.run(main())
-    import json
-    import sys
-
-    print(json.dumps(result) if result is not None else "")
-    sys.exit(0)

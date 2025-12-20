@@ -9,14 +9,22 @@ from collections.abc import Generator
 from pathlib import Path
 from unittest.mock import AsyncMock, Mock, patch
 
+import cv2
 import numpy as np
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from foxhole_stockpiles import __version__
-from foxhole_stockpiles.api.server import app
+from foxhole_stockpiles.api.dependencies import (
+    get_ocr_coordinator,
+    get_output_coordinator,
+)
+from foxhole_stockpiles.api.server import app, auth_dependency
+from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
+from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 
 
 @pytest.fixture(autouse=True)
@@ -33,7 +41,6 @@ def clear_dependency_cache() -> Generator[None, None, None]:
         get_ocr_coordinator,
         get_output_coordinator,
     )
-    from foxhole_stockpiles.core.settings import get_settings
 
     # Clear all caches before test
     get_settings.cache_clear()
@@ -273,10 +280,6 @@ class TestScanStockpileEndpoint:
             client (TestClient): FastAPI test client from fixture.
         """
         # Create a simple valid PNG image
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
-        from foxhole_stockpiles.api.server import app
 
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
@@ -308,11 +311,6 @@ class TestScanStockpileEndpoint:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
-        from foxhole_stockpiles.api.server import app
-
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
@@ -342,11 +340,6 @@ class TestScanStockpileEndpoint:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
-        from foxhole_stockpiles.api.server import app
-
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
@@ -381,11 +374,6 @@ class TestScanStockpileEndpoint:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
-        from foxhole_stockpiles.api.server import app
-
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
@@ -418,8 +406,6 @@ class TestScanStockpileEndpoint:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
@@ -437,12 +423,6 @@ class TestScanStockpileEndpoint:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
-        from foxhole_stockpiles.api.server import app
-        from foxhole_stockpiles.enums.supported_language import SupportedLanguage
-
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
@@ -477,8 +457,6 @@ class TestScanStockpileEndpoint:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
@@ -495,11 +473,6 @@ class TestScanStockpileEndpoint:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator
-        from foxhole_stockpiles.api.server import app
-
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
@@ -524,11 +497,6 @@ class TestScanStockpileEndpoint:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator
-        from foxhole_stockpiles.api.server import app
-
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
@@ -544,6 +512,31 @@ class TestScanStockpileEndpoint:
 
             assert response.status_code == 500
             assert "Unexpected error" in response.json()["detail"]
+        finally:
+            app.dependency_overrides.clear()
+
+    def test_scan_stockpile_mod_validation_error(self, client: TestClient) -> None:
+        """Test handling of mod validation errors during scan.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        _, buffer = cv2.imencode(".png", img)
+        image_bytes = buffer.tobytes()
+
+        # Mock the coordinator to raise mod validation error
+        mock_coordinator = Mock()
+        error_msg = "Mod 'CustomMod' is not supported. Available mods: Vanilla, OtherMod"
+        mock_coordinator.analyze_stockpile = AsyncMock(side_effect=ValueError(error_msg))
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
+
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            response = client.post("/ocr/scan_image", files=files)
+
+            assert response.status_code == 422
+            assert error_msg in response.json()["detail"]
         finally:
             app.dependency_overrides.clear()
 
@@ -618,11 +611,6 @@ class TestAuthHeaderHandling:
             mock_settings (Mock): Mocked app settings.
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
-        from foxhole_stockpiles.api.server import app
-
         img = np.zeros((100, 100, 3), dtype=np.uint8)
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
@@ -656,6 +644,48 @@ class TestAuthHeaderHandling:
         finally:
             app.dependency_overrides.clear()
 
+    @patch("foxhole_stockpiles.api.server.app_settings")
+    def test_no_auth_header_extraction_when_not_configured(
+        self,
+        mock_settings: Mock,
+        client: TestClient,
+    ) -> None:
+        """Test that token is None when client_auth_header is not configured.
+
+        Args:
+            mock_settings (Mock): Mocked app settings.
+            client (TestClient): FastAPI test client from fixture.
+        """
+        img = np.zeros((100, 100, 3), dtype=np.uint8)
+        _, buffer = cv2.imencode(".png", img)
+        image_bytes = buffer.tobytes()
+
+        # Configure mock settings without auth header
+        mock_settings.output.webhook.client_auth_header = None
+        mock_settings.output.format = "json"
+
+        mock_coordinator = Mock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
+        app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
+
+        mock_output_coordinator = Mock()
+        mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
+        app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
+
+        try:
+            files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
+            headers = {"X-API-Key": "test-token"}
+            response = client.post("/ocr/scan_image", files=files, headers=headers)
+
+            assert response.status_code == 200
+
+            # Verify handle_output was called with token=None
+            mock_output_coordinator.handle_output.assert_called_once()
+            call_kwargs = mock_output_coordinator.handle_output.call_args[1]
+            assert call_kwargs["token"] is None
+        finally:
+            app.dependency_overrides.clear()
+
 
 class TestAPIAuthentication:
     """Test cases for API endpoint authentication."""
@@ -668,12 +698,6 @@ class TestAPIAuthentication:
             mock_settings (Mock): Mocked app settings.
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
-        from foxhole_stockpiles.api.server import app
-        from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
-
         # Disable auth
         mock_settings.api_auth = APIAuthSettings(auth_type=None, auth_token=None)
 
@@ -707,12 +731,6 @@ class TestAPIAuthentication:
             mock_settings (Mock): Mocked app settings.
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
-        from foxhole_stockpiles.api.server import app
-        from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
-
         # Enable bearer auth
         mock_settings.api_auth = APIAuthSettings(
             auth_type=AuthType.BEARER, auth_token="test-token-123"
@@ -747,9 +765,6 @@ class TestAPIAuthentication:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.server import app, auth_dependency
 
         # Override auth dependency to raise 401
         async def failing_auth() -> None:
@@ -777,9 +792,6 @@ class TestAPIAuthentication:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.server import app, auth_dependency
 
         # Override auth dependency to raise 401
         async def failing_auth() -> None:
@@ -808,12 +820,6 @@ class TestAPIAuthentication:
             mock_settings (Mock): Mocked app settings.
             client (TestClient): FastAPI test client from fixture.
         """
-        import cv2
-
-        from foxhole_stockpiles.api.dependencies import get_ocr_coordinator, get_output_coordinator
-        from foxhole_stockpiles.api.server import app
-        from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
-
         # Enable basic auth
         mock_settings.api_auth = APIAuthSettings(
             auth_type=AuthType.BASIC, auth_token="dXNlcjpwYXNz"
@@ -960,8 +966,6 @@ class TestMemoryMonitoringEndpoints:
             mock_settings (Mock): Mocked app settings.
             client (TestClient): FastAPI test client from fixture.
         """
-        from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
-
         # Disable auth
         mock_settings.api_auth = APIAuthSettings(auth_type=None, auth_token=None)
 
