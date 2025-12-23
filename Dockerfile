@@ -82,4 +82,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
 # Run the server using Python module
 # Note: Configure via environment variables or docker-compose.yml
 # See docs/docker.md for configuration options
-CMD ["python", "-m", "foxhole_stockpiles.commands.api_server.api_server"]
+CMD ["fs", "server"]
