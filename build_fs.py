@@ -82,8 +82,8 @@ def build_fs_executable() -> None:
     for module in exclude_modules:
         cmd.extend(["--exclude-module", module])
 
-    # Add module entry point (must be last)
-    cmd.extend(["-m", "foxhole_stockpiles.commands.fs"])
+    # Add the main script
+    cmd.append("foxhole_stockpiles/commands/fs/fs.py")
 
     print(f"Building with {len(hidden_imports)} hidden imports...")
 
