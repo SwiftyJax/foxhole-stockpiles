@@ -178,10 +178,15 @@ class OCRCoordinator:
         stockpile_type = scanned_stockpile.type.value if scanned_stockpile.type else "Unknown"
         stockpile_name = scanned_stockpile.name if scanned_stockpile.name else "Unknown"
 
-        # Calculate average confidence (excluding unknown items)
+        # Calculate average confidence and gap statistics (excluding unknown items)
         matched_items = [item for item in scanned_stockpile.items if item.code != "Unknown"]
         total_items = len(scanned_stockpile.items)
         unmatched_items = total_items - len(matched_items)
+
+        # Gap statistics: unique vs with alternatives
+        with_alternatives = sum(1 for item in matched_items if item.candidates)
+        unique = len(matched_items) - with_alternatives
+
         avg_confidence = (
             sum(item.confidence or 0.0 for item in matched_items) / len(matched_items)
             if matched_items
@@ -189,7 +194,8 @@ class OCRCoordinator:
         )
 
         self.logger.info(
-            "%s:%s (%s). Scanned %d items (%d unmatched) with avg confidence: %.3f in %.2fs",
+            "%s:%s (%s). Scanned %d items (%d unmatched) with avg confidence: %.3f in %.2fs. "
+            "Quality: %d unique, %d with alternatives (gap≤%.1f)",
             stockpile_type,
             stockpile_name,
             scanned_stockpile.resolution,
@@ -197,6 +203,9 @@ class OCRCoordinator:
             unmatched_items,
             avg_confidence,
             elapsed_time,
+            unique,
+            with_alternatives,
+            self.config.confidence_gap,
         )
 
         # Emit scan completed event
