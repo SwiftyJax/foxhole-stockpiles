@@ -71,8 +71,6 @@ def build_fs_executable() -> None:
         "--name",
         "fs",
         "--console",
-        "-m",
-        "foxhole_stockpiles.commands.fs",
     ]
 
     # Add all hidden imports
@@ -83,6 +81,9 @@ def build_fs_executable() -> None:
     exclude_modules = ["pytest", "mypy", "ruff", "pre_commit"]
     for module in exclude_modules:
         cmd.extend(["--exclude-module", module])
+
+    # Add module entry point (must be last)
+    cmd.extend(["-m", "foxhole_stockpiles.commands.fs"])
 
     print(f"Building with {len(hidden_imports)} hidden imports...")
 
