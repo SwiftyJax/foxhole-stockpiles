@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-12-24
+
+### Added
+- **HDF5 Database Format**: Migrated from pickle to HDF5 for 20-40% memory reduction and faster loading (use `fs update-db` to convert)
+- **Memory Monitoring System**: Complete profiling with `/memory/stats` and `/memory/gc` API endpoints, automatic trimming after each scan
+- **Git Version Tracking**: Startup logs show commit hash, date, and dirty status (baked into Docker images at build time)
+- **Match Quality Statistics**: Scan logs include unique vs alternative matches to assess detection confidence
+- **Notification System**: Discord webhooks for scan events with customizable message templates
+- **Python 3.13 Support**: Docker images support both Python 3.12 and 3.13
+- **jemalloc Integration**: Reduces memory fragmentation by 20-40 MB
+- **Configurable Template Cache**: Control resolution database caching (0-16, default: 16 = all)
+- **Multi-language OCR**: API and CLI support for specifying language (English, Portuguese, French, German, Russian, Chinese)
+- **Confidence Gap Setting**: Configure threshold for returning alternative match candidates
+- **Performance Documentation**: Detailed metrics in README (99.99% detection rate, 1-2s scan time)
+
+### Changed
+- **BREAKING**: Database format from .pkl to .h5 - existing databases must be migrated with `fs update-db`
+- **BREAKING**: Language, faction, and mod are now method parameters instead of global scanner settings
+- **Configuration**: Split into logical sections (api, scanner, notifications, output) with separate format/destination settings
+- **Architecture**: OCRCoordinator and OutputCoordinator are now stateless singletons for better memory efficiency
+- **Early Exit Threshold**: Now defaults to 0.0 (disabled) for maximum accuracy instead of early termination
+- **Memory Management**: Webhooks use persistent connections, automatic gc.collect() + malloc_trim() after scans
+
+### Performance
+- **Memory**: ~200 MB baseline, ~400 MB peak (27.5% faster scans, 20-40% less memory)
+- **Detection**: 99.99% rate (4 undetected / 27,538 items in production)
+- **Confidence**: 97.89% average (based on 1,000+ production scans)
+- **Speed**: 1-2s per scan on consumer hardware (6+ cores)
+
+### Documentation
+- Added performance metrics and system requirements to README
+- Added fs_config examples for different deployment scenarios
+- Updated Docker documentation with Python 3.13 and jemalloc info
+- Added Windows executable build to CI workflow
+
 ## [0.2.0] - 2025-10-19
 
 ### Added
@@ -102,7 +137,8 @@ Initial beta release.
 - Test coverage >80%
 - CI/CD with GitHub Actions
 
-[Unreleased]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/xurxogr/foxhole-stockpiles/releases/tag/v0.1.0
