@@ -23,6 +23,7 @@ from foxhole_stockpiles.api.memory_middleware import MemoryMonitorMiddleware
 from foxhole_stockpiles.core.events import get_event_bus
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
+from foxhole_stockpiles.core.version import get_version_info
 from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
@@ -57,7 +58,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """
     setup_logging(app_settings.logging)
     logger = logging.getLogger(__name__)
-    logger.info("Starting Foxhole Stockpile Scanner API")
+    logger.info("Starting Foxhole Stockpile Scanner API v%s", get_version_info())
     logger.info("Database path: %s", app_settings.scanner.database_path)
 
     # Initialize notification service if enabled

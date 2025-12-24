@@ -1,10 +1,19 @@
 services:
   api:
+    # For building with git info, use ./docker-build.sh first, then:
+    # docker-compose up -d
+    # Or to build directly (without git info):
+    # docker-compose up -d --build
     build:
       context: .
       dockerfile: Dockerfile
       args:
         PYTHON_VERSION: ${PYTHON_VERSION:-3.12}
+        # Git info args - automatically passed by docker-build.sh
+        GIT_COMMIT_HASH: ${GIT_COMMIT_HASH:-unknown}
+        GIT_COMMIT_SHORT_HASH: ${GIT_COMMIT_SHORT_HASH:-unknown}
+        GIT_COMMIT_DATE: ${GIT_COMMIT_DATE:-unknown}
+        GIT_DIRTY: ${GIT_DIRTY:-unknown}
     image: fs:latest
     container_name: fs
     ports:

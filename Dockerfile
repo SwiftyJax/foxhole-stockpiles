@@ -31,6 +31,12 @@ RUN pip install --no-cache-dir --upgrade pip && \
 ARG PYTHON_VERSION=3.12
 FROM python:${PYTHON_VERSION}-slim
 
+# Build-time git information (passed during docker build)
+ARG GIT_COMMIT_HASH=unknown
+ARG GIT_COMMIT_SHORT_HASH=unknown
+ARG GIT_COMMIT_DATE=unknown
+ARG GIT_DIRTY=unknown
+
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
@@ -54,6 +60,12 @@ COPY foxhole_stockpiles /app/foxhole_stockpiles
 
 # Set up working directory
 WORKDIR /app
+
+# Write git info to file for runtime access
+RUN echo "GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" > /app/.git_info && \
+    echo "GIT_COMMIT_SHORT_HASH=${GIT_COMMIT_SHORT_HASH}" >> /app/.git_info && \
+    echo "GIT_COMMIT_DATE=${GIT_COMMIT_DATE}" >> /app/.git_info && \
+    echo "GIT_DIRTY=${GIT_DIRTY}" >> /app/.git_info
 
 # Activate virtual environment
 ENV PATH="/opt/venv/bin:$PATH"
