@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "foxhole-stockpiles"
-version = "0.2.0"
+version = "0.3.1"
 description = "REST API for processing Foxhole game screenshots to extract stockpile information"
 readme = "README.md"
 license = {text = "MIT"}
