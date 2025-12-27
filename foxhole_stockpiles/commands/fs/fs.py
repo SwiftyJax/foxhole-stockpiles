@@ -68,6 +68,11 @@ class CLIDispatcher:
                 module="foxhole_stockpiles.commands.update_config.update_config",
                 aliases=["update"],
             ),
+            "gui": CommandInfo(
+                description="Launch the GUI application",
+                module="foxhole_stockpiles.commands.gui.gui",
+                aliases=["ui", "app"],
+            ),
         }
 
     def resolve_command_alias(self, command: str) -> str | None:

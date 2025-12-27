@@ -47,6 +47,10 @@ server = [
     "psutil>=6.1.1",
     "memory-profiler>=0.61.0",
 ]
+gui = [
+    # PyQt6 for GUI
+    "PyQt6>=6.6.0",
+]
 dev = [
     # Testing
     "pytest>=8.4.2",

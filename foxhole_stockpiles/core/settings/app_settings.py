@@ -143,7 +143,7 @@ class AppSettings(BaseSettings):
             data["output"] = new_output
             del data["output_format"]
 
-        if "scanner" in data:
+        if "scanner" in data and isinstance(data["scanner"], dict):
             data["scanner"].pop("confidence_threshold", None)
             data["scanner"].pop("confidence_by_resolution", None)
 
