@@ -163,7 +163,7 @@ class ConfigWindow(QMainWindow):
         """Collect settings from tabs based on current mode.
 
         Returns:
-            AppSettings: AppSettings instance with current values from tabs.
+            AppSettings: AppSettings instance with current values from tabs
         """
         if self.advanced_mode_checkbox.isChecked():
             # Advanced mode - collect from detailed tabs

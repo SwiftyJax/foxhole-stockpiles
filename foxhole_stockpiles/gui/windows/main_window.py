@@ -2,15 +2,12 @@
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
-    QLabel,
     QMainWindow,
     QMessageBox,
-    QStatusBar,
-    QVBoxLayout,
-    QWidget,
 )
 
 from foxhole_stockpiles import __version__
+from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
 
 
@@ -27,34 +24,12 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(f"FS (Foxhole Stockpiles) - v{__version__}")
         self.setGeometry(100, 100, 1000, 700)
 
-        # Create central widget with placeholder content
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
-
-        layout = QVBoxLayout(central_widget)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-        # Welcome message
-        welcome_label = QLabel(f"FS (Foxhole Stockpiles)\nVersion {__version__}")
-        welcome_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        welcome_label.setStyleSheet("QLabel { font-size: 24px; font-weight: bold; padding: 20px; }")
-        layout.addWidget(welcome_label)
-
-        # Placeholder for server control
-        placeholder_label = QLabel(
-            "Server Control\n\nComing Soon\n\nUse File > Configuration to manage settings"
-        )
-        placeholder_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        placeholder_label.setStyleSheet("QLabel { font-size: 16px; color: gray; padding: 20px; }")
-        layout.addWidget(placeholder_label)
+        # Create central widget with server control panel
+        self.server_panel = ServerControlPanel()
+        self.setCentralWidget(self.server_panel)
 
         # Create menu bar
         self.create_menu_bar()
-
-        # Create status bar
-        status_bar = QStatusBar()
-        self.setStatusBar(status_bar)
-        status_bar.showMessage("Ready")
 
     def create_menu_bar(self) -> None:
         """Create the menu bar."""

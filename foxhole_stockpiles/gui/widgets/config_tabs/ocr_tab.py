@@ -243,7 +243,7 @@ class OCRTab(QWidget):
         """Get current values from widgets.
 
         Returns:
-            OCRSettings: OCRSettings instance with current values from widgets.
+            OCRSettings: OCRSettings instance with current values from widgets
         """
         return OCRSettings(
             height=self.height_input.value(),

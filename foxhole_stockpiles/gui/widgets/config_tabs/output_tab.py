@@ -208,7 +208,7 @@ class OutputTab(QWidget):
         """Get current values from widgets.
 
         Returns:
-            OutputSettings: OutputSettings instance with current values from widgets.
+            OutputSettings: OutputSettings instance with current values from widgets
         """
         webhook_auth_type_str = self.webhook_auth_type_input.currentText()
         webhook_auth_type: AuthType | None = (

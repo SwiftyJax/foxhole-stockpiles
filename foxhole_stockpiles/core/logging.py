@@ -15,6 +15,10 @@ def setup_logging(settings: LoggingSettings) -> None:
     Args:
         settings (LoggingSettings): Logging settings to configure logging.
     """
+    # Save any existing handlers that should be preserved (e.g., GUI handlers)
+    root_logger = logging.getLogger()
+    existing_handlers = root_logger.handlers.copy()
+
     handlers: Sequence[logging.Handler]
     if settings.log_file:
         log_path = Path(settings.log_file)
@@ -41,6 +45,13 @@ def setup_logging(settings: LoggingSettings) -> None:
         handlers=handlers,
         force=True,
     )
+
+    # Restore any existing handlers that were removed by force=True
+    for handler in existing_handlers:
+        # Only add back handlers that aren't StreamHandler or FileHandler
+        # to avoid duplicates with what we just configured
+        if not isinstance(handler, (logging.StreamHandler, logging.FileHandler)):
+            root_logger.addHandler(handler)
 
     # Configure individual logger levels
     for logger_name, level in settings.loggers.items():

@@ -121,7 +121,7 @@ class APIServerTab(QWidget):
         """Get current values from widgets.
 
         Returns:
-            APIServerSettings: APIServerSettings instance with current values from widgets.
+            APIServerSettings: APIServerSettings instance with current values from widgets
         """
         # Parse CORS origins from text
         try:

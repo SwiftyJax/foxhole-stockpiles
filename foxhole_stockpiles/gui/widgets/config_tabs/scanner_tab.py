@@ -275,7 +275,7 @@ class ScannerTab(QWidget):
         """Get current values from widgets.
 
         Returns:
-            ScannerSettings: ScannerSettings instance with current values from widgets.
+            ScannerSettings: ScannerSettings instance with current values from widgets
         """
         db_path_text = self.database_path_input.text()
         return ScannerSettings(

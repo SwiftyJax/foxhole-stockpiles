@@ -279,10 +279,10 @@ class BasicConfigTab(QWidget):
         """Set widget values from settings.
 
         Args:
-            api_server: API server settings
-            api_auth: API authentication settings
-            scanner: Scanner settings
-            output: Output settings
+            api_server (APIServerSettings): API server settings
+            api_auth (APIAuthSettings): API authentication settings
+            scanner (ScannerSettings): Scanner settings
+            output (OutputSettings): Output settings
         """
         # API Server
         self.port_input.setValue(api_server.port)
@@ -324,7 +324,8 @@ class BasicConfigTab(QWidget):
         """Get current values from widgets.
 
         Returns:
-            Tuple of (APIServerSettings, APIAuthSettings, ScannerSettings, OutputSettings)
+            tuple[APIServerSettings, APIAuthSettings, ScannerSettings, OutputSettings]: Tuple of
+              (APIServerSettings, APIAuthSettings, ScannerSettings, OutputSettings)
         """
         # API Server - use defaults for other values
         api_server = APIServerSettings(port=self.port_input.value())

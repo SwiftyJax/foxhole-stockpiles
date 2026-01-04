@@ -133,7 +133,7 @@ class LoggingTab(QWidget):
         """Get current values from widgets.
 
         Returns:
-            LoggingSettings: LoggingSettings instance with current values from widgets.
+            LoggingSettings: LoggingSettings instance with current values from widgets
         """
         return LoggingSettings(
             log_level=self.log_level_input.currentText(),

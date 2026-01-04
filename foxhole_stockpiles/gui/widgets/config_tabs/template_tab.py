@@ -171,7 +171,7 @@ class TemplateTab(QWidget):
         """Get current values from widgets.
 
         Returns:
-            TemplateSettings: TemplateSettings instance with current values from widgets.
+            TemplateSettings: TemplateSettings instance with current values from widgets
         """
         return TemplateSettings(
             crate_red_multiplier=self.red_mult_input.value(),

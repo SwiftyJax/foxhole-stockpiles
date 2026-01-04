@@ -152,7 +152,7 @@ class APIAuthTab(QWidget):
         """Get current values from widgets.
 
         Returns:
-            APIAuthSettings: APIAuthSettings instance with current values from widgets.
+            APIAuthSettings: APIAuthSettings instance with current values from widgets
         """
         # Determine auth type from radio buttons
         if self.basic_auth_radio.isChecked():
