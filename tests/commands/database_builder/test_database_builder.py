@@ -950,7 +950,7 @@ class TestDatabaseBuilderMerge:
         new_databases = {SupportedResolution.R_1080: new_db}
 
         # Merge should return new_databases as-is since file doesn't exist
-        merged = await builder._merge_with_existing(new_databases, tmp_path / "nonexistent.h5")
+        merged, _ = await builder._merge_with_existing(new_databases, tmp_path / "nonexistent.h5")
         assert SupportedResolution.R_1080 in merged
 
     async def test_merge_adds_new_templates_to_existing(
@@ -980,7 +980,7 @@ class TestDatabaseBuilderMerge:
         new_databases = {SupportedResolution.R_1080: new_db}
 
         # Merge
-        merged = await builder._merge_with_existing(new_databases, output_path)
+        merged, _ = await builder._merge_with_existing(new_databases, output_path)
 
         # Should have all 3 templates
         assert len(merged[SupportedResolution.R_1080].templates) == 3
@@ -1013,7 +1013,7 @@ class TestDatabaseBuilderMerge:
         new_databases = {SupportedResolution.R_1080: new_db}
 
         # Merge
-        merged = await builder._merge_with_existing(new_databases, output_path)
+        merged, _ = await builder._merge_with_existing(new_databases, output_path)
 
         # Should still have only 1 template (duplicate was skipped)
         assert len(merged[SupportedResolution.R_1080].templates) == 1
@@ -1045,7 +1045,7 @@ class TestDatabaseBuilderMerge:
         new_databases = {SupportedResolution.R_1080: new_db}
 
         # Merge
-        merged = await builder._merge_with_existing(new_databases, output_path)
+        merged, _ = await builder._merge_with_existing(new_databases, output_path)
 
         # Should have 2 templates (different mods)
         assert len(merged[SupportedResolution.R_1080].templates) == 2
@@ -1078,7 +1078,7 @@ class TestDatabaseBuilderMerge:
         new_databases = {SupportedResolution.R_1080: new_db}
 
         # Merge
-        merged = await builder._merge_with_existing(new_databases, output_path)
+        merged, _ = await builder._merge_with_existing(new_databases, output_path)
 
         # Should have 2 templates (crated and normal)
         assert len(merged[SupportedResolution.R_1080].templates) == 2
@@ -1118,7 +1118,7 @@ class TestDatabaseBuilderMerge:
         new_databases = {SupportedResolution.R_1080: new_db}
 
         # Merge
-        merged = await builder._merge_with_existing(new_databases, output_path)
+        merged, _ = await builder._merge_with_existing(new_databases, output_path)
 
         # Should have both resolutions
         assert SupportedResolution.R_1080 in merged
@@ -1159,7 +1159,7 @@ class TestDatabaseBuilderMerge:
         new_databases = {SupportedResolution.R_1440: new_db_1440}
 
         # Merge
-        merged = await builder._merge_with_existing(new_databases, output_path)
+        merged, _ = await builder._merge_with_existing(new_databases, output_path)
 
         # Should have both resolutions now
         assert SupportedResolution.R_1080 in merged

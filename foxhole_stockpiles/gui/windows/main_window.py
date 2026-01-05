@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import (
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
+from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
 
 
 class MainWindow(QMainWindow):
@@ -46,6 +47,10 @@ class MainWindow(QMainWindow):
         if config_action is not None:
             config_action.triggered.connect(self.show_configuration)
 
+        import_icons_action = file_menu.addAction("&Import Icons...")
+        if import_icons_action is not None:
+            import_icons_action.triggered.connect(self.show_icon_import)
+
         file_menu.addSeparator()
 
         exit_action = file_menu.addAction("E&xit")
@@ -74,6 +79,21 @@ class MainWindow(QMainWindow):
 
         config_window.move(center_x, center_y)
         config_window.show()
+
+    def show_icon_import(self) -> None:
+        """Show icon import window as modal dialog centered on main window."""
+        import_window = IconImportWindow(self)
+        import_window.setWindowModality(Qt.WindowModality.ApplicationModal)
+
+        # Center the import window on the main window
+        main_geometry = self.geometry()
+        import_geometry = import_window.geometry()
+
+        center_x = main_geometry.x() + (main_geometry.width() - import_geometry.width()) // 2
+        center_y = main_geometry.y() + (main_geometry.height() - import_geometry.height()) // 2
+
+        import_window.move(center_x, center_y)
+        import_window.show()
 
     def show_about(self) -> None:
         """Show about dialog."""

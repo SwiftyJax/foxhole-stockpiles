@@ -5,6 +5,7 @@ test suite. It includes fixtures for temporary directories, sample data, mock ob
 and test environment setup.
 """
 
+import os
 import tempfile
 from collections.abc import Generator
 from pathlib import Path
@@ -12,6 +13,17 @@ from typing import Any
 
 import numpy as np
 import pytest
+
+
+# Configure Qt to run in offscreen mode for all tests to prevent GUI windows from appearing
+# This is essential for CI/CD environments and automated testing
+def pytest_configure(config: Any) -> None:
+    """Configure pytest to run Qt tests in offscreen mode.
+
+    Args:
+        config: Pytest configuration object
+    """
+    os.environ["QT_QPA_PLATFORM"] = "offscreen"
 
 
 @pytest.fixture

@@ -86,13 +86,17 @@ class DatabaseBuilder:
             raise ValueError("No templates found for any resolution! Check your icon files.")
 
         # Merge with existing database if not overwriting
+        has_changes = True  # Default to True for overwrite or new database
         if not overwrite and output_path.exists():
-            databases = await self._merge_with_existing(
+            databases, has_changes = await self._merge_with_existing(
                 new_databases=databases, output_path=output_path
             )
 
-        # Save combined database
-        await self._save_databases(databases=databases, output_path=output_path)
+        # Save combined database only if there are changes
+        if has_changes:
+            await self._save_databases(databases=databases, output_path=output_path)
+        else:
+            self._logger.info("No new templates to add, skipping database save (no changes)")
         self._logger.debug("Database build completed successfully")
 
     async def _build_resolution_database(self, resolution: SupportedResolution) -> TemplateDatabase:
@@ -331,7 +335,7 @@ class DatabaseBuilder:
 
     async def _merge_with_existing(
         self, new_databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
-    ) -> dict[SupportedResolution, TemplateDatabase]:
+    ) -> tuple[dict[SupportedResolution, TemplateDatabase], bool]:
         """Merge new databases with existing database file.
 
         Args:
@@ -339,12 +343,12 @@ class DatabaseBuilder:
             output_path (Path): Path to existing database file
 
         Returns:
-            dict[SupportedResolution, TemplateDatabase]: Merged databases
+            tuple: (merged_databases, has_changes) - Merged databases and whether changes were made
         """
-        # If database doesn't exist, just return new databases
+        # If database doesn't exist, just return new databases (always has changes)
         if not output_path.exists():
             self._logger.info("No existing database at %s, using new databases", output_path)
-            return new_databases
+            return new_databases, True
 
         self._logger.info("Merging with existing database: %s", output_path)
 
@@ -397,7 +401,7 @@ class DatabaseBuilder:
             for template in new_db.templates:
                 key = (template.code, template.crated, template.mod)
                 if key in existing_keys:
-                    self._logger.debug(
+                    self._logger.info(
                         "Skipping duplicate template: %s (crated=%s, mod=%s)",
                         template.code,
                         template.crated,
@@ -405,6 +409,12 @@ class DatabaseBuilder:
                     )
                     stats["skipped"] += 1
                 else:
+                    self._logger.info(
+                        "Adding new template: %s (crated=%s, mod=%s)",
+                        template.code,
+                        template.crated,
+                        template.mod,
+                    )
                     merged_db.add_template(template)
                     stats["new_templates"] += 1
                     existing_keys.add(key)
@@ -420,7 +430,9 @@ class DatabaseBuilder:
             stats["skipped"],
         )
 
-        return merged_databases
+        # Return databases and whether any new templates were added
+        has_changes = stats["new_templates"] > 0
+        return merged_databases, has_changes
 
     async def _save_databases(
         self, databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
