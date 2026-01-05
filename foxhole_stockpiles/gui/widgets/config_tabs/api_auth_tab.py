@@ -175,6 +175,11 @@ class APIAuthTab(QWidget):
             if token:
                 auth_token = token
 
+        # Validation requires both auth_type and auth_token to be set or both to be None
+        # If token is None but auth_type is set, reset auth_type to None
+        if auth_token is None:
+            auth_type = "null"
+
         return APIAuthSettings(
             auth_type=None if auth_type == "null" else AuthType(auth_type),
             auth_token=auth_token,

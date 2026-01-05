@@ -1,0 +1,475 @@
+"""Tests for ScannerTab."""
+
+from pathlib import Path
+from typing import Any
+from unittest.mock import patch
+
+import pytest
+
+from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
+from foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab import ScannerTab
+
+
+@pytest.fixture
+def scanner_tab(qtbot: Any) -> ScannerTab:
+    """Create a ScannerTab instance.
+
+    Args:
+        qtbot: PyQt test fixture
+
+    Returns:
+        ScannerTab: Tab instance
+    """
+    tab = ScannerTab()
+    qtbot.addWidget(tab)
+    return tab
+
+
+def test_scanner_tab_initialization(scanner_tab: ScannerTab) -> None:
+    """Test ScannerTab initialization.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    assert scanner_tab.database_path_input is not None
+    assert scanner_tab.cache_size_input is not None
+    assert scanner_tab.early_exit_input is not None
+    assert scanner_tab.confidence_gap_input is not None
+    assert scanner_tab.custom_model_input is not None
+    assert scanner_tab.tessdata_path_input is not None
+    assert scanner_tab.debug_mode_input is not None
+    assert scanner_tab.extract_icons_input is not None
+    assert scanner_tab.screenshots_folder_input is not None
+    assert scanner_tab.max_ncc_input is not None
+    assert scanner_tab.phash_threshold_input is not None
+
+
+def test_scanner_tab_default_values(scanner_tab: ScannerTab) -> None:
+    """Test default values are set correctly.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    assert scanner_tab.cache_size_input.value() == 16
+    assert scanner_tab.early_exit_input.value() == 0.0
+    assert scanner_tab.confidence_gap_input.value() == 0.0
+    assert scanner_tab.max_ncc_input.value() == 25
+    assert scanner_tab.phash_threshold_input.value() == 12
+
+
+def test_scanner_tab_cache_size_range(scanner_tab: ScannerTab) -> None:
+    """Test cache size input has correct range.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    assert scanner_tab.cache_size_input.minimum() == 0
+    assert scanner_tab.cache_size_input.maximum() == 16
+
+
+def test_scanner_tab_early_exit_range(scanner_tab: ScannerTab) -> None:
+    """Test early exit threshold has correct range.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    assert scanner_tab.early_exit_input.minimum() == 0.0
+    assert scanner_tab.early_exit_input.maximum() == 1.0
+    assert scanner_tab.early_exit_input.decimals() == 3
+
+
+def test_scanner_tab_confidence_gap_range(scanner_tab: ScannerTab) -> None:
+    """Test confidence gap has correct range.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    assert scanner_tab.confidence_gap_input.minimum() == 0.0
+    assert scanner_tab.confidence_gap_input.maximum() == 1.0
+    assert scanner_tab.confidence_gap_input.decimals() == 3
+
+
+def test_scanner_tab_max_ncc_range(scanner_tab: ScannerTab) -> None:
+    """Test max NCC candidates has correct range.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    assert scanner_tab.max_ncc_input.minimum() == 1
+    assert scanner_tab.max_ncc_input.maximum() == 100
+
+
+def test_scanner_tab_phash_threshold_range(scanner_tab: ScannerTab) -> None:
+    """Test pHash threshold has correct range.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    assert scanner_tab.phash_threshold_input.minimum() == 0
+    assert scanner_tab.phash_threshold_input.maximum() == 64
+
+
+def test_scanner_tab_browse_database(qtbot: Any, scanner_tab: ScannerTab) -> None:
+    """Test browse database button.
+
+    Args:
+        qtbot: PyQt test fixture
+        scanner_tab: ScannerTab instance
+    """
+    test_path = "/path/to/database.h5"
+
+    with patch(
+        "foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab.QFileDialog.getOpenFileName"
+    ) as mock_dialog:
+        mock_dialog.return_value = (test_path, "HDF5 Files (*.h5)")
+
+        scanner_tab.browse_database()
+
+        assert scanner_tab.database_path_input.text() == test_path
+
+
+def test_scanner_tab_browse_database_cancel(qtbot: Any, scanner_tab: ScannerTab) -> None:
+    """Test browse database cancel.
+
+    Args:
+        qtbot: PyQt test fixture
+        scanner_tab: ScannerTab instance
+    """
+    original_text = scanner_tab.database_path_input.text()
+
+    with patch(
+        "foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab.QFileDialog.getOpenFileName"
+    ) as mock_dialog:
+        mock_dialog.return_value = ("", "")
+
+        scanner_tab.browse_database()
+
+        assert scanner_tab.database_path_input.text() == original_text
+
+
+def test_scanner_tab_browse_tessdata(qtbot: Any, scanner_tab: ScannerTab) -> None:
+    """Test browse tessdata button.
+
+    Args:
+        qtbot: PyQt test fixture
+        scanner_tab: ScannerTab instance
+    """
+    test_path = "/path/to/tessdata"
+
+    with patch(
+        "foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab.QFileDialog.getExistingDirectory"
+    ) as mock_dialog:
+        mock_dialog.return_value = test_path
+
+        scanner_tab.browse_tessdata()
+
+        assert scanner_tab.tessdata_path_input.text() == test_path
+
+
+def test_scanner_tab_browse_tessdata_cancel(qtbot: Any, scanner_tab: ScannerTab) -> None:
+    """Test browse tessdata cancel.
+
+    Args:
+        qtbot: PyQt test fixture
+        scanner_tab: ScannerTab instance
+    """
+    original_text = scanner_tab.tessdata_path_input.text()
+
+    with patch(
+        "foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab.QFileDialog.getExistingDirectory"
+    ) as mock_dialog:
+        mock_dialog.return_value = ""
+
+        scanner_tab.browse_tessdata()
+
+        assert scanner_tab.tessdata_path_input.text() == original_text
+
+
+def test_scanner_tab_browse_screenshots(qtbot: Any, scanner_tab: ScannerTab) -> None:
+    """Test browse screenshots button.
+
+    Args:
+        qtbot: PyQt test fixture
+        scanner_tab: ScannerTab instance
+    """
+    test_path = "/path/to/screenshots"
+
+    with patch(
+        "foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab.QFileDialog.getExistingDirectory"
+    ) as mock_dialog:
+        mock_dialog.return_value = test_path
+
+        scanner_tab.browse_screenshots()
+
+        assert scanner_tab.screenshots_folder_input.text() == test_path
+
+
+def test_scanner_tab_browse_screenshots_cancel(qtbot: Any, scanner_tab: ScannerTab) -> None:
+    """Test browse screenshots cancel.
+
+    Args:
+        qtbot: PyQt test fixture
+        scanner_tab: ScannerTab instance
+    """
+    original_text = scanner_tab.screenshots_folder_input.text()
+
+    with patch(
+        "foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab.QFileDialog.getExistingDirectory"
+    ) as mock_dialog:
+        mock_dialog.return_value = ""
+
+        scanner_tab.browse_screenshots()
+
+        assert scanner_tab.screenshots_folder_input.text() == original_text
+
+
+def test_scanner_tab_reset_custom_model(scanner_tab: ScannerTab) -> None:
+    """Test reset custom model button.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    # Change the value
+    scanner_tab.custom_model_input.setText("custom_value")
+
+    # Reset
+    scanner_tab.reset_custom_model()
+
+    # Should be back to default
+    defaults = ScannerSettings()
+    assert scanner_tab.custom_model_input.text() == defaults.custom_model
+
+
+def test_scanner_tab_reset_tessdata_path(scanner_tab: ScannerTab) -> None:
+    """Test reset tessdata path button.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    # Change the value
+    scanner_tab.tessdata_path_input.setText("/custom/path")
+
+    # Reset
+    scanner_tab.reset_tessdata_path()
+
+    # Should be back to default
+    defaults = ScannerSettings()
+    assert scanner_tab.tessdata_path_input.text() == str(defaults.tessdata_path)
+
+
+def test_scanner_tab_set_values(scanner_tab: ScannerTab) -> None:
+    """Test setting values from settings object.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    settings = ScannerSettings(
+        database_path=Path("/test/db.h5"),
+        template_cache_size=8,
+        early_exit_threshold=0.99,
+        confidence_gap=0.1,
+        custom_model="test_model",
+        tessdata_path="/test/tessdata",
+        debug_mode=True,
+        extract_icons=True,
+        screenshots_folder="/test/screenshots",
+        max_ncc_candidates=50,
+        phash_threshold=20,
+    )
+
+    scanner_tab.set_values(settings)
+
+    assert scanner_tab.database_path_input.text() == "/test/db.h5"
+    assert scanner_tab.cache_size_input.value() == 8
+    assert scanner_tab.early_exit_input.value() == 0.99
+    assert scanner_tab.confidence_gap_input.value() == 0.1
+    assert scanner_tab.custom_model_input.text() == "test_model"
+    assert scanner_tab.tessdata_path_input.text() == "/test/tessdata"
+    assert scanner_tab.debug_mode_input.isChecked()
+    assert scanner_tab.extract_icons_input.isChecked()
+    assert scanner_tab.screenshots_folder_input.text() == "/test/screenshots"
+    assert scanner_tab.max_ncc_input.value() == 50
+    assert scanner_tab.phash_threshold_input.value() == 20
+
+
+def test_scanner_tab_set_values_no_database_path(scanner_tab: ScannerTab) -> None:
+    """Test setting values with no database path.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    settings = ScannerSettings(database_path=None)
+
+    scanner_tab.set_values(settings)
+
+    assert scanner_tab.database_path_input.text() == ""
+
+
+def test_scanner_tab_set_values_no_screenshots_folder(scanner_tab: ScannerTab) -> None:
+    """Test setting values with no screenshots folder.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    settings = ScannerSettings(screenshots_folder="")
+
+    scanner_tab.set_values(settings)
+
+    assert scanner_tab.screenshots_folder_input.text() == ""
+
+
+def test_scanner_tab_get_values(scanner_tab: ScannerTab) -> None:
+    """Test getting values from widgets.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.database_path_input.setText("/path/to/db.h5")
+    scanner_tab.cache_size_input.setValue(4)
+    scanner_tab.early_exit_input.setValue(0.995)
+    scanner_tab.confidence_gap_input.setValue(0.15)
+    scanner_tab.custom_model_input.setText("my_model")
+    scanner_tab.tessdata_path_input.setText("/my/tessdata")
+    scanner_tab.debug_mode_input.setChecked(True)
+    scanner_tab.extract_icons_input.setChecked(False)
+    scanner_tab.screenshots_folder_input.setText("/my/screenshots")
+    scanner_tab.max_ncc_input.setValue(30)
+    scanner_tab.phash_threshold_input.setValue(15)
+
+    settings = scanner_tab.get_values()
+
+    assert settings.database_path == Path("/path/to/db.h5")
+    assert settings.template_cache_size == 4
+    assert settings.early_exit_threshold == 0.995
+    assert settings.confidence_gap == 0.15
+    assert settings.custom_model == "my_model"
+    assert settings.tessdata_path == "/my/tessdata"
+    assert settings.debug_mode is True
+    assert settings.extract_icons is False
+    assert settings.screenshots_folder == "/my/screenshots"
+    assert settings.max_ncc_candidates == 30
+    assert settings.phash_threshold == 15
+
+
+def test_scanner_tab_get_values_empty_database_path(scanner_tab: ScannerTab) -> None:
+    """Test getting values with empty database path.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.database_path_input.setText("")
+
+    settings = scanner_tab.get_values()
+
+    assert settings.database_path is None
+
+
+def test_scanner_tab_get_values_empty_screenshots_folder(scanner_tab: ScannerTab) -> None:
+    """Test getting values with empty screenshots folder.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.screenshots_folder_input.setText("")
+
+    settings = scanner_tab.get_values()
+
+    assert settings.screenshots_folder == ""
+
+
+def test_scanner_tab_checkboxes(scanner_tab: ScannerTab) -> None:
+    """Test checkboxes behavior.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    # Test debug mode
+    scanner_tab.debug_mode_input.setChecked(True)
+    assert scanner_tab.debug_mode_input.isChecked()
+
+    scanner_tab.debug_mode_input.setChecked(False)
+    assert not scanner_tab.debug_mode_input.isChecked()
+
+    # Test extract icons
+    scanner_tab.extract_icons_input.setChecked(True)
+    assert scanner_tab.extract_icons_input.isChecked()
+
+    scanner_tab.extract_icons_input.setChecked(False)
+    assert not scanner_tab.extract_icons_input.isChecked()
+
+
+def test_scanner_tab_double_spin_box_step(scanner_tab: ScannerTab) -> None:
+    """Test double spin box step size.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    assert scanner_tab.early_exit_input.singleStep() == 0.01
+    assert scanner_tab.confidence_gap_input.singleStep() == 0.01
+
+
+def test_scanner_tab_min_cache_size_boundary(scanner_tab: ScannerTab) -> None:
+    """Test cache size at minimum boundary.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.cache_size_input.setValue(0)
+
+    settings = scanner_tab.get_values()
+
+    assert settings.template_cache_size == 0
+
+
+def test_scanner_tab_max_cache_size_boundary(scanner_tab: ScannerTab) -> None:
+    """Test cache size at maximum boundary.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.cache_size_input.setValue(16)
+
+    settings = scanner_tab.get_values()
+
+    assert settings.template_cache_size == 16
+
+
+def test_scanner_tab_early_exit_precision(scanner_tab: ScannerTab) -> None:
+    """Test early exit threshold precision.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.early_exit_input.setValue(0.999)
+
+    settings = scanner_tab.get_values()
+
+    assert settings.early_exit_threshold == 0.999
+
+
+def test_scanner_tab_confidence_gap_precision(scanner_tab: ScannerTab) -> None:
+    """Test confidence gap precision.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.confidence_gap_input.setValue(0.123)
+
+    settings = scanner_tab.get_values()
+
+    assert settings.confidence_gap == 0.123
+
+
+def test_scanner_tab_set_values_default_settings(scanner_tab: ScannerTab) -> None:
+    """Test setting values with default settings object.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    settings = ScannerSettings()
+
+    scanner_tab.set_values(settings)
+
+    assert scanner_tab.cache_size_input.value() == settings.template_cache_size
+    assert scanner_tab.early_exit_input.value() == settings.early_exit_threshold
+    assert scanner_tab.confidence_gap_input.value() == settings.confidence_gap

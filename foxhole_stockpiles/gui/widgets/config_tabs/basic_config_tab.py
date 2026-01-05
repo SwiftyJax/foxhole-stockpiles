@@ -340,6 +340,11 @@ class BasicConfigTab(QWidget):
             if username or password:
                 auth_token = f"{username}:{password}"
 
+        # Validation requires both auth_type and auth_token to be set or both to be None
+        # If token is None but auth_type is set, reset auth_type to None
+        if auth_token is None:
+            auth_type = None
+
         api_auth = APIAuthSettings(auth_type=auth_type, auth_token=auth_token)
 
         # Scanner - use defaults for other values
