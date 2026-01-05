@@ -44,7 +44,10 @@ class DatabaseBuilder:
             raise ValueError(f"Catalog is empty or could not be loaded from {catalog_path}")
 
     async def build_all_databases(
-        self, output_path: Path, target_resolutions: list[SupportedResolution] | None = None
+        self,
+        output_path: Path,
+        target_resolutions: list[SupportedResolution] | None = None,
+        overwrite: bool = True,
     ) -> None:
         """Build template databases for specified or all supported resolutions.
 
@@ -52,14 +55,17 @@ class DatabaseBuilder:
             output_path (Path): Output path for binary database file
             target_resolutions (list[SupportedResolution] | None): Specific resolutions to build,
                 or None to build all supported resolutions
+            overwrite (bool): If True, replace existing templates. If False, merge new templates
+                into existing database (default: True)
         """
         # Determine which resolutions to build
         resolutions_to_build = target_resolutions or list(SupportedResolution)
 
         self._logger.info(
-            "Starting database build process for %d resolutions: %s",
+            "Starting database build process for %d resolutions: %s (overwrite=%s)",
             len(resolutions_to_build),
             [str(r.value) for r in resolutions_to_build],
+            overwrite,
         )
 
         # Build databases for specified resolutions
@@ -78,6 +84,12 @@ class DatabaseBuilder:
 
         if not databases:
             raise ValueError("No templates found for any resolution! Check your icon files.")
+
+        # Merge with existing database if not overwriting
+        if not overwrite and output_path.exists():
+            databases = await self._merge_with_existing(
+                new_databases=databases, output_path=output_path
+            )
 
         # Save combined database
         await self._save_databases(databases=databases, output_path=output_path)
@@ -317,6 +329,99 @@ class DatabaseBuilder:
 
         return found_paths
 
+    async def _merge_with_existing(
+        self, new_databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
+    ) -> dict[SupportedResolution, TemplateDatabase]:
+        """Merge new databases with existing database file.
+
+        Args:
+            new_databases (dict[SupportedResolution, TemplateDatabase]): Newly built databases
+            output_path (Path): Path to existing database file
+
+        Returns:
+            dict[SupportedResolution, TemplateDatabase]: Merged databases
+        """
+        # If database doesn't exist, just return new databases
+        if not output_path.exists():
+            self._logger.info("No existing database at %s, using new databases", output_path)
+            return new_databases
+
+        self._logger.info("Merging with existing database: %s", output_path)
+
+        # Load existing databases
+        temp_manager = TemplateManager(database_path=output_path)
+        existing_databases = await temp_manager.load_all_resolutions()
+
+        merged_databases: dict[SupportedResolution, TemplateDatabase] = {}
+        stats = {"resolutions": 0, "new_templates": 0, "existing_templates": 0, "skipped": 0}
+
+        # Merge each resolution
+        for resolution in set(list(existing_databases.keys()) + list(new_databases.keys())):
+            existing_db = existing_databases.get(resolution)
+            new_db = new_databases.get(resolution)
+
+            if new_db is None:
+                # No new templates for this resolution, keep existing
+                if existing_db:
+                    merged_databases[resolution] = existing_db
+                    stats["existing_templates"] += len(existing_db.templates)
+                continue
+
+            if existing_db is None:
+                # No existing templates for this resolution, use new
+                merged_databases[resolution] = new_db
+                stats["new_templates"] += len(new_db.templates)
+                stats["resolutions"] += 1
+                continue
+
+            # Both exist, merge them
+            self._logger.debug(
+                "Merging resolution %s: existing=%d, new=%d",
+                resolution,
+                len(existing_db.templates),
+                len(new_db.templates),
+            )
+
+            merged_db = TemplateDatabase(resolution=resolution)
+
+            # Create set of existing template keys for quick lookup
+            # Key format: (code, crated, mod)
+            existing_keys = {(t.code, t.crated, t.mod) for t in existing_db.templates}
+
+            # Add all existing templates
+            for template in existing_db.templates:
+                merged_db.add_template(template)
+                stats["existing_templates"] += 1
+
+            # Add only new templates that don't already exist
+            for template in new_db.templates:
+                key = (template.code, template.crated, template.mod)
+                if key in existing_keys:
+                    self._logger.debug(
+                        "Skipping duplicate template: %s (crated=%s, mod=%s)",
+                        template.code,
+                        template.crated,
+                        template.mod,
+                    )
+                    stats["skipped"] += 1
+                else:
+                    merged_db.add_template(template)
+                    stats["new_templates"] += 1
+                    existing_keys.add(key)
+
+            merged_databases[resolution] = merged_db
+
+        self._logger.info(
+            "Merge complete: %d resolutions, %d new templates added, "
+            "%d existing templates preserved, %d duplicates skipped",
+            len(merged_databases),
+            stats["new_templates"],
+            stats["existing_templates"],
+            stats["skipped"],
+        )
+
+        return merged_databases
+
     async def _save_databases(
         self, databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
     ) -> None:
@@ -346,9 +451,17 @@ class DatabaseBuilder:
 async def main() -> None:
     """Main entry point for database builder."""
     parser = argparse.ArgumentParser(description="Build template databases")
-    parser.add_argument("--catalog", type=Path, required=True, help="Path to catalog.json")
+    parser.add_argument(
+        "--catalog",
+        type=Path,
+        help="Path to catalog.json (default: from database_builder.catalog_file setting)",
+    )
     parser.add_argument("--templates", type=Path, required=True, help="Path to extracted templates")
-    parser.add_argument("--database", type=Path, help="Output database path")
+    parser.add_argument(
+        "--database",
+        type=Path,
+        help="Output database path (default: from scanner.database_path setting)",
+    )
     parser.add_argument(
         "--use-scaling",
         action="store_true",
@@ -370,7 +483,8 @@ async def main() -> None:
         action="append",
         help=(
             "Resolution to generate (can be specified multiple times, e.g., --resolution 1024"
-            " --resolution 2160). If not specified, all supported resolutions will be generated."
+            " --resolution 2160). If not specified, uses database_builder.target_resolutions"
+            " setting or all supported resolutions if not configured."
         ),
     )
 
@@ -379,16 +493,27 @@ async def main() -> None:
     # Setup logging
     settings = get_settings()
 
+    # Use catalog from args or fall back to config
+    catalog_path = (
+        args.catalog if args.catalog is not None else settings.database_builder.catalog_file
+    )
+    if catalog_path is None:
+        parser.error(
+            "Catalog path must be provided via --catalog or database_builder.catalog_file setting"
+        )
+
     # Use database from args or fall back to config
     database_path = args.database if args.database is not None else settings.scanner.database_path
     if database_path is None:
-        parser.error("Database path must be provided via --database or in config file")
+        parser.error(
+            "Database path must be provided via --database or scanner.database_path setting"
+        )
 
-    # Parse and validate resolutions if specified
+    # Parse and validate resolutions if specified, otherwise use settings
     target_resolutions: list[SupportedResolution] | None = None
     if args.resolution:
+        # User specified resolutions via CLI
         target_resolutions = []
-
         for res_str in args.resolution:
             try:
                 resolution = SupportedResolution(res_str)
@@ -399,6 +524,16 @@ async def main() -> None:
                     f"Invalid resolution '{res_str}'. "
                     f"Valid resolutions are: {', '.join(valid_resolutions)}"
                 )
+    elif settings.database_builder.target_resolutions:
+        # Use resolutions from settings (string list to enum list)
+        target_resolutions = []
+        for res_str in settings.database_builder.target_resolutions:
+            try:
+                resolution = SupportedResolution(res_str)
+                target_resolutions.append(resolution)
+            except ValueError:
+                logging.warning("Invalid resolution in settings: '%s', skipping", res_str)
+    # If still None, build_all_databases will use all supported resolutions
 
     logging_settings = copy(settings.logging)
     # Setup logging
@@ -412,7 +547,7 @@ async def main() -> None:
 
     # Build database
     builder = DatabaseBuilder(
-        catalog_path=args.catalog, assets_path=args.templates, use_scaling=args.use_scaling
+        catalog_path=catalog_path, assets_path=args.templates, use_scaling=args.use_scaling
     )
     await builder.build_all_databases(
         output_path=database_path, target_resolutions=target_resolutions

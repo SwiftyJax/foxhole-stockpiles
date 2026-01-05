@@ -713,6 +713,21 @@ class TemplateManager:
 
         logger.debug("Saving %d resolution(s) to HDF5 file: %s", len(databases), output_path)
 
+        # Invalidate cache for this database file to ensure fresh loads
+        with TemplateManager._shared_lock:
+            # Remove all cache entries for this database path
+            keys_to_remove = [
+                key for key in TemplateManager._shared_databases if key[0] == output_path
+            ]
+            for key in keys_to_remove:
+                TemplateManager._shared_databases.pop(key, None)
+            if keys_to_remove:
+                logger.debug(
+                    "Invalidated %d cached database entries for %s",
+                    len(keys_to_remove),
+                    output_path,
+                )
+
         # Determine number of workers
         if workers is None:
             workers = os.cpu_count() or 1

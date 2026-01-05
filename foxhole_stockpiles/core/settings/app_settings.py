@@ -13,6 +13,7 @@ from pydantic_settings import (
 from foxhole_stockpiles.core.settings.sections import (
     APIAuthSettings,
     APIServerSettings,
+    DatabaseBuilderSettings,
     LoggingSettings,
     NotificationsSettings,
     OCRSettings,
@@ -49,6 +50,9 @@ class AppSettings(BaseSettings):
     )
     templates: TemplateSettings = Field(
         description="Template generation settings", default_factory=TemplateSettings
+    )
+    database_builder: DatabaseBuilderSettings = Field(
+        description="Database builder settings", default_factory=DatabaseBuilderSettings
     )
     notifications: NotificationsSettings = Field(
         description="Notifications settings", default_factory=NotificationsSettings

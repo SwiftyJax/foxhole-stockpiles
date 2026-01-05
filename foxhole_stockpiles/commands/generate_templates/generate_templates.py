@@ -605,7 +605,11 @@ async def main() -> None:
         ),
     )
 
-    parser.add_argument("--catalog", type=Path, required=True, help="Path to the catalog.json file")
+    parser.add_argument(
+        "--catalog",
+        type=Path,
+        help="Path to catalog.json file (default: from database_builder.catalog_file setting)",
+    )
     parser.add_argument(
         "--assets",
         type=Path,
@@ -648,9 +652,19 @@ async def main() -> None:
     logging_settings.log_file = args.log_file
     setup_logging(logging_settings)
 
+    # Use catalog from args or fall back to config
+    catalog_path = (
+        args.catalog if args.catalog is not None else settings.database_builder.catalog_file
+    )
+    if catalog_path is None:
+        logger.error(
+            "Catalog path must be provided via --catalog or database_builder.catalog_file setting"
+        )
+        exit(1)
+
     # Validate input paths
-    if not args.catalog.exists():
-        logger.error("Catalog file not found: %s", args.catalog)
+    if not catalog_path.exists():
+        logger.error("Catalog file not found: %s", catalog_path)
         exit(1)
 
     if not args.assets.exists():
@@ -660,7 +674,7 @@ async def main() -> None:
     try:
         # Create generator and process templates
         generator = TemplateGenerator(
-            catalog_path=args.catalog,
+            catalog_path=catalog_path,
             assets_path=args.assets,
             template_path=args.templates,
             filter_name=args.filter,

@@ -9,7 +9,9 @@ import argparse
 import asyncio
 import logging
 import multiprocessing
+import os
 import shutil
+import subprocess
 import tempfile
 from copy import copy
 from pathlib import Path
@@ -102,6 +104,127 @@ class PakExtractor:
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Detect if tools are Windows executables (need path conversion in WSL)
+        self._tools_are_windows = self._detect_windows_tools()
+
+    def _detect_windows_tools(self) -> bool:
+        """Detect if the tools are Windows executables.
+
+        Returns:
+            bool: True if tools are Windows executables (.exe), False otherwise
+        """
+        # Check if tools have .exe extension or are in Windows paths
+        extractor_is_windows = str(self.extractor_tool).lower().endswith(".exe") or str(
+            self.extractor_tool
+        ).startswith("/mnt/")
+        converter_is_windows = str(self.converter_tool).lower().endswith(".exe") or str(
+            self.converter_tool
+        ).startswith("/mnt/")
+
+        is_windows = extractor_is_windows and converter_is_windows
+
+        if is_windows:
+            self._logger.info("Detected Windows tools - will convert paths for WSL compatibility")
+        else:
+            self._logger.info("Detected Linux/native tools - using paths as-is")
+
+        return is_windows
+
+    @staticmethod
+    def _get_wsl_temp_dir() -> str | None:
+        """Get Windows-accessible temp directory when running in WSL.
+
+        Returns:
+            str | None: Path to Windows temp directory, or None if not in WSL or failed
+        """
+        # Check if running in WSL
+        try:
+            with open("/proc/version") as f:
+                version_info = f.read().lower()
+                if "microsoft" not in version_info:
+                    return None
+        except Exception:
+            return None
+
+        # Try to get Windows TEMP directory
+        try:
+            # Use powershell.exe to get Windows TEMP variable
+            result = subprocess.run(
+                ["powershell.exe", "-Command", "Write-Host $env:TEMP"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            windows_temp = result.stdout.strip()
+
+            if not windows_temp:
+                return None
+
+            # Convert Windows path to WSL path using wslpath
+            result = subprocess.run(
+                ["wslpath", "-u", windows_temp],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            wsl_temp_path = result.stdout.strip()
+
+            # Verify it exists and is writable
+            if os.path.exists(wsl_temp_path) and os.access(wsl_temp_path, os.W_OK):
+                return wsl_temp_path
+        except Exception:
+            pass
+
+        return None
+
+    @staticmethod
+    def _convert_wsl_path_to_windows(path: str | Path) -> str:
+        """Convert WSL path to Windows path for Windows executables.
+
+        Args:
+            path (str | Path): Path to convert (may be WSL or already Windows)
+
+        Returns:
+            str: Windows-compatible path
+        """
+        path_str = str(path)
+
+        # Check if running in WSL
+        is_wsl = (
+            os.path.exists("/proc/version") and "microsoft" in open("/proc/version").read().lower()
+        )
+
+        if not is_wsl:
+            # Not in WSL, return as-is
+            return path_str
+
+        # If path starts with /mnt/, convert it
+        if path_str.startswith("/mnt/"):
+            # Extract drive letter and rest of path
+            parts = path_str[5:].split("/", 1)
+            if len(parts) >= 1:
+                drive_letter = parts[0].upper()
+                rest_of_path = parts[1] if len(parts) > 1 else ""
+                # Convert to Windows path
+                windows_path = f"{drive_letter}:\\" + rest_of_path.replace("/", "\\")
+                return windows_path
+
+        # If it's a relative or other path, try using wslpath command
+        try:
+            result = subprocess.run(
+                ["wslpath", "-w", path_str],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=5,
+            )
+            return result.stdout.strip()
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+            # wslpath failed or not available, return original
+            return path_str
+
     async def extract_single_file(self, file_path: str, temp_dir: str) -> bool:
         """Extract a single file from the PAK files to temporary directory.
 
@@ -119,8 +242,16 @@ class PakExtractor:
             pak_name = Path(pak_file).stem
             pak_extract_dir = Path(temp_dir) / pak_name
 
-            # Ensure output directory ends with / for repak
-            output_dir_str = str(pak_extract_dir) + "/"
+            # Convert paths to Windows format if using Windows tools in WSL
+            if self._tools_are_windows:
+                pak_file_str = self._convert_wsl_path_to_windows(pak_file)
+                output_dir_str = self._convert_wsl_path_to_windows(pak_extract_dir)
+                # Ensure output directory ends with backslash for Windows
+                if not output_dir_str.endswith("\\"):
+                    output_dir_str += "\\"
+            else:
+                pak_file_str = str(pak_file)
+                output_dir_str = str(pak_extract_dir) + "/"
 
             command = [
                 str(self.extractor_tool),
@@ -130,12 +261,13 @@ class PakExtractor:
                 "--include",
                 file_path,
                 "-q",
-                str(pak_file),
+                pak_file_str,
             ]
 
             process = None
             try:
                 self._logger.debug("Extracting %s from %s", file_path, pak_file)
+                self._logger.debug("Full extraction command: %s", " ".join(command))
                 process = await asyncio.create_subprocess_exec(
                     *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
                 )
@@ -220,17 +352,26 @@ class PakExtractor:
                 self._logger.error("Could not find extracted file: %s", file_path)
                 return False
 
+            # Convert paths to Windows format if using Windows tools in WSL
+            if self._tools_are_windows:
+                pak_root_dir_str = self._convert_wsl_path_to_windows(pak_root_dir)
+                output_dir_str = pak_root_dir_str.rstrip("\\") + "\\War\\Content\\"
+            else:
+                pak_root_dir_str = str(pak_root_dir)
+                output_dir_str = str(pak_root_dir) + "/War/Content/"
+
             command = [
                 str(self.converter_tool),
-                f"-path={pak_root_dir}",
+                f"-path={pak_root_dir_str}",
                 f"-game={ue_version}",
                 "-png",
                 "-export",
                 file_path,
-                f"-out={pak_root_dir}\\War\\Content\\",
+                f"-out={output_dir_str}",
             ]
 
             self._logger.debug("Trying conversion with %s: %s", ue_version, file_path)
+            self._logger.debug("Full command: %s", " ".join(command))
             process = await asyncio.create_subprocess_exec(
                 *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
             )
@@ -324,8 +465,17 @@ class PakExtractor:
             max_workers = multiprocessing.cpu_count()
             self._logger.info("Using %d workers based on CPU count", max_workers)
 
+        # Get Windows-accessible temp directory if using Windows tools in WSL
+        wsl_temp_base = None
+        if self._tools_are_windows:
+            wsl_temp_base = self._get_wsl_temp_dir()
+            if wsl_temp_base:
+                self._logger.info(
+                    "Using Windows temp directory for Windows tools: %s", wsl_temp_base
+                )
+
         # Create temporary directory
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory(dir=wsl_temp_base) as temp_dir:
             self._logger.info("Created temporary directory: %s", temp_dir)
 
             # Extract files individually
@@ -390,23 +540,19 @@ async def main() -> None:
     parser.add_argument(
         "--pak",
         action="append",
-        help="Path to PAK file(s). Can be specified multiple times for mod support. "
-        "Default: Foxhole War-WindowsNoEditor.pak",
+        help="Path to PAK file(s). Can be specified multiple times for mod support.",
     )
     parser.add_argument(
         "--catalog",
-        help="Path to the catalog.json file",
-        default=DEFAULT_CATALOG,
+        help="Path to catalog.json file (default: from database_builder.catalog_file setting)",
     )
     parser.add_argument(
         "--extractor-tool",
-        help="Path to repak.exe",
-        default=DEFAULT_EXTRACTOR,
+        help="Path to repak.exe (default: from database_builder.extractor_tool setting)",
     )
     parser.add_argument(
         "--converter-tool",
-        help="Path to umodel.exe",
-        default=DEFAULT_CONVERTER,
+        help="Path to umodel.exe (default: from database_builder.converter_tool setting)",
     )
     parser.add_argument(
         "--output",
@@ -443,12 +589,29 @@ async def main() -> None:
     logging_settings.log_file = args.log_file
     setup_logging(logging_settings)
 
+    # Use settings as defaults
+    catalog_file = args.catalog or (
+        str(settings.database_builder.catalog_file)
+        if settings.database_builder.catalog_file
+        else DEFAULT_CATALOG
+    )
+    extractor_tool = args.extractor_tool or (
+        str(settings.database_builder.extractor_tool)
+        if settings.database_builder.extractor_tool
+        else DEFAULT_EXTRACTOR
+    )
+    converter_tool = args.converter_tool or (
+        str(settings.database_builder.converter_tool)
+        if settings.database_builder.converter_tool
+        else DEFAULT_CONVERTER
+    )
+
     try:
         extractor = PakExtractor(
             pak_files=args.pak or DEFAULT_PAK_FILES,
-            catalog_file=args.catalog,
-            extractor_tool=args.extractor_tool,
-            converter_tool=args.converter_tool,
+            catalog_file=catalog_file,
+            extractor_tool=extractor_tool,
+            converter_tool=converter_tool,
             output_dir=args.output,
         )
     except (ValueError, FileNotFoundError) as e:

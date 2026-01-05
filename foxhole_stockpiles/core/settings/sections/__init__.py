@@ -1,6 +1,7 @@
 """Settings sections exports."""
 
 from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings, APIServerSettings
+from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseBuilderSettings
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 from foxhole_stockpiles.core.settings.sections.notifications import NotificationsSettings
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
@@ -18,6 +19,7 @@ __all__ = [
     "APIAuthSettings",
     "APIServerSettings",
     "ConsoleOutputSettings",
+    "DatabaseBuilderSettings",
     "FileOutputSettings",
     "LoggingSettings",
     "NotificationsSettings",

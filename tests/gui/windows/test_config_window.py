@@ -10,6 +10,7 @@ from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections import (
     APIAuthSettings,
     APIServerSettings,
+    DatabaseBuilderSettings,
     LoggingSettings,
     NotificationsSettings,
     OCRSettings,
@@ -82,6 +83,7 @@ def test_config_window_has_all_tabs(config_window: ConfigWindow) -> None:
     assert config_window.output_tab is not None
     assert config_window.ocr_tab is not None
     assert config_window.template_tab is not None
+    assert config_window.database_builder_tab is not None
     assert config_window.logging_tab is not None
 
 
@@ -109,15 +111,16 @@ def test_config_window_toggle_to_advanced_mode(qtbot: Any, config_window: Config
     # Toggle to advanced mode
     config_window.advanced_mode_checkbox.setChecked(True)
 
-    # Should have 7 advanced tabs
-    assert config_window.tab_widget.count() == 7
+    # Should have 8 advanced tabs
+    assert config_window.tab_widget.count() == 8
     assert config_window.tab_widget.tabText(0) == "API Server"
     assert config_window.tab_widget.tabText(1) == "API Authentication"
     assert config_window.tab_widget.tabText(2) == "Scanner"
     assert config_window.tab_widget.tabText(3) == "Output"
     assert config_window.tab_widget.tabText(4) == "OCR"
     assert config_window.tab_widget.tabText(5) == "Templates"
-    assert config_window.tab_widget.tabText(6) == "Logging"
+    assert config_window.tab_widget.tabText(6) == "Database Builder"
+    assert config_window.tab_widget.tabText(7) == "Logging"
 
 
 def test_config_window_toggle_back_to_basic_mode(qtbot: Any, config_window: ConfigWindow) -> None:
@@ -129,7 +132,7 @@ def test_config_window_toggle_back_to_basic_mode(qtbot: Any, config_window: Conf
     """
     # Toggle to advanced
     config_window.advanced_mode_checkbox.setChecked(True)
-    assert config_window.tab_widget.count() == 7
+    assert config_window.tab_widget.count() == 8
 
     # Toggle back to basic
     config_window.advanced_mode_checkbox.setChecked(False)
@@ -318,6 +321,7 @@ def test_config_window_collect_settings_advanced_mode(config_window: ConfigWindo
     assert isinstance(settings.output, OutputSettings)
     assert isinstance(settings.ocr, OCRSettings)
     assert isinstance(settings.templates, TemplateSettings)
+    assert isinstance(settings.database_builder, DatabaseBuilderSettings)
     assert isinstance(settings.logging, LoggingSettings)
 
 
@@ -435,4 +439,4 @@ def test_config_window_checkbox_state_change(qtbot: Any, config_window: ConfigWi
     config_window.advanced_mode_checkbox.setChecked(True)
 
     # Should show advanced tabs (toggle_mode was called)
-    assert config_window.tab_widget.count() == 7
+    assert config_window.tab_widget.count() == 8

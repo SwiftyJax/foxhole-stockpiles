@@ -594,11 +594,26 @@ class TestMainFunction:
     builder command, including argument parsing and workflow execution.
     """
 
+    def _create_mock_settings(self) -> MagicMock:
+        """Create a mock settings object for testing.
+
+        Returns:
+            MagicMock: Mock settings with database_builder and scanner sections.
+        """
+        mock_settings = MagicMock()
+        mock_settings.database_builder.catalog_file = None
+        mock_settings.database_builder.target_resolutions = None
+        mock_settings.scanner.database_path = None
+        mock_settings.logging = MagicMock()
+        return mock_settings
+
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.database_builder.database_builder.DatabaseBuilder")
     @patch("foxhole_stockpiles.commands.database_builder.database_builder.setup_logging")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.get_settings")
     async def test_main_with_default_args(
         self,
+        mock_get_settings: Mock,
         mock_setup_logging: Mock,
         mock_builder_class: Mock,
         mock_args: Mock,
@@ -607,6 +622,7 @@ class TestMainFunction:
         """Test main function with default arguments.
 
         Args:
+            mock_get_settings (Mock): Mocked get_settings function.
             mock_setup_logging (Mock): Mocked setup_logging function.
             mock_builder_class (Mock): Mocked DatabaseBuilder class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
@@ -619,6 +635,14 @@ class TestMainFunction:
         templates_path.mkdir()
 
         database_path = tmp_path / "database.pkl"
+
+        # Mock settings
+        mock_settings = MagicMock()
+        mock_settings.database_builder.catalog_file = None
+        mock_settings.database_builder.target_resolutions = None
+        mock_settings.scanner.database_path = None
+        mock_settings.logging = MagicMock()
+        mock_get_settings.return_value = mock_settings
 
         mock_args.return_value = argparse.Namespace(
             catalog=catalog_path,
@@ -647,8 +671,10 @@ class TestMainFunction:
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.database_builder.database_builder.DatabaseBuilder")
     @patch("foxhole_stockpiles.commands.database_builder.database_builder.setup_logging")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.get_settings")
     async def test_main_with_specific_resolutions(
         self,
+        mock_get_settings: Mock,
         mock_setup_logging: Mock,
         mock_builder_class: Mock,
         mock_args: Mock,
@@ -657,6 +683,7 @@ class TestMainFunction:
         """Test main function with specific resolution arguments.
 
         Args:
+            mock_get_settings (Mock): Mocked get_settings function.
             mock_setup_logging (Mock): Mocked setup_logging function.
             mock_builder_class (Mock): Mocked DatabaseBuilder class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
@@ -788,3 +815,445 @@ class TestMainFunction:
             await main()
 
         assert exc_info.value.code == 2
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.DatabaseBuilder")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.setup_logging")
+    @patch("foxhole_stockpiles.commands.database_builder.database_builder.get_settings")
+    async def test_main_uses_settings_when_args_not_provided(
+        self,
+        mock_get_settings: Mock,
+        mock_setup_logging: Mock,
+        mock_builder_class: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+    ) -> None:
+        """Test that main function uses settings when CLI args not provided.
+
+        Args:
+            mock_get_settings (Mock): Mocked get_settings function.
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_builder_class (Mock): Mocked DatabaseBuilder class.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_path = tmp_path / "catalog.json"
+        catalog_path.write_text("[]")
+
+        templates_path = tmp_path / "templates"
+        templates_path.mkdir()
+
+        database_path = tmp_path / "database.pkl"
+
+        # Mock settings with values
+        mock_settings = MagicMock()
+        mock_settings.database_builder.catalog_file = catalog_path
+        mock_settings.database_builder.target_resolutions = ["1080", "1440"]
+        mock_settings.scanner.database_path = database_path
+        mock_settings.logging = MagicMock()
+        mock_get_settings.return_value = mock_settings
+
+        # Args with catalog=None (should use settings)
+        mock_args.return_value = argparse.Namespace(
+            catalog=None,  # Not provided, should use settings
+            templates=templates_path,
+            database=None,  # Not provided, should use settings
+            use_scaling=False,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+            resolution=None,  # Not provided, should use settings
+        )
+
+        # Mock builder instance
+        mock_builder = MagicMock()
+        mock_builder.build_all_databases = AsyncMock(return_value=None)
+        mock_builder_class.return_value = mock_builder
+
+        await main()
+
+        # Verify DatabaseBuilder was instantiated with catalog from settings
+        call_args = mock_builder_class.call_args
+        assert call_args[1]["catalog_path"] == catalog_path
+
+        # Verify build_all_databases was called with resolutions from settings
+        build_call_args = mock_builder.build_all_databases.call_args
+        assert build_call_args[1]["output_path"] == database_path
+        assert len(build_call_args[1]["target_resolutions"]) == 2
+
+
+class TestDatabaseBuilderMerge:
+    """Test suite for database merge functionality.
+
+    This class contains tests for the merge functionality when overwrite=False.
+    """
+
+    @pytest.fixture
+    def builder(self, tmp_path: Path, mock_catalog_file: Path) -> DatabaseBuilder:
+        """Create a DatabaseBuilder instance for testing.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            mock_catalog_file (Path): Mock catalog file from fixture.
+
+        Returns:
+            DatabaseBuilder: Configured builder instance for testing.
+        """
+        assets_path = tmp_path / "assets"
+        assets_path.mkdir()
+
+        return DatabaseBuilder(
+            catalog_path=mock_catalog_file, assets_path=assets_path, use_scaling=False
+        )
+
+    def _create_template(
+        self,
+        code: str,
+        mod: str = "vanilla",
+        crated: bool = False,
+        resolution: SupportedResolution = SupportedResolution.R_1080,
+    ) -> IconTemplate:
+        """Create a test template.
+
+        Args:
+            code (str): Item code
+            mod (str): Mod name
+            crated (bool): Whether template is crated
+            resolution (SupportedResolution): Template resolution
+
+        Returns:
+            IconTemplate: Test template
+        """
+        return IconTemplate(
+            code=code,
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=crated,
+            mod=mod,
+            resolution=resolution,
+            image=np.zeros((32, 32, 3), dtype=np.uint8),
+            phash=0,
+        )
+
+    async def test_merge_with_no_existing_database(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test merge when no existing database file exists.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance
+            tmp_path (Path): Temporary directory path
+        """
+        # Create new database
+        new_db = TemplateDatabase(SupportedResolution.R_1080)
+        new_db.add_template(self._create_template("Rifle"))
+        new_databases = {SupportedResolution.R_1080: new_db}
+
+        # Merge should return new_databases as-is since file doesn't exist
+        merged = await builder._merge_with_existing(new_databases, tmp_path / "nonexistent.h5")
+        assert SupportedResolution.R_1080 in merged
+
+    async def test_merge_adds_new_templates_to_existing(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test that merge adds new templates to existing database.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance
+            tmp_path (Path): Temporary directory path
+        """
+        output_path = tmp_path / "existing.h5"
+
+        # Create and save existing database
+        existing_db = TemplateDatabase(SupportedResolution.R_1080)
+        existing_db.add_template(self._create_template("Rifle"))
+        existing_db.add_template(self._create_template("Pistol"))
+        existing_databases = {SupportedResolution.R_1080: existing_db}
+
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+
+        # Create new database with different items
+        new_db = TemplateDatabase(SupportedResolution.R_1080)
+        new_db.add_template(self._create_template("Grenade"))
+        new_databases = {SupportedResolution.R_1080: new_db}
+
+        # Merge
+        merged = await builder._merge_with_existing(new_databases, output_path)
+
+        # Should have all 3 templates
+        assert len(merged[SupportedResolution.R_1080].templates) == 3
+        codes = {t.code for t in merged[SupportedResolution.R_1080].templates}
+        assert codes == {"Rifle", "Pistol", "Grenade"}
+
+    async def test_merge_skips_duplicate_templates(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test that merge skips duplicate templates.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance
+            tmp_path (Path): Temporary directory path
+        """
+        output_path = tmp_path / "existing.h5"
+
+        # Create and save existing database
+        existing_db = TemplateDatabase(SupportedResolution.R_1080)
+        existing_db.add_template(self._create_template("Rifle", mod="vanilla"))
+        existing_databases = {SupportedResolution.R_1080: existing_db}
+
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+
+        # Create new database with same item (duplicate)
+        new_db = TemplateDatabase(SupportedResolution.R_1080)
+        new_db.add_template(self._create_template("Rifle", mod="vanilla"))
+        new_databases = {SupportedResolution.R_1080: new_db}
+
+        # Merge
+        merged = await builder._merge_with_existing(new_databases, output_path)
+
+        # Should still have only 1 template (duplicate was skipped)
+        assert len(merged[SupportedResolution.R_1080].templates) == 1
+        assert merged[SupportedResolution.R_1080].templates[0].code == "Rifle"
+
+    async def test_merge_different_mods_not_duplicates(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test that same item from different mods are not considered duplicates.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance
+            tmp_path (Path): Temporary directory path
+        """
+        output_path = tmp_path / "existing.h5"
+
+        # Create and save existing database with vanilla mod
+        existing_db = TemplateDatabase(SupportedResolution.R_1080)
+        existing_db.add_template(self._create_template("Rifle", mod="vanilla"))
+        existing_databases = {SupportedResolution.R_1080: existing_db}
+
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+
+        # Create new database with same item from different mod
+        new_db = TemplateDatabase(SupportedResolution.R_1080)
+        new_db.add_template(self._create_template("Rifle", mod="custom_mod"))
+        new_databases = {SupportedResolution.R_1080: new_db}
+
+        # Merge
+        merged = await builder._merge_with_existing(new_databases, output_path)
+
+        # Should have 2 templates (different mods)
+        assert len(merged[SupportedResolution.R_1080].templates) == 2
+        mods = {t.mod for t in merged[SupportedResolution.R_1080].templates}
+        assert mods == {"vanilla", "custom_mod"}
+
+    async def test_merge_crated_variants_not_duplicates(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test that crated and normal variants are not considered duplicates.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance
+            tmp_path (Path): Temporary directory path
+        """
+        output_path = tmp_path / "existing.h5"
+
+        # Create and save existing database with normal variant
+        existing_db = TemplateDatabase(SupportedResolution.R_1080)
+        existing_db.add_template(self._create_template("Rifle", crated=False))
+        existing_databases = {SupportedResolution.R_1080: existing_db}
+
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+
+        # Create new database with crated variant
+        new_db = TemplateDatabase(SupportedResolution.R_1080)
+        new_db.add_template(self._create_template("Rifle", crated=True))
+        new_databases = {SupportedResolution.R_1080: new_db}
+
+        # Merge
+        merged = await builder._merge_with_existing(new_databases, output_path)
+
+        # Should have 2 templates (crated and normal)
+        assert len(merged[SupportedResolution.R_1080].templates) == 2
+        crated_states = {t.crated for t in merged[SupportedResolution.R_1080].templates}
+        assert crated_states == {True, False}
+
+    async def test_merge_preserves_existing_resolutions(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test that merge preserves existing resolutions not in new database.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance
+            tmp_path (Path): Temporary directory path
+        """
+        output_path = tmp_path / "existing.h5"
+
+        # Create and save existing database with multiple resolutions
+        existing_db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        existing_db_1080.add_template(self._create_template("Rifle"))
+
+        existing_db_1440 = TemplateDatabase(SupportedResolution.R_1440)
+        existing_db_1440.add_template(self._create_template("Pistol"))
+
+        existing_databases = {
+            SupportedResolution.R_1080: existing_db_1080,
+            SupportedResolution.R_1440: existing_db_1440,
+        }
+
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+
+        # Create new database with only 1080 resolution
+        new_db = TemplateDatabase(SupportedResolution.R_1080)
+        new_db.add_template(self._create_template("Grenade"))
+        new_databases = {SupportedResolution.R_1080: new_db}
+
+        # Merge
+        merged = await builder._merge_with_existing(new_databases, output_path)
+
+        # Should have both resolutions
+        assert SupportedResolution.R_1080 in merged
+        assert SupportedResolution.R_1440 in merged
+
+        # 1080 should have merged templates
+        assert len(merged[SupportedResolution.R_1080].templates) == 2
+
+        # 1440 should be unchanged
+        assert len(merged[SupportedResolution.R_1440].templates) == 1
+        assert merged[SupportedResolution.R_1440].templates[0].code == "Pistol"
+
+    async def test_merge_adds_new_resolution_not_in_existing(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test that merge adds a new resolution that doesn't exist in old database.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance
+            tmp_path (Path): Temporary directory path
+        """
+        output_path = tmp_path / "existing.h5"
+
+        # Create and save existing database with only 1080p
+        existing_db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        existing_db_1080.add_template(self._create_template("Rifle"))
+        existing_databases = {SupportedResolution.R_1080: existing_db_1080}
+
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+
+        # Create new database with only 1440p (which doesn't exist in old database)
+        new_db_1440 = TemplateDatabase(SupportedResolution.R_1440)
+        new_db_1440.add_template(
+            self._create_template("Grenade", resolution=SupportedResolution.R_1440)
+        )
+        new_databases = {SupportedResolution.R_1440: new_db_1440}
+
+        # Merge
+        merged = await builder._merge_with_existing(new_databases, output_path)
+
+        # Should have both resolutions now
+        assert SupportedResolution.R_1080 in merged
+        assert SupportedResolution.R_1440 in merged
+
+        # 1080 should have the old template (preserved from existing)
+        assert len(merged[SupportedResolution.R_1080].templates) == 1
+        assert merged[SupportedResolution.R_1080].templates[0].code == "Rifle"
+
+        # 1440 should have the new template (added because it didn't exist before)
+        assert len(merged[SupportedResolution.R_1440].templates) == 1
+        assert merged[SupportedResolution.R_1440].templates[0].code == "Grenade"
+
+    async def test_build_all_databases_with_overwrite_false(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test build_all_databases respects overwrite=False parameter.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance
+            tmp_path (Path): Temporary directory path
+        """
+        output_path = tmp_path / "database.h5"
+
+        # Create initial database
+        existing_db = TemplateDatabase(SupportedResolution.R_1080)
+        existing_db.add_template(self._create_template("Rifle"))
+        existing_databases = {SupportedResolution.R_1080: existing_db}
+
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+
+        # Mock _build_resolution_database to return new template
+        async def mock_build_db(resolution: SupportedResolution) -> TemplateDatabase:
+            db = TemplateDatabase(resolution)
+            db.add_template(self._create_template("Grenade", resolution=resolution))
+            return db
+
+        with patch.object(builder, "_build_resolution_database", side_effect=mock_build_db):
+            # Build with overwrite=False (should merge)
+            await builder.build_all_databases(
+                output_path=output_path,
+                target_resolutions=[SupportedResolution.R_1080],
+                overwrite=False,
+            )
+
+        # Load and verify merged database
+        temp_manager = TemplateManager(database_path=output_path)
+        loaded = await temp_manager.load_all_resolutions()
+
+        # Should have both templates
+        assert len(loaded[SupportedResolution.R_1080].templates) == 2
+        codes = {t.code for t in loaded[SupportedResolution.R_1080].templates}
+        assert codes == {"Rifle", "Grenade"}
+
+    async def test_build_all_databases_with_overwrite_true(
+        self, builder: DatabaseBuilder, tmp_path: Path
+    ) -> None:
+        """Test build_all_databases with overwrite=True replaces database.
+
+        Args:
+            builder (DatabaseBuilder): DatabaseBuilder instance
+            tmp_path (Path): Temporary directory path
+        """
+        output_path = tmp_path / "database.h5"
+
+        # Create initial database
+        existing_db = TemplateDatabase(SupportedResolution.R_1080)
+        existing_db.add_template(self._create_template("Rifle"))
+        existing_databases = {SupportedResolution.R_1080: existing_db}
+
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+
+        # Mock _build_resolution_database to return new template
+        async def mock_build_db(resolution: SupportedResolution) -> TemplateDatabase:
+            db = TemplateDatabase(resolution)
+            db.add_template(self._create_template("Grenade", resolution=resolution))
+            return db
+
+        with patch.object(builder, "_build_resolution_database", side_effect=mock_build_db):
+            # Build with overwrite=True (should replace)
+            await builder.build_all_databases(
+                output_path=output_path,
+                target_resolutions=[SupportedResolution.R_1080],
+                overwrite=True,  # Default, but explicit for clarity
+            )
+
+        # Load and verify database
+        temp_manager = TemplateManager(database_path=output_path)
+        loaded = await temp_manager.load_all_resolutions()
+
+        # Should have only new template (old one replaced)
+        assert len(loaded[SupportedResolution.R_1080].templates) == 1
+        assert loaded[SupportedResolution.R_1080].templates[0].code == "Grenade"

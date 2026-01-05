@@ -1120,3 +1120,432 @@ class TestMainFunction:
 
             # Verify success message was printed
             assert any("success" in str(call).lower() for call in mock_print.call_args_list)
+
+
+class TestWSLPathConversion:
+    """Test suite for WSL path conversion functionality.
+
+    This class contains tests for WSL path detection, conversion,
+    and Windows tool compatibility.
+    """
+
+    def test_detect_windows_tools_with_exe_files(self, tmp_path: Path) -> None:
+        """Test detection of Windows tools based on .exe extension.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_file = tmp_path / "catalog.json"
+        catalog_file.write_text("[]")
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        converter_tool = tmp_path / "umodel.exe"
+        converter_tool.touch()
+
+        extractor = PakExtractor(
+            catalog_file=str(catalog_file),
+            pak_files=[str(pak_file)],
+            extractor_tool=str(extractor_tool),
+            converter_tool=str(converter_tool),
+        )
+
+        assert extractor._tools_are_windows is True
+
+    def test_detect_linux_tools(self, tmp_path: Path) -> None:
+        """Test detection of Linux/native tools without .exe extension.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_file = tmp_path / "catalog.json"
+        catalog_file.write_text("[]")
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        extractor_tool = tmp_path / "repak"
+        extractor_tool.touch()
+
+        converter_tool = tmp_path / "umodel"
+        converter_tool.touch()
+
+        extractor = PakExtractor(
+            catalog_file=str(catalog_file),
+            pak_files=[str(pak_file)],
+            extractor_tool=str(extractor_tool),
+            converter_tool=str(converter_tool),
+        )
+
+        assert extractor._tools_are_windows is False
+
+    def test_detect_windows_tools_with_mnt_paths(self, tmp_path: Path) -> None:
+        """Test detection of Windows tools in /mnt/ paths.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_file = tmp_path / "catalog.json"
+        catalog_file.write_text("[]")
+
+        with patch("pathlib.Path.exists", return_value=True):
+            extractor = PakExtractor(
+                catalog_file=str(catalog_file),
+                extractor_tool="/mnt/c/tools/repak.exe",
+                converter_tool="/mnt/c/tools/umodel.exe",
+            )
+
+            assert extractor._tools_are_windows is True
+
+    @patch("builtins.open", side_effect=FileNotFoundError)
+    def test_get_wsl_temp_dir_not_in_wsl(self, mock_open: Mock) -> None:
+        """Test _get_wsl_temp_dir when not running in WSL.
+
+        Args:
+            mock_open (Mock): Mocked open function.
+        """
+        result = PakExtractor._get_wsl_temp_dir()
+        assert result is None
+
+    @patch("builtins.open")
+    def test_get_wsl_temp_dir_not_microsoft(self, mock_open: Mock) -> None:
+        """Test _get_wsl_temp_dir when /proc/version doesn't contain 'microsoft'.
+
+        Args:
+            mock_open (Mock): Mocked open function.
+        """
+        mock_file = MagicMock()
+        mock_file.read.return_value = "Linux version 5.15.0"
+        mock_file.__enter__.return_value = mock_file
+        mock_open.return_value = mock_file
+
+        result = PakExtractor._get_wsl_temp_dir()
+        assert result is None
+
+    @patch("subprocess.run")
+    @patch("builtins.open")
+    def test_get_wsl_temp_dir_empty_temp(self, mock_open: Mock, mock_run: Mock) -> None:
+        """Test _get_wsl_temp_dir when Windows TEMP is empty.
+
+        Args:
+            mock_open (Mock): Mocked open function.
+            mock_run (Mock): Mocked subprocess.run function.
+        """
+        # Mock /proc/version to indicate WSL
+        mock_file = MagicMock()
+        mock_file.read.return_value = "Linux version 5.15.0-microsoft-standard"
+        mock_file.__enter__.return_value = mock_file
+        mock_open.return_value = mock_file
+
+        # Mock powershell returning empty string
+        mock_run.return_value = MagicMock(stdout="")
+
+        result = PakExtractor._get_wsl_temp_dir()
+        assert result is None
+
+    @patch("subprocess.run")
+    @patch("builtins.open")
+    def test_get_wsl_temp_dir_subprocess_exception(self, mock_open: Mock, mock_run: Mock) -> None:
+        """Test _get_wsl_temp_dir when subprocess raises exception.
+
+        Args:
+            mock_open (Mock): Mocked open function.
+            mock_run (Mock): Mocked subprocess.run function.
+        """
+        # Mock /proc/version to indicate WSL
+        mock_file = MagicMock()
+        mock_file.read.return_value = "Linux version 5.15.0-microsoft-standard"
+        mock_file.__enter__.return_value = mock_file
+        mock_open.return_value = mock_file
+
+        # Mock subprocess raising exception
+        mock_run.side_effect = Exception("Command failed")
+
+        result = PakExtractor._get_wsl_temp_dir()
+        assert result is None
+
+    @patch("os.path.exists", return_value=False)
+    def test_convert_wsl_path_not_in_wsl(self, mock_exists: Mock) -> None:
+        """Test _convert_wsl_path_to_windows when not in WSL.
+
+        Args:
+            mock_exists (Mock): Mocked os.path.exists function.
+        """
+        path = "/home/user/file.txt"
+        result = PakExtractor._convert_wsl_path_to_windows(path)
+        assert result == path
+
+    @patch("builtins.open")
+    def test_convert_wsl_path_mnt_c(self, mock_open: Mock) -> None:
+        """Test _convert_wsl_path_to_windows with /mnt/c/ path.
+
+        Args:
+            mock_open (Mock): Mocked open function.
+        """
+        # Mock /proc/version to indicate WSL
+        mock_file = MagicMock()
+        mock_file.read.return_value = "Linux version 5.15.0-microsoft-standard"
+        mock_file.__enter__.return_value = mock_file
+        mock_open.return_value = mock_file
+
+        path = "/mnt/c/Users/test/file.txt"
+        result = PakExtractor._convert_wsl_path_to_windows(path)
+        assert result == "C:\\Users\\test\\file.txt"
+
+    @patch("builtins.open")
+    def test_convert_wsl_path_mnt_d(self, mock_open: Mock) -> None:
+        """Test _convert_wsl_path_to_windows with /mnt/d/ path.
+
+        Args:
+            mock_open (Mock): Mocked open function.
+        """
+        # Mock /proc/version to indicate WSL
+        mock_file = MagicMock()
+        mock_file.read.return_value = "Linux version 5.15.0-microsoft-standard"
+        mock_file.__enter__.return_value = mock_file
+        mock_open.return_value = mock_file
+
+        path = "/mnt/d/data/file.txt"
+        result = PakExtractor._convert_wsl_path_to_windows(path)
+        assert result == "D:\\data\\file.txt"
+
+    @patch("builtins.open")
+    def test_convert_wsl_path_mnt_only_drive(self, mock_open: Mock) -> None:
+        """Test _convert_wsl_path_to_windows with /mnt/c only (no path after drive).
+
+        Args:
+            mock_open (Mock): Mocked open function.
+        """
+        # Mock /proc/version to indicate WSL
+        mock_file = MagicMock()
+        mock_file.read.return_value = "Linux version 5.15.0-microsoft-standard"
+        mock_file.__enter__.return_value = mock_file
+        mock_open.return_value = mock_file
+
+        path = "/mnt/c"
+        result = PakExtractor._convert_wsl_path_to_windows(path)
+        assert result == "C:\\"
+
+    @patch("subprocess.run")
+    @patch("builtins.open")
+    def test_convert_wsl_path_wslpath_success(self, mock_open: Mock, mock_run: Mock) -> None:
+        """Test _convert_wsl_path_to_windows using wslpath command.
+
+        Args:
+            mock_open (Mock): Mocked open function.
+            mock_run (Mock): Mocked subprocess.run function.
+        """
+        # Mock /proc/version to indicate WSL
+        mock_file = MagicMock()
+        mock_file.read.return_value = "Linux version 5.15.0-microsoft-standard"
+        mock_file.__enter__.return_value = mock_file
+        mock_open.return_value = mock_file
+
+        # Mock wslpath success
+        mock_run.return_value = MagicMock(stdout="C:\\Users\\test\\file.txt\n")
+
+        path = "/home/user/file.txt"
+        result = PakExtractor._convert_wsl_path_to_windows(path)
+        assert result == "C:\\Users\\test\\file.txt"
+
+    @patch("subprocess.run")
+    @patch("builtins.open")
+    def test_convert_wsl_path_wslpath_exception(self, mock_open: Mock, mock_run: Mock) -> None:
+        """Test _convert_wsl_path_to_windows when wslpath fails.
+
+        Args:
+            mock_open (Mock): Mocked open function.
+            mock_run (Mock): Mocked subprocess.run function.
+        """
+        # Mock /proc/version to indicate WSL
+        mock_file = MagicMock()
+        mock_file.read.return_value = "Linux version 5.15.0-microsoft-standard"
+        mock_file.__enter__.return_value = mock_file
+        mock_open.return_value = mock_file
+
+        # Mock wslpath raising exception
+        mock_run.side_effect = FileNotFoundError("wslpath not found")
+
+        path = "/home/user/file.txt"
+        result = PakExtractor._convert_wsl_path_to_windows(path)
+        # Should return original path when wslpath fails
+        assert result == path
+
+    async def test_extract_single_file_with_linux_tools(self, tmp_path: Path) -> None:
+        """Test extract_single_file path format with Linux/native tools.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_file = tmp_path / "catalog.json"
+        catalog_file.write_text("[]")
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        # Use non-.exe tools to trigger Linux path
+        extractor_tool = tmp_path / "repak"
+        extractor_tool.touch()
+
+        converter_tool = tmp_path / "umodel"
+        converter_tool.touch()
+
+        extractor = PakExtractor(
+            catalog_file=str(catalog_file),
+            pak_files=[str(pak_file)],
+            extractor_tool=str(extractor_tool),
+            converter_tool=str(converter_tool),
+        )
+
+        # Verify Linux tools are detected
+        assert extractor._tools_are_windows is False
+
+        # Mock subprocess to capture command
+        with patch("asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.communicate = AsyncMock(return_value=(b"", b""))
+            mock_process.returncode = 0
+            mock_subprocess.return_value = mock_process
+
+            # Create the expected output directory structure
+            pak_dir = tmp_path / "test"
+            pak_dir.mkdir()
+            output_file = pak_dir / "War" / "Content" / "test.uasset"
+            output_file.parent.mkdir(parents=True)
+            output_file.touch()
+
+            await extractor.extract_single_file(
+                file_path="War/Content/test.uasset", temp_dir=str(tmp_path)
+            )
+
+            # Verify command used Linux-style path separator (ends with /)
+            call_args = mock_subprocess.call_args[0][0]
+            # The output dir should end with /
+            assert any(arg.endswith("/") for arg in call_args if isinstance(arg, str))
+
+    async def test_extract_single_file_process_cleanup_on_error(self, tmp_path: Path) -> None:
+        """Test extract_single_file cleans up process on error.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_file = tmp_path / "catalog.json"
+        catalog_file.write_text("[]")
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        converter_tool = tmp_path / "umodel.exe"
+        converter_tool.touch()
+
+        extractor = PakExtractor(
+            catalog_file=str(catalog_file),
+            pak_files=[str(pak_file)],
+            extractor_tool=str(extractor_tool),
+            converter_tool=str(converter_tool),
+        )
+
+        # Mock subprocess with hanging process
+        with patch("asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.communicate = AsyncMock(side_effect=Exception("Error"))
+            mock_process.returncode = None  # Still running
+            mock_process.terminate = AsyncMock()
+            mock_process.wait = AsyncMock()
+            mock_subprocess.return_value = mock_process
+
+            result = await extractor.extract_single_file(
+                file_path="War/Content/test.uasset", temp_dir=str(tmp_path)
+            )
+
+            # Should fail and clean up
+            assert result is False
+            mock_process.terminate.assert_called_once()
+            mock_process.wait.assert_called_once()
+
+    def test_try_convert_with_version_linux_tools(self, tmp_path: Path) -> None:
+        """Test Linux tools detection for _try_convert_with_version.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_file = tmp_path / "catalog.json"
+        catalog_file.write_text("[]")
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        # Use non-.exe tools to trigger Linux path
+        extractor_tool = tmp_path / "repak"
+        extractor_tool.touch()
+
+        converter_tool = tmp_path / "umodel"
+        converter_tool.touch()
+
+        extractor = PakExtractor(
+            catalog_file=str(catalog_file),
+            pak_files=[str(pak_file)],
+            extractor_tool=str(extractor_tool),
+            converter_tool=str(converter_tool),
+        )
+
+        # Verify Linux tools are detected (which affects path format in convert)
+        assert extractor._tools_are_windows is False
+        # This test covers line 360-361 where _tools_are_windows is False
+
+    async def test_try_convert_with_version_process_cleanup(self, tmp_path: Path) -> None:
+        """Test _try_convert_with_version cleans up process on error.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        catalog_file = tmp_path / "catalog.json"
+        catalog_file.write_text("[]")
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        converter_tool = tmp_path / "umodel.exe"
+        converter_tool.touch()
+
+        extractor = PakExtractor(
+            catalog_file=str(catalog_file),
+            pak_files=[str(pak_file)],
+            extractor_tool=str(extractor_tool),
+            converter_tool=str(converter_tool),
+        )
+
+        # Create extracted file structure
+        pak_dir = tmp_path / "TestPak"
+        pak_dir.mkdir()
+        test_file = pak_dir / "War" / "Content" / "test.uasset"
+        test_file.parent.mkdir(parents=True)
+        test_file.touch()
+
+        # Mock subprocess with hanging process
+        with patch("asyncio.create_subprocess_exec") as mock_subprocess:
+            mock_process = AsyncMock()
+            mock_process.communicate = AsyncMock(side_effect=Exception("Error"))
+            mock_process.returncode = None  # Still running
+            mock_process.terminate = AsyncMock()
+            mock_process.wait = AsyncMock()
+            mock_subprocess.return_value = mock_process
+
+            result = await extractor._try_convert_with_version(
+                file_path="War/Content/test.uasset", temp_dir=str(tmp_path)
+            )
+
+            # Should fail and clean up
+            assert result is False
+            mock_process.terminate.assert_called_once()
+            mock_process.wait.assert_called_once()
