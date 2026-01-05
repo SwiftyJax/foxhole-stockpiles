@@ -13,6 +13,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Callable
 from copy import copy
 from pathlib import Path
 
@@ -46,6 +47,7 @@ class PakExtractor:
         extractor_tool: str = DEFAULT_EXTRACTOR,
         converter_tool: str = DEFAULT_CONVERTER,
         output_dir: str = DEFAULT_OUTPUT,
+        filter_assets: set[str] | Callable[[str], bool] | None = None,
     ) -> None:
         """Initialize the PAK extractor with default paths and tools.
 
@@ -55,6 +57,10 @@ class PakExtractor:
             extractor_tool (str): Path to the repak.exe tool for extraction.
             converter_tool (str): Path to the umodel.exe tool for conversion.
             output_dir (str): Directory where converted PNG files will be saved.
+            filter_assets (set[str] | Callable[[str], bool] | None): Optional filter for assets.
+                Can be a set of file paths to include, or a callable that takes a file path
+                and returns True if the asset should be extracted. If None, all catalog assets
+                are extracted.
 
         Raises:
             ValueError: If any of the parameters but log_file is empty.
@@ -99,8 +105,18 @@ class PakExtractor:
             if not pak_file.exists():
                 raise FileNotFoundError(f"PAK file not found: {pak_file}")
 
+        self.filter_assets = filter_assets
+
         self._logger = logging.getLogger(__name__)
         self._logger.info("Using PAK files: %s", self.pak_files)
+
+        if self.filter_assets is not None:
+            if isinstance(self.filter_assets, set):
+                self._logger.info(
+                    "Asset filter enabled: %d specific files", len(self.filter_assets)
+                )
+            else:
+                self._logger.info("Asset filter enabled: custom filter function")
 
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -420,6 +436,8 @@ class PakExtractor:
     def get_files_to_extract(self) -> set[str]:
         """Get all unique files that need to be extracted from the catalog.
 
+        Applies the filter_assets if configured to limit which files are extracted.
+
         Returns:
             set[str]: A set of unique file paths to extract.
         """
@@ -440,6 +458,24 @@ class PakExtractor:
             files_to_extract.add(f"{item.icon_path}.uasset")
             if item.subicon_path:
                 files_to_extract.add(f"{item.subicon_path}.uasset")
+
+        # Apply filter if configured
+        if self.filter_assets is not None:
+            if isinstance(self.filter_assets, set):
+                # Filter to only include files in the filter set
+                files_to_extract = files_to_extract.intersection(self.filter_assets)
+                self._logger.info(
+                    "Applied asset filter: %d files after filtering", len(files_to_extract)
+                )
+            else:
+                # Use callable filter function
+                original_count = len(files_to_extract)
+                files_to_extract = {f for f in files_to_extract if self.filter_assets(f)}
+                self._logger.info(
+                    "Applied asset filter: %d files after filtering (from %d)",
+                    len(files_to_extract),
+                    original_count,
+                )
 
         self._logger.info("Found %d unique files to process", len(files_to_extract))
         return files_to_extract
@@ -565,6 +601,18 @@ async def main() -> None:
         default=None,
         help="Number of parallel operations (default: cpu count)",
     )
+    parser.add_argument(
+        "--filter-files",
+        action="append",
+        help="Extract only these specific file paths. Can be specified multiple times. "
+        "Example: --filter-files 'War/Content/Icons/Icon1.uasset'",
+    )
+    parser.add_argument(
+        "--filter-pattern",
+        action="append",
+        help="Extract only files matching this pattern (substring match). "
+        "Can be specified multiple times. Example: --filter-pattern 'Subicons/'",
+    )
     parser.add_argument("--log-file", type=Path, help="Path to log file (default: console only)")
     parser.add_argument(
         "--verbose", action="store_true", help="Enable verbose logging (debug level)"
@@ -606,6 +654,31 @@ async def main() -> None:
         else DEFAULT_CONVERTER
     )
 
+    # Build filter_assets from CLI arguments
+    filter_assets: set[str] | Callable[[str], bool] | None = None
+
+    if args.filter_files or args.filter_pattern:
+        if args.filter_files and not args.filter_pattern:
+            # Only specific files - use set
+            filter_assets = set(args.filter_files)
+        elif args.filter_pattern and not args.filter_files:
+            # Only patterns - use callable
+            patterns = args.filter_pattern
+
+            def pattern_filter(path: str) -> bool:
+                return any(pattern in path for pattern in patterns)
+
+            filter_assets = pattern_filter
+        else:
+            # Both specified - combine them
+            specific_files = set(args.filter_files)
+            patterns = args.filter_pattern
+
+            def combined_filter(path: str) -> bool:
+                return path in specific_files or any(pattern in path for pattern in patterns)
+
+            filter_assets = combined_filter
+
     try:
         extractor = PakExtractor(
             pak_files=args.pak or DEFAULT_PAK_FILES,
@@ -613,6 +686,7 @@ async def main() -> None:
             extractor_tool=extractor_tool,
             converter_tool=converter_tool,
             output_dir=args.output,
+            filter_assets=filter_assets,
         )
     except (ValueError, FileNotFoundError) as e:
         print(f"Error: {e}")

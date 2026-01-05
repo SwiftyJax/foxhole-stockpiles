@@ -814,6 +814,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             workers=None,
+            filter_files=None,
+            filter_pattern=None,
         )
 
         with patch(
@@ -856,6 +858,8 @@ class TestMainFunction:
             verbose=True,
             quiet=False,
             workers=None,
+            filter_files=None,
+            filter_pattern=None,
         )
 
         with patch(
@@ -895,6 +899,8 @@ class TestMainFunction:
             verbose=False,
             quiet=True,
             workers=None,
+            filter_files=None,
+            filter_pattern=None,
         )
 
         with patch(
@@ -935,6 +941,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             workers=None,
+            filter_files=None,
+            filter_pattern=None,
         )
 
         with patch(
@@ -979,6 +987,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             workers=None,
+            filter_files=None,
+            filter_pattern=None,
         )
 
         # Make exit() actually raise to prevent further code execution
@@ -1020,6 +1030,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             workers=None,
+            filter_files=None,
+            filter_pattern=None,
         )
 
         # Make exit() actually raise to prevent further code execution
@@ -1061,6 +1073,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             workers=None,
+            filter_files=None,
+            filter_pattern=None,
         )
 
         with patch(
@@ -1079,6 +1093,138 @@ class TestMainFunction:
             # Verify failure message was printed and exit was called
             mock_print.assert_called()
             mock_exit.assert_called_with(1)
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.core.logging.setup_logging")
+    async def test_main_with_filter_files(self, mock_setup_logging: Mock, mock_args: Mock) -> None:
+        """Test main function with filter-files argument.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+        """
+        mock_args.return_value = argparse.Namespace(
+            catalog="catalog.json",
+            pak=None,
+            extractor_tool="C:\\repak\\repak.exe",
+            converter_tool="C:\\UModel\\umodel.exe",
+            output="output",
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            workers=None,
+            filter_files=["War/Content/Icons/Icon1.uasset", "War/Content/Icons/Icon2.uasset"],
+            filter_pattern=None,
+        )
+
+        with patch(
+            "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor.PakExtractor"
+        ) as mock_extractor:
+            instance = MagicMock()
+
+            async def mock_process_files(*args: Any, **kwargs: Any) -> bool:
+                return True
+
+            instance.process_files = mock_process_files
+            mock_extractor.return_value = instance
+
+            await main()
+
+            # Verify PakExtractor was called with filter_assets as a set
+            call_kwargs = mock_extractor.call_args[1]
+            assert call_kwargs["filter_assets"] is not None
+            assert isinstance(call_kwargs["filter_assets"], set)
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.core.logging.setup_logging")
+    async def test_main_with_filter_pattern(
+        self, mock_setup_logging: Mock, mock_args: Mock
+    ) -> None:
+        """Test main function with filter-pattern argument.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+        """
+        mock_args.return_value = argparse.Namespace(
+            catalog="catalog.json",
+            pak=None,
+            extractor_tool="C:\\repak\\repak.exe",
+            converter_tool="C:\\UModel\\umodel.exe",
+            output="output",
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            workers=None,
+            filter_files=None,
+            filter_pattern=["Subicons/"],
+        )
+
+        with patch(
+            "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor.PakExtractor"
+        ) as mock_extractor:
+            instance = MagicMock()
+
+            async def mock_process_files(*args: Any, **kwargs: Any) -> bool:
+                return True
+
+            instance.process_files = mock_process_files
+            mock_extractor.return_value = instance
+
+            await main()
+
+            # Verify PakExtractor was called with filter_assets as a callable
+            call_kwargs = mock_extractor.call_args[1]
+            assert call_kwargs["filter_assets"] is not None
+            assert callable(call_kwargs["filter_assets"])
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.core.logging.setup_logging")
+    async def test_main_with_combined_filters(
+        self, mock_setup_logging: Mock, mock_args: Mock
+    ) -> None:
+        """Test main function with both filter-files and filter-pattern.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_args (Mock): Mocked ArgumentParser.parse_args method.
+        """
+        mock_args.return_value = argparse.Namespace(
+            catalog="catalog.json",
+            pak=None,
+            extractor_tool="C:\\repak\\repak.exe",
+            converter_tool="C:\\UModel\\umodel.exe",
+            output="output",
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            workers=None,
+            filter_files=["War/Content/Textures/UI/Menus/IconFilterCrates.uasset"],
+            filter_pattern=["Subicons/"],
+        )
+
+        with patch(
+            "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor.PakExtractor"
+        ) as mock_extractor:
+            instance = MagicMock()
+
+            async def mock_process_files(*args: Any, **kwargs: Any) -> bool:
+                return True
+
+            instance.process_files = mock_process_files
+            mock_extractor.return_value = instance
+
+            await main()
+
+            # Verify PakExtractor was called with filter_assets as a callable
+            call_kwargs = mock_extractor.call_args[1]
+            assert call_kwargs["filter_assets"] is not None
+            assert callable(call_kwargs["filter_assets"])
+            # Test that the filter works correctly
+            filter_func = call_kwargs["filter_assets"]
+            assert filter_func("War/Content/Textures/UI/Menus/IconFilterCrates.uasset") is True
+            assert filter_func("War/Content/Icons/Subicons/Ammo.uasset") is True
+            assert filter_func("War/Content/Icons/MainIcon.uasset") is False
 
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.core.logging.setup_logging")
@@ -1103,6 +1249,8 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             workers=None,
+            filter_files=None,
+            filter_pattern=None,
         )
 
         with patch(
@@ -1120,6 +1268,225 @@ class TestMainFunction:
 
             # Verify success message was printed
             assert any("success" in str(call).lower() for call in mock_print.call_args_list)
+
+
+class TestFilterAssets:
+    """Test suite for filter_assets functionality."""
+
+    @pytest.fixture
+    def extractor(self, tmp_path: Path) -> PakExtractor:
+        """Create a PakExtractor instance for testing.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+
+        Returns:
+            PakExtractor: Configured extractor instance for testing.
+        """
+        catalog_file = tmp_path / "catalog.json"
+        catalog_file.write_text("[]")
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+        converter_tool = tmp_path / "umodel.exe"
+        converter_tool.touch()
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        return PakExtractor(
+            catalog_file=str(catalog_file),
+            pak_files=str(pak_file),
+            extractor_tool=str(extractor_tool),
+            converter_tool=str(converter_tool),
+            output_dir=str(tmp_path / "output"),
+        )
+
+    def test_filter_assets_with_set(self, extractor: PakExtractor) -> None:
+        """Test filter_assets with a set of file paths.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+        """
+        from foxhole_stockpiles.models.catalog_item import CatalogItem
+
+        mock_item1 = Mock(spec=CatalogItem)
+        mock_item1.code = "TEST001"
+        mock_item1.icon_path = "War/Content/Icons/Icon1"
+        mock_item1.subicon_path = "War/Content/Icons/SubIcon1"
+
+        mock_item2 = Mock(spec=CatalogItem)
+        mock_item2.code = "TEST002"
+        mock_item2.icon_path = "War/Content/Icons/Icon2"
+        mock_item2.subicon_path = None
+
+        # Set filter to only include Icon1 and crate icon
+        extractor.filter_assets = {
+            "War/Content/Icons/Icon1.uasset",
+            "War/Content/Textures/UI/Menus/IconFilterCrates.uasset",
+        }
+
+        with patch(
+            "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor.load_catalog"
+        ) as mock_load:
+            mock_load.return_value = [mock_item1, mock_item2]
+            result = extractor.get_files_to_extract()
+
+        # Should only contain Icon1 and crate icon, not Icon2 or SubIcon1
+        assert "War/Content/Icons/Icon1.uasset" in result
+        assert "War/Content/Textures/UI/Menus/IconFilterCrates.uasset" in result
+        assert "War/Content/Icons/Icon2.uasset" not in result
+        assert "War/Content/Icons/SubIcon1.uasset" not in result
+        assert len(result) == 2
+
+    def test_filter_assets_with_callable(self, extractor: PakExtractor) -> None:
+        """Test filter_assets with a callable filter function.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+        """
+        from foxhole_stockpiles.models.catalog_item import CatalogItem
+
+        mock_item1 = Mock(spec=CatalogItem)
+        mock_item1.code = "TEST001"
+        mock_item1.icon_path = "War/Content/Icons/MainIcon"
+        mock_item1.subicon_path = "War/Content/Icons/SubIcon"
+
+        mock_item2 = Mock(spec=CatalogItem)
+        mock_item2.code = "TEST002"
+        mock_item2.icon_path = "War/Content/OtherIcons/Icon"
+        mock_item2.subicon_path = None
+
+        # Filter to only include files with "SubIcon" or "Crates" in path
+        def filter_func(file_path: str) -> bool:
+            return "SubIcon" in file_path or "Crates" in file_path
+
+        extractor.filter_assets = filter_func
+
+        with patch(
+            "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor.load_catalog"
+        ) as mock_load:
+            mock_load.return_value = [mock_item1, mock_item2]
+            result = extractor.get_files_to_extract()
+
+        # Should only contain SubIcon and crate icon
+        assert "War/Content/Icons/SubIcon.uasset" in result
+        assert "War/Content/Textures/UI/Menus/IconFilterCrates.uasset" in result
+        assert "War/Content/Icons/MainIcon.uasset" not in result
+        assert "War/Content/OtherIcons/Icon.uasset" not in result
+        assert len(result) == 2
+
+    def test_filter_assets_none_returns_all(self, extractor: PakExtractor) -> None:
+        """Test that filter_assets=None returns all catalog files.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+        """
+        from foxhole_stockpiles.models.catalog_item import CatalogItem
+
+        mock_item = Mock(spec=CatalogItem)
+        mock_item.code = "TEST001"
+        mock_item.icon_path = "War/Content/Icons/Icon"
+        mock_item.subicon_path = "War/Content/Icons/SubIcon"
+
+        extractor.filter_assets = None
+
+        with patch(
+            "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor.load_catalog"
+        ) as mock_load:
+            mock_load.return_value = [mock_item]
+            result = extractor.get_files_to_extract()
+
+        # Should contain all files
+        assert "War/Content/Icons/Icon.uasset" in result
+        assert "War/Content/Icons/SubIcon.uasset" in result
+        assert "War/Content/Textures/UI/Menus/IconFilterCrates.uasset" in result
+        assert len(result) == 3
+
+    def test_filter_assets_empty_set_returns_none(self, extractor: PakExtractor) -> None:
+        """Test that empty filter set returns no files.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+        """
+        from foxhole_stockpiles.models.catalog_item import CatalogItem
+
+        mock_item = Mock(spec=CatalogItem)
+        mock_item.code = "TEST001"
+        mock_item.icon_path = "War/Content/Icons/Icon"
+        mock_item.subicon_path = None
+
+        extractor.filter_assets = set()
+
+        with patch(
+            "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor.load_catalog"
+        ) as mock_load:
+            mock_load.return_value = [mock_item]
+            result = extractor.get_files_to_extract()
+
+        # Should return empty set
+        assert len(result) == 0
+
+    def test_filter_assets_callable_returns_all_false(self, extractor: PakExtractor) -> None:
+        """Test callable filter that returns False for all files.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+        """
+        from foxhole_stockpiles.models.catalog_item import CatalogItem
+
+        mock_item = Mock(spec=CatalogItem)
+        mock_item.code = "TEST001"
+        mock_item.icon_path = "War/Content/Icons/Icon"
+        mock_item.subicon_path = None
+
+        # Filter that rejects everything
+        extractor.filter_assets = lambda x: False
+
+        with patch(
+            "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor.load_catalog"
+        ) as mock_load:
+            mock_load.return_value = [mock_item]
+            result = extractor.get_files_to_extract()
+
+        # Should return empty set
+        assert len(result) == 0
+
+    def test_filter_assets_with_subicons_only(self, extractor: PakExtractor) -> None:
+        """Test filtering to extract only subicons and crate icon.
+
+        Args:
+            extractor (PakExtractor): PakExtractor instance from fixture.
+        """
+        from foxhole_stockpiles.models.catalog_item import CatalogItem
+
+        mock_item1 = Mock(spec=CatalogItem)
+        mock_item1.code = "TEST001"
+        mock_item1.icon_path = "War/Content/Icons/MainIcon1"
+        mock_item1.subicon_path = "War/Content/Icons/Subicons/Ammo"
+
+        mock_item2 = Mock(spec=CatalogItem)
+        mock_item2.code = "TEST002"
+        mock_item2.icon_path = "War/Content/Icons/MainIcon2"
+        mock_item2.subicon_path = "War/Content/Icons/Subicons/Fuel"
+
+        # Filter for subicons and crate only (use case for vanilla dependency extraction)
+        def subicons_filter(file_path: str) -> bool:
+            return "Subicons/" in file_path or "Crates" in file_path
+
+        extractor.filter_assets = subicons_filter
+
+        with patch(
+            "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor.load_catalog"
+        ) as mock_load:
+            mock_load.return_value = [mock_item1, mock_item2]
+            result = extractor.get_files_to_extract()
+
+        # Should only contain subicons and crate icon
+        assert "War/Content/Icons/Subicons/Ammo.uasset" in result
+        assert "War/Content/Icons/Subicons/Fuel.uasset" in result
+        assert "War/Content/Textures/UI/Menus/IconFilterCrates.uasset" in result
+        assert "War/Content/Icons/MainIcon1.uasset" not in result
+        assert "War/Content/Icons/MainIcon2.uasset" not in result
+        assert len(result) == 3
 
 
 class TestWSLPathConversion:
