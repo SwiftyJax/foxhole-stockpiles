@@ -2,7 +2,8 @@
 
 from pathlib import Path
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QUrl
+from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWidgets import (
     QFileDialog,
     QFormLayout,
@@ -60,34 +61,46 @@ class DatabaseBuilderTab(QWidget):
         tools_group.setLayout(tools_layout)
 
         # Extractor tool
-        extractor_label = QLabel("Extractor Tool (repak.exe):")
+        extractor_label = QLabel("Extractor Tool (repak):")
         extractor_label.setToolTip(
-            "Path to repak.exe for extracting PAK files.\n\n"
+            "Path to repak executable for extracting PAK files.\n\n"
             "Required for the 'Import Icons' feature.\n"
-            "Download from: https://github.com/trumank/repak\n\n"
-            "Example: C:\\repak\\repak.exe"
+            "Download from: https://github.com/trumank/repak"
         )
         extractor_layout = QHBoxLayout()
         self.extractor_tool_input = QLineEdit()
-        self.extractor_tool_input.setPlaceholderText("C:\\repak\\repak.exe")
+        self.extractor_tool_input.setPlaceholderText("Path to repak executable")
+        self.extractor_tool_input.textChanged.connect(self._update_download_buttons)
         extractor_layout.addWidget(self.extractor_tool_input)
+        self.extractor_download_btn = QPushButton("Download")
+        self.extractor_download_btn.setMaximumWidth(80)
+        self.extractor_download_btn.clicked.connect(
+            lambda: self._open_url("https://github.com/trumank/repak/releases")
+        )
+        extractor_layout.addWidget(self.extractor_download_btn)
         extractor_browse_btn = QPushButton("Browse...")
         extractor_browse_btn.clicked.connect(self.browse_extractor_tool)
         extractor_layout.addWidget(extractor_browse_btn)
         tools_layout.addRow(extractor_label, extractor_layout)
 
         # Converter tool
-        converter_label = QLabel("Converter Tool (umodel.exe):")
+        converter_label = QLabel("Converter Tool (umodel):")
         converter_label.setToolTip(
-            "Path to umodel.exe for converting UAsset files to PNG.\n\n"
+            "Path to umodel executable for converting UAsset files to PNG.\n\n"
             "Required for the 'Import Icons' feature.\n"
-            "Download from: https://www.gildor.org/en/projects/umodel\n\n"
-            "Example: C:\\UModel\\umodel.exe"
+            "Download from: https://www.gildor.org/en/projects/umodel"
         )
         converter_layout = QHBoxLayout()
         self.converter_tool_input = QLineEdit()
-        self.converter_tool_input.setPlaceholderText("C:\\UModel\\umodel.exe")
+        self.converter_tool_input.setPlaceholderText("Path to umodel executable")
+        self.converter_tool_input.textChanged.connect(self._update_download_buttons)
         converter_layout.addWidget(self.converter_tool_input)
+        self.converter_download_btn = QPushButton("Download")
+        self.converter_download_btn.setMaximumWidth(80)
+        self.converter_download_btn.clicked.connect(
+            lambda: self._open_url("https://www.gildor.org/en/projects/umodel")
+        )
+        converter_layout.addWidget(self.converter_download_btn)
         converter_browse_btn = QPushButton("Browse...")
         converter_browse_btn.clicked.connect(self.browse_converter_tool)
         converter_layout.addWidget(converter_browse_btn)
@@ -99,12 +112,19 @@ class DatabaseBuilderTab(QWidget):
             "Path to catalog.json file that defines all game items.\n\n"
             "Required for the 'Import Icons' feature.\n"
             "This file maps item codes to their icon paths.\n\n"
-            "Example: C:\\foxhole\\catalog.json"
+            "Download from: https://github.com/xurxogr/foxhole-stockpiles/tree/main/data"
         )
         catalog_layout = QHBoxLayout()
         self.catalog_file_input = QLineEdit()
-        self.catalog_file_input.setPlaceholderText("catalog.json")
+        self.catalog_file_input.setPlaceholderText("Path to catalog.json")
+        self.catalog_file_input.textChanged.connect(self._update_download_buttons)
         catalog_layout.addWidget(self.catalog_file_input)
+        self.catalog_download_btn = QPushButton("Download")
+        self.catalog_download_btn.setMaximumWidth(80)
+        self.catalog_download_btn.clicked.connect(
+            lambda: self._open_url("https://github.com/xurxogr/foxhole-stockpiles/tree/main/data")
+        )
+        catalog_layout.addWidget(self.catalog_download_btn)
         catalog_browse_btn = QPushButton("Browse...")
         catalog_browse_btn.clicked.connect(self.browse_catalog_file)
         catalog_layout.addWidget(catalog_browse_btn)
@@ -165,24 +185,41 @@ class DatabaseBuilderTab(QWidget):
 
         layout.addStretch()
 
+        # Initial update of download button visibility
+        self._update_download_buttons()
+
+    def _update_download_buttons(self) -> None:
+        """Update visibility of download buttons based on whether fields are empty."""
+        self.extractor_download_btn.setVisible(not self.extractor_tool_input.text().strip())
+        self.converter_download_btn.setVisible(not self.converter_tool_input.text().strip())
+        self.catalog_download_btn.setVisible(not self.catalog_file_input.text().strip())
+
+    def _open_url(self, url: str) -> None:
+        """Open URL in default browser.
+
+        Args:
+            url (str): URL to open
+        """
+        QDesktopServices.openUrl(QUrl(url))
+
     def browse_extractor_tool(self) -> None:
-        """Open file dialog to select extractor tool (repak.exe)."""
+        """Open file dialog to select extractor tool (repak)."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Extractor Tool (repak.exe)",
+            "Select Extractor Tool (repak)",
             "",
-            "Executable Files (*.exe);;All Files (*)",
+            "All Files (*)",
         )
         if file_path:
             self.extractor_tool_input.setText(file_path)
 
     def browse_converter_tool(self) -> None:
-        """Open file dialog to select converter tool (umodel.exe)."""
+        """Open file dialog to select converter tool (umodel)."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Converter Tool (umodel.exe)",
+            "Select Converter Tool (umodel)",
             "",
-            "Executable Files (*.exe);;All Files (*)",
+            "All Files (*)",
         )
         if file_path:
             self.converter_tool_input.setText(file_path)
@@ -311,6 +348,9 @@ class DatabaseBuilderTab(QWidget):
         finally:
             # Reconnect
             self.resolution_list.itemChanged.connect(self._handle_resolution_selection)
+
+        # Update download button visibility
+        self._update_download_buttons()
 
     def get_values(self) -> DatabaseBuilderSettings:
         """Get current values from widgets.
