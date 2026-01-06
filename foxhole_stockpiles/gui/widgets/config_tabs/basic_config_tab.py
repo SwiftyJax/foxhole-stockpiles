@@ -210,10 +210,9 @@ class BasicConfigTab(QWidget):
         info_label.setWordWrap(True)
         info_label.setStyleSheet(
             "QLabel { "
-            "background-color: #e3f2fd; "
-            "color: #000000; "
+            "background-color: palette(alternate-base); "
             "padding: 12px; "
-            "border: 1px solid #2196f3; "
+            "border: 2px solid #2196F3; "
             "border-radius: 4px; "
             "}"
         )

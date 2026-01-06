@@ -49,8 +49,8 @@ class DatabaseBuilderTab(QWidget):
         )
         info_label.setWordWrap(True)
         info_label.setStyleSheet(
-            "QLabel { background-color: #e3f2fd; color: #000000; padding: 10px; "
-            "border: 1px solid #2196f3; }"
+            "QLabel { background-color: palette(alternate-base); padding: 10px; "
+            "border: 2px solid #2196F3; }"
         )
         info_layout.addWidget(info_label, 1)
 
@@ -179,8 +179,8 @@ class DatabaseBuilderTab(QWidget):
         )
         status_label.setWordWrap(True)
         status_label.setStyleSheet(
-            "QLabel { background-color: #fff9c4; color: #000000; padding: 8px; "
-            "border: 1px solid #fbc02d; margin-top: 10px; }"
+            "QLabel { background-color: palette(alternate-base); padding: 8px; "
+            "border: 2px solid #FF9800; margin-top: 10px; }"
         )
         layout.addWidget(status_label)
 

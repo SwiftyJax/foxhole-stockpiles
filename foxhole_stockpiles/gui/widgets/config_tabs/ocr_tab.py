@@ -53,16 +53,14 @@ class OCRTab(QWidget):
         )
         info_label.setWordWrap(True)
         info_label.setStyleSheet(
-            "QLabel { background-color: #fff3e0; color: #000000; padding: 10px; "
-            "border: 1px solid #ff9800; }"
+            "QLabel { background-color: palette(alternate-base); padding: 10px; "
+            "border: 2px solid #FF9800; }"
         )
         warning_layout.addWidget(info_label, 1)
 
         reset_all_btn = QPushButton("Reset All to Defaults")
         reset_all_btn.clicked.connect(self.reset_all_to_defaults)
-        reset_all_btn.setStyleSheet(
-            "QPushButton { background-color: #ff9800; color: white; padding: 8px; }"
-        )
+        reset_all_btn.setStyleSheet("QPushButton { padding: 8px; }")
         warning_layout.addWidget(reset_all_btn)
 
         layout.addRow(warning_header)

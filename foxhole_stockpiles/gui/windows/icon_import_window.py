@@ -85,11 +85,11 @@ class IconImportWindow(QMainWindow):
         vanilla_info.setWordWrap(True)
         vanilla_info.setStyleSheet(
             "QLabel { "
-            "background-color: #E3F2FD; "
-            "border: 1px solid #2196F3; "
+            "border: 2px solid #2196F3; "
             "border-radius: 4px; "
             "padding: 6px; "
             "font-size: 11px; "
+            "background-color: palette(alternate-base); "
             "}"
         )
         vanilla_layout.addWidget(vanilla_info)
@@ -301,11 +301,11 @@ class IconImportWindow(QMainWindow):
         warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         warning_label.setStyleSheet(
             "QLabel { "
-            "background-color: #fff3e0; "
-            "border: 2px solid #ff9800; "
+            "border: 2px solid #FF9800; "
             "border-radius: 8px; "
             "padding: 30px; "
             "font-size: 13px; "
+            "background-color: palette(alternate-base); "
             "}"
         )
         warning_layout.addWidget(warning_label)
