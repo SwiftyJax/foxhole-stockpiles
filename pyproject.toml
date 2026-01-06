@@ -128,3 +128,6 @@ filterwarnings = [
 
 [project.scripts]
 fs = "foxhole_stockpiles.commands.fs.fs:main"
+
+[project.gui-scripts]
+fs-gui = "foxhole_stockpiles.gui.app:launch_gui"

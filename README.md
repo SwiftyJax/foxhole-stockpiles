@@ -100,8 +100,11 @@ Migrates template databases to the latest format version with automatic sequenti
 ### fs update-config
 Updates `.fs_config` configuration files to the latest format version with automatic migration.
 
-### fs gui
+### fs gui / fs-gui
 Launches the PyQt6 graphical user interface for managing configurations and running scans. Provides a user-friendly interface for non-technical users.
+
+- `fs gui` - Launches GUI via CLI dispatcher
+- `fs-gui` - Direct GUI launcher (no console window on Windows, recommended for building standalone executables)
 
 ## Requirements
 
@@ -154,7 +157,7 @@ pip install -e .
 # Install with API server support (adds fs server command)
 pip install -e .[server]
 
-# Install with GUI support (adds fs gui command)
+# Install with GUI support (adds fs gui and fs-gui commands)
 pip install -e .[gui]
 
 # Install with development dependencies

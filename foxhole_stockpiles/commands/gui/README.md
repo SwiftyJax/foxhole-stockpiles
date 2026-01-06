@@ -12,11 +12,37 @@ pip install -e .[gui]
 
 ## Usage
 
+**Recommended:**
 ```bash
 fs gui
-# or
+```
+
+**Alternative Methods:**
+```bash
+# Direct GUI launcher (no console on Windows)
+fs-gui
+
+# Python module
 python -m foxhole_stockpiles.commands.gui
 ```
+
+### Windows Standalone Executable
+
+The `fs-gui` command is designed for building standalone Windows executables without a console window.
+
+**Using PyInstaller:**
+```bash
+# Install PyInstaller
+pip install pyinstaller
+
+# Build standalone GUI executable (no console)
+pyinstaller --windowed --onefile --name="Foxhole-Stockpiles" \
+    --add-data "tessdata;tessdata" \
+    --add-data "data;data" \
+    -m foxhole_stockpiles.gui.app:launch_gui
+```
+
+The `--windowed` flag ensures no console window appears when launching the GUI on Windows.
 
 ### WSL2 Requirements
 
