@@ -56,14 +56,8 @@ class ServerControlPanel(QWidget):
         """Initialize the user interface."""
         layout = QVBoxLayout(self)
 
-        # Top section: Server Control and Drop Zone side by side
-        top_layout = QHBoxLayout()
-
-        # Server Control Group (left side)
-        server_group = QGroupBox("")
-        server_group.setMaximumHeight(100)
+        # Server Control section
         server_layout = QHBoxLayout()
-        server_group.setLayout(server_layout)
 
         self.start_stop_button = QPushButton("Start Server")
         self.start_stop_button.clicked.connect(self.toggle_server)
@@ -76,41 +70,33 @@ class ServerControlPanel(QWidget):
 
         server_layout.addStretch()
 
-        top_layout.addWidget(server_group, 1)
+        # DB info label (shown when valid)
+        self.db_info_text = QLabel("")
+        self.db_info_text.setStyleSheet("QLabel { font-size: 12px; }")
+        self.db_info_text.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        server_layout.addWidget(self.db_info_text)
 
-        # Screenshot Scanning Group (right side)
-        scan_group = QGroupBox("")
-        scan_group.setMaximumHeight(100)
-        scan_layout = QVBoxLayout()
-        scan_group.setLayout(scan_layout)
+        layout.addLayout(server_layout)
 
-        # Drop zone
-        self.drop_zone = QLabel("Drop screenshot here or click to select file")
-        self.drop_zone.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.drop_zone.setStyleSheet(
+        # Error panel (shown when config/DB invalid, replaces logs)
+        self.error_panel = QLabel("")
+        self.error_panel.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.error_panel.setWordWrap(True)
+        self.error_panel.setStyleSheet(
             "QLabel { "
-            "border: 2px dashed #aaa; "
+            "border: 2px solid #FF9800; "
             "border-radius: 8px; "
-            "background-color: #f5f5f5; "
-            "color: #666; "
-            "font-size: 12px; "
-            "padding: 10px; "
+            "background-color: palette(alternate-base); "
+            "font-size: 13px; "
+            "padding: 15px; "
             "}"
         )
-        self.drop_zone.setAcceptDrops(True)
-        self.drop_zone.mousePressEvent = self.select_screenshot  # type: ignore[assignment]
-        self.drop_zone.dragEnterEvent = self.drag_enter_event  # type: ignore[assignment]
-        self.drop_zone.dropEvent = self.drop_event  # type: ignore[assignment]
-        scan_layout.addWidget(self.drop_zone)
+        layout.addWidget(self.error_panel)
 
-        top_layout.addWidget(scan_group, 2)
-
-        layout.addLayout(top_layout)
-
-        # Server Logs Group (full width below)
-        logs_group = QGroupBox("")
+        # Server Logs Group (shown when everything valid)
+        self.logs_group = QGroupBox("")
         logs_layout = QVBoxLayout()
-        logs_group.setLayout(logs_layout)
+        self.logs_group.setLayout(logs_layout)
 
         self.log_display = QTableWidget()
         self.log_display.setColumnCount(4)
@@ -147,7 +133,108 @@ class ServerControlPanel(QWidget):
         log_controls.addWidget(clear_logs_button)
         logs_layout.addLayout(log_controls)
 
-        layout.addWidget(logs_group)
+        layout.addWidget(self.logs_group)
+
+        # Initial validation
+        self._update_validation_state()
+
+    def refresh_db_info(self) -> None:
+        """Refresh the database info and validation state."""
+        self._update_validation_state()
+
+    def _update_validation_state(self) -> None:
+        """Update the validation state and show/hide appropriate panels."""
+        from pathlib import Path
+
+        from foxhole_stockpiles.core.settings.app_settings import AppSettings
+        from foxhole_stockpiles.services.template_manager import TemplateManager
+
+        is_valid = False
+        error_message = ""
+        db_info = ""
+
+        try:
+            # Try to load config
+            settings = AppSettings()
+            db_path = settings.scanner.database_path
+
+            if not db_path:
+                error_message = (
+                    "<b>⚙️ Configuration Incomplete</b><br><br>"
+                    "Please configure the database path in<br>"
+                    "<b>File → Configuration</b>"
+                )
+            elif not Path(db_path).exists():
+                error_message = (
+                    "<b>⚠️ Database File Not Found</b><br><br>"
+                    "Configure database path in <b>File → Configuration</b><br>"
+                    "or build one in <b>Database → Build</b>"
+                )
+            else:
+                # Try to load DB statistics
+                try:
+                    manager = TemplateManager(database_path=Path(db_path))
+                    stats = manager.get_database_statistics()
+
+                    # Format mods list (comma-separated)
+                    mods_text = ", ".join(sorted(stats.mod_stats.keys()))
+
+                    # Determine path to display (relative if possible)
+                    db_path_obj = Path(db_path)
+                    try:
+                        # Try to get relative path from current working directory
+                        rel_path = db_path_obj.relative_to(Path.cwd())
+                        display_path = str(rel_path)
+                    except ValueError:
+                        # Path is not relative to cwd, just show filename
+                        display_path = db_path_obj.name
+
+                    # Everything is valid
+                    is_valid = True
+                    db_info = f"Database: {display_path}  |  Mods: {mods_text}"
+
+                except Exception as e:
+                    logger.error(f"Failed to load database statistics: {e}")
+                    error_message = (
+                        "<b>⚠️ Database Error</b><br><br>"
+                        f"Failed to load database<br>"
+                        f"<small>{str(e)[:100]}</small>"
+                    )
+
+        except Exception:
+            # No config file exists
+            error_message = (
+                "<b>⚙️ No Configuration Found</b><br><br>"
+                "Please set up your configuration in<br>"
+                "<b>File → Configuration</b>"
+            )
+
+        # Update UI based on validation state
+        if is_valid:
+            # Show DB info and logs, hide error panel
+            self.db_info_text.setText(db_info)
+            self.db_info_text.setVisible(True)
+            self.error_panel.setVisible(False)
+            self.logs_group.setVisible(True)
+            self.start_stop_button.setEnabled(True)
+        else:
+            # Show error panel, hide DB info and logs
+            self.error_panel.setText(error_message)
+            self.error_panel.setVisible(True)
+            self.db_info_text.setVisible(False)
+            self.logs_group.setVisible(False)
+            self.start_stop_button.setEnabled(False)
+
+    def scan_screenshot_from_menu(self) -> None:
+        """Open file dialog to select and scan a screenshot (called from menu)."""
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Screenshot to Scan",
+            "",
+            "Images (*.png *.jpg *.jpeg);;All Files (*)",
+        )
+        if filepath:
+            self.process_screenshot(filepath)
 
     def toggle_server(self) -> None:
         """Toggle server start/stop."""
@@ -193,44 +280,6 @@ class ServerControlPanel(QWidget):
         self.status_label.setText("Status: Stopped")
         self.status_label.setStyleSheet("QLabel { font-weight: bold; color: red; }")
         self.server_stopped.emit()
-
-    def select_screenshot(self, event: object) -> None:
-        """Open file dialog to select a screenshot.
-
-        Args:
-            event (object): Mouse event (unused)
-        """
-        filepath, _ = QFileDialog.getOpenFileName(
-            self,
-            "Select Screenshot",
-            "",
-            "Images (*.png *.jpg *.jpeg);;All Files (*)",
-        )
-        if filepath:
-            self.process_screenshot(filepath)
-
-    def drag_enter_event(self, event: object) -> None:
-        """Handle drag enter event.
-
-        Args:
-            event (object): Drag event
-        """
-        # Type checking is disabled for this method since we're dynamically assigning it
-        event.accept()  # type: ignore[attr-defined]
-
-    def drop_event(self, event: object) -> None:
-        """Handle drop event.
-
-        Args:
-            event (object): Drop event
-        """
-        # Type checking is disabled for this method since we're dynamically assigning it
-        urls = event.mimeData().urls()  # type: ignore[attr-defined]
-        if urls:
-            filepath = urls[0].toLocalFile()
-            if filepath:
-                self.process_screenshot(filepath)
-        event.accept()  # type: ignore[attr-defined]
 
     def process_screenshot(self, filepath: str) -> None:
         """Process a screenshot file.

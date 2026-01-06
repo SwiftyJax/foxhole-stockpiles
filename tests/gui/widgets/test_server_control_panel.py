@@ -19,9 +19,18 @@ def panel(qtbot: Any) -> ServerControlPanel:
     Returns:
         ServerControlPanel: Panel instance
     """
-    with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
+    from PyQt6.QtWidgets import QApplication
+
+    from foxhole_stockpiles.core.settings import app_settings
+
+    with (
+        patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"),
+        patch.object(app_settings, "AppSettings", side_effect=Exception("No config")),
+    ):
         panel = ServerControlPanel()
         qtbot.addWidget(panel)
+        panel.show()
+        QApplication.processEvents()
         return panel
 
 
@@ -198,5 +207,119 @@ def test_panel_select_screenshot(qtbot: Any, panel: ServerControlPanel) -> None:
         return_value=("/test/file.png", ""),
     ):
         with patch.object(panel, "process_screenshot") as mock_process:
-            panel.select_screenshot(None)
+            panel.scan_screenshot_from_menu()
             mock_process.assert_called_once_with("/test/file.png")
+
+
+def test_panel_refresh_db_info(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test refreshing database info.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    with patch.object(panel, "_update_validation_state") as mock_update:
+        panel.refresh_db_info()
+        mock_update.assert_called_once()
+
+
+def test_panel_validation_no_config(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test validation state with no configuration.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from PyQt6.QtWidgets import QApplication
+
+    from foxhole_stockpiles.core.settings import app_settings
+
+    with patch.object(app_settings, "AppSettings", side_effect=Exception("No config")):
+        panel._update_validation_state()
+        QApplication.processEvents()
+
+        # Should show error panel, hide logs
+        assert panel.error_panel.isVisible()
+        assert not panel.logs_group.isVisible()
+        assert not panel.start_stop_button.isEnabled()
+        assert "No Configuration Found" in panel.error_panel.text()
+
+
+def test_panel_validation_no_db_path(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test validation state with no database path configured.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from PyQt6.QtWidgets import QApplication
+
+    from foxhole_stockpiles.core.settings import app_settings
+
+    with patch.object(app_settings, "AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = None
+
+        panel._update_validation_state()
+        QApplication.processEvents()
+
+        # Should show error panel, hide logs
+        assert panel.error_panel.isVisible()
+        assert not panel.logs_group.isVisible()
+        assert not panel.start_stop_button.isEnabled()
+        assert "Configuration Incomplete" in panel.error_panel.text()
+
+
+def test_panel_validation_db_not_found(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test validation state with database file not found.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from PyQt6.QtWidgets import QApplication
+
+    from foxhole_stockpiles.core.settings import app_settings
+
+    with patch.object(app_settings, "AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = "/nonexistent/db.h5"
+
+        panel._update_validation_state()
+        QApplication.processEvents()
+
+        # Should show error panel, hide logs
+        assert panel.error_panel.isVisible()
+        assert not panel.logs_group.isVisible()
+        assert not panel.start_stop_button.isEnabled()
+        assert "Database File Not Found" in panel.error_panel.text()
+
+
+def test_panel_validation_valid_db(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test validation state with valid database.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from pathlib import Path
+
+    from PyQt6.QtWidgets import QApplication
+
+    from foxhole_stockpiles.core.settings import app_settings
+
+    test_db = Path(__file__).parent.parent.parent / "fixtures" / "test_db_v1.h5"
+
+    with patch.object(app_settings, "AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = str(test_db)
+
+        panel._update_validation_state()
+        QApplication.processEvents()
+
+        # Should hide error panel, show logs
+        assert not panel.error_panel.isVisible()
+        assert panel.logs_group.isVisible()
+        assert panel.start_stop_button.isEnabled()
+        assert panel.db_info_text.isVisible()
+        assert len(panel.db_info_text.text()) > 0

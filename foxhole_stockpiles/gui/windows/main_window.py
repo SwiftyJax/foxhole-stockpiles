@@ -12,8 +12,10 @@ from PyQt6.QtWidgets import (
 )
 
 from foxhole_stockpiles import __version__
+from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
+from foxhole_stockpiles.gui.windows.database_info_window import DatabaseInfoWindow
 from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
 
 logger = logging.getLogger(__name__)
@@ -57,6 +59,10 @@ class MainWindow(QMainWindow):
         if config_action is not None:
             config_action.triggered.connect(self.show_configuration)
 
+        scan_action = file_menu.addAction("&Scan Screenshot...")
+        if scan_action is not None:
+            scan_action.triggered.connect(self.scan_screenshot)
+
         file_menu.addSeparator()
 
         minimize_to_tray_action = file_menu.addAction("Minimize to &Tray on Close")
@@ -79,6 +85,10 @@ class MainWindow(QMainWindow):
         build_database_action = database_menu.addAction("&Build...")
         if build_database_action is not None:
             build_database_action.triggered.connect(self.show_icon_import)
+
+        info_database_action = database_menu.addAction("&Information...")
+        if info_database_action is not None:
+            info_database_action.triggered.connect(self.show_database_info)
 
         # Help menu
         help_menu = menu_bar.addMenu("&Help")
@@ -194,6 +204,10 @@ class MainWindow(QMainWindow):
         self.minimize_to_tray = checked
         logger.info(f"Minimize to tray: {self.minimize_to_tray}")
 
+    def scan_screenshot(self) -> None:
+        """Open file dialog to scan a screenshot."""
+        self.server_panel.scan_screenshot_from_menu()
+
     def show_configuration(self) -> None:
         """Show configuration window as modal dialog centered on main window."""
         config_window = ConfigWindow(self)
@@ -207,6 +221,10 @@ class MainWindow(QMainWindow):
         center_y = main_geometry.y() + (main_geometry.height() - config_geometry.height()) // 2
 
         config_window.move(center_x, center_y)
+
+        # Connect to refresh DB info when config window closes
+        config_window.destroyed.connect(self.server_panel.refresh_db_info)
+
         config_window.show()
 
     def show_icon_import(self) -> None:
@@ -223,6 +241,29 @@ class MainWindow(QMainWindow):
 
         import_window.move(center_x, center_y)
         import_window.show()
+
+    def show_database_info(self) -> None:
+        """Show database information window."""
+        # Try to get configured database path
+        initial_db_path = None
+        try:
+            settings = AppSettings()
+            if settings.scanner.database_path:
+                initial_db_path = str(settings.scanner.database_path)
+        except Exception:
+            pass  # No config or error loading, will start with empty
+
+        info_window = DatabaseInfoWindow(self, initial_db_path=initial_db_path)
+
+        # Center the info window on the main window
+        main_geometry = self.geometry()
+        info_geometry = info_window.geometry()
+
+        center_x = main_geometry.x() + (main_geometry.width() - info_geometry.width()) // 2
+        center_y = main_geometry.y() + (main_geometry.height() - info_geometry.height()) // 2
+
+        info_window.move(center_x, center_y)
+        info_window.exec()
 
     def show_about(self) -> None:
         """Show about dialog."""

@@ -20,6 +20,7 @@ from foxhole_stockpiles.core.utils import compute_icon_phash, hamming_distance
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
+from foxhole_stockpiles.models.database_statistics import DatabaseStatistics
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.services.template_database import DATABASE_VERSION, TemplateDatabase
@@ -250,6 +251,50 @@ class TemplateManager:
                 return 1  # Pickle format is version 1
             except Exception:
                 return 0  # Invalid or unknown format
+
+    def get_database_statistics(self) -> DatabaseStatistics:
+        """Get database statistics without loading full template data.
+
+        Returns:
+            DatabaseStatistics: Database statistics with per-mod resolution counts
+
+        Raises:
+            FileNotFoundError: If database file not found
+            ValueError: If database format is invalid
+        """
+        # Use existing method for validation and getting resolutions
+        available_resolutions = self.get_available_resolutions()
+
+        # Read statistics from HDF5 file - track per mod per resolution
+        mod_stats: dict[str, dict[str, int]] = {}
+
+        with h5py.File(str(self.database_path), "r") as f:
+            for resolution in available_resolutions:
+                group = f[resolution.value]
+                assert isinstance(group, h5py.Group)
+
+                # Get mods for this resolution
+                if "mods" in group:
+                    mods_dataset = group["mods"]
+                    assert isinstance(mods_dataset, h5py.Dataset)
+                    mods_data = mods_dataset[:]
+
+                    # Count templates per mod for this resolution
+                    for mod in mods_data:
+                        mod_str = mod.decode("utf-8") if isinstance(mod, bytes) else str(mod)
+
+                        if mod_str not in mod_stats:
+                            mod_stats[mod_str] = {}
+
+                        if resolution.value not in mod_stats[mod_str]:
+                            mod_stats[mod_str][resolution.value] = 0
+
+                        mod_stats[mod_str][resolution.value] += 1
+
+        return DatabaseStatistics(
+            resolutions=sorted([r.value for r in available_resolutions], key=lambda x: int(x)),
+            mod_stats=mod_stats,
+        )
 
     def get_available_resolutions(self) -> list[SupportedResolution]:
         """Get list of available resolutions in the database file.

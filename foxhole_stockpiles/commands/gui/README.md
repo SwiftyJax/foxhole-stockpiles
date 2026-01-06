@@ -66,12 +66,30 @@ The main window provides an integrated interface for running the FastAPI server 
 #### Server Control Panel
 
 - **Start/Stop Server**: One-click control to start/stop the FastAPI server
+  - Button is automatically disabled when configuration is invalid
+  - Enabled only when database is properly configured and accessible
 - **Server Status**: Real-time display of server status (Running/Stopped)
-- **Screenshot Scanning**:
-  - Drag & drop screenshots directly onto the drop zone
-  - Click to open file dialog for selecting screenshots
-  - Automatic scanning when server is running
-  - Supports PNG, JPG, and JPEG formats
+- **Database Information**: Shows loaded database filename and mods when valid
+  - Displays relative path if database is in the current directory
+  - Shows comma-separated list of available mods
+
+#### Configuration Validation
+
+The main window validates your configuration on startup and after changes:
+
+**When configuration is invalid:**
+- Start Server button is disabled
+- Error panel replaces the logging display with detailed messages:
+  - "⚙️ No Configuration Found" - No config file exists yet
+  - "⚙️ Configuration Incomplete" - Database path not configured
+  - "⚠️ Database File Not Found" - Configured database doesn't exist
+  - "⚠️ Database Error" - Database file is corrupted or invalid
+- Database info is hidden
+
+**When configuration is valid:**
+- Start Server button is enabled
+- Database info shows: "Database: [path] | Mods: [mod1, mod2, ...]"
+- Real-time logging panel is displayed
 
 #### Real-time Logging
 
@@ -84,6 +102,7 @@ The main window provides an integrated interface for running the FastAPI server 
 - **Auto-scroll**: Automatically scrolls to show latest logs
 - **Clear logs**: Button to clear all accumulated logs
 - **Dark theme**: Console-style dark background for better readability
+- **Conditional display**: Only shown when configuration is valid
 
 ### Configuration Dialog
 
@@ -227,11 +246,21 @@ Access via **Database > Build**. Provides a user-friendly interface for building
 
 **File Menu:**
 - **Configuration...**: Opens the configuration dialog
+- **Scan Screenshot...**: Opens file dialog to select and scan a screenshot
+  - Requires server to be running
+  - Supports PNG, JPG, and JPEG formats
 - **Minimize to Tray on Close**: Toggle whether closing the window minimizes to system tray (unchecked by default)
 - **Exit**: Quits the application completely
 
 **Database Menu:**
 - **Build...**: Opens the database builder window for creating/updating template databases from PAK files
+- **Information...**: Opens database information window
+  - Automatically loads the configured database if available
+  - Browse and select any database file (.h5)
+  - Statistics load automatically when selecting a file
+  - View detailed statistics in table format
+  - Shows mod names and template counts per resolution (crated + not crated)
+  - Useful for inspecting database contents before using
 
 **Help Menu:**
 - **About**: Shows application information including:
@@ -269,12 +298,18 @@ The application supports system tray for background operation (opt-in):
 ### First-Time Setup
 
 1. Launch GUI: `fs gui`
+   - You'll see an error panel indicating configuration is needed
+   - Start Server button will be disabled
 2. Open Configuration (File > Configuration)
 3. Set database path to your template database file
 4. Configure server port if needed (default: 8000)
 5. Save configuration
-6. Start the server
-7. Drop screenshots to scan them
+6. The main window will automatically validate and show:
+   - Database info with loaded mods
+   - Logging panel
+   - Enabled Start Server button
+7. Start the server
+8. Scan screenshots via File > Scan Screenshot...
 
 ### Building Custom Database
 
@@ -288,6 +323,19 @@ The application supports system tray for background operation (opt-in):
 5. Click "Start Import"
 6. Monitor progress in the log display
 7. Wait for completion message
+
+### Inspecting Database Contents
+
+1. Open Database Information window (Database > Information)
+   - If you have a database configured, it will load automatically
+   - Otherwise, you'll see a "No database loaded" message
+2. (Optional) Click "Browse..." to select a different database file (.h5)
+   - Statistics load automatically when you select a file
+3. View the statistics table showing:
+   - Each mod name in rows
+   - Template counts per resolution in columns (e.g., "1080p", "2160p")
+   - Numbers represent total templates (crated + not crated versions)
+4. Use this to verify database contents before configuring it for use
 
 ### Advanced Configuration
 
@@ -347,6 +395,16 @@ export QT_QPA_PLATFORM=xcb
 fs gui
 ```
 
+### Start Server Button Disabled
+
+**Error panel shows configuration/database errors:**
+- "⚙️ No Configuration Found" - Run File > Configuration and save settings
+- "⚙️ Configuration Incomplete" - Set database path in File > Configuration
+- "⚠️ Database File Not Found" - Verify database path exists or build a new database
+- "⚠️ Database Error" - Database file may be corrupted, check error details in the message
+
+The Start Server button will automatically enable once configuration is valid.
+
 ### Server Won't Start
 
 - Check that port 8000 (or configured port) is not in use
@@ -360,6 +418,7 @@ fs gui
 - Check database path is valid in configuration
 - Ensure screenshot format is supported (PNG, JPG, JPEG)
 - Review logs for specific error messages
+- Use File > Scan Screenshot to manually select files
 
 ### Database Builder Fails
 
