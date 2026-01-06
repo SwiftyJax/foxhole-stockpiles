@@ -3,16 +3,20 @@
 import logging
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QCloseEvent
+from PyQt6.QtGui import QAction, QCloseEvent, QIcon
 from PyQt6.QtWidgets import (
     QMainWindow,
+    QMenu,
     QMessageBox,
+    QSystemTrayIcon,
 )
 
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
 from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
+
+logger = logging.getLogger(__name__)
 
 
 class MainWindow(QMainWindow):
@@ -21,7 +25,10 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         """Initialize the main window."""
         super().__init__()
+        # Preference to minimize to tray on close (disabled by default)
+        self.minimize_to_tray = False
         self.init_ui()
+        self.create_tray_icon()
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
@@ -56,9 +63,17 @@ class MainWindow(QMainWindow):
 
         file_menu.addSeparator()
 
+        minimize_to_tray_action = file_menu.addAction("Minimize to &Tray on Close")
+        if minimize_to_tray_action is not None:
+            minimize_to_tray_action.setCheckable(True)
+            minimize_to_tray_action.setChecked(self.minimize_to_tray)
+            minimize_to_tray_action.triggered.connect(self.toggle_minimize_to_tray)
+
+        file_menu.addSeparator()
+
         exit_action = file_menu.addAction("E&xit")
         if exit_action is not None:
-            exit_action.triggered.connect(self.close)
+            exit_action.triggered.connect(self.quit_application)
 
         # Help menu
         help_menu = menu_bar.addMenu("&Help")
@@ -67,6 +82,112 @@ class MainWindow(QMainWindow):
         about_action = help_menu.addAction("&About")
         if about_action is not None:
             about_action.triggered.connect(self.show_about)
+
+    def create_tray_icon(self) -> None:
+        """Create system tray icon with menu."""
+        # Check if system tray is available
+        if not QSystemTrayIcon.isSystemTrayAvailable():
+            logger.warning("System tray is not available on this system")
+            self.minimize_to_tray = False
+            return
+
+        # Create tray icon
+        self.tray_icon = QSystemTrayIcon(self)
+
+        # Create a visible icon for Windows - use a standard pixmap that works cross-platform
+        # Try multiple fallbacks to ensure we get a visible icon
+        style = self.style()
+        if style is not None:
+            icon = style.standardIcon(style.StandardPixmap.SP_ComputerIcon)
+        else:
+            icon = QIcon()
+
+        # On Windows, if the icon is still null, create a simple colored pixmap
+        if icon.isNull():
+            from PyQt6.QtCore import QSize
+            from PyQt6.QtGui import QColor, QPainter, QPixmap
+
+            pixmap = QPixmap(QSize(64, 64))
+            pixmap.fill(QColor(0, 120, 215))  # Blue color
+            painter = QPainter(pixmap)
+            painter.setPen(QColor(255, 255, 255))
+            painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "FS")
+            painter.end()
+            icon = QIcon(pixmap)
+
+        self.tray_icon.setIcon(icon)
+        logger.info("Created tray icon")
+
+        # Create tray menu
+        tray_menu = QMenu()
+
+        show_action = QAction("Show", self)
+        show_action.triggered.connect(self.show_from_tray)
+        tray_menu.addAction(show_action)
+
+        hide_action = QAction("Hide", self)
+        hide_action.triggered.connect(self.hide)
+        tray_menu.addAction(hide_action)
+
+        tray_menu.addSeparator()
+
+        config_action = QAction("Configuration...", self)
+        config_action.triggered.connect(self.show_configuration)
+        tray_menu.addAction(config_action)
+
+        tray_menu.addSeparator()
+
+        quit_action = QAction("Quit", self)
+        quit_action.triggered.connect(self.quit_application)
+        tray_menu.addAction(quit_action)
+
+        self.tray_icon.setContextMenu(tray_menu)
+
+        # Double-click to show window
+        self.tray_icon.activated.connect(self.tray_icon_activated)
+
+        # Set tooltip
+        self.tray_icon.setToolTip(f"FS (Foxhole Stockpiles) - v{__version__}")
+
+        # Show tray icon and verify it's visible
+        self.tray_icon.show()
+
+        # Force processing of events to ensure tray icon is created
+        from PyQt6.QtWidgets import QApplication
+
+        QApplication.processEvents()
+
+        # Log tray icon visibility status
+        logger.info(f"Tray icon visible: {self.tray_icon.isVisible()}")
+        if not self.tray_icon.isVisible():
+            logger.warning(
+                "Tray icon created but not visible. "
+                "It might be in the Windows overflow area (click ^ in system tray)"
+            )
+
+    def tray_icon_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
+        """Handle tray icon activation.
+
+        Args:
+            reason (QSystemTrayIcon.ActivationReason): Activation reason
+        """
+        if reason == QSystemTrayIcon.ActivationReason.DoubleClick:
+            self.show_from_tray()
+
+    def show_from_tray(self) -> None:
+        """Show window from system tray."""
+        self.show()
+        self.activateWindow()
+        self.raise_()
+
+    def toggle_minimize_to_tray(self, checked: bool) -> None:
+        """Toggle minimize to tray preference.
+
+        Args:
+            checked (bool): Whether minimize to tray is enabled
+        """
+        self.minimize_to_tray = checked
+        logger.info(f"Minimize to tray: {self.minimize_to_tray}")
 
     def show_configuration(self) -> None:
         """Show configuration window as modal dialog centered on main window."""
@@ -122,11 +243,61 @@ class MainWindow(QMainWindow):
         )
 
     def closeEvent(self, event: QCloseEvent | None) -> None:
-        """Handle window close event to clean up Qt log handlers.
+        """Handle window close event.
+
+        If minimize to tray is enabled, hide to tray instead of closing.
+        Otherwise, perform cleanup and close.
 
         Args:
             event (QCloseEvent | None): Close event
         """
+        if not event:
+            return
+
+        # Check if we can minimize to tray
+        can_minimize_to_tray = (
+            self.minimize_to_tray
+            and hasattr(self, "tray_icon")
+            and self.tray_icon is not None
+            and self.tray_icon.isVisible()
+        )
+
+        if can_minimize_to_tray:
+            logger.info("Minimizing to system tray")
+            event.ignore()
+            self.hide()
+
+            # Show notification on first minimize
+            if not hasattr(self, "_shown_tray_message"):
+                self.tray_icon.showMessage(
+                    "FS - Foxhole Stockpiles",
+                    "Application minimized to system tray. Right-click the tray icon for options.",
+                    QSystemTrayIcon.MessageIcon.Information,
+                    4000,
+                )
+                self._shown_tray_message = True
+                logger.info(
+                    "Note: On Windows, the tray icon might be in the overflow area. "
+                    "Click the ^ arrow in the system tray to see hidden icons."
+                )
+        else:
+            # Can't minimize to tray or it's disabled - actually quit
+            if self.minimize_to_tray and not can_minimize_to_tray:
+                logger.warning(
+                    "Cannot minimize to tray (tray icon not available). Quitting instead."
+                )
+            self.quit_application()
+            event.accept()
+
+    def quit_application(self) -> None:
+        """Quit the application with proper cleanup."""
+        logger.info("Quitting application")
+
+        # Stop server if running
+        if hasattr(self, "server_panel") and self.server_panel.server_running:
+            logger.info("Stopping server before quit")
+            self.server_panel.stop_server()
+
         # Remove all QtLogHandler instances from all loggers before Qt cleanup
         from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 
@@ -137,6 +308,11 @@ class MainWindow(QMainWindow):
             root_logger.removeHandler(handler)
             handler.close()
 
-        # Accept the close event
-        if event:
-            event.accept()
+        # Hide tray icon
+        if hasattr(self, "tray_icon"):
+            self.tray_icon.hide()
+
+        # Close the application
+        from PyQt6.QtWidgets import QApplication
+
+        QApplication.quit()

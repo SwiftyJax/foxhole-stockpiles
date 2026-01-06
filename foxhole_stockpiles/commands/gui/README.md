@@ -202,7 +202,8 @@ Access via **File > Import Icons**. Provides a user-friendly interface for impor
 **File Menu:**
 - **Configuration...**: Opens the configuration dialog
 - **Import Icons...**: Opens the icon import window
-- **Exit**: Closes the application
+- **Minimize to Tray on Close**: Toggle whether closing the window minimizes to system tray (unchecked by default)
+- **Exit**: Quits the application completely
 
 **Help Menu:**
 - **About**: Shows application information including:
@@ -210,6 +211,30 @@ Access via **File > Import Icons**. Provides a user-friendly interface for impor
   - Feature list
   - Links to GitHub repositories (main project and FS Client)
   - Copyright and license information
+
+### System Tray
+
+The application supports system tray for background operation (opt-in):
+
+**Enabling System Tray:**
+- Check "File > Minimize to Tray on Close" to enable
+- Once enabled, clicking the window close button (X) minimizes to tray instead of quitting
+- The tray icon will always be visible when the application is running
+
+**Features:**
+- **Auto-minimize**: When enabled, clicking the close button minimizes to tray instead of quitting
+- **Tray icon**: Displays in system tray with tooltip showing application version
+- **Notification**: Shows a balloon notification on first minimize to inform user
+
+**Tray Menu** (right-click on tray icon):
+- **Show**: Restore and show the main window
+- **Hide**: Hide the main window to tray
+- **Configuration...**: Open configuration dialog
+- **Quit**: Completely exit the application
+
+**Double-click**: Double-clicking the tray icon restores the main window
+
+**Note**: By default, the close button quits the application. Check "File > Minimize to Tray on Close" to enable minimize-to-tray behavior.
 
 ## Workflow Examples
 
@@ -322,6 +347,27 @@ fs gui
 - Restart server after configuration changes
 - Check for validation errors in status bar
 - Verify no environment variables are overriding file settings
+
+### System Tray Not Working
+
+**No tray icon appears:**
+- Some desktop environments don't support system tray (e.g., GNOME without extensions)
+- On Linux, install a system tray extension if needed
+- The application will automatically disable tray functionality if unsupported
+- Check logs for "System tray is not available" warning
+
+**Can't find minimized application:**
+- **Windows**: Look in the system tray (bottom-right corner)
+  - The icon might be in the **overflow area** - click the **^ (up arrow)** in the system tray to see hidden icons
+  - You can drag the FS icon from the overflow to the main tray area to keep it visible
+- **Linux/Mac**: Look in the top-right corner of the screen
+- Right-click the tray icon and select "Show" to restore
+- Double-click the tray icon to restore
+- If tray icon is still missing, check the application logs for warnings
+
+**Want to disable minimize to tray:**
+- Uncheck "File > Minimize to Tray on Close" in the menu
+- Close button will then quit the application normally
 
 ## Related Documentation
 
