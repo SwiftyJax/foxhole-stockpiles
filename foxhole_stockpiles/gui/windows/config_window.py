@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QDialogButtonBox,
     QHBoxLayout,
+    QLabel,
     QMainWindow,
     QMessageBox,
     QPushButton,
@@ -75,6 +76,12 @@ class ConfigWindow(QMainWindow):
         )
         self.advanced_mode_checkbox.stateChanged.connect(self.toggle_mode)
         toggle_layout.addWidget(self.advanced_mode_checkbox)
+
+        # Add hint about hovering labels
+        hint_label = QLabel("💡 Tip: Hover over labels for help")
+        hint_label.setStyleSheet("QLabel { color: gray; font-size: 11px; }")
+        toggle_layout.addWidget(hint_label)
+
         toggle_layout.addStretch()
         layout.addLayout(toggle_layout)
 
