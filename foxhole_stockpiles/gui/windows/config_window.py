@@ -2,6 +2,8 @@
 
 import logging
 
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QCloseEvent, QKeyEvent
 from PyQt6.QtWidgets import (
     QCheckBox,
     QDialogButtonBox,
@@ -9,6 +11,7 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QStatusBar,
     QTabWidget,
     QVBoxLayout,
     QWidget,
@@ -102,11 +105,15 @@ class ConfigWindow(QMainWindow):
         save_button.clicked.connect(self.save_settings)
         button_box.addButton(save_button, QDialogButtonBox.ButtonRole.AcceptRole)
 
-        cancel_button = QPushButton("Cancel")
-        cancel_button.clicked.connect(self.close)
-        button_box.addButton(cancel_button, QDialogButtonBox.ButtonRole.RejectRole)
+        close_button = QPushButton("Close")
+        close_button.clicked.connect(self.close)
+        button_box.addButton(close_button, QDialogButtonBox.ButtonRole.RejectRole)
 
         layout.addWidget(button_box)
+
+        # Add status bar
+        self.status_bar = QStatusBar()
+        self.setStatusBar(self.status_bar)
 
     def toggle_mode(self) -> None:
         """Toggle between basic and advanced mode."""
@@ -223,11 +230,7 @@ class ConfigWindow(QMainWindow):
 
             if success:
                 self.settings = new_settings
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    "Configuration saved successfully!",
-                )
+                self.status_bar.showMessage("Configuration saved successfully!", 3000)
                 logger.info("Settings saved successfully")
             else:
                 QMessageBox.critical(
@@ -244,3 +247,64 @@ class ConfigWindow(QMainWindow):
                 f"An unexpected error occurred:\n{e}",
             )
             logger.error("Unexpected error saving settings: %s", e, exc_info=True)
+
+    def has_changes(self) -> bool:
+        """Check if current settings differ from loaded settings.
+
+        Returns:
+            bool: True if there are unsaved changes
+        """
+        if not self.settings:
+            return False
+
+        try:
+            current_settings = self.collect_settings()
+            return current_settings != self.settings
+        except Exception:
+            # If we can't collect settings, assume no changes
+            return False
+
+    def keyPressEvent(self, event: QKeyEvent | None) -> None:
+        """Handle key press events.
+
+        Args:
+            event (QKeyEvent | None): Key press event
+        """
+        if event and event.key() == Qt.Key.Key_Escape:
+            self.close()
+        else:
+            super().keyPressEvent(event)
+
+    def closeEvent(self, event: QCloseEvent | None) -> None:
+        """Handle window close event to check for unsaved changes.
+
+        Args:
+            event (QCloseEvent | None): Close event
+        """
+        if self.has_changes():
+            reply = QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                "There are pending changes. Do you want to save them?",
+                QMessageBox.StandardButton.Save
+                | QMessageBox.StandardButton.Discard
+                | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Save,
+            )
+
+            if reply == QMessageBox.StandardButton.Save:
+                self.save_settings()
+                # Only close if save was successful (no more changes)
+                if not self.has_changes() and event:
+                    event.accept()
+                elif event:
+                    event.ignore()
+            elif reply == QMessageBox.StandardButton.Discard:
+                if event:
+                    event.accept()
+            else:  # Cancel
+                if event:
+                    event.ignore()
+        else:
+            if event:
+                event.accept()

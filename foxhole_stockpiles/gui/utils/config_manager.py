@@ -51,6 +51,9 @@ class ConfigManager:
             with open(self.config_path, "w", encoding="utf-8") as f:
                 json.dump(config_dict, f, indent=2, ensure_ascii=False)
 
+            # Clear the settings cache so next load reads from file
+            get_settings.cache_clear()
+
             logger.info("Configuration saved successfully to %s", self.config_path)
             return True, f"Configuration saved to {self.config_path}"
 
