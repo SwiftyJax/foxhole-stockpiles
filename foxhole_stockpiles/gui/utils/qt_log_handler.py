@@ -15,6 +15,10 @@ class QtLogHandler(logging.Handler, QObject):
         """Initialize the Qt log handler."""
         logging.Handler.__init__(self)
         QObject.__init__(self)
+        self._is_closed = False
+        # Prevent logging.shutdown() from trying to flush this handler
+        # since Qt may delete the C++ object before Python cleanup
+        self.flushOnClose = False
 
     def emit(self, record: logging.LogRecord) -> None:
         """Emit a log record.
@@ -22,6 +26,9 @@ class QtLogHandler(logging.Handler, QObject):
         Args:
             record (logging.LogRecord): Log record to emit
         """
+        if self._is_closed:
+            return
+
         try:
             # Determine color based on logger name and level
             if "gui" in record.name or "scanner_client" in record.name:
@@ -46,3 +53,29 @@ class QtLogHandler(logging.Handler, QObject):
             self.log_message.emit(log_data)
         except Exception:
             self.handleError(record)
+
+    def __getattribute__(self, name: str) -> object:
+        """Override attribute access to handle Qt object deletion gracefully.
+
+        Args:
+            name (str): Attribute name
+
+        Returns:
+            object: Attribute value, or default for special attributes if Qt deleted
+
+        Raises:
+            AttributeError: If attribute doesn't exist
+        """
+        try:
+            return super().__getattribute__(name)
+        except RuntimeError:
+            # Qt C++ object has been deleted, return safe defaults
+            if name == "flushOnClose":
+                return False
+            # For other attributes during shutdown, return None
+            return None
+
+    def close(self) -> None:
+        """Close the handler and mark it as closed to prevent further emissions."""
+        self._is_closed = True
+        super().close()

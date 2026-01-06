@@ -1,6 +1,9 @@
 """Main application window."""
 
+import logging
+
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import (
     QMainWindow,
     QMessageBox,
@@ -117,3 +120,23 @@ class MainWindow(QMainWindow):
             f"<p>Copyright © 2024 Xurxogr</p>"
             f"<p>Licensed under the MIT License</p>",
         )
+
+    def closeEvent(self, event: QCloseEvent | None) -> None:
+        """Handle window close event to clean up Qt log handlers.
+
+        Args:
+            event (QCloseEvent | None): Close event
+        """
+        # Remove all QtLogHandler instances from all loggers before Qt cleanup
+        from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
+
+        root_logger = logging.getLogger()
+        handlers_to_remove = [h for h in root_logger.handlers[:] if isinstance(h, QtLogHandler)]
+
+        for handler in handlers_to_remove:
+            root_logger.removeHandler(handler)
+            handler.close()
+
+        # Accept the close event
+        if event:
+            event.accept()

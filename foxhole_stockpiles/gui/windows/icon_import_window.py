@@ -522,9 +522,10 @@ class IconImportWindow(QMainWindow):
         Args:
             success (bool): Whether the import was successful
         """
-        # Remove log handler
+        # Close and remove log handler
         root_logger = logging.getLogger()
         root_logger.removeHandler(self.log_handler)
+        self.log_handler.close()
 
         # Add final status message to logs
         from datetime import datetime

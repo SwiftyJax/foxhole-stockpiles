@@ -183,9 +183,10 @@ class ServerControlPanel(QWidget):
             self.server_thread.stop()
             self.server_thread = None
 
-        # Remove log handler
+        # Close and remove log handler
         root_logger = logging.getLogger()
         root_logger.removeHandler(self.log_handler)
+        self.log_handler.close()
 
         self.server_running = False
         self.start_stop_button.setText("Start Server")
