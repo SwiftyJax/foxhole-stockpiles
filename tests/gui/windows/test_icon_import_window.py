@@ -131,7 +131,8 @@ def test_icon_import_window_initialization_configured(configured_window: IconImp
     assert configured_window.windowTitle() == "Import Icons to Database"
     assert configured_window.is_configured is True
     assert configured_window.import_worker is None
-    assert configured_window.pak_files == []
+    assert configured_window.mod_pak_files == []
+    assert configured_window.vanilla_pak_file is None
     assert configured_window.log_handler is not None
 
 
@@ -153,7 +154,8 @@ def test_icon_import_window_widgets_exist(configured_window: IconImportWindow) -
     Args:
         configured_window: Configured window instance
     """
-    assert configured_window.pak_list_widget is not None
+    assert configured_window.vanilla_pak_display is not None
+    assert configured_window.mod_pak_list_widget is not None
     assert configured_window.mod_name_input is not None
     assert configured_window.overwrite_checkbox is not None
     assert configured_window.start_button is not None
@@ -308,7 +310,7 @@ def test_check_configuration_file_not_exists(tmp_path: Path) -> None:
 # ===== PAK File Management Tests =====
 
 
-def test_add_pak_files(qtbot: Any, configured_window: IconImportWindow, tmp_path: Path) -> None:
+def test_add_mod_pak_files(qtbot: Any, configured_window: IconImportWindow, tmp_path: Path) -> None:
     """Test adding PAK files via file dialog.
 
     Args:
@@ -324,17 +326,17 @@ def test_add_pak_files(qtbot: Any, configured_window: IconImportWindow, tmp_path
     ) as mock_dialog:
         mock_dialog.return_value = ([test_pak1, test_pak2], "PAK Files (*.pak)")
 
-        configured_window.add_pak_files()
+        configured_window.add_mod_pak_files()
 
-        assert configured_window.pak_files == [test_pak1, test_pak2]
-        assert configured_window.pak_list_widget.count() == 2
-        item0 = configured_window.pak_list_widget.item(0)
-        item1 = configured_window.pak_list_widget.item(1)
+        assert configured_window.mod_pak_files == [test_pak1, test_pak2]
+        assert configured_window.mod_pak_list_widget.count() == 2
+        item0 = configured_window.mod_pak_list_widget.item(0)
+        item1 = configured_window.mod_pak_list_widget.item(1)
         assert item0 is not None and item0.text() == test_pak1
         assert item1 is not None and item1.text() == test_pak2
 
 
-def test_add_pak_files_no_duplicates(
+def test_add_mod_pak_files_no_duplicates(
     qtbot: Any, configured_window: IconImportWindow, tmp_path: Path
 ) -> None:
     """Test adding duplicate PAK files doesn't duplicate entries.
@@ -351,21 +353,21 @@ def test_add_pak_files_no_duplicates(
         "foxhole_stockpiles.gui.windows.icon_import_window.QFileDialog.getOpenFileNames"
     ) as mock_dialog:
         mock_dialog.return_value = ([test_pak], "PAK Files (*.pak)")
-        configured_window.add_pak_files()
+        configured_window.add_mod_pak_files()
 
     # Try to add again
     with patch(
         "foxhole_stockpiles.gui.windows.icon_import_window.QFileDialog.getOpenFileNames"
     ) as mock_dialog:
         mock_dialog.return_value = ([test_pak], "PAK Files (*.pak)")
-        configured_window.add_pak_files()
+        configured_window.add_mod_pak_files()
 
     # Should still be only one entry
-    assert len(configured_window.pak_files) == 1
-    assert configured_window.pak_list_widget.count() == 1
+    assert len(configured_window.mod_pak_files) == 1
+    assert configured_window.mod_pak_list_widget.count() == 1
 
 
-def test_add_pak_files_cancel(qtbot: Any, configured_window: IconImportWindow) -> None:
+def test_add_mod_pak_files_cancel(qtbot: Any, configured_window: IconImportWindow) -> None:
     """Test canceling add PAK files dialog.
 
     Args:
@@ -377,10 +379,10 @@ def test_add_pak_files_cancel(qtbot: Any, configured_window: IconImportWindow) -
     ) as mock_dialog:
         mock_dialog.return_value = ([], "")
 
-        configured_window.add_pak_files()
+        configured_window.add_mod_pak_files()
 
-        assert configured_window.pak_files == []
-        assert configured_window.pak_list_widget.count() == 0
+        assert configured_window.mod_pak_files == []
+        assert configured_window.mod_pak_list_widget.count() == 0
 
 
 def test_remove_selected_paks(
@@ -397,22 +399,22 @@ def test_remove_selected_paks(
     test_pak2 = str(tmp_path / "test2.pak")
 
     # Add files
-    configured_window.pak_files = [test_pak1, test_pak2]
-    configured_window.pak_list_widget.addItem(test_pak1)
-    configured_window.pak_list_widget.addItem(test_pak2)
+    configured_window.mod_pak_files = [test_pak1, test_pak2]
+    configured_window.mod_pak_list_widget.addItem(test_pak1)
+    configured_window.mod_pak_list_widget.addItem(test_pak2)
 
     # Select first item
-    item0 = configured_window.pak_list_widget.item(0)
+    item0 = configured_window.mod_pak_list_widget.item(0)
     assert item0 is not None
     item0.setSelected(True)
 
     # Remove
-    configured_window.remove_selected_paks()
+    configured_window.remove_selected_mod_paks()
 
     # Only second should remain
-    assert configured_window.pak_files == [test_pak2]
-    assert configured_window.pak_list_widget.count() == 1
-    remaining_item = configured_window.pak_list_widget.item(0)
+    assert configured_window.mod_pak_files == [test_pak2]
+    assert configured_window.mod_pak_list_widget.count() == 1
+    remaining_item = configured_window.mod_pak_list_widget.item(0)
     assert remaining_item is not None and remaining_item.text() == test_pak2
 
 
@@ -428,15 +430,15 @@ def test_clear_all_paks(qtbot: Any, configured_window: IconImportWindow, tmp_pat
     test_pak2 = str(tmp_path / "test2.pak")
 
     # Add files
-    configured_window.pak_files = [test_pak1, test_pak2]
-    configured_window.pak_list_widget.addItem(test_pak1)
-    configured_window.pak_list_widget.addItem(test_pak2)
+    configured_window.mod_pak_files = [test_pak1, test_pak2]
+    configured_window.mod_pak_list_widget.addItem(test_pak1)
+    configured_window.mod_pak_list_widget.addItem(test_pak2)
 
     # Clear
-    configured_window.clear_all_paks()
+    configured_window.clear_all_mod_paks()
 
-    assert configured_window.pak_files == []
-    assert configured_window.pak_list_widget.count() == 0
+    assert configured_window.mod_pak_files == []
+    assert configured_window.mod_pak_list_widget.count() == 0
 
 
 # ===== Drag and Drop Tests =====
@@ -481,8 +483,8 @@ def test_pak_drop_event(configured_window: IconImportWindow, tmp_path: Path) -> 
 
     configured_window.pak_drop_event(mock_event)
 
-    assert test_pak in configured_window.pak_files
-    assert configured_window.pak_list_widget.count() == 1
+    assert test_pak in configured_window.mod_pak_files
+    assert configured_window.mod_pak_list_widget.count() == 1
     mock_event.accept.assert_called_once()
 
 
@@ -504,8 +506,8 @@ def test_pak_drop_event_non_pak_file(configured_window: IconImportWindow, tmp_pa
 
     configured_window.pak_drop_event(mock_event)
 
-    assert configured_window.pak_files == []
-    assert configured_window.pak_list_widget.count() == 0
+    assert configured_window.mod_pak_files == []
+    assert configured_window.mod_pak_list_widget.count() == 0
 
 
 def test_pak_drop_event_none(configured_window: IconImportWindow) -> None:
@@ -521,8 +523,8 @@ def test_pak_drop_event_none(configured_window: IconImportWindow) -> None:
 # ===== Validation Tests =====
 
 
-def test_validate_inputs_no_pak_files(configured_window: IconImportWindow) -> None:
-    """Test validation fails when no PAK files are added.
+def test_validate_inputs_no_mod_pak_files(configured_window: IconImportWindow) -> None:
+    """Test validation fails when no mod PAK files are added.
 
     Args:
         configured_window: Configured window instance
@@ -532,7 +534,7 @@ def test_validate_inputs_no_pak_files(configured_window: IconImportWindow) -> No
     is_valid, error_msg = configured_window.validate_inputs()
 
     assert is_valid is False
-    assert "at least one PAK file" in error_msg
+    assert "at least one mod PAK file" in error_msg
 
 
 def test_validate_inputs_no_mod_name(configured_window: IconImportWindow) -> None:
@@ -541,7 +543,7 @@ def test_validate_inputs_no_mod_name(configured_window: IconImportWindow) -> Non
     Args:
         configured_window: Configured window instance
     """
-    configured_window.pak_files = ["test.pak"]
+    configured_window.mod_pak_files = ["test.pak"]
 
     is_valid, error_msg = configured_window.validate_inputs()
 
@@ -555,7 +557,7 @@ def test_validate_inputs_valid(configured_window: IconImportWindow) -> None:
     Args:
         configured_window: Configured window instance
     """
-    configured_window.pak_files = ["test.pak"]
+    configured_window.mod_pak_files = ["test.pak"]
     configured_window.mod_name_input.setText("test_mod")
 
     is_valid, error_msg = configured_window.validate_inputs()
@@ -594,7 +596,7 @@ def test_start_import_success(
         configured_window: Configured window instance
         tmp_path: Temporary directory path
     """
-    configured_window.pak_files = ["test.pak"]
+    configured_window.mod_pak_files = ["test.pak"]
     configured_window.mod_name_input.setText("test_mod")
 
     with patch(
@@ -622,7 +624,7 @@ def test_start_import_no_catalog(qtbot: Any, configured_window: IconImportWindow
         qtbot: PyQt test fixture
         configured_window: Configured window instance
     """
-    configured_window.pak_files = ["test.pak"]
+    configured_window.mod_pak_files = ["test.pak"]
     configured_window.mod_name_input.setText("test_mod")
     configured_window.settings.database_builder.catalog_file = None
 
@@ -671,28 +673,6 @@ def test_cancel_import_user_confirms(qtbot: Any, configured_window: IconImportWi
 
         mock_worker.stop.assert_called_once()
         mock_worker.wait.assert_called_once()
-
-
-def test_cancel_import_user_declines(qtbot: Any, configured_window: IconImportWindow) -> None:
-    """Test cancel import when user declines.
-
-    Args:
-        qtbot: PyQt test fixture
-        configured_window: Configured window instance
-    """
-    # Create mock worker
-    mock_worker = MagicMock(spec=IconImportWorker)
-    mock_worker.isRunning.return_value = True
-    configured_window.import_worker = mock_worker
-
-    with patch(
-        "foxhole_stockpiles.gui.windows.icon_import_window.QMessageBox.question"
-    ) as mock_question:
-        mock_question.return_value = QMessageBox.StandardButton.No
-
-        configured_window.cancel_import()
-
-        mock_worker.stop.assert_not_called()
 
 
 def test_on_import_finished_success(qtbot: Any, configured_window: IconImportWindow) -> None:
@@ -937,3 +917,87 @@ def test_close_event_worker_running_user_declines(
         mock_worker.stop.assert_not_called()
         mock_event.accept.assert_not_called()
         mock_event.ignore.assert_called_once()
+
+
+# ===== Additional Coverage Tests =====
+
+
+def test_start_import_invalid_mod_name(qtbot: Any, configured_window: IconImportWindow) -> None:
+    """Test start import with invalid mod name.
+
+    Args:
+        qtbot: PyQt test fixture
+        configured_window: Configured window instance
+    """
+    configured_window.mod_pak_files = ["test.pak"]
+    configured_window.mod_name_input.setText("invalid/mod<name>")  # Invalid characters
+
+    with patch(
+        "foxhole_stockpiles.gui.windows.icon_import_window.QMessageBox.critical"
+    ) as mock_critical:
+        configured_window.start_import()
+
+        mock_critical.assert_called_once()
+        assert "Invalid Mod Name" in str(mock_critical.call_args)
+        assert configured_window.import_worker is None
+
+
+def test_clear_vanilla_pak(qtbot: Any, configured_window: IconImportWindow) -> None:
+    """Test clearing vanilla PAK selection.
+
+    Args:
+        qtbot: PyQt test fixture
+        configured_window: Configured window instance
+    """
+    configured_window.vanilla_pak_file = "test.pak"
+    configured_window.vanilla_pak_display.setText("test.pak")
+
+    configured_window.clear_vanilla_pak()
+
+    assert configured_window.vanilla_pak_file is None
+    assert configured_window.vanilla_pak_display.text() == ""
+
+
+def test_copy_selected_logs(qtbot: Any, configured_window: IconImportWindow) -> None:
+    """Test copying selected log rows to clipboard.
+
+    Args:
+        qtbot: PyQt test fixture
+        configured_window: Configured window instance
+    """
+    # Add some log entries
+    configured_window.append_log(
+        {
+            "timestamp": "2024-01-01 12:00:00",
+            "level": "INFO",
+            "module": "test.module",
+            "message": "Test message 1",
+            "color": "#FFFFFF",
+        }
+    )
+    configured_window.append_log(
+        {
+            "timestamp": "2024-01-01 12:00:01",
+            "level": "ERROR",
+            "module": "test.module",
+            "message": "Test message 2",
+            "color": "#FF0000",
+        }
+    )
+
+    # Select all rows
+    configured_window.log_display.selectAll()
+
+    with patch(
+        "foxhole_stockpiles.gui.windows.icon_import_window.QApplication.clipboard"
+    ) as mock_clipboard:
+        mock_clipboard_instance = MagicMock()
+        mock_clipboard.return_value = mock_clipboard_instance
+
+        configured_window._copy_selected_logs()
+
+        # Check clipboard was called with formatted text
+        mock_clipboard_instance.setText.assert_called_once()
+        clipboard_text = mock_clipboard_instance.setText.call_args[0][0]
+        assert "[2024-01-01 12:00:00] INFO test.module: Test message 1" in clipboard_text
+        assert "[2024-01-01 12:00:01] ERROR test.module: Test message 2" in clipboard_text

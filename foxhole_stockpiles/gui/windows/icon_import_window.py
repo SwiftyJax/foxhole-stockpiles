@@ -5,9 +5,10 @@ import platform
 from pathlib import Path
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QBrush, QColor, QDragEnterEvent, QDropEvent
+from PyQt6.QtGui import QBrush, QColor, QDragEnterEvent, QDropEvent, QKeyEvent, QKeySequence
 from PyQt6.QtWidgets import (
     QAbstractItemView,
+    QApplication,
     QCheckBox,
     QFileDialog,
     QGroupBox,
@@ -43,7 +44,8 @@ class IconImportWindow(QMainWindow):
         """
         super().__init__(parent)
         self.import_worker: IconImportWorker | None = None
-        self.pak_files: list[str] = []
+        self.vanilla_pak_file: str | None = None
+        self.mod_pak_files: list[str] = []
 
         # Setup log handler (shared across all imports)
         self.log_handler = QtLogHandler()
@@ -70,37 +72,80 @@ class IconImportWindow(QMainWindow):
 
         layout = QVBoxLayout(central_widget)
 
-        # PAK Files Section
-        pak_group = QGroupBox("PAK Files")
-        pak_layout = QVBoxLayout()
-        pak_group.setLayout(pak_layout)
+        # Vanilla PAK Section
+        vanilla_group = QGroupBox("Vanilla PAK File (Optional)")
+        vanilla_layout = QVBoxLayout()
+        vanilla_group.setLayout(vanilla_layout)
 
-        # PAK file list
-        self.pak_list_widget = QListWidget()
-        self.pak_list_widget.setAcceptDrops(True)
-        self.pak_list_widget.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
-        self.pak_list_widget.dragEnterEvent = self.pak_drag_enter_event  # type: ignore[method-assign]
-        self.pak_list_widget.dropEvent = self.pak_drop_event  # type: ignore[method-assign]
-        pak_layout.addWidget(self.pak_list_widget)
+        # Info text about vanilla PAK
+        vanilla_info = QLabel(
+            "ℹ️ Contains shared resources (crate icon, subicons) that mods depend on. "
+            "Extracted automatically if needed."
+        )
+        vanilla_info.setWordWrap(True)
+        vanilla_info.setStyleSheet(
+            "QLabel { "
+            "background-color: #E3F2FD; "
+            "border: 1px solid #2196F3; "
+            "border-radius: 4px; "
+            "padding: 6px; "
+            "font-size: 11px; "
+            "}"
+        )
+        vanilla_layout.addWidget(vanilla_info)
 
-        # PAK file buttons
-        pak_buttons_layout = QHBoxLayout()
-        add_pak_button = QPushButton("Add PAK Files...")
-        add_pak_button.clicked.connect(self.add_pak_files)
-        pak_buttons_layout.addWidget(add_pak_button)
+        # Vanilla PAK file path display
+        vanilla_path_layout = QHBoxLayout()
+        self.vanilla_pak_display = QLineEdit()
+        self.vanilla_pak_display.setReadOnly(True)
+        self.vanilla_pak_display.setPlaceholderText("No vanilla PAK selected")
+        vanilla_path_layout.addWidget(self.vanilla_pak_display)
 
-        remove_pak_button = QPushButton("Remove Selected")
-        remove_pak_button.clicked.connect(self.remove_selected_paks)
-        pak_buttons_layout.addWidget(remove_pak_button)
+        # Vanilla PAK buttons
+        vanilla_browse_button = QPushButton("Browse...")
+        vanilla_browse_button.clicked.connect(self.select_vanilla_pak)
+        vanilla_path_layout.addWidget(vanilla_browse_button)
 
-        clear_pak_button = QPushButton("Clear All")
-        clear_pak_button.clicked.connect(self.clear_all_paks)
-        pak_buttons_layout.addWidget(clear_pak_button)
+        vanilla_clear_button = QPushButton("Clear")
+        vanilla_clear_button.clicked.connect(self.clear_vanilla_pak)
+        vanilla_path_layout.addWidget(vanilla_clear_button)
 
-        pak_buttons_layout.addStretch()
-        pak_layout.addLayout(pak_buttons_layout)
+        vanilla_layout.addLayout(vanilla_path_layout)
+        layout.addWidget(vanilla_group)
 
-        layout.addWidget(pak_group)
+        # Mod PAK Files Section
+        mod_pak_group = QGroupBox("Mod PAK Files")
+        mod_pak_layout = QVBoxLayout()
+        mod_pak_group.setLayout(mod_pak_layout)
+
+        # Mod PAK file list
+        self.mod_pak_list_widget = QListWidget()
+        self.mod_pak_list_widget.setAcceptDrops(True)
+        self.mod_pak_list_widget.setSelectionMode(QAbstractItemView.SelectionMode.ExtendedSelection)
+        self.mod_pak_list_widget.dragEnterEvent = self.pak_drag_enter_event  # type: ignore[method-assign]
+        self.mod_pak_list_widget.dropEvent = self.pak_drop_event  # type: ignore[method-assign]
+        # Limit height to 5 rows
+        self.mod_pak_list_widget.setMaximumHeight(100)
+        mod_pak_layout.addWidget(self.mod_pak_list_widget)
+
+        # Mod PAK file buttons
+        mod_pak_buttons_layout = QHBoxLayout()
+        add_mod_pak_button = QPushButton("Add PAK Files...")
+        add_mod_pak_button.clicked.connect(self.add_mod_pak_files)
+        mod_pak_buttons_layout.addWidget(add_mod_pak_button)
+
+        remove_mod_pak_button = QPushButton("Remove Selected")
+        remove_mod_pak_button.clicked.connect(self.remove_selected_mod_paks)
+        mod_pak_buttons_layout.addWidget(remove_mod_pak_button)
+
+        clear_mod_pak_button = QPushButton("Clear All")
+        clear_mod_pak_button.clicked.connect(self.clear_all_mod_paks)
+        mod_pak_buttons_layout.addWidget(clear_mod_pak_button)
+
+        mod_pak_buttons_layout.addStretch()
+        mod_pak_layout.addLayout(mod_pak_buttons_layout)
+
+        layout.addWidget(mod_pak_group)
 
         # Configuration Section
         config_group = QGroupBox("Configuration")
@@ -115,16 +160,16 @@ class IconImportWindow(QMainWindow):
         mod_name_layout.addWidget(self.mod_name_input)
         config_layout.addLayout(mod_name_layout)
 
-        # Overwrite option
+        # Overwrite option and database path on same row
+        overwrite_db_layout = QHBoxLayout()
         self.overwrite_checkbox = QCheckBox("Overwrite existing data")
         self.overwrite_checkbox.setToolTip(
             "If checked, existing templates with the same item-resolution will be overwritten"
         )
-        config_layout.addWidget(self.overwrite_checkbox)
+        overwrite_db_layout.addWidget(self.overwrite_checkbox)
 
-        # Destination database (read-only)
-        db_layout = QHBoxLayout()
-        db_layout.addWidget(QLabel("Destination Database:"))
+        overwrite_db_layout.addSpacing(20)
+        overwrite_db_layout.addWidget(QLabel("Destination Database:"))
         self.db_path_display = QLineEdit()
         self.db_path_display.setReadOnly(True)
         self.db_path_display.setStyleSheet(
@@ -136,8 +181,8 @@ class IconImportWindow(QMainWindow):
             "Database file where templates will be saved\n"
             "Configure in: File → Configuration → Scanner tab"
         )
-        db_layout.addWidget(self.db_path_display)
-        config_layout.addLayout(db_layout)
+        overwrite_db_layout.addWidget(self.db_path_display)
+        config_layout.addLayout(overwrite_db_layout)
 
         layout.addWidget(config_group)
 
@@ -151,9 +196,12 @@ class IconImportWindow(QMainWindow):
         self.log_display.setHorizontalHeaderLabels(["Time", "Level", "Module", "Message"])
         self.log_display.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.log_display.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
+        self.log_display.setWordWrap(True)  # Enable word wrap for multi-line content
         vertical_header = self.log_display.verticalHeader()
         if vertical_header:
             vertical_header.setVisible(False)
+            # Auto-resize rows to fit content
+            vertical_header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.log_display.setStyleSheet(
             "QTableWidget { background-color: #1E1E1E; gridline-color: #3E3E3E; }"
         )
@@ -171,17 +219,12 @@ class IconImportWindow(QMainWindow):
         self.log_display.setColumnWidth(1, 80)  # Level
         self.log_display.setColumnWidth(2, 250)  # Module
 
+        # Enable copy on CTRL-C
+        self.log_display.keyPressEvent = self._log_key_press_event  # type: ignore[assignment,method-assign]
+
         logs_layout.addWidget(self.log_display)
 
-        # Log controls
-        log_controls = QHBoxLayout()
-        clear_logs_button = QPushButton("Clear Logs")
-        clear_logs_button.clicked.connect(self.clear_logs)
-        log_controls.addStretch()
-        log_controls.addWidget(clear_logs_button)
-        logs_layout.addLayout(log_controls)
-
-        layout.addWidget(logs_group)
+        layout.addWidget(logs_group, stretch=1)  # Expand to use maximum available space
 
         # Action Buttons (at bottom)
         action_buttons_layout = QHBoxLayout()
@@ -195,6 +238,10 @@ class IconImportWindow(QMainWindow):
         action_buttons_layout.addWidget(self.cancel_button)
 
         action_buttons_layout.addStretch()
+
+        clear_logs_button = QPushButton("Clear Logs")
+        clear_logs_button.clicked.connect(self.clear_logs)
+        action_buttons_layout.addWidget(clear_logs_button)
 
         close_button = QPushButton("Close")
         close_button.clicked.connect(self.close)
@@ -318,33 +365,50 @@ class IconImportWindow(QMainWindow):
             return str(default_path)
         return str(Path.cwd())
 
-    def add_pak_files(self) -> None:
-        """Open file dialog to add PAK files."""
+    def select_vanilla_pak(self) -> None:
+        """Open file dialog to select vanilla PAK file."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Vanilla PAK File",
+            self._get_default_pak_directory(),
+            "PAK Files (*.pak);;All Files (*)",
+        )
+        if file_path:
+            self.vanilla_pak_file = file_path
+            self.vanilla_pak_display.setText(file_path)
+
+    def clear_vanilla_pak(self) -> None:
+        """Clear the vanilla PAK file selection."""
+        self.vanilla_pak_file = None
+        self.vanilla_pak_display.clear()
+
+    def add_mod_pak_files(self) -> None:
+        """Open file dialog to add mod PAK files."""
         files, _ = QFileDialog.getOpenFileNames(
             self,
-            "Select PAK Files",
+            "Select Mod PAK Files",
             self._get_default_pak_directory(),
             "PAK Files (*.pak);;All Files (*)",
         )
         if files:
             for file_path in files:
-                if file_path not in self.pak_files:
-                    self.pak_files.append(file_path)
-                    self.pak_list_widget.addItem(file_path)
+                if file_path not in self.mod_pak_files:
+                    self.mod_pak_files.append(file_path)
+                    self.mod_pak_list_widget.addItem(file_path)
 
-    def remove_selected_paks(self) -> None:
-        """Remove selected PAK files from the list."""
-        selected_items = self.pak_list_widget.selectedItems()
+    def remove_selected_mod_paks(self) -> None:
+        """Remove selected mod PAK files from the list."""
+        selected_items = self.mod_pak_list_widget.selectedItems()
         for item in selected_items:
-            row = self.pak_list_widget.row(item)
-            self.pak_list_widget.takeItem(row)
-            if item.text() in self.pak_files:
-                self.pak_files.remove(item.text())
+            row = self.mod_pak_list_widget.row(item)
+            self.mod_pak_list_widget.takeItem(row)
+            if item.text() in self.mod_pak_files:
+                self.mod_pak_files.remove(item.text())
 
-    def clear_all_paks(self) -> None:
-        """Clear all PAK files from the list."""
-        self.pak_list_widget.clear()
-        self.pak_files.clear()
+    def clear_all_mod_paks(self) -> None:
+        """Clear all mod PAK files from the list."""
+        self.mod_pak_list_widget.clear()
+        self.mod_pak_files.clear()
 
     def pak_drag_enter_event(self, e: QDragEnterEvent | None) -> None:
         """Handle drag enter event for PAK files.
@@ -356,7 +420,7 @@ class IconImportWindow(QMainWindow):
             e.accept()
 
     def pak_drop_event(self, event: QDropEvent | None) -> None:
-        """Handle drop event for PAK files.
+        """Handle drop event for mod PAK files.
 
         Args:
             event (QDropEvent | None): Drop event
@@ -371,9 +435,9 @@ class IconImportWindow(QMainWindow):
                 for url in urls:
                     filepath = url.toLocalFile()
                     if filepath and filepath.endswith(".pak"):
-                        if filepath not in self.pak_files:
-                            self.pak_files.append(filepath)
-                            self.pak_list_widget.addItem(filepath)
+                        if filepath not in self.mod_pak_files:
+                            self.mod_pak_files.append(filepath)
+                            self.mod_pak_list_widget.addItem(filepath)
         event.accept()
 
     def validate_inputs(self) -> tuple[bool, str]:
@@ -382,8 +446,8 @@ class IconImportWindow(QMainWindow):
         Returns:
             tuple[bool, str]: (is_valid, error_message)
         """
-        if not self.pak_files:
-            return False, "Please add at least one PAK file"
+        if not self.mod_pak_files:
+            return False, "Please add at least one mod PAK file"
 
         mod_name = self.mod_name_input.text().strip()
         if not mod_name:
@@ -425,12 +489,18 @@ class IconImportWindow(QMainWindow):
             return
 
         # Create and start worker
-        self.import_worker = IconImportWorker(
-            pak_files=self.pak_files,
-            mod_name=mod_name,
-            catalog_path=catalog_path,
-            overwrite=self.overwrite_checkbox.isChecked(),
-        )
+        try:
+            self.import_worker = IconImportWorker(
+                mod_pak_files=self.mod_pak_files,
+                mod_name=mod_name,
+                catalog_path=catalog_path,
+                overwrite=self.overwrite_checkbox.isChecked(),
+                vanilla_pak_file=self.vanilla_pak_file,
+            )
+        except ValueError as e:
+            QMessageBox.critical(self, "Invalid Mod Name", str(e))
+            logger.error("Invalid mod name: %s", e)
+            return
 
         self.import_worker.finished.connect(self.on_import_finished)
         self.import_worker.error.connect(self.on_import_error)
@@ -441,18 +511,10 @@ class IconImportWindow(QMainWindow):
     def cancel_import(self) -> None:
         """Cancel the running import process."""
         if self.import_worker and self.import_worker.isRunning():
-            reply = QMessageBox.question(
-                self,
-                "Cancel Import",
-                "Are you sure you want to cancel the import process?",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            )
-
-            if reply == QMessageBox.StandardButton.Yes:
-                logger.warning("User requested import cancellation")
-                self.import_worker.stop()
-                self.import_worker.wait()
-                self.on_import_finished(False)
+            logger.warning("User requested import cancellation")
+            self.import_worker.stop()
+            self.import_worker.wait()
+            self.on_import_finished(False)
 
     def on_import_finished(self, success: bool) -> None:
         """Handle import process completion.
@@ -534,6 +596,8 @@ class IconImportWindow(QMainWindow):
 
         message_item = QTableWidgetItem(log_data["message"])
         message_item.setForeground(brush)
+        # Enable text wrapping for message item and align to top
+        message_item.setTextAlignment(int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop))
 
         # Add items to table
         self.log_display.setItem(row_position, 0, time_item)
@@ -541,12 +605,63 @@ class IconImportWindow(QMainWindow):
         self.log_display.setItem(row_position, 2, module_item)
         self.log_display.setItem(row_position, 3, message_item)
 
+        # Resize row to fit content
+        self.log_display.resizeRowToContents(row_position)
+
         # Auto-scroll to bottom
         self.log_display.scrollToBottom()
 
     def clear_logs(self) -> None:
         """Clear the log display."""
         self.log_display.setRowCount(0)
+
+    def _log_key_press_event(self, event: QKeyEvent | None) -> None:
+        """Handle key press events in log display.
+
+        Args:
+            event (QKeyEvent | None): Key event
+        """
+        if not event:
+            return
+
+        # Handle CTRL-C for copying selected rows
+        if event.matches(QKeySequence.StandardKey.Copy):
+            self._copy_selected_logs()
+        else:
+            # Call the default implementation for other keys
+            QTableWidget.keyPressEvent(self.log_display, event)
+
+    def _copy_selected_logs(self) -> None:
+        """Copy selected log rows to clipboard."""
+        selected_rows = self.log_display.selectionModel()
+        if not selected_rows:
+            return
+
+        selected_indexes = selected_rows.selectedRows()
+        if not selected_indexes:
+            return
+
+        # Build text from selected rows
+        lines = []
+        for index in sorted(selected_indexes, key=lambda x: x.row()):
+            row = index.row()
+            time_item = self.log_display.item(row, 0)
+            level_item = self.log_display.item(row, 1)
+            module_item = self.log_display.item(row, 2)
+            message_item = self.log_display.item(row, 3)
+
+            if time_item and level_item and module_item and message_item:
+                # Format: [Time] LEVEL Module: Message
+                line = (
+                    f"[{time_item.text()}] {level_item.text()} "
+                    f"{module_item.text()}: {message_item.text()}"
+                )
+                lines.append(line)
+
+        if lines:
+            clipboard = QApplication.clipboard()
+            if clipboard:
+                clipboard.setText("\n".join(lines))
 
     def closeEvent(self, event: object) -> None:
         """Handle window close event.
