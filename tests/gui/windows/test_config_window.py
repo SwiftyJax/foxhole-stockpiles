@@ -4,7 +4,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PyQt6.QtWidgets import QPushButton
+from PyQt6.QtWidgets import QMessageBox, QPushButton
 
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections import (
@@ -21,6 +21,16 @@ from foxhole_stockpiles.core.settings.sections import (
 )
 from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
+
+
+@pytest.fixture(autouse=True)
+def mock_close_dialog() -> Any:
+    """Mock QMessageBox.question to prevent closeEvent from blocking.
+
+    The closeEvent shows a confirmation dialog when there are unsaved changes.
+    """
+    with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Discard):
+        yield
 
 
 @pytest.fixture
@@ -200,16 +210,13 @@ def test_config_window_save_settings_basic_mode(
     """
     mock_config_manager.save_config.return_value = (True, "Success")
 
-    with patch("foxhole_stockpiles.gui.windows.config_window.QMessageBox.information") as mock_msg:
-        config_window.save_settings()
+    config_window.save_settings()
 
-        # Should call save_config
-        mock_config_manager.save_config.assert_called_once()
+    # Should call save_config
+    mock_config_manager.save_config.assert_called_once()
 
-        # Should show success message
-        mock_msg.assert_called_once()
-        args = mock_msg.call_args[0]
-        assert args[1] == "Success"
+    # Should show success message in status bar
+    assert "saved successfully" in config_window.status_bar.currentMessage().lower()
 
 
 def test_config_window_save_settings_advanced_mode(
@@ -227,14 +234,13 @@ def test_config_window_save_settings_advanced_mode(
 
     mock_config_manager.save_config.return_value = (True, "Success")
 
-    with patch("foxhole_stockpiles.gui.windows.config_window.QMessageBox.information") as mock_msg:
-        config_window.save_settings()
+    config_window.save_settings()
 
-        # Should call save_config
-        mock_config_manager.save_config.assert_called_once()
+    # Should call save_config
+    mock_config_manager.save_config.assert_called_once()
 
-        # Should show success message
-        mock_msg.assert_called_once()
+    # Should show success message in status bar
+    assert "saved successfully" in config_window.status_bar.currentMessage().lower()
 
 
 def test_config_window_save_settings_failure(
@@ -357,22 +363,22 @@ def test_config_window_populate_tabs_none_settings(config_window: ConfigWindow) 
     config_window.populate_tabs()
 
 
-def test_config_window_cancel_button_closes_window(qtbot: Any, config_window: ConfigWindow) -> None:
-    """Test cancel button closes the window.
+def test_config_window_close_button_closes_window(qtbot: Any, config_window: ConfigWindow) -> None:
+    """Test close button closes the window.
 
     Args:
         qtbot: PyQt test fixture
         config_window: ConfigWindow instance
     """
-    # Find cancel button
+    # Find close button
     buttons = config_window.findChildren(QPushButton)
-    cancel_button = None
+    close_button = None
     for btn in buttons:
-        if btn.text() == "Cancel":
-            cancel_button = btn
+        if btn.text() == "Close":
+            close_button = btn
             break
 
-    assert cancel_button is not None
+    assert close_button is not None
 
     # Verify button is connected to close slot
     # The button should trigger close when clicked
