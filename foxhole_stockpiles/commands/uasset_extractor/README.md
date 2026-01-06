@@ -109,10 +109,56 @@ Optional:
   --converter-tool PATH       Path to umodel.exe (default: C:\UModel\umodel.exe)
   --output PATH               Output directory (default: output)
   --workers N                 Number of parallel workers (default: CPU count)
+  --filter-files PATH         Extract only specific file paths (can be multiple)
+  --filter-pattern PATTERN    Extract only files matching pattern (can be multiple)
   --log-file PATH             Path to log file (default: console only)
   --verbose                   Enable verbose logging (debug level)
   --quiet                     Suppress all output except errors and warnings
 ```
+
+## Filtering Options
+
+Extract only specific files or patterns to speed up extraction when you don't need all assets.
+
+### Extract Specific Files
+
+```bash
+# Extract only specific icon files
+fs extract-assets --catalog catalog.json \
+  --filter-files 'War/Content/Icons/Icon1.uasset' \
+  --filter-files 'War/Content/Icons/Icon2.uasset'
+```
+
+### Extract by Pattern
+
+```bash
+# Extract all subicons
+fs extract-assets --catalog catalog.json \
+  --filter-pattern 'Subicons/'
+
+# Extract all crate icons
+fs extract-assets --catalog catalog.json \
+  --filter-pattern 'IconFilterCrates'
+
+# Combine multiple patterns
+fs extract-assets --catalog catalog.json \
+  --filter-pattern 'Subicons/' \
+  --filter-pattern 'IconFilterCrates'
+```
+
+### Combine Filters
+
+```bash
+# Extract specific files AND files matching patterns
+fs extract-assets --catalog catalog.json \
+  --filter-files 'War/Content/Icons/SpecificIcon.uasset' \
+  --filter-pattern 'Subicons/'
+```
+
+**Note**: Filtering is useful when:
+- You only need certain icons (e.g., crate icon and subicons for vanilla dependencies)
+- You're testing extraction of specific assets
+- You want to speed up extraction by skipping unwanted files
 
 ## Performance Options
 
