@@ -57,10 +57,6 @@ class MainWindow(QMainWindow):
         if config_action is not None:
             config_action.triggered.connect(self.show_configuration)
 
-        import_icons_action = file_menu.addAction("&Import Icons...")
-        if import_icons_action is not None:
-            import_icons_action.triggered.connect(self.show_icon_import)
-
         file_menu.addSeparator()
 
         minimize_to_tray_action = file_menu.addAction("Minimize to &Tray on Close")
@@ -74,6 +70,15 @@ class MainWindow(QMainWindow):
         exit_action = file_menu.addAction("E&xit")
         if exit_action is not None:
             exit_action.triggered.connect(self.quit_application)
+
+        # Database menu
+        database_menu = menu_bar.addMenu("&Database")
+        if database_menu is None:
+            return
+
+        build_database_action = database_menu.addAction("&Build...")
+        if build_database_action is not None:
+            build_database_action.triggered.connect(self.show_icon_import)
 
         # Help menu
         help_menu = menu_bar.addMenu("&Help")

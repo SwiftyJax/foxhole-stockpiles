@@ -45,7 +45,7 @@ class DatabaseBuilderTab(QWidget):
         info_label = QLabel(
             "ℹ️ <b>Database Builder:</b> Configure tools and files required for "
             "importing new icons to the database. "
-            "These settings are used by the <b>File → Import Icons...</b> feature."
+            "These settings are used by the <b>Database → Build...</b> feature."
         )
         info_label.setWordWrap(True)
         info_label.setStyleSheet(
@@ -65,7 +65,7 @@ class DatabaseBuilderTab(QWidget):
         extractor_label = QLabel("Extractor Tool (repak):")
         extractor_label.setToolTip(
             "Path to repak executable for extracting PAK files.\n\n"
-            "Required for the 'Import Icons' feature.\n"
+            "Required for the 'Build Database' feature.\n"
             "Download from: https://github.com/trumank/repak"
         )
         extractor_layout = QHBoxLayout()
@@ -88,7 +88,7 @@ class DatabaseBuilderTab(QWidget):
         converter_label = QLabel("Converter Tool (umodel):")
         converter_label.setToolTip(
             "Path to umodel executable for converting UAsset files to PNG.\n\n"
-            "Required for the 'Import Icons' feature.\n"
+            "Required for the 'Build Database' feature.\n"
             "Download from: https://www.gildor.org/en/projects/umodel"
         )
         converter_layout = QHBoxLayout()
@@ -111,7 +111,7 @@ class DatabaseBuilderTab(QWidget):
         catalog_label = QLabel("Catalog File (catalog.json):")
         catalog_label.setToolTip(
             "Path to catalog.json file that defines all game items.\n\n"
-            "Required for the 'Import Icons' feature.\n"
+            "Required for the 'Build Database' feature.\n"
             "This file maps item codes to their icon paths.\n\n"
             "Download from: https://github.com/xurxogr/foxhole-stockpiles/tree/main/data"
         )
@@ -174,8 +174,8 @@ class DatabaseBuilderTab(QWidget):
 
         # Status info
         status_label = QLabel(
-            "<b>Note:</b> All three files must be configured for the 'Import Icons' "
-            "feature to work. If any are missing, the import feature will be disabled."
+            "<b>Note:</b> All three files must be configured for the 'Build Database' "
+            "feature to work. If any are missing, the feature will be disabled."
         )
         status_label.setWordWrap(True)
         status_label.setStyleSheet(

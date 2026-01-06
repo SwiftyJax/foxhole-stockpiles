@@ -180,9 +180,9 @@ All configuration changes are validated before saving:
 
 Settings are saved to `~/.fs_config` in JSON format and persist between sessions. The configuration uses versioned format (current: v2) with automatic migration support.
 
-### Icon Import Window
+### Database Builder Window
 
-Access via **File > Import Icons**. Provides a user-friendly interface for importing icons from PAK files into the template database.
+Access via **Database > Build**. Provides a user-friendly interface for building the template database from PAK files.
 
 #### Features
 
@@ -227,9 +227,11 @@ Access via **File > Import Icons**. Provides a user-friendly interface for impor
 
 **File Menu:**
 - **Configuration...**: Opens the configuration dialog
-- **Import Icons...**: Opens the icon import window
 - **Minimize to Tray on Close**: Toggle whether closing the window minimizes to system tray (unchecked by default)
 - **Exit**: Quits the application completely
+
+**Database Menu:**
+- **Build...**: Opens the database builder window for creating/updating template databases from PAK files
 
 **Help Menu:**
 - **About**: Shows application information including:
@@ -274,13 +276,13 @@ The application supports system tray for background operation (opt-in):
 6. Start the server
 7. Drop screenshots to scan them
 
-### Importing Custom Icons
+### Building Custom Database
 
-1. Open Import Icons window (File > Import Icons)
+1. Open Database Builder window (Database > Build)
 2. If configuration warning appears:
    - Click "Open Configuration" to set up Database Builder settings
    - Configure paths for repak, UModel, and UAssetGUI tools
-   - Save and return to Import Icons window
+   - Save and return to Database Builder window
 3. (Optional) Select vanilla PAK file if needed
 4. Add mod PAK file(s) via Browse or drag & drop
 5. Click "Start Import"
@@ -359,7 +361,7 @@ fs gui
 - Ensure screenshot format is supported (PNG, JPG, JPEG)
 - Review logs for specific error messages
 
-### Icon Import Fails
+### Database Builder Fails
 
 - Verify Database Builder configuration is complete
 - Check that repak, UModel, and UAssetGUI paths are correct

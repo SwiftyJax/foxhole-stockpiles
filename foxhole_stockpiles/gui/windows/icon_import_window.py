@@ -64,7 +64,7 @@ class IconImportWindow(QMainWindow):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Import Icons to Database")
+        self.setWindowTitle("Build Database")
         self.setGeometry(100, 100, 900, 700)
 
         central_widget = QWidget()
@@ -281,7 +281,7 @@ class IconImportWindow(QMainWindow):
         warning_label = QLabel(
             "<h2>⚠️ Configuration Required</h2>"
             "<p><b>The Database Builder is not properly configured.</b></p>"
-            "<p>To use the Icon Import feature, you need to configure:</p>"
+            "<p>To use the Database Builder feature, you need to configure:</p>"
             "<ul>"
             "<li><b>Extractor Tool</b> (repak.exe) - for extracting PAK files</li>"
             "<li><b>Converter Tool</b> (umodel.exe) - for converting UAsset files</li>"

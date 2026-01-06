@@ -128,7 +128,7 @@ def test_icon_import_window_initialization_configured(configured_window: IconImp
     Args:
         configured_window: Configured window instance
     """
-    assert configured_window.windowTitle() == "Import Icons to Database"
+    assert configured_window.windowTitle() == "Build Database"
     assert configured_window.is_configured is True
     assert configured_window.import_worker is None
     assert configured_window.mod_pak_files == []
@@ -144,7 +144,7 @@ def test_icon_import_window_initialization_unconfigured(
     Args:
         unconfigured_window: Unconfigured window instance
     """
-    assert unconfigured_window.windowTitle() == "Import Icons to Database"
+    assert unconfigured_window.windowTitle() == "Build Database"
     assert unconfigured_window.is_configured is False
 
 
