@@ -2,6 +2,14 @@
 
 Launches the PyQt6 graphical user interface for FS (Foxhole Stockpiles).
 
+## Installation
+
+The GUI requires PyQt6. Install with:
+
+```bash
+pip install -e .[gui]
+```
+
 ## Usage
 
 ```bash
@@ -23,66 +31,301 @@ export QT_QPA_PLATFORM=xcb
 fs gui
 ```
 
-## Current Features
+## Features
 
 ### Main Window
 
-The main window displays the application name, version, and provides access to:
+The main window provides an integrated interface for running the FastAPI server and scanning screenshots:
 
-- **File > Configuration**: Opens the configuration helper
-- **File > Exit**: Closes the application
-- **Help > About**: Shows application information, version, and links to GitHub repositories
+#### Server Control Panel
 
-### Configuration Helper
+- **Start/Stop Server**: One-click control to start/stop the FastAPI server
+- **Server Status**: Real-time display of server status (Running/Stopped)
+- **Screenshot Scanning**:
+  - Drag & drop screenshots directly onto the drop zone
+  - Click to open file dialog for selecting screenshots
+  - Automatic scanning when server is running
+  - Supports PNG, JPG, and JPEG formats
 
-Access via **File > Configuration**. Opens as a centered modal dialog with two modes:
+#### Real-time Logging
+
+- **Colored log display**: Color-coded by severity level (DEBUG, INFO, WARNING, ERROR)
+- **Four-column layout**:
+  - Timestamp: When the log event occurred
+  - Level: Log severity level
+  - Module: Which component generated the log
+  - Message: The log message content
+- **Auto-scroll**: Automatically scrolls to show latest logs
+- **Clear logs**: Button to clear all accumulated logs
+- **Dark theme**: Console-style dark background for better readability
+
+### Configuration Dialog
+
+Access via **File > Configuration**. Opens as a centered modal dialog.
 
 #### Basic Configuration Mode (Default)
 
-A simplified interface for non-technical users with essential settings only:
+A simplified interface designed for non-technical users with only essential settings:
 
-- **Server Settings**
-  - Port: API server port (default: 8000)
+**Server Settings:**
+- Port: API server port (default: 8000)
 
-- **Authentication**
-  - Auth Type: None or Basic (HTTP Basic Auth)
-  - Username/Password: Shown only when Basic auth is selected
+**Authentication:**
+- Auth Type: None or Basic (HTTP Basic Auth)
+- Username/Password: Shown only when Basic auth is selected
 
-- **Scanner Settings**
-  - Database Path: Path to template database (.h5 file)
+**Scanner Settings:**
+- Database Path: Path to template database (.h5 file) with browse button
 
-- **Output Settings**
-  - Destination: console (default), return, file, or webhook
-  - File Path: Shown when destination is "file"
-  - Webhook URL: Shown when destination is "webhook"
-  - Webhook Auth: None or Basic with username/password
+**Output Settings:**
+- Destination: console (default), return, file, or webhook
+- Dynamic sections that appear based on destination:
+  - **File**: Path input with browse button
+  - **Webhook**: URL and optional Basic authentication
 
 #### Advanced Configuration Mode
 
-Enable by checking **"Show Advanced Settings"** to access all configuration options across 7 detailed tabs:
+Enable by checking **"Show Advanced Settings"** to access all configuration options across detailed tabs:
 
-1. **API Server**: Host, port, reload, log level
-2. **API Authentication**: Auth type and credentials
-3. **Scanner**: Database path, cache settings, confidence thresholds, debug options
-4. **Output**: Format, destination, file/webhook/console settings with full auth options
-5. **OCR**: Layout detection parameters (box dimensions, offsets, thresholds)
-6. **Templates**: Template matching settings and cache configuration
-7. **Logging**: Log levels, file output, and rotation settings
+1. **API Server**:
+   - Host and port configuration
+   - Reload on code changes (development)
+   - Log level selection
+   - CORS origins
+   - Memory monitoring options
 
-**Warning**: Some advanced options are critical - misconfiguring them (especially OCR and Templates settings) can break stockpile scanning completely.
+2. **API Authentication**:
+   - Auth type selection (none, bearer, basic)
+   - Token/credentials management
 
-### Configuration Validation
+3. **Scanner**:
+   - Database path and cache settings
+   - Faction filter options
+   - Confidence thresholds
+   - Max NCC candidates
+   - pHash settings
+   - Debug options (save debug images)
+
+4. **Output**:
+   - Format (JSON)
+   - Destination (return, file, webhook, console)
+   - File settings (path with timestamp support)
+   - Webhook settings (URL, auth type, token, custom headers)
+   - Console settings
+
+5. **OCR**:
+   - Layout detection parameters
+   - Box dimensions (width, height)
+   - Offsets (column, row, group, icon-to-quantity)
+   - Title detection (margin, min width, height)
+   - Gray threshold values
+   - Pixel difference tolerance
+
+6. **Templates**:
+   - Template matching settings
+   - Crate detection RGB multipliers and offsets
+   - Cache configuration
+
+7. **Database Builder**:
+   - Repak tool path
+   - UModel tool path
+   - UAssetGUI tool path
+   - Workers count
+   - Filter options
+
+8. **Logging**:
+   - Log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+   - File output configuration
+   - Log format customization
+   - Date format
+   - Log rotation settings
+
+**⚠️ Warning**: Advanced settings include critical parameters. Misconfiguring OCR or Templates settings can break stockpile scanning completely. Only modify if you understand the implications.
+
+#### Configuration Validation
 
 All configuration changes are validated before saving:
 - Required fields are checked
 - Settings consistency is verified
 - Invalid configurations are rejected with helpful error messages
+- Changes are highlighted when modified
 
-### Configuration Storage
+#### Configuration Storage
 
-Settings are saved to `~/.fs_config` in JSON format and persist between sessions.
+Settings are saved to `~/.fs_config` in JSON format and persist between sessions. The configuration uses versioned format (current: v2) with automatic migration support.
 
-## Dependencies
+### Icon Import Window
 
-- PyQt6
+Access via **File > Import Icons**. Provides a user-friendly interface for importing icons from PAK files into the template database.
+
+#### Features
+
+**Vanilla PAK Section (Optional):**
+- Browse to select the vanilla Foxhole PAK file
+- Automatically extracted if needed for shared resources (crate icon, subicons)
+- Clear button to remove selection
+- Info message explaining vanilla PAK purpose
+
+**Mod PAK Files Section:**
+- Add one or multiple mod PAK files
+- Drag & drop support for adding PAK files quickly
+- List view showing all selected mod PAKs
+- Remove selected or clear all functionality
+- Multi-selection support
+
+**Configuration Verification:**
+- Checks if Database Builder is properly configured
+- Verifies required tools (repak, UModel, UAssetGUI) are configured
+- Shows warning and disables UI if configuration is incomplete
+- Helpful error messages directing users to configuration dialog
+
+**Import Process:**
+- Real-time logging during import process
+- Shows extraction progress
+- Displays conversion status
+- Reports success/failure for each step
+- Color-coded log messages for easy status tracking
+
+**Keyboard Shortcuts:**
+- `Escape`: Close window
+- `Delete`: Remove selected PAK files from list
+
+**Import Log Display:**
+- Four-column table layout (Time, Level, Module, Message)
+- Color-coded by severity
+- Auto-scroll to latest messages
+- Dark theme for better readability
+- Clear logs button
+
+### Menu Bar
+
+**File Menu:**
+- **Configuration...**: Opens the configuration dialog
+- **Import Icons...**: Opens the icon import window
+- **Exit**: Closes the application
+
+**Help Menu:**
+- **About**: Shows application information including:
+  - Application version
+  - Feature list
+  - Links to GitHub repositories (main project and FS Client)
+  - Copyright and license information
+
+## Workflow Examples
+
+### First-Time Setup
+
+1. Launch GUI: `fs gui`
+2. Open Configuration (File > Configuration)
+3. Set database path to your template database file
+4. Configure server port if needed (default: 8000)
+5. Save configuration
+6. Start the server
+7. Drop screenshots to scan them
+
+### Importing Custom Icons
+
+1. Open Import Icons window (File > Import Icons)
+2. If configuration warning appears:
+   - Click "Open Configuration" to set up Database Builder settings
+   - Configure paths for repak, UModel, and UAssetGUI tools
+   - Save and return to Import Icons window
+3. (Optional) Select vanilla PAK file if needed
+4. Add mod PAK file(s) via Browse or drag & drop
+5. Click "Start Import"
+6. Monitor progress in the log display
+7. Wait for completion message
+
+### Advanced Configuration
+
+1. Open Configuration (File > Configuration)
+2. Check "Show Advanced Settings"
+3. Navigate through tabs to configure specific features:
+   - Adjust OCR parameters for better text detection
+   - Configure template matching thresholds
+   - Set up webhook notifications
+   - Enable debug image output
+4. Save configuration
+5. Restart server if it's running for changes to take effect
+
+## Technical Details
+
+### Dependencies
+
+- PyQt6 >= 6.6.0
 - Python 3.12+
+- All core Foxhole Stockpiles dependencies
+
+### Platform Support
+
+- **Windows**: Fully supported
+- **Linux**: Supported with standard X11 or Wayland
+- **WSL2**: Supported with XCB platform (see WSL2 Requirements above)
+- **macOS**: Should work but not extensively tested
+
+### Threading Model
+
+- Server runs in separate thread (non-blocking UI)
+- Screenshot scanning runs in background workers
+- Icon import runs in background worker thread
+- Qt log handler uses signals for thread-safe logging
+- All long-running operations are non-blocking
+
+### Configuration Management
+
+- Automatic loading from `~/.fs_config`
+- Validation before saving
+- Support for both basic and advanced modes
+- Automatic migration from older config versions
+- Environment variable precedence respected
+
+## Troubleshooting
+
+### GUI Won't Start
+
+**Error: `No module named 'PyQt6'`**
+```bash
+pip install -e .[gui]
+```
+
+**WSL2 Display Issues:**
+```bash
+export QT_QPA_PLATFORM=xcb
+fs gui
+```
+
+### Server Won't Start
+
+- Check that port 8000 (or configured port) is not in use
+- Verify database path is correct in configuration
+- Check logs in the log display for specific errors
+- Ensure all required dependencies are installed
+
+### Screenshot Scanning Not Working
+
+- Verify server is running (status shows "Running")
+- Check database path is valid in configuration
+- Ensure screenshot format is supported (PNG, JPG, JPEG)
+- Review logs for specific error messages
+
+### Icon Import Fails
+
+- Verify Database Builder configuration is complete
+- Check that repak, UModel, and UAssetGUI paths are correct
+- Ensure PAK files are valid Foxhole PAK files
+- Review import logs for specific errors
+- Check that tools are executable (Windows: .exe files)
+
+### Configuration Changes Not Taking Effect
+
+- Click "Save" or "Apply" button in configuration dialog
+- Restart server after configuration changes
+- Check for validation errors in status bar
+- Verify no environment variables are overriding file settings
+
+## Related Documentation
+
+- [Configuration Guide](../../../docs/configuration.md) - Detailed configuration reference
+- [API Server Command](../api_server/README.md) - Server command-line options
+- [Scanner Command](../stockpile_scanner/README.md) - Scanner details
+- [Database Builder Command](../database_builder/README.md) - Database creation

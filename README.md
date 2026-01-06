@@ -54,13 +54,20 @@ Optimized for all common gaming resolutions with consistent accuracy:
 
 ## What It Does
 
-The project consists of five command-line tools that work together:
+The project provides a comprehensive toolkit for Foxhole stockpile recognition:
 
+**Core Pipeline Tools:**
 1. **Asset Extraction** - Extracts icon assets from Foxhole PAK files
 2. **Template Generation** - Creates resolution-specific templates with crate overlays
 3. **Database Building** - Compiles templates into optimized binary databases
 4. **Scanner Tool** - Analyzes screenshots to detect and identify stockpile items with automatic quantity recognition
+
+**Additional Tools:**
 5. **Inspector Tool** - Debugs and validates template databases
+6. **API Server** - HTTP REST API for processing screenshots
+7. **GUI Application** - User-friendly graphical interface for configuration and scanning
+8. **Database Management** - Tools for adding icons and migrating database formats
+9. **Configuration Management** - Tools for updating configuration files
 
 For technical details on the system design and implementation decisions, see the [Architecture Documentation](docs/architecture.md).
 
@@ -92,6 +99,9 @@ Migrates template databases to the latest format version with automatic sequenti
 
 ### fs update-config
 Updates `.fs_config` configuration files to the latest format version with automatic migration.
+
+### fs gui
+Launches the PyQt6 graphical user interface for managing configurations and running scans. Provides a user-friendly interface for non-technical users.
 
 ## Requirements
 
@@ -144,11 +154,14 @@ pip install -e .
 # Install with API server support (adds fs server command)
 pip install -e .[server]
 
+# Install with GUI support (adds fs gui command)
+pip install -e .[gui]
+
 # Install with development dependencies
 pip install -e .[dev]
 
-# Install everything (server + dev)
-pip install -e .[server,dev]
+# Install everything (server + gui + dev)
+pip install -e .[server,gui,dev]
 ```
 
 ### 4. Install and Configure Tesseract OCR
@@ -599,7 +612,9 @@ Each CLI tool has detailed documentation in its directory:
 - [Inspector](foxhole_stockpiles/commands/candidate_inspector/README.md) - Debug and validate databases
 - [API Server](foxhole_stockpiles/commands/api_server/README.md) - HTTP API server
 - [Add Icon](foxhole_stockpiles/commands/add_icon/README.md) - Add individual icons to databases
+- [Update DB](foxhole_stockpiles/commands/update_db/README.md) - Migrate template databases
 - [Update Config](foxhole_stockpiles/commands/update_config/README.md) - Migrate configuration files
+- [GUI](foxhole_stockpiles/commands/gui/README.md) - Graphical user interface
 
 ### Guides
 
