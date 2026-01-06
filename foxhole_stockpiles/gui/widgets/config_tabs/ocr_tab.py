@@ -53,7 +53,8 @@ class OCRTab(QWidget):
         )
         info_label.setWordWrap(True)
         info_label.setStyleSheet(
-            "QLabel { background-color: #fff3e0; padding: 10px; border: 1px solid #ff9800; }"
+            "QLabel { background-color: #fff3e0; color: #000000; padding: 10px; "
+            "border: 1px solid #ff9800; }"
         )
         warning_layout.addWidget(info_label, 1)
 

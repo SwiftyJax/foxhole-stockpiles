@@ -211,6 +211,7 @@ class BasicConfigTab(QWidget):
         info_label.setStyleSheet(
             "QLabel { "
             "background-color: #e3f2fd; "
+            "color: #000000; "
             "padding: 12px; "
             "border: 1px solid #2196f3; "
             "border-radius: 4px; "
