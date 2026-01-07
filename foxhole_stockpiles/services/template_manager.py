@@ -271,12 +271,14 @@ class TemplateManager:
         with h5py.File(str(self.database_path), "r") as f:
             for resolution in available_resolutions:
                 group = f[resolution.value]
-                assert isinstance(group, h5py.Group)
+                if not isinstance(group, h5py.Group):
+                    continue
 
                 # Get mods for this resolution
                 if "mods" in group:
                     mods_dataset = group["mods"]
-                    assert isinstance(mods_dataset, h5py.Dataset)
+                    if not isinstance(mods_dataset, h5py.Dataset):
+                        continue
                     mods_data = mods_dataset[:]
 
                     # Count templates per mod for this resolution

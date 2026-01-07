@@ -47,56 +47,41 @@ class MainWindow(QMainWindow):
     def create_menu_bar(self) -> None:
         """Create the menu bar."""
         menu_bar = self.menuBar()
-        if menu_bar is None:
-            return
 
         # File menu
-        file_menu = menu_bar.addMenu("&File")
-        if file_menu is None:
-            return
+        file_menu = menu_bar.addMenu("&File")  # type: ignore[union-attr]
 
-        config_action = file_menu.addAction("&Configuration...")
-        if config_action is not None:
-            config_action.triggered.connect(self.show_configuration)
+        config_action = file_menu.addAction("&Configuration...")  # type: ignore[union-attr]
+        config_action.triggered.connect(self.show_configuration)  # type: ignore[union-attr]
 
-        scan_action = file_menu.addAction("&Scan Screenshot...")
-        if scan_action is not None:
-            scan_action.triggered.connect(self.scan_screenshot)
+        scan_action = file_menu.addAction("&Scan Screenshot...")  # type: ignore[union-attr]
+        scan_action.triggered.connect(self.scan_screenshot)  # type: ignore[union-attr]
 
-        file_menu.addSeparator()
+        file_menu.addSeparator()  # type: ignore[union-attr]
 
-        minimize_to_tray_action = file_menu.addAction("Minimize to &Tray on Close")
-        if minimize_to_tray_action is not None:
-            minimize_to_tray_action.setCheckable(True)
-            minimize_to_tray_action.setChecked(self.minimize_to_tray)
-            minimize_to_tray_action.triggered.connect(self.toggle_minimize_to_tray)
+        minimize_to_tray_action = file_menu.addAction("Minimize to &Tray on Close")  # type: ignore[union-attr]
+        minimize_to_tray_action.setCheckable(True)  # type: ignore[union-attr]
+        minimize_to_tray_action.setChecked(self.minimize_to_tray)  # type: ignore[union-attr]
+        minimize_to_tray_action.triggered.connect(self.toggle_minimize_to_tray)  # type: ignore[union-attr]
 
-        file_menu.addSeparator()
+        file_menu.addSeparator()  # type: ignore[union-attr]
 
-        exit_action = file_menu.addAction("E&xit")
-        if exit_action is not None:
-            exit_action.triggered.connect(self.quit_application)
+        exit_action = file_menu.addAction("E&xit")  # type: ignore[union-attr]
+        exit_action.triggered.connect(self.quit_application)  # type: ignore[union-attr]
 
         # Database menu
-        database_menu = menu_bar.addMenu("&Database")
-        if database_menu is None:
-            return
+        database_menu = menu_bar.addMenu("&Database")  # type: ignore[union-attr]
 
-        build_database_action = database_menu.addAction("&Build...")
-        if build_database_action is not None:
-            build_database_action.triggered.connect(self.show_icon_import)
+        build_database_action = database_menu.addAction("&Build...")  # type: ignore[union-attr]
+        build_database_action.triggered.connect(self.show_icon_import)  # type: ignore[union-attr]
 
-        info_database_action = database_menu.addAction("&Information...")
-        if info_database_action is not None:
-            info_database_action.triggered.connect(self.show_database_info)
+        info_database_action = database_menu.addAction("&Information...")  # type: ignore[union-attr]
+        info_database_action.triggered.connect(self.show_database_info)  # type: ignore[union-attr]
 
         # Help menu
-        help_menu = menu_bar.addMenu("&Help")
-        if help_menu is None:
-            return
-        about_action = help_menu.addAction("&About")
-        if about_action is not None:
-            about_action.triggered.connect(self.show_about)
+        help_menu = menu_bar.addMenu("&Help")  # type: ignore[union-attr]
+        about_action = help_menu.addAction("&About")  # type: ignore[union-attr]
+        about_action.triggered.connect(self.show_about)  # type: ignore[union-attr]
 
     def create_tray_icon(self) -> None:
         """Create system tray icon with menu."""
