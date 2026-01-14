@@ -406,7 +406,7 @@ class DatabaseBuilder:
             for template in new_db.templates:
                 key = (template.code, template.crated, template.mod)
                 if key in existing_keys:
-                    self._logger.info(
+                    self._logger.debug(
                         "Skipping duplicate template: %s (crated=%s, mod=%s)",
                         template.code,
                         template.crated,
@@ -414,7 +414,7 @@ class DatabaseBuilder:
                     )
                     stats["skipped"] += 1
                 else:
-                    self._logger.info(
+                    self._logger.debug(
                         "Adding new template: %s (crated=%s, mod=%s)",
                         template.code,
                         template.crated,
