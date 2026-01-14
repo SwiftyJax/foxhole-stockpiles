@@ -52,18 +52,16 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y tesseract-ocr libegl1 libxkbcommon0 libxcb-cursor0
+          sudo apt-get install -y tesseract-ocr
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -e .[dev,server,gui]
+          pip install -e .[dev,server]
 
       - name: Run tests with coverage
-        env:
-          QT_QPA_PLATFORM: offscreen
         run: |
-          pytest tests/ --cov=foxhole_stockpiles --cov-report=term-missing --junitxml=junit.xml
+          pytest tests/ --ignore=tests/gui --cov=foxhole_stockpiles --cov-report=term-missing --junitxml=junit.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
