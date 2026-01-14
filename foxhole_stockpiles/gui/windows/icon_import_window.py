@@ -545,10 +545,9 @@ class IconImportWindow(QMainWindow):
         Args:
             success (bool): Whether the import was successful
         """
-        # Close and remove log handler
+        # Remove log handler from root logger (but don't close it - reused for next import)
         root_logger = logging.getLogger()
         root_logger.removeHandler(self.log_handler)
-        self.log_handler.close()
 
         # Add final status message to logs
         from datetime import datetime
@@ -705,8 +704,18 @@ class IconImportWindow(QMainWindow):
             if reply == QMessageBox.StandardButton.Yes:
                 self.import_worker.stop()
                 self.import_worker.wait()
-                event.accept()  # type: ignore[attr-defined]
+                self._cleanup_and_accept(event)
             else:
                 event.ignore()  # type: ignore[attr-defined]
         else:
-            event.accept()  # type: ignore[attr-defined]
+            self._cleanup_and_accept(event)
+
+    def _cleanup_and_accept(self, event: object) -> None:
+        """Clean up resources and accept close event.
+
+        Args:
+            event (object): Close event
+        """
+        # Close the log handler to prevent further emissions
+        self.log_handler.close()
+        event.accept()  # type: ignore[attr-defined]
