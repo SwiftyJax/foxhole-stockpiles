@@ -156,6 +156,34 @@ def test_initialization_with_overwrite(tmp_path: Path, mock_settings: AppSetting
     assert worker.overwrite is True
 
 
+def test_initialization_with_custom_database_path(
+    tmp_path: Path, mock_settings: AppSettings
+) -> None:
+    """Test IconImportWorker initialization with custom database path.
+
+    Args:
+        tmp_path: Temporary directory path
+        mock_settings: Mock settings
+    """
+    pak_file = tmp_path / "test.pak"
+    pak_file.write_text("")
+
+    catalog_path = tmp_path / "catalog.json"
+    custom_db_path = tmp_path / "custom_database.h5"
+
+    with patch(
+        "foxhole_stockpiles.gui.utils.icon_import_worker.get_settings", return_value=mock_settings
+    ):
+        worker = IconImportWorker(
+            mod_pak_files=[str(pak_file)],
+            mod_name="test_mod",
+            catalog_path=catalog_path,
+            database_path=custom_db_path,
+        )
+
+    assert worker.database_path == custom_db_path
+
+
 # ===== Mod Name Validation Tests =====
 # Note: Full validation tests are in test_mod_importer.py
 # These tests verify the worker delegates validation correctly
@@ -451,3 +479,48 @@ async def test_run_import_passes_callbacks(worker: IconImportWorker) -> None:
 
             assert call_kwargs["progress_callback"] == worker._on_progress
             assert call_kwargs["cancel_check"] == worker._check_cancel
+
+
+@pytest.mark.asyncio
+async def test_run_import_uses_custom_database_path(
+    tmp_path: Path, mock_settings: AppSettings
+) -> None:
+    """Test that run_import uses custom database path when provided.
+
+    Args:
+        tmp_path: Temporary directory path
+        mock_settings: Mock settings
+    """
+    pak_file = tmp_path / "test.pak"
+    pak_file.write_text("")
+
+    catalog_path = tmp_path / "catalog.json"
+    custom_db_path = tmp_path / "custom_database.h5"
+
+    with patch(
+        "foxhole_stockpiles.gui.utils.icon_import_worker.get_settings", return_value=mock_settings
+    ):
+        worker = IconImportWorker(
+            mod_pak_files=[str(pak_file)],
+            mod_name="test_mod",
+            catalog_path=catalog_path,
+            database_path=custom_db_path,
+        )
+
+    mock_finished = MagicMock()
+    mock_result = ModImportResult(success=True)
+
+    with patch.object(worker, "finished", mock_finished):
+        with patch(
+            "foxhole_stockpiles.gui.utils.icon_import_worker.ModImporter"
+        ) as mock_importer_class:
+            mock_importer = MagicMock()
+            mock_importer.run = AsyncMock(return_value=mock_result)
+            mock_importer_class.return_value = mock_importer
+
+            await worker._run_import()
+
+            # Verify custom database path was used
+            call_kwargs = mock_importer_class.call_args[1]
+            config = call_kwargs["config"]
+            assert config.database_path == custom_db_path

@@ -218,6 +218,14 @@ Access via **Database > Build**. Provides a user-friendly interface for building
 - Remove selected or clear all functionality
 - Multi-selection support
 
+**Configuration Section:**
+- **Mod Name**: Identifier for the mod in the database (alphanumeric, spaces, underscores, hyphens)
+- **Overwrite existing data**: When checked, replaces existing templates for this mod
+- **Destination Database**: Path to the output database file (.h5)
+  - Pre-filled from scanner settings if configured
+  - Browse button to select a different location
+  - Creates new database if file doesn't exist
+
 **Configuration Verification:**
 - Checks if Database Builder is properly configured
 - Verifies required tools (repak, UModel, UAssetGUI) are configured

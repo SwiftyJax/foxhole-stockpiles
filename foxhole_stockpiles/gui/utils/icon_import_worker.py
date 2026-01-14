@@ -37,6 +37,7 @@ class IconImportWorker(QThread):
         catalog_path: Path,
         overwrite: bool = False,
         vanilla_pak_file: str | None = None,
+        database_path: Path | None = None,
     ) -> None:
         """Initialize the icon import worker.
 
@@ -46,6 +47,7 @@ class IconImportWorker(QThread):
             catalog_path (Path): Path to catalog.json file
             overwrite (bool): Whether to overwrite existing data
             vanilla_pak_file (str | None): Optional vanilla PAK file for dependencies
+            database_path (Path | None): Optional database path (uses settings if None)
 
         Raises:
             ValueError: If mod_name is invalid or contains unsafe characters
@@ -57,16 +59,18 @@ class IconImportWorker(QThread):
         self.catalog_path = catalog_path
         self.overwrite = overwrite
         self.vanilla_pak_file = vanilla_pak_file
+        self.database_path = database_path
         self._should_stop = False
 
         # Get settings
         self.settings = get_settings()
 
         logger.debug(
-            "IconImportWorker initialized: mod=%s, paks=%d, vanilla=%s",
+            "IconImportWorker initialized: mod=%s, paks=%d, vanilla=%s, db=%s",
             self.mod_name,
             len(mod_pak_files),
             "Yes" if vanilla_pak_file else "No",
+            database_path or "default",
         )
 
     def stop(self) -> None:
@@ -107,6 +111,8 @@ class IconImportWorker(QThread):
         try:
             # Build configuration from settings
             db_builder = self.settings.database_builder
+            # Use custom database path if provided, otherwise fall back to settings
+            database_path = self.database_path or self.settings.scanner.database_path
             config = ModImportConfig(
                 mod_pak_files=self.mod_pak_files,
                 mod_name=self.mod_name,
@@ -115,7 +121,7 @@ class IconImportWorker(QThread):
                 vanilla_pak_file=self.vanilla_pak_file,
                 extractor_tool=db_builder.extractor_tool,
                 converter_tool=db_builder.converter_tool,
-                database_path=self.settings.scanner.database_path,
+                database_path=database_path,
                 target_resolutions=db_builder.target_resolutions,
                 template_settings=self.settings.templates,
             )

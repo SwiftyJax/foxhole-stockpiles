@@ -160,29 +160,27 @@ class IconImportWindow(QMainWindow):
         mod_name_layout.addWidget(self.mod_name_input)
         config_layout.addLayout(mod_name_layout)
 
-        # Overwrite option and database path on same row
-        overwrite_db_layout = QHBoxLayout()
+        # Overwrite option
         self.overwrite_checkbox = QCheckBox("Overwrite existing data")
         self.overwrite_checkbox.setToolTip(
             "If checked, existing templates with the same item-resolution will be overwritten"
         )
-        overwrite_db_layout.addWidget(self.overwrite_checkbox)
+        config_layout.addWidget(self.overwrite_checkbox)
 
-        overwrite_db_layout.addSpacing(20)
-        overwrite_db_layout.addWidget(QLabel("Destination Database:"))
-        self.db_path_display = QLineEdit()
-        self.db_path_display.setReadOnly(True)
-        self.db_path_display.setStyleSheet(
-            "QLineEdit { background-color: #F0F0F0; color: #606060; }"
-        )
+        # Database path row
+        db_path_layout = QHBoxLayout()
+        db_path_layout.addWidget(QLabel("Destination Database:"))
+        self.db_path_input = QLineEdit()
         db_path = self.settings.scanner.database_path
-        self.db_path_display.setText(str(db_path) if db_path else "Not configured")
-        self.db_path_display.setToolTip(
-            "Database file where templates will be saved\n"
-            "Configure in: File → Configuration → Scanner tab"
-        )
-        overwrite_db_layout.addWidget(self.db_path_display)
-        config_layout.addLayout(overwrite_db_layout)
+        self.db_path_input.setText(str(db_path) if db_path else "")
+        self.db_path_input.setPlaceholderText("Select database file (.h5)")
+        self.db_path_input.setToolTip("Database file where templates will be saved")
+        db_path_layout.addWidget(self.db_path_input)
+
+        db_browse_button = QPushButton("Browse...")
+        db_browse_button.clicked.connect(self.select_database_path)
+        db_path_layout.addWidget(db_browse_button)
+        config_layout.addLayout(db_path_layout)
 
         layout.addWidget(config_group)
 
@@ -382,6 +380,24 @@ class IconImportWindow(QMainWindow):
         self.vanilla_pak_file = None
         self.vanilla_pak_display.clear()
 
+    def select_database_path(self) -> None:
+        """Open file dialog to select database file."""
+        # Start from current path if set, otherwise use current directory
+        current_path = self.db_path_input.text().strip()
+        start_dir = str(Path(current_path).parent) if current_path else str(Path.cwd())
+
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            "Select Database File",
+            start_dir,
+            "HDF5 Database (*.h5);;All Files (*)",
+        )
+        if file_path:
+            # Ensure .h5 extension
+            if not file_path.endswith(".h5"):
+                file_path += ".h5"
+            self.db_path_input.setText(file_path)
+
     def add_mod_pak_files(self) -> None:
         """Open file dialog to add mod PAK files."""
         files, _ = QFileDialog.getOpenFileNames(
@@ -453,6 +469,10 @@ class IconImportWindow(QMainWindow):
         if not mod_name:
             return False, "Please enter a mod name"
 
+        db_path = self.db_path_input.text().strip()
+        if not db_path:
+            return False, "Please select a destination database file"
+
         return True, ""
 
     def start_import(self) -> None:
@@ -464,12 +484,14 @@ class IconImportWindow(QMainWindow):
             return
 
         mod_name = self.mod_name_input.text().strip()
+        db_path = Path(self.db_path_input.text().strip())
 
         # Disable inputs and start button
         self.start_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
         self.mod_name_input.setEnabled(False)
         self.overwrite_checkbox.setEnabled(False)
+        self.db_path_input.setEnabled(False)
 
         # Clear logs
         self.clear_logs()
@@ -496,6 +518,7 @@ class IconImportWindow(QMainWindow):
                 catalog_path=catalog_path,
                 overwrite=self.overwrite_checkbox.isChecked(),
                 vanilla_pak_file=self.vanilla_pak_file,
+                database_path=db_path,
             )
         except ValueError as e:
             QMessageBox.critical(self, "Invalid Mod Name", str(e))
@@ -553,6 +576,7 @@ class IconImportWindow(QMainWindow):
         self.cancel_button.setEnabled(False)
         self.mod_name_input.setEnabled(True)
         self.overwrite_checkbox.setEnabled(True)
+        self.db_path_input.setEnabled(True)
 
     def on_import_error(self, error_msg: str) -> None:
         """Handle import process error.
