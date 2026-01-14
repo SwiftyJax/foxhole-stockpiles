@@ -2,6 +2,7 @@
 
 import asyncio
 import importlib
+import multiprocessing
 import sys
 from typing import Any
 
@@ -206,6 +207,9 @@ def main() -> None:
 
     Handles argument parsing and dispatches to the appropriate command.
     """
+    # Required for multiprocessing to work correctly in frozen executables (PyInstaller)
+    multiprocessing.freeze_support()
+
     dispatcher = CLIDispatcher()
 
     # DEBUG MODE: Uncomment to use predefined debug arguments
