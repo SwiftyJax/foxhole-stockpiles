@@ -105,7 +105,7 @@ def build_cli_executable(project_root: Path) -> bool:
         exe_path = project_root / "dist" / "fs.exe"
         if exe_path.exists():
             size_mb = exe_path.stat().st_size / (1024 * 1024)
-            print("\n✓ CLI Build successful!")
+            print("\n[OK] CLI Build successful!")
             print(f"  Executable: {exe_path}")
             print(f"  Size: {size_mb:.1f} MB")
 
@@ -115,9 +115,9 @@ def build_cli_executable(project_root: Path) -> bool:
             # Test help
             result = subprocess.run([str(exe_path), "--help"], capture_output=True, text=True)
             if result.returncode == 0:
-                print("  ✓ Help command works")
+                print("  [OK] Help command works")
             else:
-                print("  ✗ Help command failed")
+                print("  [FAIL] Help command failed")
                 return False
 
             # Test subcommand help
@@ -125,20 +125,20 @@ def build_cli_executable(project_root: Path) -> bool:
                 [str(exe_path), "scanner", "--help"], capture_output=True, text=True
             )
             if result.returncode == 0:
-                print("  ✓ Scanner subcommand works")
+                print("  [OK] Scanner subcommand works")
             else:
-                print("  ✗ Scanner subcommand failed")
+                print("  [FAIL] Scanner subcommand failed")
                 return False
 
             print("\n  fs.exe ready! Use: fs <command> [options]")
             return True
 
         else:
-            print("✗ Executable not found after build")
+            print("[FAIL] Executable not found after build")
             return False
 
     except subprocess.CalledProcessError as e:
-        print(f"✗ Build failed: {e}")
+        print(f"[FAIL] Build failed: {e}")
         return False
 
 
@@ -226,18 +226,18 @@ def build_gui_executable(project_root: Path) -> bool:
         exe_path = project_root / "dist" / "fs-gui.exe"
         if exe_path.exists():
             size_mb = exe_path.stat().st_size / (1024 * 1024)
-            print("\n✓ GUI Build successful!")
+            print("\n[OK] GUI Build successful!")
             print(f"  Executable: {exe_path}")
             print(f"  Size: {size_mb:.1f} MB")
             print("\n  fs-gui.exe ready! Double-click to launch GUI (no console)")
             return True
 
         else:
-            print("✗ Executable not found after build")
+            print("[FAIL] Executable not found after build")
             return False
 
     except subprocess.CalledProcessError as e:
-        print(f"✗ Build failed: {e}")
+        print(f"[FAIL] Build failed: {e}")
         return False
 
 
@@ -263,8 +263,8 @@ def main() -> None:
         print("\n" + "=" * 50)
         print("Build Summary")
         print("=" * 50)
-        print(f"CLI (fs.exe):      {'✓ Success' if cli_success else '✗ Failed'}")
-        print(f"GUI (fs-gui.exe):  {'✓ Success' if gui_success else '✗ Failed'}")
+        print(f"CLI (fs.exe):      {'[OK] Success' if cli_success else '[FAIL] Failed'}")
+        print(f"GUI (fs-gui.exe):  {'[OK] Success' if gui_success else '[FAIL] Failed'}")
 
         if cli_success and gui_success:
             print("\nAll builds completed successfully!")
@@ -276,7 +276,7 @@ def main() -> None:
             sys.exit(1)
 
     except FileNotFoundError:
-        print("✗ PyInstaller not found. Install with: pip install pyinstaller")
+        print("[FAIL] PyInstaller not found. Install with: pip install pyinstaller")
         sys.exit(1)
 
 
