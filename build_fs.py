@@ -1,12 +1,12 @@
-"""Build script for creating fs executables (CLI and GUI)."""
+"""Build script for creating fs executable (unified CLI and GUI)."""
 
 import subprocess
 import sys
 from pathlib import Path
 
 
-def get_common_hidden_imports() -> list[str]:
-    """Get hidden imports common to both CLI and GUI builds."""
+def get_hidden_imports() -> list[str]:
+    """Get all hidden imports for the unified build."""
     return [
         # Core dependencies
         "cv2",
@@ -28,23 +28,6 @@ def get_common_hidden_imports() -> list[str]:
         "foxhole_stockpiles.enums.supported_resolution",
         "foxhole_stockpiles.models",
         "foxhole_stockpiles.services",
-    ]
-
-
-def build_cli_executable(project_root: Path) -> bool:
-    """Build the CLI executable (fs.exe).
-
-    Args:
-        project_root: Path to project root directory
-
-    Returns:
-        True if build successful, False otherwise
-    """
-    print("\n" + "=" * 50)
-    print("Building CLI Executable (fs.exe)")
-    print("=" * 50)
-
-    hidden_imports = get_common_hidden_imports() + [
         # API Server dependencies
         "fastapi",
         "uvicorn",
@@ -73,15 +56,61 @@ def build_cli_executable(project_root: Path) -> bool:
         "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor",
         "foxhole_stockpiles.commands.candidate_inspector.candidate_inspector",
         "foxhole_stockpiles.commands.api_server.api_server",
+        "foxhole_stockpiles.commands.gui.gui",
+        "foxhole_stockpiles.commands.add_icon.add_icon",
+        "foxhole_stockpiles.commands.add_mod.add_mod",
+        "foxhole_stockpiles.commands.update_db.update_db",
+        "foxhole_stockpiles.commands.update_config.update_config",
+        # PyQt6 dependencies (for GUI)
+        "PyQt6",
+        "PyQt6.QtCore",
+        "PyQt6.QtGui",
+        "PyQt6.QtWidgets",
+        "PyQt6.sip",
+        # GUI modules
+        "foxhole_stockpiles.gui",
+        "foxhole_stockpiles.gui.app",
+        "foxhole_stockpiles.gui.windows",
+        "foxhole_stockpiles.gui.windows.main_window",
+        "foxhole_stockpiles.gui.windows.config_window",
+        "foxhole_stockpiles.gui.windows.about_window",
+        "foxhole_stockpiles.gui.windows.import_icons_window",
+        "foxhole_stockpiles.gui.widgets",
+        "foxhole_stockpiles.gui.widgets.log_widget",
+        "foxhole_stockpiles.gui.handlers",
+        "foxhole_stockpiles.gui.handlers.qt_log_handler",
     ]
 
+
+def build_executable(project_root: Path) -> bool:
+    """Build the unified executable (fs.exe).
+
+    Args:
+        project_root: Path to project root directory
+
+    Returns:
+        True if build successful, False otherwise
+    """
+    print("=" * 50)
+    print("Building Unified Executable (fs.exe)")
+    print("=" * 50)
+    print()
+    print("This executable provides:")
+    print("  - GUI mode: Run 'fs' with no arguments")
+    print("  - CLI mode: Run 'fs <command>' for CLI commands")
+    print()
+
+    hidden_imports = get_hidden_imports()
+
     # Build PyInstaller command
+    # Use --windowed so no console appears on double-click
+    # CLI commands attach to parent console or allocate one when needed
     cmd = [
         "pyinstaller",
         "--onefile",
         "--name",
         "fs",
-        "--console",
+        "--windowed",
     ]
 
     # Add all hidden imports
@@ -105,7 +134,7 @@ def build_cli_executable(project_root: Path) -> bool:
         exe_path = project_root / "dist" / "fs.exe"
         if exe_path.exists():
             size_mb = exe_path.stat().st_size / (1024 * 1024)
-            print("\n[OK] CLI Build successful!")
+            print("\n[OK] Build successful!")
             print(f"  Executable: {exe_path}")
             print(f"  Size: {size_mb:.1f} MB")
 
@@ -130,106 +159,10 @@ def build_cli_executable(project_root: Path) -> bool:
                 print("  [FAIL] Scanner subcommand failed")
                 return False
 
-            print("\n  fs.exe ready! Use: fs <command> [options]")
-            return True
-
-        else:
-            print("[FAIL] Executable not found after build")
-            return False
-
-    except subprocess.CalledProcessError as e:
-        print(f"[FAIL] Build failed: {e}")
-        return False
-
-
-def build_gui_executable(project_root: Path) -> bool:
-    """Build the GUI executable (fs-gui.exe).
-
-    Args:
-        project_root: Path to project root directory
-
-    Returns:
-        True if build successful, False otherwise
-    """
-    print("\n" + "=" * 50)
-    print("Building GUI Executable (fs-gui.exe)")
-    print("=" * 50)
-
-    hidden_imports = get_common_hidden_imports() + [
-        # PyQt6 dependencies
-        "PyQt6",
-        "PyQt6.QtCore",
-        "PyQt6.QtGui",
-        "PyQt6.QtWidgets",
-        "PyQt6.sip",
-        # GUI modules
-        "foxhole_stockpiles.gui",
-        "foxhole_stockpiles.gui.app",
-        "foxhole_stockpiles.gui.windows",
-        "foxhole_stockpiles.gui.windows.main_window",
-        "foxhole_stockpiles.gui.windows.config_window",
-        "foxhole_stockpiles.gui.windows.about_window",
-        "foxhole_stockpiles.gui.windows.import_icons_window",
-        "foxhole_stockpiles.gui.widgets",
-        "foxhole_stockpiles.gui.widgets.log_widget",
-        "foxhole_stockpiles.gui.handlers",
-        "foxhole_stockpiles.gui.handlers.qt_log_handler",
-        # API Server (needed for server control in GUI)
-        "fastapi",
-        "uvicorn",
-        "uvicorn.logging",
-        "uvicorn.loops",
-        "uvicorn.loops.auto",
-        "uvicorn.protocols",
-        "uvicorn.protocols.http",
-        "uvicorn.protocols.http.auto",
-        "uvicorn.protocols.websockets",
-        "uvicorn.protocols.websockets.auto",
-        "uvicorn.lifespan",
-        "uvicorn.lifespan.on",
-        "starlette",
-        "starlette.routing",
-        "starlette.middleware",
-        "multipart",
-        "foxhole_stockpiles.api",
-        "foxhole_stockpiles.api.server",
-        "foxhole_stockpiles.api.auth",
-    ]
-
-    # Build PyInstaller command
-    cmd = [
-        "pyinstaller",
-        "--onefile",
-        "--name",
-        "fs-gui",
-        "--windowed",  # No console for GUI
-    ]
-
-    # Add all hidden imports
-    for import_name in hidden_imports:
-        cmd.extend(["--hidden-import", import_name])
-
-    # Exclude development dependencies
-    exclude_modules = ["pytest", "mypy", "ruff", "pre_commit"]
-    for module in exclude_modules:
-        cmd.extend(["--exclude-module", module])
-
-    # Add the main script
-    cmd.append("foxhole_stockpiles/gui/app.py")
-
-    print(f"Building with {len(hidden_imports)} hidden imports...")
-
-    try:
-        subprocess.run(cmd, cwd=project_root, check=True)
-
-        # Check result
-        exe_path = project_root / "dist" / "fs-gui.exe"
-        if exe_path.exists():
-            size_mb = exe_path.stat().st_size / (1024 * 1024)
-            print("\n[OK] GUI Build successful!")
-            print(f"  Executable: {exe_path}")
-            print(f"  Size: {size_mb:.1f} MB")
-            print("\n  fs-gui.exe ready! Double-click to launch GUI (no console)")
+            print("\n  Usage:")
+            print("    fs          - Launch GUI (console window hidden)")
+            print("    fs gui      - Launch GUI explicitly")
+            print("    fs <cmd>    - Run CLI command")
             return True
 
         else:
@@ -242,37 +175,28 @@ def build_gui_executable(project_root: Path) -> bool:
 
 
 def main() -> None:
-    """Build both CLI and GUI executables."""
+    """Build the unified executable."""
     project_root = Path(__file__).parent
 
-    print("Building Foxhole Stockpiles Executables")
+    print("Building Foxhole Stockpiles Executable")
     print("=" * 50)
-    print("This will create:")
-    print("  1. fs.exe - CLI tool (with console)")
-    print("  2. fs-gui.exe - GUI tool (no console)")
     print()
 
     try:
-        # Build CLI executable
-        cli_success = build_cli_executable(project_root)
+        success = build_executable(project_root)
 
-        # Build GUI executable
-        gui_success = build_gui_executable(project_root)
-
-        # Summary
         print("\n" + "=" * 50)
         print("Build Summary")
         print("=" * 50)
-        print(f"CLI (fs.exe):      {'[OK] Success' if cli_success else '[FAIL] Failed'}")
-        print(f"GUI (fs-gui.exe):  {'[OK] Success' if gui_success else '[FAIL] Failed'}")
+        print(f"fs.exe: {'[OK] Success' if success else '[FAIL] Failed'}")
 
-        if cli_success and gui_success:
-            print("\nAll builds completed successfully!")
-            print("\nExecutables in dist/:")
-            print("  - fs.exe: CLI tool with all commands")
-            print("  - fs-gui.exe: GUI application (no console)")
+        if success:
+            print("\nBuild completed successfully!")
+            print("\nExecutable in dist/:")
+            print("  - fs.exe: Unified CLI/GUI tool")
+            print("            Run without args for GUI, with command for CLI")
         else:
-            print("\nSome builds failed. Check output above for details.")
+            print("\nBuild failed. Check output above for details.")
             sys.exit(1)
 
     except FileNotFoundError:

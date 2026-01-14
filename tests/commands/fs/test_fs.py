@@ -4,11 +4,20 @@ This module contains comprehensive tests for the unified CLI dispatcher,
 including command resolution, alias handling, and command execution.
 """
 
+from collections.abc import Generator
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import pytest
 
 from foxhole_stockpiles.commands.fs.fs import CLIDispatcher, main
+
+
+# Mock _attach_console globally for all tests since it uses Windows-specific APIs
+@pytest.fixture(autouse=True)
+def mock_attach_console() -> Generator[None, None, None]:
+    """Mock _attach_console to avoid Windows-specific API calls in tests."""
+    with patch("foxhole_stockpiles.commands.fs.fs._attach_console"):
+        yield
 
 
 class TestCLIDispatcherInitialization:
@@ -192,19 +201,19 @@ class TestMainFunction:
         assert "Foxhole Stockpiles" in call_args
 
     @patch("foxhole_stockpiles.commands.fs.fs.sys.argv", ["fs"])
-    @patch("builtins.print")
-    def test_main_with_no_args(self, mock_print: Mock) -> None:
-        """Test main function with no arguments.
+    @patch("foxhole_stockpiles.commands.fs.fs.CLIDispatcher.execute_command")
+    def test_main_with_no_args(self, mock_execute: Mock) -> None:
+        """Test main function with no arguments launches GUI.
 
         Args:
-            mock_print (Mock): Mocked print function.
+            mock_execute (Mock): Mocked execute_command method.
         """
+        mock_execute.return_value = None
+
         main()
 
-        # Should print help text
-        assert mock_print.called
-        call_args = mock_print.call_args[0][0]
-        assert "Foxhole Stockpiles" in call_args
+        # Should launch GUI when no arguments provided
+        mock_execute.assert_called_once_with("gui")
 
     @patch("foxhole_stockpiles.commands.fs.fs.sys.argv", ["fs", "--version"])
     @patch("builtins.print")

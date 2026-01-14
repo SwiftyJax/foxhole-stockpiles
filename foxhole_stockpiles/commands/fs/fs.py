@@ -10,6 +10,50 @@ from foxhole_stockpiles import __version__
 from foxhole_stockpiles.models.command_info import CommandInfo
 
 
+def _attach_console() -> None:
+    """Attach to parent console or allocate a new one on Windows.
+
+    This is used when running CLI commands from a windowed executable.
+    - When run from cmd: attaches to the parent console
+    - When double-clicked: allocates a new console for output
+    """
+    if sys.platform == "win32":
+        try:
+            import ctypes
+
+            kernel32 = ctypes.windll.kernel32
+            # Try to attach to parent console (e.g., when run from cmd)
+            ATTACH_PARENT_PROCESS = -1
+            if not kernel32.AttachConsole(ATTACH_PARENT_PROCESS):
+                # No parent console, allocate a new one
+                kernel32.AllocConsole()
+
+            # Redirect stdout/stderr to the console
+            import msvcrt
+            import os
+
+            # Get console handles
+            STD_OUTPUT_HANDLE = -11
+            STD_ERROR_HANDLE = -12
+
+            stdout_handle = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+            stderr_handle = kernel32.GetStdHandle(STD_ERROR_HANDLE)
+
+            if stdout_handle and stdout_handle != -1:
+                # Open file descriptor for stdout
+                stdout_fd = msvcrt.open_osfhandle(stdout_handle, os.O_WRONLY | os.O_TEXT)
+                sys.stdout = open(stdout_fd, "w", encoding="utf-8", buffering=1)
+
+            if stderr_handle and stderr_handle != -1:
+                # Open file descriptor for stderr
+                stderr_fd = msvcrt.open_osfhandle(stderr_handle, os.O_WRONLY | os.O_TEXT)
+                sys.stderr = open(stderr_fd, "w", encoding="utf-8", buffering=1)
+
+        except Exception:
+            # Silently ignore errors - output may not work but won't crash
+            pass
+
+
 class CLIDispatcher:
     """Dispatcher for unified CLI tool commands."""
 
@@ -223,15 +267,22 @@ def main() -> None:
     #     "--debug_image",
     # ]
 
-    # Handle no arguments or help requests
-    if len(sys.argv) < 2 or sys.argv[1] in ["-h", "--help", "help"]:
+    # Handle help requests
+    if len(sys.argv) >= 2 and sys.argv[1] in ["-h", "--help", "help"]:
+        _attach_console()
         print(dispatcher.get_help())
+        return
+
+    # Launch GUI if no arguments provided
+    if len(sys.argv) < 2:
+        dispatcher.execute_command("gui")
         return
 
     command = sys.argv[1]
 
     # Special handling for version requests
     if command in ["--version", "-v", "version"]:
+        _attach_console()
         print(f"Foxhole Stockpiles v{__version__}")
         return
 
@@ -243,6 +294,10 @@ def main() -> None:
         sys.argv = [f"fs-{canonical_command}"] + sys.argv[2:]
 
     try:
+        # Attach to console for CLI commands (not GUI)
+        if canonical_command != "gui":
+            _attach_console()
+
         # Execute the specific command
         result = dispatcher.execute_command(command)
 
