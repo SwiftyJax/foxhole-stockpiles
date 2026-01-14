@@ -19,7 +19,7 @@ from pathlib import Path
 
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import get_settings
-from foxhole_stockpiles.core.utils import load_catalog
+from foxhole_stockpiles.core.utils import get_subprocess_kwargs, load_catalog
 from foxhole_stockpiles.models.catalog_item import CatalogItem
 
 DEFAULT_CATALOG = "catalog.json"
@@ -285,7 +285,10 @@ class PakExtractor:
                 self._logger.debug("Extracting %s from %s", file_path, pak_file)
                 self._logger.debug("Full extraction command: %s", " ".join(command))
                 process = await asyncio.create_subprocess_exec(
-                    *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                    *command,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    **get_subprocess_kwargs(),
                 )
                 # Await process completion and capture output
                 stdout, stderr = await process.communicate()
@@ -389,7 +392,10 @@ class PakExtractor:
             self._logger.debug("Trying conversion with %s: %s", ue_version, file_path)
             self._logger.debug("Full command: %s", " ".join(command))
             process = await asyncio.create_subprocess_exec(
-                *command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+                *command,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+                **get_subprocess_kwargs(),
             )
             # Await process completion and capture output
             stdout, stderr = await process.communicate()
