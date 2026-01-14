@@ -49,14 +49,16 @@ class IconImportWindow(QMainWindow):
         self.vanilla_pak_file: str | None = None
         self.mod_pak_files: list[str] = []
 
-        # Setup log handler (shared across all imports)
-        self.log_handler = QtLogHandler()
-        self.log_handler.log_message.connect(self.append_log)
-        self.log_handler.setLevel(logging.INFO)
-
         # Check if database builder is configured
         self.settings = get_settings()
         self.is_configured = self._check_configuration()
+
+        # Setup log handler (shared across all imports)
+        # Use log level from settings
+        self.log_handler = QtLogHandler()
+        self.log_handler.log_message.connect(self.append_log)
+        log_level = getattr(logging, self.settings.logging.log_level.upper(), logging.INFO)
+        self.log_handler.setLevel(log_level)
 
         self.init_ui()
 
