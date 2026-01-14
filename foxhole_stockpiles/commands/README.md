@@ -106,6 +106,29 @@ python -m foxhole_stockpiles.commands.stockpile_scanner
 
 [📖 Detailed Documentation](stockpile_scanner/README.md)
 
+---
+
+### 6. `fs add-mod` - Mod Integration
+**Purpose**: Add all icons from a mod's PAK file(s) to the template database in one command.
+
+**Usage**:
+```bash
+# Primary interface
+fs add-mod --pak mod.pak --name "My Mod"
+fs mod --pak mod.pak --name "My Mod"
+
+# With vanilla PAK for shared dependencies
+fs add-mod --pak mod.pak --name "My Mod" --vanilla War.pak
+
+# Development interface
+python -m foxhole_stockpiles.commands.add_mod.add_mod
+```
+
+**Input**: Mod PAK files, optional vanilla PAK for dependencies
+**Output**: Updated database with mod templates merged in
+
+[📖 Detailed Documentation](add_mod/README.md)
+
 ## Recommended Workflow
 
 ### Complete Pipeline (Production)

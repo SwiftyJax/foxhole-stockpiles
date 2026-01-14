@@ -58,6 +58,11 @@ class CLIDispatcher:
                 module="foxhole_stockpiles.commands.add_icon.add_icon",
                 aliases=["add"],
             ),
+            "add-mod": CommandInfo(
+                description="Add a mod to the template database (full pipeline)",
+                module="foxhole_stockpiles.commands.add_mod.add_mod",
+                aliases=["mod"],
+            ),
             "update-db": CommandInfo(
                 description="Migrate template database to latest format",
                 module="foxhole_stockpiles.commands.update_db.update_db",
