@@ -141,6 +141,15 @@ Prerequisites:
         ),
     )
 
+    # Performance options
+    parser.add_argument(
+        "--workers",
+        type=int,
+        default=None,
+        help="Number of worker processes for database building "
+        "(default: from database_builder.workers setting or CPU count)",
+    )
+
     # Logging options
     parser.add_argument(
         "--verbose",
@@ -227,6 +236,9 @@ Prerequisites:
     elif settings.database_builder.target_resolutions:
         target_resolutions = settings.database_builder.target_resolutions
 
+    # Resolve workers from args or settings
+    workers = args.workers if args.workers is not None else settings.database_builder.workers
+
     # Create configuration
     config = ModImportConfig(
         mod_pak_files=[str(p) for p in args.pak_files],
@@ -239,6 +251,7 @@ Prerequisites:
         database_path=database_path,
         target_resolutions=target_resolutions,
         template_settings=settings.templates,
+        database_workers=workers,
     )
 
     # Run import

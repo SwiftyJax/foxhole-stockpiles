@@ -1,5 +1,6 @@
 """Database Builder settings tab."""
 
+import os
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QUrl
@@ -13,6 +14,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QPushButton,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
@@ -130,6 +132,27 @@ class DatabaseBuilderTab(QWidget):
         catalog_browse_btn.clicked.connect(self.browse_catalog_file)
         catalog_layout.addWidget(catalog_browse_btn)
         tools_layout.addRow(catalog_label, catalog_layout)
+
+        # Workers
+        cpu_count = os.cpu_count() or 1
+        workers_label = QLabel("Workers:")
+        workers_label.setToolTip(
+            "Number of parallel processes for database building.\n\n"
+            "Set to 0 to auto-detect (uses CPU count).\n"
+            "Set to 1 to disable multiprocessing."
+        )
+        workers_layout = QHBoxLayout()
+        self.workers_spinbox = QSpinBox()
+        self.workers_spinbox.setMinimum(0)
+        self.workers_spinbox.setMaximum(cpu_count)
+        self.workers_spinbox.setValue(0)
+        self.workers_spinbox.setFixedWidth(80)
+        workers_layout.addWidget(self.workers_spinbox)
+        workers_hint = QLabel(f"(0 = auto-detect, max {cpu_count} cores)")
+        workers_hint.setStyleSheet("color: gray; font-size: 11px;")
+        workers_layout.addWidget(workers_hint)
+        workers_layout.addStretch()
+        tools_layout.addRow(workers_label, workers_layout)
 
         layout.addWidget(tools_group)
 
@@ -294,6 +317,7 @@ class DatabaseBuilderTab(QWidget):
             str(settings.converter_tool) if settings.converter_tool else ""
         )
         self.catalog_file_input.setText(str(settings.catalog_file) if settings.catalog_file else "")
+        self.workers_spinbox.setValue(settings.workers if settings.workers is not None else 0)
 
         # Set resolution checkboxes
         # Disconnect to avoid triggering events during setup
@@ -390,9 +414,14 @@ class DatabaseBuilderTab(QWidget):
             # Nothing selected - save as empty list
             target_resolutions = []
 
+        # Get workers value (0 means auto-detect, which we store as None)
+        workers_value = self.workers_spinbox.value()
+        workers = workers_value if workers_value > 0 else None
+
         return DatabaseBuilderSettings(
             extractor_tool=Path(extractor_text) if extractor_text else None,
             converter_tool=Path(converter_text) if converter_text else None,
             catalog_file=Path(catalog_text) if catalog_text else None,
             target_resolutions=target_resolutions,
+            workers=workers,
         )

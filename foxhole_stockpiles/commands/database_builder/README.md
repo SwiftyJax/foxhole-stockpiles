@@ -72,6 +72,7 @@ python -m foxhole_stockpiles.commands.database_builder.database_builder --catalo
 - `--quiet` (optional): Suppress all output except errors and warnings
 - `--log-file` (optional): Path to log file for detailed output (default: console only)
 - `--resolution` (optional): Resolution to generate (can be specified multiple times, e.g., --resolution 1080 --resolution 1440). If not specified, all supported resolutions will be generated
+- `--workers` (optional): Number of worker processes for parallel database building. Set to 1 to disable multiprocessing. If not specified, uses all available CPU cores
 
 ### Examples
 
@@ -90,6 +91,12 @@ fs database-builder --catalog catalog.json --templates training_images/ \
 ```bash
 fs database-builder --catalog catalog.json --templates training_images/ \
   --database icons.h5 --resolution 1080 --resolution 1440
+```
+
+**Build with single worker (avoids multiprocessing issues):**
+```bash
+fs database-builder --catalog catalog.json --templates training_images/ \
+  --database icons.h5 --workers 1
 ```
 
 ## Input Requirements

@@ -48,6 +48,7 @@ class DatabaseBuilder:
         output_path: Path,
         target_resolutions: list[SupportedResolution] | None = None,
         overwrite: bool = True,
+        workers: int | None = None,
     ) -> None:
         """Build template databases for specified or all supported resolutions.
 
@@ -57,6 +58,8 @@ class DatabaseBuilder:
                 or None to build all supported resolutions
             overwrite (bool): If True, replace existing templates. If False, merge new templates
                 into existing database (default: True)
+            workers (int | None): Number of worker processes for database saving.
+                Set to 1 to disable multiprocessing (recommended for GUI).
         """
         # Determine which resolutions to build
         resolutions_to_build = target_resolutions or list(SupportedResolution)
@@ -94,7 +97,9 @@ class DatabaseBuilder:
 
         # Save combined database only if there are changes
         if has_changes:
-            await self._save_databases(databases=databases, output_path=output_path)
+            await self._save_databases(
+                databases=databases, output_path=output_path, workers=workers
+            )
         else:
             self._logger.info("No new templates to add, skipping database save (no changes)")
         self._logger.debug("Database build completed successfully")
@@ -435,18 +440,24 @@ class DatabaseBuilder:
         return merged_databases, has_changes
 
     async def _save_databases(
-        self, databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
+        self,
+        databases: dict[SupportedResolution, TemplateDatabase],
+        output_path: Path,
+        workers: int | None = None,
     ) -> None:
         """Save all databases to HDF5 file.
 
         Args:
             databases (dict[SupportedResolution, TemplateDatabase]): Built databases
             output_path (Path): Output file path
+            workers (int | None): Number of worker processes. Set to 1 to disable multiprocessing.
         """
         self._logger.debug("Saving databases to HDF5 file: %s", output_path)
 
         # Save using centralized method
-        await asyncio.to_thread(TemplateManager.save_databases_to_hdf5, databases, output_path)
+        await asyncio.to_thread(
+            TemplateManager.save_databases_to_hdf5, databases, output_path, workers
+        )
 
         # Log statistics
         total_templates = sum(len(db.templates) for db in databases.values())

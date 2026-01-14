@@ -68,6 +68,7 @@ python -m foxhole_stockpiles.commands.add_mod.add_mod --pak MOD.pak --name "Mod 
 - `--converter`: Path to umodel.exe (default: from database_builder.converter_tool setting)
 - `--overwrite`: Overwrite existing templates for this mod (default: merge/skip existing)
 - `--resolution`: Target resolution (can be specified multiple times, default: all configured)
+- `--workers`: Number of worker processes for database building (default: from database_builder.workers setting or CPU count)
 - `--verbose`: Enable verbose logging (debug level)
 - `--quiet`: Suppress all output except errors
 - `--log-file`: Path to log file for detailed output
@@ -107,6 +108,11 @@ fs add-mod --pak mod.pak --name "My Mod" \
 ```bash
 fs add-mod --pak mod.pak --name "My Mod" \
   --resolution 1080 --resolution 1440 --resolution 2160
+```
+
+**Use single-threaded mode (avoids multiprocessing issues):**
+```bash
+fs add-mod --pak mod.pak --name "My Mod" --workers 1
 ```
 
 ## Prerequisites
@@ -190,7 +196,8 @@ Configure default paths in your settings file:
     "extractor_tool": "/path/to/repak.exe",
     "converter_tool": "/path/to/umodel.exe",
     "catalog_file": "/path/to/catalog.json",
-    "target_resolutions": ["1080", "1440", "2160"]
+    "target_resolutions": ["1080", "1440", "2160"],
+    "workers": null
   },
   "scanner": {
     "database_path": "/path/to/templates.h5"
@@ -198,12 +205,18 @@ Configure default paths in your settings file:
 }
 ```
 
+**Note**: `workers` can be set to:
+- `null` - Auto-detect (uses CPU count)
+- `1` - Disable multiprocessing (single-threaded)
+- `2-N` - Use specified number of worker processes
+
 ### Environment Variables
 
 ```bash
 FS_DATABASE_BUILDER__EXTRACTOR_TOOL=/path/to/repak.exe
 FS_DATABASE_BUILDER__CONVERTER_TOOL=/path/to/umodel.exe
 FS_DATABASE_BUILDER__CATALOG_FILE=/path/to/catalog.json
+FS_DATABASE_BUILDER__WORKERS=4
 FS_SCANNER__DATABASE_PATH=/path/to/templates.h5
 ```
 

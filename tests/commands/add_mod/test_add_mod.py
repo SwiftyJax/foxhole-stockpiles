@@ -118,6 +118,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_result = ModImportResult(success=True, templates_added=10)
@@ -161,6 +162,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_result = ModImportResult(success=False, error_message="Test error")
@@ -207,6 +209,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -242,6 +245,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -278,6 +282,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -316,6 +321,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_result = ModImportResult(success=True)
@@ -363,6 +369,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_result = ModImportResult(success=True)
@@ -407,6 +414,7 @@ class TestMainFunction:
             verbose=False,
             quiet=True,
             log_file=None,
+            workers=None,
         )
 
         mock_result = ModImportResult(success=True)
@@ -450,6 +458,7 @@ class TestMainFunction:
             verbose=True,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_result = ModImportResult(success=True)
@@ -504,6 +513,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -551,6 +561,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -598,6 +609,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -636,6 +648,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -674,6 +687,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_result = ModImportResult(success=True)
@@ -732,6 +746,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_result = ModImportResult(success=True)
@@ -777,6 +792,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_result = ModImportResult(
@@ -830,6 +846,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_importer_class.side_effect = ValueError("Invalid configuration")
@@ -874,6 +891,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_importer_class.side_effect = FileNotFoundError("Required file missing")
@@ -918,6 +936,7 @@ class TestMainFunction:
             verbose=False,
             quiet=False,
             log_file=None,
+            workers=None,
         )
 
         mock_importer_class.side_effect = RuntimeError("Unexpected error")

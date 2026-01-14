@@ -28,6 +28,14 @@ class DatabaseBuilderSettings(BaseModel):
         ),
         default=None,
     )
+    workers: int | None = Field(
+        description=(
+            "Number of worker processes for database building. "
+            "Set to None to auto-detect (uses CPU count). "
+            "Set to 1 to disable multiprocessing."
+        ),
+        default=None,
+    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -37,6 +45,7 @@ class DatabaseBuilderSettings(BaseModel):
                 "converter_tool": "C:/UModel/umodel.exe",
                 "catalog_file": "C:/foxhole/catalog.json",
                 "target_resolutions": None,  # None = all resolutions
+                "workers": None,  # None = auto-detect (CPU count)
             }
         },
     )

@@ -38,6 +38,7 @@ class IconImportWorker(QThread):
         overwrite: bool = False,
         vanilla_pak_file: str | None = None,
         database_path: Path | None = None,
+        database_workers: int | None = None,
     ) -> None:
         """Initialize the icon import worker.
 
@@ -48,6 +49,8 @@ class IconImportWorker(QThread):
             overwrite (bool): Whether to overwrite existing data
             vanilla_pak_file (str | None): Optional vanilla PAK file for dependencies
             database_path (Path | None): Optional database path (uses settings if None)
+            database_workers (int | None): Number of workers for database building.
+                Set to 1 to disable multiprocessing (recommended for GUI on Windows).
 
         Raises:
             ValueError: If mod_name is invalid or contains unsafe characters
@@ -60,6 +63,7 @@ class IconImportWorker(QThread):
         self.overwrite = overwrite
         self.vanilla_pak_file = vanilla_pak_file
         self.database_path = database_path
+        self.database_workers = database_workers
         self._should_stop = False
 
         # Get settings
@@ -124,6 +128,7 @@ class IconImportWorker(QThread):
                 database_path=database_path,
                 target_resolutions=db_builder.target_resolutions,
                 template_settings=self.settings.templates,
+                database_workers=self.database_workers,
             )
 
             # Create importer with callbacks

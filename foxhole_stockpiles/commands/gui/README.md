@@ -172,11 +172,11 @@ Enable by checking **"Show Advanced Settings"** to access all configuration opti
    - Cache configuration
 
 7. **Database Builder**:
-   - Repak tool path
-   - UModel tool path
-   - UAssetGUI tool path
-   - Workers count
-   - Filter options
+   - Extractor tool (repak) path
+   - Converter tool (umodel) path
+   - Catalog file path
+   - Workers count (0 = auto-detect, 1-N for specific count)
+   - Target resolutions selection
 
 8. **Logging**:
    - Log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
@@ -225,10 +225,13 @@ Access via **Database > Build**. Provides a user-friendly interface for building
   - Pre-filled from scanner settings if configured
   - Browse button to select a different location
   - Creates new database if file doesn't exist
+- **Workers**: Number of parallel processes for database building
+  - Default from database_builder.workers setting or detected CPU count
+  - Set to 1 to disable multiprocessing (single-threaded)
 
 **Configuration Verification:**
 - Checks if Database Builder is properly configured
-- Verifies required tools (repak, UModel, UAssetGUI) are configured
+- Verifies required tools (repak, umodel, catalog.json) are configured
 - Shows warning and disables UI if configuration is incomplete
 - Helpful error messages directing users to configuration dialog
 
@@ -324,13 +327,15 @@ The application supports system tray for background operation (opt-in):
 1. Open Database Builder window (Database > Build)
 2. If configuration warning appears:
    - Click "Open Configuration" to set up Database Builder settings
-   - Configure paths for repak, UModel, and UAssetGUI tools
+   - Configure paths for repak (extractor), umodel (converter), and catalog.json
+   - Configure workers count (0 = auto, or set specific count)
    - Save and return to Database Builder window
 3. (Optional) Select vanilla PAK file if needed
 4. Add mod PAK file(s) via Browse or drag & drop
-5. Click "Start Import"
-6. Monitor progress in the log display
-7. Wait for completion message
+5. (Optional) Adjust workers count if needed (lower for stability, higher for speed)
+6. Click "Start Import"
+7. Monitor progress in the log display
+8. Wait for completion message
 
 ### Inspecting Database Contents
 
@@ -431,10 +436,12 @@ The Start Server button will automatically enable once configuration is valid.
 ### Database Builder Fails
 
 - Verify Database Builder configuration is complete
-- Check that repak, UModel, and UAssetGUI paths are correct
+- Check that repak and umodel paths are correct
+- Verify catalog.json file exists and is valid
 - Ensure PAK files are valid Foxhole PAK files
 - Review import logs for specific errors
 - Check that tools are executable (Windows: .exe files)
+- Try setting workers to 1 if multiprocessing causes issues
 
 ### Configuration Changes Not Taking Effect
 

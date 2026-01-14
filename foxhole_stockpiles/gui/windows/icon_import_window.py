@@ -1,6 +1,7 @@
 """Icon import window for importing new icons to the database."""
 
 import logging
+import os
 import platform
 from pathlib import Path
 
@@ -20,6 +21,7 @@ from PyQt6.QtWidgets import (
     QMainWindow,
     QMessageBox,
     QPushButton,
+    QSpinBox,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -181,6 +183,28 @@ class IconImportWindow(QMainWindow):
         db_browse_button.clicked.connect(self.select_database_path)
         db_path_layout.addWidget(db_browse_button)
         config_layout.addLayout(db_path_layout)
+
+        # Workers row
+        cpu_count = os.cpu_count() or 1
+        configured_workers = self.settings.database_builder.workers
+        default_workers = configured_workers if configured_workers is not None else cpu_count
+        workers_layout = QHBoxLayout()
+        workers_layout.addWidget(QLabel("Workers:"))
+        self.workers_spinbox = QSpinBox()
+        self.workers_spinbox.setMinimum(1)
+        self.workers_spinbox.setMaximum(cpu_count)
+        self.workers_spinbox.setValue(min(default_workers, cpu_count))
+        self.workers_spinbox.setToolTip(
+            "Number of parallel processes for database building.\n"
+            "Set to 1 to disable multiprocessing."
+        )
+        self.workers_spinbox.setFixedWidth(80)
+        workers_layout.addWidget(self.workers_spinbox)
+        workers_hint = QLabel(f"({cpu_count} cores detected)")
+        workers_hint.setStyleSheet("color: gray; font-size: 11px;")
+        workers_layout.addWidget(workers_hint)
+        workers_layout.addStretch()
+        config_layout.addLayout(workers_layout)
 
         layout.addWidget(config_group)
 
@@ -492,6 +516,7 @@ class IconImportWindow(QMainWindow):
         self.mod_name_input.setEnabled(False)
         self.overwrite_checkbox.setEnabled(False)
         self.db_path_input.setEnabled(False)
+        self.workers_spinbox.setEnabled(False)
 
         # Clear logs
         self.clear_logs()
@@ -519,6 +544,7 @@ class IconImportWindow(QMainWindow):
                 overwrite=self.overwrite_checkbox.isChecked(),
                 vanilla_pak_file=self.vanilla_pak_file,
                 database_path=db_path,
+                database_workers=self.workers_spinbox.value(),
             )
         except ValueError as e:
             QMessageBox.critical(self, "Invalid Mod Name", str(e))
@@ -576,6 +602,7 @@ class IconImportWindow(QMainWindow):
         self.mod_name_input.setEnabled(True)
         self.overwrite_checkbox.setEnabled(True)
         self.db_path_input.setEnabled(True)
+        self.workers_spinbox.setEnabled(True)
 
     def on_import_error(self, error_msg: str) -> None:
         """Handle import process error.

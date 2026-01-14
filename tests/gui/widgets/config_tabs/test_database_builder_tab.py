@@ -39,6 +39,7 @@ def test_database_builder_tab_initialization(database_builder_tab: DatabaseBuild
     assert database_builder_tab.converter_tool_input is not None
     assert database_builder_tab.catalog_file_input is not None
     assert database_builder_tab.resolution_list is not None
+    assert database_builder_tab.workers_spinbox is not None
 
 
 def test_database_builder_tab_widget_count(database_builder_tab: DatabaseBuilderTab) -> None:
@@ -485,3 +486,83 @@ def test_database_builder_tab_set_values_on_fresh_instance(qtbot: Any) -> None:
     # Verify it worked
     retrieved = tab.get_values()
     assert set(retrieved.target_resolutions or []) == {"1080", "1440"}
+
+
+# ===== Workers Tests =====
+
+
+def test_database_builder_tab_workers_default_zero(
+    database_builder_tab: DatabaseBuilderTab,
+) -> None:
+    """Test that workers spinbox defaults to 0 (auto-detect).
+
+    Args:
+        database_builder_tab: DatabaseBuilderTab instance
+    """
+    assert database_builder_tab.workers_spinbox.value() == 0
+
+
+def test_database_builder_tab_set_workers_value(
+    database_builder_tab: DatabaseBuilderTab,
+) -> None:
+    """Test setting workers value from settings.
+
+    Args:
+        database_builder_tab: DatabaseBuilderTab instance
+    """
+    settings = DatabaseBuilderSettings(workers=4)
+    database_builder_tab.set_values(settings)
+    assert database_builder_tab.workers_spinbox.value() == 4
+
+
+def test_database_builder_tab_set_workers_none_becomes_zero(
+    database_builder_tab: DatabaseBuilderTab,
+) -> None:
+    """Test that None workers value becomes 0 in spinbox.
+
+    Args:
+        database_builder_tab: DatabaseBuilderTab instance
+    """
+    settings = DatabaseBuilderSettings(workers=None)
+    database_builder_tab.set_values(settings)
+    assert database_builder_tab.workers_spinbox.value() == 0
+
+
+def test_database_builder_tab_get_workers_value(
+    database_builder_tab: DatabaseBuilderTab,
+) -> None:
+    """Test getting workers value from spinbox.
+
+    Args:
+        database_builder_tab: DatabaseBuilderTab instance
+    """
+    database_builder_tab.workers_spinbox.setValue(8)
+    settings = database_builder_tab.get_values()
+    assert settings.workers == 8
+
+
+def test_database_builder_tab_get_workers_zero_becomes_none(
+    database_builder_tab: DatabaseBuilderTab,
+) -> None:
+    """Test that 0 workers value becomes None in settings.
+
+    Args:
+        database_builder_tab: DatabaseBuilderTab instance
+    """
+    database_builder_tab.workers_spinbox.setValue(0)
+    settings = database_builder_tab.get_values()
+    assert settings.workers is None
+
+
+def test_database_builder_tab_workers_roundtrip(
+    database_builder_tab: DatabaseBuilderTab,
+) -> None:
+    """Test workers value roundtrip.
+
+    Args:
+        database_builder_tab: DatabaseBuilderTab instance
+    """
+    original_settings = DatabaseBuilderSettings(workers=2)
+    database_builder_tab.set_values(original_settings)
+    retrieved_settings = database_builder_tab.get_values()
+    assert retrieved_settings.workers == 2

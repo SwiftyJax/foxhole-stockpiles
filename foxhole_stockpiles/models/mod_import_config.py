@@ -34,6 +34,11 @@ class ModImportConfig(BaseModel):
     template_settings: TemplateSettings | None = Field(
         default=None, description="Template generation settings"
     )
+    database_workers: int | None = Field(
+        default=None,
+        description="Number of workers for database building. Set to 1 to disable multiprocessing "
+        "(recommended for GUI to avoid freezing on Windows).",
+    )
 
     model_config = ConfigDict(
         str_strip_whitespace=True,

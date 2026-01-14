@@ -580,6 +580,7 @@ class ModImporter:
             output_path=database_path,
             target_resolutions=target_resolutions_enum,
             overwrite=self.config.overwrite,
+            workers=self.config.database_workers,
         )
 
         logger.info("Database build completed successfully")
