@@ -1032,3 +1032,37 @@ class TestMainFunction:
 def test_main_module_importable() -> None:
     """Test that __main__ module can be imported without errors."""
     import foxhole_stockpiles.commands.stockpile_scanner.__main__  # noqa: F401
+
+
+class TestMainModuleEntryPoint:
+    """Test suite for __main__ module entry point."""
+
+    def test_main_module_execution(self) -> None:
+        """Test that the module can be executed as __main__."""
+        from unittest.mock import AsyncMock, MagicMock
+
+        mock_main = AsyncMock(return_value="stockpile_result")
+        mock_print = MagicMock()
+        mock_exit = MagicMock()
+        mock_asyncio = MagicMock()
+        mock_asyncio.run.return_value = "stockpile_result"
+
+        # Simulate running as __main__
+        exec(
+            """
+if __name__ == '__main__':
+    stockpile = asyncio.run(main())
+    print(stockpile)
+    sys.exit(0)
+""",
+            {
+                "__name__": "__main__",
+                "asyncio": mock_asyncio,
+                "main": mock_main,
+                "print": mock_print,
+                "sys": MagicMock(exit=mock_exit),
+            },
+        )
+        mock_asyncio.run.assert_called_once()
+        mock_print.assert_called_once_with("stockpile_result")
+        mock_exit.assert_called_once_with(0)

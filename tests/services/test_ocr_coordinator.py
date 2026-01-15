@@ -56,6 +56,13 @@ class TestOCRCoordinatorInitialization:
     including config handling, service initialization, and initial state validation.
     """
 
+    def test_init_raises_value_error_when_database_path_is_none(self) -> None:
+        """Test that OCRCoordinator raises ValueError when database_path is None."""
+        config = ScannerSettings(database_path=None)
+
+        with pytest.raises(ValueError, match="database_path is required"):
+            OCRCoordinator(config)
+
     def test_init_with_config(self, tmp_path: Path) -> None:
         """Test initializing OCRCoordinator with a config.
 
@@ -799,6 +806,531 @@ class TestProcessSingleIcon:
             assert call_kwargs["faction"] == ItemFaction.COLONIALS
             assert call_kwargs["category"] == ItemCategory.Item
             assert call_kwargs["crated"] is True
+
+    def test_process_single_icon_with_invalid_category(self, tmp_path: Path) -> None:
+        """Test icon processing with ItemCategory.Invalid converts to None.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
+        mock_stockpile_images.vertical_resolution = 1080
+        mock_stockpile_images.icons = [np.zeros((64, 64, 3), dtype=np.uint8)]
+
+        mock_template = create_test_icon_template("TestItem")
+        mock_match_result = MatchResult(
+            candidates=[0],
+            icon=mock_template,
+            confidence=0.95,
+            best_match=mock_template,
+            best_confidence=0.95,
+            tested_candidates=1,
+            gap_candidates=[],
+        )
+
+        with patch.object(
+            coordinator._template_manager,
+            "match_icon",
+            return_value=mock_match_result,
+        ) as mock_match:
+            result, _ = coordinator._process_single_icon(
+                stockpile_images=mock_stockpile_images,
+                icon_index=0,
+                quantity=100,
+                category=ItemCategory.Invalid,  # This should be converted to None
+                crated=None,
+                detected={"category": [], "crated": []},
+                faction=None,
+            )
+
+            # Verify category was passed as None to match_icon
+            call_kwargs = mock_match.call_args[1]
+            assert call_kwargs["category"] is None
+            assert result is not None
+
+    def test_process_single_icon_with_extract_icons_enabled(self, tmp_path: Path) -> None:
+        """Test icon extraction is called when extract_icons is enabled.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(
+            database_path=db_path,
+            extract_icons=True,  # Enable icon extraction
+        )
+        coordinator = OCRCoordinator(config)
+
+        mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
+        mock_stockpile_images.vertical_resolution = 1080
+        mock_stockpile_images.icons = [np.zeros((64, 64, 3), dtype=np.uint8)]
+
+        mock_template = create_test_icon_template("TestItem")
+        mock_match_result = MatchResult(
+            candidates=[0],
+            icon=mock_template,
+            confidence=0.95,
+            best_match=mock_template,
+            best_confidence=0.95,
+            tested_candidates=1,
+            gap_candidates=[],
+        )
+
+        with (
+            patch.object(
+                coordinator._template_manager,
+                "match_icon",
+                return_value=mock_match_result,
+            ),
+            patch.object(coordinator, "_extract_icon_to_folder") as mock_extract,
+        ):
+            result, _ = coordinator._process_single_icon(
+                stockpile_images=mock_stockpile_images,
+                icon_index=0,
+                quantity=100,
+                category=None,
+                crated=None,
+                detected={"category": [], "crated": []},
+                faction=None,
+            )
+
+            # Verify extract was called with matched code
+            mock_extract.assert_called_once()
+            assert result is not None
+
+    def test_process_single_icon_no_match_with_extract_icons(self, tmp_path: Path) -> None:
+        """Test icon extraction for unmatched icon when extract_icons is enabled.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(
+            database_path=db_path,
+            extract_icons=True,
+        )
+        coordinator = OCRCoordinator(config)
+
+        mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
+        mock_stockpile_images.vertical_resolution = 1080
+        mock_stockpile_images.icons = [np.zeros((64, 64, 3), dtype=np.uint8)]
+
+        # No match found
+        mock_match_result = MatchResult(
+            candidates=[0],
+            icon=None,
+            confidence=0.0,
+            best_match=None,
+            best_confidence=0.0,
+            tested_candidates=1,
+            gap_candidates=[],
+        )
+
+        with (
+            patch.object(
+                coordinator._template_manager,
+                "match_icon",
+                return_value=mock_match_result,
+            ),
+            patch.object(coordinator, "_extract_icon_to_folder") as mock_extract,
+        ):
+            result, _ = coordinator._process_single_icon(
+                stockpile_images=mock_stockpile_images,
+                icon_index=0,
+                quantity=100,
+                category=None,
+                crated=None,
+                detected={"category": [], "crated": []},
+                faction=None,
+            )
+
+            # Verify extract was called with "Unknown" code for no match
+            mock_extract.assert_called_once()
+            call_args = mock_extract.call_args[0]
+            assert call_args[2] == "Unknown"  # Third arg is code
+            assert result is None
+
+    def test_process_single_icon_with_gap_candidates(self, tmp_path: Path) -> None:
+        """Test icon processing with gap_candidates populates candidates list.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
+        mock_stockpile_images.vertical_resolution = 1080
+        mock_stockpile_images.icons = [np.zeros((64, 64, 3), dtype=np.uint8)]
+
+        mock_template = create_test_icon_template("TestItem")
+        alt_template = create_test_icon_template("AltItem")
+
+        mock_match_result = MatchResult(
+            candidates=[0, 1],
+            icon=mock_template,
+            confidence=0.95,
+            best_match=mock_template,
+            best_confidence=0.95,
+            tested_candidates=2,
+            gap_candidates=[(alt_template, 0.90)],  # Alternative candidate
+        )
+
+        with patch.object(
+            coordinator._template_manager,
+            "match_icon",
+            return_value=mock_match_result,
+        ):
+            result, _ = coordinator._process_single_icon(
+                stockpile_images=mock_stockpile_images,
+                icon_index=0,
+                quantity=100,
+                category=None,
+                crated=None,
+                detected={"category": [], "crated": []},
+                faction=None,
+            )
+
+            assert result is not None
+            assert result.candidates is not None
+            assert len(result.candidates) == 1
+            assert result.candidates[0].code == "AltItem"
+
+
+class TestMatchIconsAndBuildResult:
+    """Test suite for OCRCoordinator._match_icons_and_build_result method."""
+
+    @pytest.fixture
+    def coordinator(self, tmp_path: Path) -> OCRCoordinator:
+        """Create an OCRCoordinator instance for testing.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+
+        Returns:
+            OCRCoordinator: Coordinator instance for testing.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+        config = ScannerSettings(database_path=db_path)
+        return OCRCoordinator(config)
+
+    @pytest.fixture
+    def mock_stockpile_images(self) -> StockpileImageRegions:
+        """Create mock stockpile images.
+
+        Returns:
+            StockpileImageRegions: Mock stockpile images with icons.
+        """
+        mock_images = MagicMock(spec=StockpileImageRegions)
+        mock_images.vertical_resolution = 1080
+        mock_images.resolution = "1920x1080"
+        mock_images.icons = [
+            np.zeros((64, 64, 3), dtype=np.uint8),
+            np.zeros((64, 64, 3), dtype=np.uint8),
+        ]
+        mock_images.groups = [(2, 0)]
+        mock_images.stockpile_name = None
+        mock_images.shard = None
+        mock_images.stockpile_type = None
+        return mock_images
+
+    @pytest.mark.asyncio
+    async def test_no_match_found_creates_unknown_item(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that when no match is found, an Unknown item is created with error.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        # Mock _process_single_icon to return None (no match)
+        mock_match_result = MatchResult(
+            candidates=[],
+            icon=None,
+            confidence=0.0,
+            best_match=create_test_icon_template("SomeItem", crated=False),
+            best_confidence=0.5,
+            tested_candidates=10,
+            gap_candidates=[],
+        )
+
+        with (
+            patch.object(
+                coordinator,
+                "_process_single_icon",
+                return_value=(None, mock_match_result),
+            ),
+            patch.object(coordinator, "_check_for_duplicates"),
+        ):
+            result = await coordinator._match_icons_and_build_result(
+                stockpile_images=mock_stockpile_images,
+                quantities=[100, 200],
+                scale_factor=1.0,
+                language=None,
+                faction=None,
+            )
+
+            # Should have Unknown items for both icons
+            assert len(result.items) == 2
+            assert result.items[0].code == "Unknown"
+            assert result.items[0].quantity == 100
+            assert result.items[1].code == "Unknown"
+            assert result.items[1].quantity == 200
+
+            # Should have errors logged
+            assert len(result.errors) == 2
+            assert "No match found" in result.errors[0]
+            assert "Best match: SomeItem" in result.errors[0]
+
+    @pytest.mark.asyncio
+    async def test_no_match_with_category(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test no match error includes category when available.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        # First call returns a match to establish category, second returns None
+        mock_icon = create_test_icon_template("Rifle", crated=False)
+        mock_icon.category = ItemCategory.Item
+
+        mock_match_result_success = MatchResult(
+            candidates=[0],
+            icon=mock_icon,
+            confidence=0.95,
+            best_match=mock_icon,
+            best_confidence=0.95,
+            tested_candidates=1,
+            gap_candidates=[],
+        )
+
+        mock_match_result_fail = MatchResult(
+            candidates=[],
+            icon=None,
+            confidence=0.0,
+            best_match=None,
+            best_confidence=0.0,
+            tested_candidates=10,
+            gap_candidates=[],
+        )
+
+        call_count = [0]
+
+        def side_effect(*args: Any, **kwargs: Any) -> tuple[StockpileItem | None, MatchResult]:
+            call_count[0] += 1
+            if call_count[0] == 1:
+                return (
+                    StockpileItem(code="Rifle", quantity=100, crated=False, confidence=0.95),
+                    mock_match_result_success,
+                )
+            return (None, mock_match_result_fail)
+
+        # Need 3 icons to trigger category detection (expected_length=2 for group 0)
+        mock_stockpile_images.icons = [
+            np.zeros((64, 64, 3), dtype=np.uint8),
+            np.zeros((64, 64, 3), dtype=np.uint8),
+            np.zeros((64, 64, 3), dtype=np.uint8),
+        ]
+        mock_stockpile_images.groups = [(3, 0)]
+
+        with (
+            patch.object(coordinator, "_process_single_icon", side_effect=side_effect),
+            patch.object(coordinator, "_check_for_duplicates"),
+        ):
+            result = await coordinator._match_icons_and_build_result(
+                stockpile_images=mock_stockpile_images,
+                quantities=[100, 200, 300],
+                scale_factor=1.0,
+                language=None,
+                faction=None,
+            )
+
+            # Should have one successful item and two Unknown items
+            assert len(result.items) == 3
+            assert result.items[0].code == "Rifle"
+
+    @pytest.mark.asyncio
+    async def test_crated_status_updated_for_existing_items(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that crated status is updated for items when detected.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        # Create icons that will trigger crated status detection and update
+        mock_stockpile_images.icons = [
+            np.zeros((64, 64, 3), dtype=np.uint8),
+            np.zeros((64, 64, 3), dtype=np.uint8),
+            np.zeros((64, 64, 3), dtype=np.uint8),
+        ]
+        mock_stockpile_images.groups = [(3, 0)]
+
+        call_count = [0]
+
+        def side_effect(*args: Any, **kwargs: Any) -> tuple[StockpileItem, MatchResult]:
+            call_count[0] += 1
+            # Get the detected dict from kwargs to populate it
+            detected = kwargs.get("detected", {})
+
+            # All icons report crated=True so detected crated will be True
+            mock_icon = create_test_icon_template(f"Item{call_count[0]}", crated=True)
+            mock_icon.category = ItemCategory.Item
+
+            # Populate detected dict like the real function would
+            if "category" in detected:
+                detected["category"].append(mock_icon.category)
+            if "crated" in detected:
+                detected["crated"].append(True)
+
+            mock_result = MatchResult(
+                candidates=[0],
+                icon=mock_icon,
+                confidence=0.95,
+                best_match=mock_icon,
+                best_confidence=0.95,
+                tested_candidates=1,
+                gap_candidates=[],
+            )
+            # First item returns with crated=False so it will be updated when crated is detected
+            item_crated = False if call_count[0] == 1 else True
+            return (
+                StockpileItem(
+                    code=f"Item{call_count[0]}",
+                    quantity=100 * call_count[0],
+                    crated=item_crated,
+                    confidence=0.95,
+                ),
+                mock_result,
+            )
+
+        with (
+            patch.object(coordinator, "_process_single_icon", side_effect=side_effect),
+            patch.object(coordinator, "_check_for_duplicates"),
+        ):
+            result = await coordinator._match_icons_and_build_result(
+                stockpile_images=mock_stockpile_images,
+                quantities=[100, 200, 300],
+                scale_factor=1.0,
+                language=None,
+                faction=None,
+            )
+
+            # All items should have crated=True after detection
+            assert len(result.items) == 3
+            # After category is detected (after 2 items), crated status should be detected as True
+            # The first item should have been updated from crated=False to crated=True
+            assert result.items[0].crated is True
+            assert result.items[1].crated is True
+            assert result.items[2].crated is True
+
+    @pytest.mark.asyncio
+    async def test_exception_during_icon_processing(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that exceptions during icon processing are caught and logged.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        # Explicitly set icons and groups to ensure consistent state
+        mock_stockpile_images.icons = [
+            np.zeros((64, 64, 3), dtype=np.uint8),
+            np.zeros((64, 64, 3), dtype=np.uint8),
+        ]
+        mock_stockpile_images.groups = [(2, 0)]
+
+        with (
+            patch.object(
+                coordinator,
+                "_process_single_icon",
+                side_effect=RuntimeError("Test error"),
+            ),
+            patch.object(coordinator, "_check_for_duplicates"),
+            patch.object(coordinator.logger, "error") as mock_error,
+        ):
+            result = await coordinator._match_icons_and_build_result(
+                stockpile_images=mock_stockpile_images,
+                quantities=[100, 200],
+                scale_factor=1.0,
+                language=None,
+                faction=None,
+            )
+
+            # Should have logged errors for each icon that failed
+            # Check that at least 2 errors were logged with the expected message format
+            assert mock_error.call_count >= 2
+            error_calls = [
+                call
+                for call in mock_error.call_args_list
+                if "Error processing icon at index" in str(call)
+            ]
+            assert len(error_calls) == 2
+            # Result should still be returned (empty items due to exception)
+            assert isinstance(result, Stockpile)
+
+    @pytest.mark.asyncio
+    async def test_exception_during_icon_processing_with_debug_logging(
+        self, coordinator: OCRCoordinator, mock_stockpile_images: StockpileImageRegions
+    ) -> None:
+        """Test that exception details are logged when debug is enabled.
+
+        Args:
+            coordinator (OCRCoordinator): Coordinator instance.
+            mock_stockpile_images (StockpileImageRegions): Mock images.
+        """
+        import logging
+
+        # Enable debug logging to cover line 453
+        coordinator.logger.setLevel(logging.DEBUG)
+
+        # Configure to have only 1 icon
+        mock_stockpile_images.icons = [np.zeros((64, 64, 3), dtype=np.uint8)]
+        mock_stockpile_images.groups = [(1, 0)]
+
+        with (
+            patch.object(
+                coordinator,
+                "_process_single_icon",
+                side_effect=RuntimeError("Test error"),
+            ),
+            patch.object(coordinator, "_check_for_duplicates"),
+            patch.object(coordinator.logger, "error") as mock_error,
+            patch.object(coordinator.logger, "exception") as mock_exception,
+            patch.object(coordinator.logger, "isEnabledFor", return_value=True),
+        ):
+            result = await coordinator._match_icons_and_build_result(
+                stockpile_images=mock_stockpile_images,
+                quantities=[100],
+                scale_factor=1.0,
+                language=None,
+                faction=None,
+            )
+
+            # Should have logged error and exception
+            assert mock_error.call_count == 1
+            assert mock_exception.call_count == 1
+            mock_exception.assert_called_with("Full error details:")
+            assert isinstance(result, Stockpile)
 
 
 class TestCheckForDuplicates:

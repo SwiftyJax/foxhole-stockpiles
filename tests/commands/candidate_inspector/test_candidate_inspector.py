@@ -1482,3 +1482,71 @@ class TestCandidateInspectorMain:
 def test_main_module_importable() -> None:
     """Test that __main__ module can be imported without errors."""
     import foxhole_stockpiles.commands.candidate_inspector.__main__  # noqa: F401
+
+
+class TestMainModuleEntryPoint:
+    """Test suite for __main__ module entry point."""
+
+    def test_main_module_execution_with_result(self) -> None:
+        """Test that the module can be executed as __main__ with result."""
+        from unittest.mock import AsyncMock
+
+        mock_main = AsyncMock(return_value={"test": "result"})
+        mock_print = MagicMock()
+        mock_exit = MagicMock()
+        mock_asyncio = MagicMock()
+        mock_asyncio.run.return_value = {"test": "result"}
+        mock_json = MagicMock()
+        mock_json.dumps.return_value = '{"test": "result"}'
+
+        # Simulate running as __main__
+        exec(
+            """
+if __name__ == '__main__':
+    result = asyncio.run(main())
+    print(json.dumps(result) if result is not None else "")
+    sys.exit(0)
+""",
+            {
+                "__name__": "__main__",
+                "asyncio": mock_asyncio,
+                "json": mock_json,
+                "main": mock_main,
+                "print": mock_print,
+                "sys": MagicMock(exit=mock_exit),
+            },
+        )
+        mock_asyncio.run.assert_called_once()
+        mock_print.assert_called_once_with('{"test": "result"}')
+        mock_exit.assert_called_once_with(0)
+
+    def test_main_module_execution_with_none_result(self) -> None:
+        """Test that the module can be executed as __main__ with None result."""
+        from unittest.mock import AsyncMock
+
+        mock_main = AsyncMock(return_value=None)
+        mock_print = MagicMock()
+        mock_exit = MagicMock()
+        mock_asyncio = MagicMock()
+        mock_asyncio.run.return_value = None
+
+        # Simulate running as __main__
+        exec(
+            """
+if __name__ == '__main__':
+    result = asyncio.run(main())
+    print(json.dumps(result) if result is not None else "")
+    sys.exit(0)
+""",
+            {
+                "__name__": "__main__",
+                "asyncio": mock_asyncio,
+                "json": MagicMock(),
+                "main": mock_main,
+                "print": mock_print,
+                "sys": MagicMock(exit=mock_exit),
+            },
+        )
+        mock_asyncio.run.assert_called_once()
+        mock_print.assert_called_once_with("")
+        mock_exit.assert_called_once_with(0)

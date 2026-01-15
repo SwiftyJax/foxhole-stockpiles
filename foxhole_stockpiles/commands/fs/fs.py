@@ -1,8 +1,10 @@
 """Unified CLI tool for Foxhole Stockpiles commands."""
 
 import asyncio
+import ctypes
 import importlib
 import multiprocessing
+import os
 import sys
 from typing import Any
 
@@ -17,41 +19,40 @@ def _attach_console() -> None:
     - When run from cmd: attaches to the parent console
     - When double-clicked: allocates a new console for output
     """
-    if sys.platform == "win32":
-        try:
-            import ctypes
+    if sys.platform != "win32":
+        return
 
-            kernel32 = ctypes.windll.kernel32
-            # Try to attach to parent console (e.g., when run from cmd)
-            ATTACH_PARENT_PROCESS = -1
-            if not kernel32.AttachConsole(ATTACH_PARENT_PROCESS):
-                # No parent console, allocate a new one
-                kernel32.AllocConsole()
+    # Import msvcrt here since it's only available on Windows
+    import msvcrt
 
-            # Redirect stdout/stderr to the console
-            import msvcrt
-            import os
+    try:
+        kernel32 = ctypes.windll.kernel32
+        # Try to attach to parent console (e.g., when run from cmd)
+        ATTACH_PARENT_PROCESS = -1
+        if not kernel32.AttachConsole(ATTACH_PARENT_PROCESS):
+            # No parent console, allocate a new one
+            kernel32.AllocConsole()
 
-            # Get console handles
-            STD_OUTPUT_HANDLE = -11
-            STD_ERROR_HANDLE = -12
+        # Get console handles
+        STD_OUTPUT_HANDLE = -11
+        STD_ERROR_HANDLE = -12
 
-            stdout_handle = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
-            stderr_handle = kernel32.GetStdHandle(STD_ERROR_HANDLE)
+        stdout_handle = kernel32.GetStdHandle(STD_OUTPUT_HANDLE)
+        stderr_handle = kernel32.GetStdHandle(STD_ERROR_HANDLE)
 
-            if stdout_handle and stdout_handle != -1:
-                # Open file descriptor for stdout
-                stdout_fd = msvcrt.open_osfhandle(stdout_handle, os.O_WRONLY | os.O_TEXT)
-                sys.stdout = open(stdout_fd, "w", encoding="utf-8", buffering=1)
+        if stdout_handle and stdout_handle != -1:
+            # Open file descriptor for stdout
+            stdout_fd = msvcrt.open_osfhandle(stdout_handle, os.O_WRONLY | os.O_TEXT)
+            sys.stdout = open(stdout_fd, "w", encoding="utf-8", buffering=1)
 
-            if stderr_handle and stderr_handle != -1:
-                # Open file descriptor for stderr
-                stderr_fd = msvcrt.open_osfhandle(stderr_handle, os.O_WRONLY | os.O_TEXT)
-                sys.stderr = open(stderr_fd, "w", encoding="utf-8", buffering=1)
+        if stderr_handle and stderr_handle != -1:
+            # Open file descriptor for stderr
+            stderr_fd = msvcrt.open_osfhandle(stderr_handle, os.O_WRONLY | os.O_TEXT)
+            sys.stderr = open(stderr_fd, "w", encoding="utf-8", buffering=1)
 
-        except Exception:
-            # Silently ignore errors - output may not work but won't crash
-            pass
+    except Exception:
+        # Silently ignore errors - output may not work but won't crash
+        pass
 
 
 class CLIDispatcher:

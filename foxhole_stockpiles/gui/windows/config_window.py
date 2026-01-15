@@ -264,12 +264,8 @@ class ConfigWindow(QMainWindow):
         if not self.settings:
             return False
 
-        try:
-            current_settings = self.collect_settings()
-            return current_settings != self.settings
-        except Exception:
-            # If we can't collect settings, assume no changes
-            return False
+        current_settings = self.collect_settings()
+        return current_settings != self.settings
 
     def keyPressEvent(self, event: QKeyEvent | None) -> None:
         """Handle key press events.

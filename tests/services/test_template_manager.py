@@ -159,6 +159,44 @@ class TestLoadDatabase:
         with pytest.raises(ValueError):
             await manager.load_database(SupportedResolution.R_1080)
 
+    async def test_load_nonexistent_database(self, tmp_path: Path) -> None:
+        """Test loading a database that doesn't exist.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "nonexistent.h5"
+
+        manager = TemplateManager(db_path)
+
+        # Should raise FileNotFoundError for missing database
+        with pytest.raises(FileNotFoundError) as exc_info:
+            await manager.load_database(SupportedResolution.R_1080)
+
+        assert "Template database not found" in str(exc_info.value)
+
+    async def test_load_wrong_version_database(self, tmp_path: Path) -> None:
+        """Test loading a database with wrong version.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "wrong_version.h5"
+
+        # Create an h5 file with wrong version
+        with h5py.File(str(db_path), "w") as f:
+            f.attrs["version"] = 999  # Wrong version
+            f.attrs["format"] = "hdf5"
+            f.attrs["resolutions"] = [SupportedResolution.R_1080.value]
+
+        manager = TemplateManager(db_path)
+
+        # Should raise ValueError for version mismatch
+        with pytest.raises(ValueError) as exc_info:
+            await manager.load_database(SupportedResolution.R_1080)
+
+        assert "version 999 does not match" in str(exc_info.value)
+
 
 class TestSetActiveResolution:
     """Test suite for TemplateManager.set_active_resolution method.
@@ -1298,3 +1336,229 @@ class TestLoadAllResolutions:
 
         with pytest.raises(ValueError):
             await manager.load_all_resolutions()
+
+
+class TestPrepareDatabase:
+    """Test suite for _prepare_resolution_data function."""
+
+    def test_prepare_empty_database(self) -> None:
+        """Test preparing an empty database returns minimal data."""
+        from foxhole_stockpiles.services.template_manager import _prepare_resolution_data
+
+        empty_db = TemplateDatabase(SupportedResolution.R_1080)
+        result = _prepare_resolution_data(SupportedResolution.R_1080, empty_db)
+
+        assert result["template_count"] == 0
+        assert result["icon_size"] == 0
+        assert result["empty"] is True
+        assert result["resolution"] == "1080"
+
+
+class TestSaveDatabasesToHdf5:
+    """Test suite for TemplateManager.save_databases_to_hdf5 static method."""
+
+    def test_save_empty_databases_raises_error(self, tmp_path: Path) -> None:
+        """Test that saving an empty databases dict raises ValueError.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        output_path = tmp_path / "output.h5"
+
+        with pytest.raises(ValueError) as exc_info:
+            TemplateManager.save_databases_to_hdf5({}, output_path)
+
+        assert "Cannot save empty databases dictionary" in str(exc_info.value)
+
+
+class TestMigrateDatabase:
+    """Test suite for TemplateManager.migrate_database method."""
+
+    def test_migrate_nonexistent_database(self, tmp_path: Path) -> None:
+        """Test migration fails when database file doesn't exist.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "nonexistent.h5"
+        manager = TemplateManager(db_path)
+
+        with pytest.raises(FileNotFoundError) as exc_info:
+            manager.migrate_database()
+
+        assert "Database file not found" in str(exc_info.value)
+
+    def test_migrate_corrupted_database(self, tmp_path: Path) -> None:
+        """Test migration fails when database is corrupted (version 0).
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "corrupted.h5"
+        db_path.write_text("not a valid hdf5 file")
+
+        manager = TemplateManager(db_path)
+
+        with pytest.raises(ValueError) as exc_info:
+            manager.migrate_database()
+
+        assert "corrupted or in an unrecognized format" in str(exc_info.value)
+
+    def test_migrate_already_current_version(self, tmp_path: Path) -> None:
+        """Test migration fails when database is already at current version.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "current.h5"
+
+        # Create a database at current version
+        real_db = TemplateDatabase(SupportedResolution.R_1080)
+        create_hdf5_database(db_path, {SupportedResolution.R_1080: real_db})
+
+        manager = TemplateManager(db_path)
+
+        with pytest.raises(ValueError) as exc_info:
+            manager.migrate_database()
+
+        assert f"already at version {DATABASE_VERSION}" in str(exc_info.value)
+
+    def test_migrate_unknown_version(self, tmp_path: Path) -> None:
+        """Test migration handles unknown version with warning.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "unknown_version.h5"
+
+        # Create a dummy h5 file
+        with h5py.File(str(db_path), "w") as f:
+            f.attrs["version"] = 1
+            f.attrs["format"] = "hdf5"
+
+        manager = TemplateManager(db_path)
+
+        # Mock _check_database_version to return version -1:
+        # - Not 0 (passes corrupted check)
+        # - Not DATABASE_VERSION (passes already current check)
+        # - Less than DATABASE_VERSION (enters while loop)
+        # - Not 1 (hits case _: for warning)
+        # Also mock _migrate_v1_to_v2 since the loop will eventually hit case 1
+        with (
+            patch.object(manager, "_check_database_version", return_value=-1),
+            patch.object(manager, "_migrate_v1_to_v2"),
+            patch("foxhole_stockpiles.services.template_manager.logger") as mock_logger,
+        ):
+            manager.migrate_database()
+
+            # Should log a warning about no migration path from version -1 to 0
+            mock_logger.warning.assert_called()
+            warning_call = str(mock_logger.warning.call_args)
+            assert "No migration path" in warning_call
+
+
+class TestMigrateV1ToV2:
+    """Test suite for TemplateManager._migrate_v1_to_v2 method."""
+
+    def test_migrate_v1_nonexistent_input(self, tmp_path: Path) -> None:
+        """Test migration fails when input file doesn't exist.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "db.h5"
+        manager = TemplateManager(db_path)
+
+        nonexistent_path = tmp_path / "nonexistent.pkl"
+
+        with pytest.raises(FileNotFoundError) as exc_info:
+            manager._migrate_v1_to_v2(nonexistent_path)
+
+        assert "Database file not found" in str(exc_info.value)
+
+    def test_migrate_v1_invalid_pickle(self, tmp_path: Path) -> None:
+        """Test migration fails when file is not a valid pickle.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "db.h5"
+        manager = TemplateManager(db_path)
+
+        # Create a file that's not a valid pickle
+        invalid_pickle = tmp_path / "invalid.pkl"
+        invalid_pickle.write_text("this is not a pickle file")
+
+        with pytest.raises(ValueError) as exc_info:
+            manager._migrate_v1_to_v2(invalid_pickle)
+
+        assert "Failed to load pickle database" in str(exc_info.value)
+
+    def test_migrate_v1_not_a_dict(self, tmp_path: Path) -> None:
+        """Test migration fails when pickle doesn't contain a dict.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        import pickle
+
+        db_path = tmp_path / "db.h5"
+        manager = TemplateManager(db_path)
+
+        # Create a valid pickle file that contains a list instead of dict
+        not_dict_pickle = tmp_path / "not_dict.pkl"
+        with open(not_dict_pickle, "wb") as f:
+            pickle.dump(["this", "is", "a", "list"], f)
+
+        with pytest.raises(ValueError) as exc_info:
+            manager._migrate_v1_to_v2(not_dict_pickle)
+
+        assert "Expected dict of databases, got list" in str(exc_info.value)
+
+
+class TestTemplateManagerEdgeCases:
+    """Test suite for edge cases in TemplateManager."""
+
+    def test_evict_to_size_handles_non_int_max_size(self) -> None:
+        """Test that _evict_to_size handles non-int max_size gracefully."""
+        from unittest.mock import MagicMock
+
+        # Directly call the classmethod with a non-int value
+        # Should not raise an exception - just return early
+        TemplateManager._evict_to_size(MagicMock())
+
+    def test_get_available_resolutions_with_invalid_key(self, tmp_path: Path) -> None:
+        """Test get_available_resolutions skips invalid resolution keys.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        import h5py
+
+        db_path = tmp_path / "test.h5"
+
+        # Create database with valid and invalid resolution keys
+        with h5py.File(str(db_path), "w") as f:
+            # Valid resolution
+            f.create_group("1080")
+            # Invalid resolution key
+            f.create_group("invalid_resolution")
+
+        manager = TemplateManager(db_path)
+        resolutions = manager.get_available_resolutions()
+
+        # Should only contain the valid resolution
+        assert len(resolutions) == 1
+        assert SupportedResolution.R_1080 in resolutions
+
+    def test_needs_migration_returns_false_when_file_missing(self, tmp_path: Path) -> None:
+        """Test needs_migration returns False when database file doesn't exist.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "nonexistent.h5"
+        manager = TemplateManager(db_path)
+
+        # Should return False for non-existent file
+        assert manager.needs_migration() is False

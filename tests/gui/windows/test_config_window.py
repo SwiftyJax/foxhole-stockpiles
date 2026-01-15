@@ -4,6 +4,8 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QCloseEvent, QKeyEvent
 from PyQt6.QtWidgets import QMessageBox, QPushButton
 
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
@@ -446,3 +448,204 @@ def test_config_window_checkbox_state_change(qtbot: Any, config_window: ConfigWi
 
     # Should show advanced tabs (toggle_mode was called)
     assert config_window.tab_widget.count() == 8
+
+
+class TestCloseEvent:
+    """Tests for ConfigWindow.closeEvent method."""
+
+    @pytest.fixture
+    def mock_config_manager(self) -> Any:
+        """Create a mock ConfigManager.
+
+        Returns:
+            MagicMock: Mock ConfigManager
+        """
+        with patch("foxhole_stockpiles.gui.windows.config_window.ConfigManager") as mock_class:
+            mock_instance = MagicMock()
+            mock_class.return_value = mock_instance
+            mock_instance.load_config.return_value = AppSettings()
+            yield mock_instance
+
+    @pytest.fixture
+    def config_window(self, qtbot: Any, mock_config_manager: MagicMock) -> ConfigWindow:
+        """Create a ConfigWindow instance without autouse mock.
+
+        Args:
+            qtbot: PyQt test fixture
+            mock_config_manager: Mock ConfigManager
+
+        Returns:
+            ConfigWindow: Window instance
+        """
+        window = ConfigWindow()
+        qtbot.addWidget(window)
+        return window
+
+    def test_close_event_no_changes(
+        self, config_window: ConfigWindow, mock_config_manager: MagicMock
+    ) -> None:
+        """Test closeEvent accepts when no changes.
+
+        Args:
+            config_window: ConfigWindow instance
+            mock_config_manager: Mock ConfigManager
+        """
+        # No changes made, has_changes() returns False
+        event = MagicMock(spec=QCloseEvent)
+
+        config_window.closeEvent(event)
+
+        # Should accept without showing dialog
+        event.accept.assert_called_once()
+        event.ignore.assert_not_called()
+
+    def test_close_event_with_changes_save(
+        self, config_window: ConfigWindow, mock_config_manager: MagicMock
+    ) -> None:
+        """Test closeEvent when user clicks Save.
+
+        Args:
+            config_window: ConfigWindow instance
+            mock_config_manager: Mock ConfigManager
+        """
+        # Make changes
+        config_window.basic_config_tab.port_input.setValue(9999)
+        mock_config_manager.save_config.return_value = (True, "Success")
+
+        event = MagicMock(spec=QCloseEvent)
+
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Save):
+            config_window.closeEvent(event)
+
+        # Should save and accept
+        mock_config_manager.save_config.assert_called_once()
+        event.accept.assert_called_once()
+
+    def test_close_event_with_changes_save_fails(
+        self, config_window: ConfigWindow, mock_config_manager: MagicMock
+    ) -> None:
+        """Test closeEvent when save fails after user clicks Save.
+
+        Args:
+            config_window: ConfigWindow instance
+            mock_config_manager: Mock ConfigManager
+        """
+        # Make changes
+        config_window.basic_config_tab.port_input.setValue(9999)
+        mock_config_manager.save_config.return_value = (False, "Save failed")
+
+        event = MagicMock(spec=QCloseEvent)
+
+        with (
+            patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Save),
+            patch.object(QMessageBox, "critical"),
+        ):
+            config_window.closeEvent(event)
+
+        # Should not accept because save failed (still has changes)
+        event.ignore.assert_called_once()
+
+    def test_close_event_with_changes_discard(
+        self, config_window: ConfigWindow, mock_config_manager: MagicMock
+    ) -> None:
+        """Test closeEvent when user clicks Discard.
+
+        Args:
+            config_window: ConfigWindow instance
+            mock_config_manager: Mock ConfigManager
+        """
+        # Make changes
+        config_window.basic_config_tab.port_input.setValue(9999)
+
+        event = MagicMock(spec=QCloseEvent)
+
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Discard):
+            config_window.closeEvent(event)
+
+        # Should accept without saving
+        mock_config_manager.save_config.assert_not_called()
+        event.accept.assert_called_once()
+
+    def test_close_event_with_changes_cancel(
+        self, config_window: ConfigWindow, mock_config_manager: MagicMock
+    ) -> None:
+        """Test closeEvent when user clicks Cancel.
+
+        Args:
+            config_window: ConfigWindow instance
+            mock_config_manager: Mock ConfigManager
+        """
+        # Make changes
+        config_window.basic_config_tab.port_input.setValue(9999)
+
+        event = MagicMock(spec=QCloseEvent)
+
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Cancel):
+            config_window.closeEvent(event)
+
+        # Should ignore (not close)
+        mock_config_manager.save_config.assert_not_called()
+        event.ignore.assert_called_once()
+        event.accept.assert_not_called()
+
+
+class TestKeyPressEvent:
+    """Tests for ConfigWindow.keyPressEvent method."""
+
+    @pytest.fixture
+    def mock_config_manager(self) -> Any:
+        """Create a mock ConfigManager.
+
+        Returns:
+            MagicMock: Mock ConfigManager
+        """
+        with patch("foxhole_stockpiles.gui.windows.config_window.ConfigManager") as mock_class:
+            mock_instance = MagicMock()
+            mock_class.return_value = mock_instance
+            mock_instance.load_config.return_value = AppSettings()
+            yield mock_instance
+
+    @pytest.fixture
+    def config_window(self, qtbot: Any, mock_config_manager: MagicMock) -> ConfigWindow:
+        """Create a ConfigWindow instance.
+
+        Args:
+            qtbot: PyQt test fixture
+            mock_config_manager: Mock ConfigManager
+
+        Returns:
+            ConfigWindow: Window instance
+        """
+        window = ConfigWindow()
+        qtbot.addWidget(window)
+        return window
+
+    def test_escape_key_closes_window(self, config_window: ConfigWindow) -> None:
+        """Test pressing Escape closes the window.
+
+        Args:
+            config_window: ConfigWindow instance
+        """
+        with (
+            patch.object(config_window, "close") as mock_close,
+            patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Discard),
+        ):
+            # Create escape key event
+            event = QKeyEvent(
+                QKeyEvent.Type.KeyPress, Qt.Key.Key_Escape, Qt.KeyboardModifier.NoModifier
+            )
+            config_window.keyPressEvent(event)
+
+            mock_close.assert_called_once()
+
+    def test_other_key_passes_to_parent(self, config_window: ConfigWindow) -> None:
+        """Test other keys are passed to parent handler.
+
+        Args:
+            config_window: ConfigWindow instance
+        """
+        with patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.Discard):
+            # Create non-escape key event
+            event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_A, Qt.KeyboardModifier.NoModifier)
+            # Should not raise and should call parent handler
+            config_window.keyPressEvent(event)

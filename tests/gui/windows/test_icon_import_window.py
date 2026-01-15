@@ -1001,3 +1001,321 @@ def test_copy_selected_logs(qtbot: Any, configured_window: IconImportWindow) -> 
         clipboard_text = mock_clipboard_instance.setText.call_args[0][0]
         assert "[2024-01-01 12:00:00] INFO test.module: Test message 1" in clipboard_text
         assert "[2024-01-01 12:00:01] ERROR test.module: Test message 2" in clipboard_text
+
+
+# ===== QFileDialog Tests =====
+
+
+def test_select_vanilla_pak_file_selected(
+    qtbot: Any, configured_window: IconImportWindow, tmp_path: Path
+) -> None:
+    """Test selecting a vanilla PAK file via dialog.
+
+    Args:
+        qtbot: PyQt test fixture
+        configured_window: Configured window instance
+        tmp_path: Temporary directory path
+    """
+    test_pak = str(tmp_path / "FoxholeVanilla.pak")
+
+    with patch(
+        "foxhole_stockpiles.gui.windows.icon_import_window.QFileDialog.getOpenFileName"
+    ) as mock_dialog:
+        mock_dialog.return_value = (test_pak, "PAK Files (*.pak)")
+
+        configured_window.select_vanilla_pak()
+
+        assert configured_window.vanilla_pak_file == test_pak
+        assert configured_window.vanilla_pak_display.text() == test_pak
+
+
+def test_select_vanilla_pak_cancelled(qtbot: Any, configured_window: IconImportWindow) -> None:
+    """Test cancelling vanilla PAK file dialog.
+
+    Args:
+        qtbot: PyQt test fixture
+        configured_window: Configured window instance
+    """
+    with patch(
+        "foxhole_stockpiles.gui.windows.icon_import_window.QFileDialog.getOpenFileName"
+    ) as mock_dialog:
+        mock_dialog.return_value = ("", "")
+
+        configured_window.select_vanilla_pak()
+
+        assert configured_window.vanilla_pak_file is None
+        assert configured_window.vanilla_pak_display.text() == ""
+
+
+def test_select_database_path_file_selected(
+    qtbot: Any, configured_window: IconImportWindow, tmp_path: Path
+) -> None:
+    """Test selecting a database path via dialog.
+
+    Args:
+        qtbot: PyQt test fixture
+        configured_window: Configured window instance
+        tmp_path: Temporary directory path
+    """
+    test_db = str(tmp_path / "database.h5")
+
+    with patch(
+        "foxhole_stockpiles.gui.windows.icon_import_window.QFileDialog.getSaveFileName"
+    ) as mock_dialog:
+        mock_dialog.return_value = (test_db, "HDF5 Database (*.h5)")
+
+        configured_window.select_database_path()
+
+        assert configured_window.db_path_input.text() == test_db
+
+
+def test_select_database_path_adds_h5_extension(
+    qtbot: Any, configured_window: IconImportWindow, tmp_path: Path
+) -> None:
+    """Test that .h5 extension is added if missing.
+
+    Args:
+        qtbot: PyQt test fixture
+        configured_window: Configured window instance
+        tmp_path: Temporary directory path
+    """
+    test_db = str(tmp_path / "database")  # No extension
+
+    with patch(
+        "foxhole_stockpiles.gui.windows.icon_import_window.QFileDialog.getSaveFileName"
+    ) as mock_dialog:
+        mock_dialog.return_value = (test_db, "HDF5 Database (*.h5)")
+
+        configured_window.select_database_path()
+
+        assert configured_window.db_path_input.text() == test_db + ".h5"
+
+
+def test_select_database_path_cancelled(qtbot: Any, configured_window: IconImportWindow) -> None:
+    """Test cancelling database path dialog.
+
+    Args:
+        qtbot: PyQt test fixture
+        configured_window: Configured window instance
+    """
+    original_text = configured_window.db_path_input.text()
+
+    with patch(
+        "foxhole_stockpiles.gui.windows.icon_import_window.QFileDialog.getSaveFileName"
+    ) as mock_dialog:
+        mock_dialog.return_value = ("", "")
+
+        configured_window.select_database_path()
+
+        # Should not change the current value
+        assert configured_window.db_path_input.text() == original_text
+
+
+def test_validate_inputs_no_db_path(configured_window: IconImportWindow) -> None:
+    """Test validation fails when database path is empty.
+
+    Args:
+        configured_window: Configured window instance
+    """
+    configured_window.mod_pak_files = ["test.pak"]
+    configured_window.mod_name_input.setText("test_mod")
+    configured_window.db_path_input.setText("")
+
+    is_valid, error_msg = configured_window.validate_inputs()
+
+    assert is_valid is False
+    assert "database file" in error_msg.lower()
+
+
+# ===== Platform-Specific Path Tests =====
+
+
+def test_get_default_pak_directory_windows(configured_window: IconImportWindow) -> None:
+    """Test default PAK directory on Windows when Steam path exists.
+
+    Args:
+        configured_window: Configured window instance
+    """
+    steam_path = "C:/Program Files (x86)/Steam/steamapps/common/Foxhole/War/Content/Paks"
+
+    with (
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.platform.system") as mock_system,
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.Path") as mock_path_class,
+    ):
+        mock_system.return_value = "Windows"
+
+        # Mock Path.cwd() to return a default path
+        mock_cwd = MagicMock()
+        mock_path_class.cwd.return_value = mock_cwd
+
+        # Mock the Steam path to exist
+        mock_steam_path = MagicMock()
+        mock_steam_path.exists.return_value = True
+        mock_steam_path.__str__ = MagicMock(return_value=steam_path)  # type: ignore[method-assign]
+
+        # Make Path() return different mocks based on the argument
+        def path_constructor(arg: str) -> MagicMock:
+            if "Steam" in arg:
+                return mock_steam_path
+            return mock_cwd
+
+        mock_path_class.side_effect = path_constructor
+
+        result = configured_window._get_default_pak_directory()
+
+        assert result == steam_path
+
+
+def test_get_default_pak_directory_windows_no_steam(configured_window: IconImportWindow) -> None:
+    """Test default PAK directory on Windows when Steam path doesn't exist.
+
+    Args:
+        configured_window: Configured window instance
+    """
+    with (
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.platform.system") as mock_system,
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.Path") as mock_path_class,
+    ):
+        mock_system.return_value = "Windows"
+
+        # Mock Path.cwd() to return a default path
+        mock_cwd = MagicMock()
+        mock_cwd.__str__ = MagicMock(return_value="/home/user")  # type: ignore[method-assign]
+        mock_path_class.cwd.return_value = mock_cwd
+
+        # Mock the Steam path to not exist
+        mock_steam_path = MagicMock()
+        mock_steam_path.exists.return_value = False
+
+        def path_constructor(arg: str) -> MagicMock:
+            if "Steam" in arg:
+                return mock_steam_path
+            return mock_cwd
+
+        mock_path_class.side_effect = path_constructor
+
+        result = configured_window._get_default_pak_directory()
+
+        assert result == "/home/user"
+
+
+def test_get_default_pak_directory_wsl(configured_window: IconImportWindow) -> None:
+    """Test default PAK directory on WSL when path exists.
+
+    Args:
+        configured_window: Configured window instance
+    """
+    wsl_path = "/mnt/c/Program Files (x86)/Steam/steamapps/common/Foxhole/War/Content/Paks"
+
+    with (
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.platform.system") as mock_system,
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.Path") as mock_path_class,
+        patch(
+            "builtins.open",
+            MagicMock(
+                return_value=MagicMock(
+                    __enter__=lambda self: MagicMock(
+                        read=lambda: "Linux version microsoft-standard-WSL2"
+                    ),
+                    __exit__=lambda *args: None,
+                )
+            ),
+        ),
+    ):
+        mock_system.return_value = "Linux"
+
+        # Mock Path.cwd()
+        mock_cwd = MagicMock()
+        mock_path_class.cwd.return_value = mock_cwd
+
+        # Mock the WSL path to exist
+        mock_wsl_path = MagicMock()
+        mock_wsl_path.exists.return_value = True
+        mock_wsl_path.__str__ = MagicMock(return_value=wsl_path)  # type: ignore[method-assign]
+
+        def path_constructor(arg: str) -> MagicMock:
+            if "/mnt/c" in arg:
+                return mock_wsl_path
+            return mock_cwd
+
+        mock_path_class.side_effect = path_constructor
+
+        result = configured_window._get_default_pak_directory()
+
+        assert result == wsl_path
+
+
+def test_get_default_pak_directory_linux_not_wsl(configured_window: IconImportWindow) -> None:
+    """Test default PAK directory on native Linux.
+
+    Args:
+        configured_window: Configured window instance
+    """
+    with (
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.platform.system") as mock_system,
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.Path") as mock_path_class,
+        patch(
+            "builtins.open",
+            MagicMock(
+                return_value=MagicMock(
+                    __enter__=lambda self: MagicMock(read=lambda: "Linux version 6.1.0-generic"),
+                    __exit__=lambda *args: None,
+                )
+            ),
+        ),
+    ):
+        mock_system.return_value = "Linux"
+
+        # Mock Path.cwd()
+        mock_cwd = MagicMock()
+        mock_cwd.__str__ = MagicMock(return_value="/home/user")  # type: ignore[method-assign]
+        mock_path_class.cwd.return_value = mock_cwd
+
+        result = configured_window._get_default_pak_directory()
+
+        assert result == "/home/user"
+
+
+def test_get_default_pak_directory_linux_oserror(configured_window: IconImportWindow) -> None:
+    """Test default PAK directory on Linux when /proc/version can't be read.
+
+    Args:
+        configured_window: Configured window instance
+    """
+    with (
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.platform.system") as mock_system,
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.Path") as mock_path_class,
+        patch("builtins.open", side_effect=OSError("Permission denied")),
+    ):
+        mock_system.return_value = "Linux"
+
+        # Mock Path.cwd()
+        mock_cwd = MagicMock()
+        mock_cwd.__str__ = MagicMock(return_value="/home/user")  # type: ignore[method-assign]
+        mock_path_class.cwd.return_value = mock_cwd
+
+        result = configured_window._get_default_pak_directory()
+
+        assert result == "/home/user"
+
+
+def test_get_default_pak_directory_macos(configured_window: IconImportWindow) -> None:
+    """Test default PAK directory on macOS (unsupported platform).
+
+    Args:
+        configured_window: Configured window instance
+    """
+    with (
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.platform.system") as mock_system,
+        patch("foxhole_stockpiles.gui.windows.icon_import_window.Path") as mock_path_class,
+    ):
+        mock_system.return_value = "Darwin"
+
+        # Mock Path.cwd()
+        mock_cwd = MagicMock()
+        mock_cwd.__str__ = MagicMock(return_value="/Users/user")  # type: ignore[method-assign]
+        mock_path_class.cwd.return_value = mock_cwd
+
+        result = configured_window._get_default_pak_directory()
+
+        assert result == "/Users/user"

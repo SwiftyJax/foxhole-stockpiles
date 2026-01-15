@@ -1,31 +1,8 @@
 """Utility for creating advanced setting widgets with warnings and reset buttons."""
 
 from collections.abc import Callable
-from typing import Any
 
-from pydantic import BaseModel
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
-
-
-def get_model_default(model_class: type[BaseModel], field_name: str) -> Any:
-    """Get the default value for a field from a Pydantic model.
-
-    Args:
-        model_class (type[BaseModel]): The Pydantic model class.
-        field_name (str): The name of the field.
-
-    Returns:
-        Any: The default value for the field.
-    """
-    field_info = model_class.model_fields.get(field_name)
-    if field_info and field_info.default is not None:
-        return field_info.default
-    # If no default, return the default_factory result
-    if field_info and field_info.default_factory is not None:
-        factory = field_info.default_factory
-        if callable(factory):
-            return factory()  # type: ignore[call-arg]
-    return None
 
 
 class AdvancedSettingRow(QWidget):

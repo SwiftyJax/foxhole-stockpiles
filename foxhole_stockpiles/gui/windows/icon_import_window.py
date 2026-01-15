@@ -356,13 +356,17 @@ class IconImportWindow(QMainWindow):
         Returns:
             str: Default directory path for PAK files
         """
+        # Default to current working directory
+        default_path = Path.cwd()
         system = platform.system()
 
         if system == "Windows":
             # Windows: C:\Program Files (x86)\Steam\steamapps\common\Foxhole\War\Content\Paks
-            default_path = Path(
+            steam_path = Path(
                 "C:/Program Files (x86)/Steam/steamapps/common/Foxhole/War/Content/Paks"
             )
+            if steam_path.exists():
+                default_path = steam_path
         elif system == "Linux":
             # Check if running under WSL
             try:
@@ -370,24 +374,16 @@ class IconImportWindow(QMainWindow):
                     version_info = f.read().lower()
                     if "microsoft" in version_info or "wsl" in version_info:
                         # WSL: /mnt/c/Program Files (x86)/Steam/...
-                        default_path = Path(
+                        wsl_path = Path(
                             "/mnt/c/Program Files (x86)/Steam/steamapps/common/"
                             "Foxhole/War/Content/Paks"
                         )
-                    else:
-                        # Regular Linux: use current directory
-                        default_path = Path.cwd()
+                        if wsl_path.exists():
+                            default_path = wsl_path
             except OSError:
-                # If we can't read /proc/version, assume regular Linux
-                default_path = Path.cwd()
-        else:
-            # Other platforms (macOS, etc.): use current directory
-            default_path = Path.cwd()
+                pass  # Keep default_path as cwd
 
-        # Return as string, use current directory if default doesn't exist
-        if default_path.exists():
-            return str(default_path)
-        return str(Path.cwd())
+        return str(default_path)
 
     def select_vanilla_pak(self) -> None:
         """Open file dialog to select vanilla PAK file."""
