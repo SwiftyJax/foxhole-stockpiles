@@ -28,9 +28,12 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.core.settings import get_settings, reload_settings
 from foxhole_stockpiles.gui.utils.icon_import_worker import IconImportWorker
 from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
+from foxhole_stockpiles.gui.windows.database_builder_settings_dialog import (
+    DatabaseBuilderSettingsDialog,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -311,15 +314,6 @@ class IconImportWindow(QMainWindow):
             "<li><b>Converter Tool</b> (umodel.exe) - for converting UAsset files</li>"
             "<li><b>Catalog File</b> (catalog.json) - defines all game items</li>"
             "</ul>"
-            "<p><b>How to configure:</b></p>"
-            "<ol>"
-            "<li>Go to <b>File → Configuration...</b></li>"
-            "<li>Enable <b>Show Advanced Settings</b></li>"
-            "<li>Go to the <b>Database Builder</b> tab</li>"
-            "<li>Configure all three required files</li>"
-            "<li>Click <b>Save</b></li>"
-            "<li>Reopen this window</li>"
-            "</ol>"
         )
         warning_label.setWordWrap(True)
         warning_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -337,18 +331,39 @@ class IconImportWindow(QMainWindow):
         # Add spacer
         warning_layout.addStretch()
 
-        # Close button
-        close_button_layout = QHBoxLayout()
-        close_button_layout.addStretch()
+        # Buttons
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        configure_button = QPushButton("Configure...")
+        configure_button.setFixedWidth(120)
+        configure_button.clicked.connect(self._open_settings_dialog)
+        button_layout.addWidget(configure_button)
+
         close_button = QPushButton("Close")
         close_button.setFixedWidth(100)
         close_button.clicked.connect(self.close)
-        close_button_layout.addWidget(close_button)
-        close_button_layout.addStretch()
-        warning_layout.addLayout(close_button_layout)
+        button_layout.addWidget(close_button)
+
+        button_layout.addStretch()
+        warning_layout.addLayout(button_layout)
 
         # Set warning widget as central widget
         self.setCentralWidget(warning_widget)
+
+    def _open_settings_dialog(self) -> None:
+        """Open the database builder settings dialog."""
+        dialog = DatabaseBuilderSettingsDialog(self)
+        if dialog.exec():
+            # Settings were saved, reload and check configuration
+            reload_settings()
+            self.settings = get_settings()
+            self.is_configured = self._check_configuration()
+
+            if self.is_configured:
+                # Rebuild the full UI
+                self.init_ui()
+                logger.info("Database builder configured successfully")
 
     def _get_default_pak_directory(self) -> str:
         """Get default directory for PAK files based on platform.

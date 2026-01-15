@@ -13,7 +13,7 @@ from pydantic import ValidationError
 from pydantic_settings import BaseSettings
 from pydantic_settings.sources import PydanticBaseSettingsSource
 
-from foxhole_stockpiles.core.settings import AppSettings, get_settings
+from foxhole_stockpiles.core.settings import AppSettings, get_settings, reload_settings
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.core.settings.sections.output import (
@@ -560,3 +560,32 @@ class TestGetSettings:
         assert hasattr(settings, "ocr")
         assert hasattr(settings, "output")
         assert hasattr(settings, "stockpile_types")
+
+
+class TestReloadSettings:
+    """Test cases for reload_settings function."""
+
+    def test_reload_settings_clears_cache(self) -> None:
+        """Test that reload_settings clears the cache and returns new settings."""
+        settings1 = get_settings()
+        settings2 = reload_settings()
+
+        # After reload, we should get a new instance
+        assert settings1 is not settings2
+
+    def test_reload_settings_returns_app_settings(self) -> None:
+        """Test that reload_settings returns AppSettings instance."""
+        settings = reload_settings()
+        assert isinstance(settings, AppSettings)
+
+    def test_reload_settings_updates_get_settings_cache(self) -> None:
+        """Test that reload_settings updates the cache used by get_settings."""
+        get_settings.cache_clear()
+
+        settings1 = get_settings()
+        settings2 = reload_settings()
+        settings3 = get_settings()
+
+        # After reload, get_settings should return the new instance
+        assert settings1 is not settings2
+        assert settings2 is settings3

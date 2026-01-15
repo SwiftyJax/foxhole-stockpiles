@@ -64,9 +64,20 @@ def get_settings() -> AppSettings:
     return AppSettings()
 
 
+def reload_settings() -> AppSettings:
+    """Reload the settings by clearing the cache.
+
+    Returns:
+        AppSettings: Newly loaded settings
+    """
+    get_settings.cache_clear()
+    return get_settings()
+
+
 __all__ = [
     "AppSettings",
     "MigratingInitSettingsSource",
     "Utf8JsonConfigSettingsSource",
     "get_settings",
+    "reload_settings",
 ]
