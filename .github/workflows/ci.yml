@@ -61,7 +61,7 @@ jobs:
 
       - name: Run tests with coverage
         run: |
-          pytest tests/ --ignore=tests/gui --cov=foxhole_stockpiles --cov-report=term-missing --junitxml=junit.xml
+          pytest tests/ --ignore=tests/gui -p no:pytest-qt --cov=foxhole_stockpiles --cov-report=term-missing --junitxml=junit.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
