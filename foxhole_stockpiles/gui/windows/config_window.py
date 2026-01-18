@@ -2,7 +2,7 @@
 
 import logging
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QCloseEvent, QKeyEvent
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -43,6 +43,9 @@ logger = logging.getLogger(__name__)
 
 class ConfigWindow(QMainWindow):
     """Configuration window for managing application settings."""
+
+    # Signal emitted when the window is closed
+    closed = pyqtSignal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the configuration window.
@@ -284,6 +287,8 @@ class ConfigWindow(QMainWindow):
         Args:
             event (QCloseEvent | None): Close event
         """
+        should_close = False
+
         if self.has_changes():
             reply = QMessageBox.question(
                 self,
@@ -298,16 +303,16 @@ class ConfigWindow(QMainWindow):
             if reply == QMessageBox.StandardButton.Save:
                 self.save_settings()
                 # Only close if save was successful (no more changes)
-                if not self.has_changes() and event:
-                    event.accept()
-                elif event:
-                    event.ignore()
+                should_close = not self.has_changes()
             elif reply == QMessageBox.StandardButton.Discard:
-                if event:
-                    event.accept()
-            else:  # Cancel
-                if event:
-                    event.ignore()
+                should_close = True
+            # else: Cancel - should_close remains False
         else:
-            if event:
+            should_close = True
+
+        if event:
+            if should_close:
                 event.accept()
+                self.closed.emit()
+            else:
+                event.ignore()

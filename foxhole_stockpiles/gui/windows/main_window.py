@@ -208,7 +208,7 @@ class MainWindow(QMainWindow):
         config_window.move(center_x, center_y)
 
         # Connect to refresh DB info when config window closes
-        config_window.destroyed.connect(self.server_panel.refresh_db_info)
+        config_window.closed.connect(self.server_panel.refresh_db_info)
 
         config_window.show()
 
