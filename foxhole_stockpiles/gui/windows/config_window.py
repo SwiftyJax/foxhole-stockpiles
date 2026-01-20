@@ -74,6 +74,7 @@ class ConfigWindow(QMainWindow):
         # Add mode toggle at top
         toggle_layout = QHBoxLayout()
         self.advanced_mode_checkbox = QCheckBox("Show Advanced Settings")
+        self.advanced_mode_checkbox.setChecked(True)  # Show advanced by default
         self.advanced_mode_checkbox.setToolTip(
             "Show all advanced configuration options.\n\n"
             "When disabled, only essential settings are shown for basic users."

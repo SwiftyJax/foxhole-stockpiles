@@ -99,57 +99,52 @@ def test_config_window_has_all_tabs(config_window: ConfigWindow) -> None:
     assert config_window.logging_tab is not None
 
 
-def test_config_window_basic_mode_by_default(config_window: ConfigWindow) -> None:
-    """Test ConfigWindow starts in basic mode.
+def test_config_window_advanced_mode_by_default(config_window: ConfigWindow) -> None:
+    """Test ConfigWindow starts in advanced mode.
 
     Args:
         config_window: ConfigWindow instance
     """
-    assert not config_window.advanced_mode_checkbox.isChecked()
-    assert config_window.tab_widget.count() == 1
-    assert config_window.tab_widget.tabText(0) == "Configuration"
-
-
-def test_config_window_toggle_to_advanced_mode(qtbot: Any, config_window: ConfigWindow) -> None:
-    """Test toggling to advanced mode.
-
-    Args:
-        qtbot: PyQt test fixture
-        config_window: ConfigWindow instance
-    """
-    # Start in basic mode
-    assert config_window.tab_widget.count() == 1
-
-    # Toggle to advanced mode
-    config_window.advanced_mode_checkbox.setChecked(True)
-
-    # Should have 8 advanced tabs
+    assert config_window.advanced_mode_checkbox.isChecked()
     assert config_window.tab_widget.count() == 8
     assert config_window.tab_widget.tabText(0) == "API Server"
-    assert config_window.tab_widget.tabText(1) == "API Authentication"
-    assert config_window.tab_widget.tabText(2) == "Scanner"
-    assert config_window.tab_widget.tabText(3) == "Output"
-    assert config_window.tab_widget.tabText(4) == "OCR"
-    assert config_window.tab_widget.tabText(5) == "Templates"
-    assert config_window.tab_widget.tabText(6) == "Database Builder"
-    assert config_window.tab_widget.tabText(7) == "Logging"
 
 
-def test_config_window_toggle_back_to_basic_mode(qtbot: Any, config_window: ConfigWindow) -> None:
-    """Test toggling back to basic mode.
+def test_config_window_toggle_to_basic_mode(qtbot: Any, config_window: ConfigWindow) -> None:
+    """Test toggling to basic mode.
 
     Args:
         qtbot: PyQt test fixture
         config_window: ConfigWindow instance
     """
-    # Toggle to advanced
-    config_window.advanced_mode_checkbox.setChecked(True)
+    # Start in advanced mode
     assert config_window.tab_widget.count() == 8
 
-    # Toggle back to basic
+    # Toggle to basic mode
     config_window.advanced_mode_checkbox.setChecked(False)
+
+    # Should have 1 basic tab
     assert config_window.tab_widget.count() == 1
     assert config_window.tab_widget.tabText(0) == "Configuration"
+
+
+def test_config_window_toggle_back_to_advanced_mode(
+    qtbot: Any, config_window: ConfigWindow
+) -> None:
+    """Test toggling back to advanced mode.
+
+    Args:
+        qtbot: PyQt test fixture
+        config_window: ConfigWindow instance
+    """
+    # Toggle to basic
+    config_window.advanced_mode_checkbox.setChecked(False)
+    assert config_window.tab_widget.count() == 1
+
+    # Toggle back to advanced
+    config_window.advanced_mode_checkbox.setChecked(True)
+    assert config_window.tab_widget.count() == 8
+    assert config_window.tab_widget.tabText(0) == "API Server"
 
 
 def test_config_window_load_settings_populates_tabs(
@@ -440,14 +435,14 @@ def test_config_window_checkbox_state_change(qtbot: Any, config_window: ConfigWi
         qtbot: PyQt test fixture
         config_window: ConfigWindow instance
     """
-    # Start in basic mode
-    assert config_window.tab_widget.count() == 1
+    # Start in advanced mode
+    assert config_window.tab_widget.count() == 8
 
     # Change checkbox state
-    config_window.advanced_mode_checkbox.setChecked(True)
+    config_window.advanced_mode_checkbox.setChecked(False)
 
-    # Should show advanced tabs (toggle_mode was called)
-    assert config_window.tab_widget.count() == 8
+    # Should show basic tab (toggle_mode was called)
+    assert config_window.tab_widget.count() == 1
 
 
 class TestCloseEvent:
@@ -508,8 +503,8 @@ class TestCloseEvent:
             config_window: ConfigWindow instance
             mock_config_manager: Mock ConfigManager
         """
-        # Make changes
-        config_window.basic_config_tab.port_input.setValue(9999)
+        # Make changes (use api_server_tab since advanced mode is default)
+        config_window.api_server_tab.port_input.setValue(9999)
         mock_config_manager.save_config.return_value = (True, "Success")
 
         event = MagicMock(spec=QCloseEvent)
@@ -530,8 +525,8 @@ class TestCloseEvent:
             config_window: ConfigWindow instance
             mock_config_manager: Mock ConfigManager
         """
-        # Make changes
-        config_window.basic_config_tab.port_input.setValue(9999)
+        # Make changes (use api_server_tab since advanced mode is default)
+        config_window.api_server_tab.port_input.setValue(9999)
         mock_config_manager.save_config.return_value = (False, "Save failed")
 
         event = MagicMock(spec=QCloseEvent)
@@ -554,8 +549,8 @@ class TestCloseEvent:
             config_window: ConfigWindow instance
             mock_config_manager: Mock ConfigManager
         """
-        # Make changes
-        config_window.basic_config_tab.port_input.setValue(9999)
+        # Make changes (use api_server_tab since advanced mode is default)
+        config_window.api_server_tab.port_input.setValue(9999)
 
         event = MagicMock(spec=QCloseEvent)
 
@@ -575,8 +570,8 @@ class TestCloseEvent:
             config_window: ConfigWindow instance
             mock_config_manager: Mock ConfigManager
         """
-        # Make changes
-        config_window.basic_config_tab.port_input.setValue(9999)
+        # Make changes (use api_server_tab since advanced mode is default)
+        config_window.api_server_tab.port_input.setValue(9999)
 
         event = MagicMock(spec=QCloseEvent)
 
