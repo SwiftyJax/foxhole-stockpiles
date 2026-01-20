@@ -135,3 +135,67 @@ def test_pak_validation_worker_run_exception(qtbot: Any, tmp_path: Path) -> None
     result = blocker.args[0]
     assert result.is_valid is False
     assert "Test error" in result.error_message
+
+
+# Direct run() tests for coverage (coverage doesn't track QThread.start() properly)
+class TestPakValidationWorkerRunDirect:
+    """Tests that call run() directly for coverage tracking."""
+
+    def test_run_success_direct(self, tmp_path: Path) -> None:
+        """Test run() method directly for successful validation."""
+        pak_files = ["test.pak"]
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        worker = PakValidationWorker(
+            pak_files=pak_files,
+            extractor_tool=extractor_tool,
+        )
+
+        expected_result = PakValidationResult()
+        expected_result.is_valid = True
+        expected_result.has_crate_icon = True
+
+        async def mock_validate(*args: Any, **kwargs: Any) -> PakValidationResult:
+            return expected_result
+
+        emitted_results: list[PakValidationResult] = []
+        worker.validation_complete.connect(lambda r: emitted_results.append(r))
+
+        with patch(
+            "foxhole_stockpiles.gui.utils.pak_validation_worker.PakExtractor.validate_required_assets",
+            side_effect=mock_validate,
+        ):
+            # Call run() directly instead of start() for coverage
+            worker.run()
+
+        assert len(emitted_results) == 1
+        assert emitted_results[0].is_valid is True
+
+    def test_run_exception_direct(self, tmp_path: Path) -> None:
+        """Test run() method directly handles exceptions."""
+        pak_files = ["test.pak"]
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        worker = PakValidationWorker(
+            pak_files=pak_files,
+            extractor_tool=extractor_tool,
+        )
+
+        async def mock_validate(*args: Any, **kwargs: Any) -> PakValidationResult:
+            raise RuntimeError("Validation failed")
+
+        emitted_results: list[PakValidationResult] = []
+        worker.validation_complete.connect(lambda r: emitted_results.append(r))
+
+        with patch(
+            "foxhole_stockpiles.gui.utils.pak_validation_worker.PakExtractor.validate_required_assets",
+            side_effect=mock_validate,
+        ):
+            # Call run() directly for coverage
+            worker.run()
+
+        assert len(emitted_results) == 1
+        assert emitted_results[0].is_valid is False
+        assert "Validation failed" in emitted_results[0].error_message

@@ -207,11 +207,11 @@ class TestMiddleware:
 class TestRootEndpoint:
     """Test cases for root endpoint.
 
-    This class contains tests for the / endpoint that returns basic API information.
+    This class contains tests for the / endpoint that serves the web interface.
     """
 
     def test_root_endpoint(self, client: TestClient) -> None:
-        """Test root endpoint returns API information.
+        """Test root endpoint returns HTML web interface.
 
         Args:
             client (TestClient): FastAPI test client from fixture.
@@ -219,12 +219,11 @@ class TestRootEndpoint:
         response = client.get("/")
 
         assert response.status_code == 200
-        data = response.json()
-        assert data["status"] == "running"
-        assert data["version"] == __version__
+        assert "text/html" in response.headers.get("content-type", "")
+        assert "Foxhole Stockpile Scanner" in response.text
 
-    def test_root_endpoint_response_model(self, client: TestClient) -> None:
-        """Test root endpoint conforms to HealthResponse model.
+    def test_root_endpoint_contains_version(self, client: TestClient) -> None:
+        """Test root endpoint HTML contains version information.
 
         Args:
             client (TestClient): FastAPI test client from fixture.
@@ -232,11 +231,7 @@ class TestRootEndpoint:
         response = client.get("/")
 
         assert response.status_code == 200
-        data = response.json()
-        assert "status" in data
-        assert "version" in data
-        assert isinstance(data["status"], str)
-        assert isinstance(data["version"], str)
+        assert __version__ in response.text
 
 
 class TestScanStockpileEndpoint:

@@ -100,6 +100,19 @@ class APIServerTab(QWidget):
         self.auto_trim_input.setChecked(True)
         layout.addRow(trim_label, self.auto_trim_input)
 
+        # Web Icon Mod
+        web_icon_mod_label = QLabel("Web Icon Mod:")
+        web_icon_mod_label.setToolTip(
+            "Mod to use for item icons in the web interface.\n\n"
+            "When the web interface displays scan results, icons will be loaded\n"
+            "from this mod. If an icon is not found in the specified mod,\n"
+            "it will fall back to 'vanilla'.\n\n"
+            "Available mods depend on what you've imported into the database."
+        )
+        self.web_icon_mod_input = QLineEdit()
+        self.web_icon_mod_input.setPlaceholderText("vanilla")
+        layout.addRow(web_icon_mod_label, self.web_icon_mod_input)
+
     def set_values(self, settings: APIServerSettings) -> None:
         """Set widget values from settings.
 
@@ -116,6 +129,7 @@ class APIServerTab(QWidget):
 
         self.memory_monitoring_input.setChecked(settings.enable_memory_monitoring)
         self.auto_trim_input.setChecked(settings.auto_trim_memory)
+        self.web_icon_mod_input.setText(settings.web_icon_mod)
 
     def get_values(self) -> APIServerSettings:
         """Get current values from widgets.
@@ -138,4 +152,5 @@ class APIServerTab(QWidget):
             reload=False,  # Always False for GUI users (development-only option)
             enable_memory_monitoring=self.memory_monitoring_input.isChecked(),
             auto_trim_memory=self.auto_trim_input.isChecked(),
+            web_icon_mod=self.web_icon_mod_input.text() or "vanilla",
         )

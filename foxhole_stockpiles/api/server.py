@@ -22,6 +22,7 @@ from foxhole_stockpiles.api.dependencies import (
     get_output_coordinator,
 )
 from foxhole_stockpiles.api.memory_middleware import MemoryMonitorMiddleware
+from foxhole_stockpiles.api.web.routes import router as web_router
 from foxhole_stockpiles.core.events import get_event_bus
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
@@ -62,6 +63,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger = logging.getLogger(__name__)
     logger.info("Starting Foxhole Stockpile Scanner API v%s", get_version_info())
     logger.info("Database path: %s", app_settings.scanner.database_path)
+    logger.info("Web icon mod: %s", app_settings.api_server.web_icon_mod)
 
     # Check if Tesseract is accessible
     try:
@@ -129,15 +131,8 @@ if app_settings.api_server.enable_memory_monitoring or app_settings.api_server.a
 # Create authentication dependency
 auth_dependency = create_auth_dependency(app_settings.api_auth)
 
-
-@app.get("/", response_model=HealthResponse)
-async def root() -> HealthResponse:
-    """Root endpoint returning basic API information.
-
-    Returns:
-        HealthResponse: Basic API status and version information
-    """
-    return HealthResponse(status="running", version=__version__)
+# Include web router (provides "/" and "/web/*" endpoints) with auth
+app.include_router(web_router, dependencies=[Depends(auth_dependency)])
 
 
 @app.get("/health", response_model=HealthResponse)

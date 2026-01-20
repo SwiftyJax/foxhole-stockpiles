@@ -1,12 +1,17 @@
 """FastAPI dependency injection providers."""
 
+import logging
 from functools import lru_cache
 
+from foxhole_stockpiles.api.web.services import IconService
 from foxhole_stockpiles.core.events import EventBus, get_event_bus
 from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.services.catalog_service import CatalogService
 from foxhole_stockpiles.services.notification_service import NotificationService
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
+
+logger = logging.getLogger(__name__)
 
 
 @lru_cache
@@ -66,3 +71,46 @@ def get_output_coordinator() -> OutputCoordinator:
     """
     settings = get_settings()
     return OutputCoordinator(settings=settings)
+
+
+@lru_cache
+def get_catalog_service() -> CatalogService:
+    """Get the catalog service singleton.
+
+    Returns:
+        CatalogService: The catalog service instance
+    """
+    settings = get_settings()
+    catalog_path = settings.database_builder.catalog_file
+    return CatalogService(catalog_path=catalog_path)
+
+
+@lru_cache
+def get_icon_service() -> IconService:
+    """Get the icon service singleton.
+
+    Returns:
+        IconService: The icon service instance
+
+    Raises:
+        ValueError: If database_path is not configured
+    """
+    settings = get_settings()
+    coordinator = get_ocr_coordinator()
+    return IconService(
+        template_manager=coordinator._template_manager,
+        default_mod=settings.api_server.web_icon_mod,
+    )
+
+
+def clear_dependency_caches() -> None:
+    """Clear all dependency caches.
+
+    Call this when the server stops to ensure next start picks up fresh settings.
+    """
+    logger.info("Clearing all dependency caches")
+    get_icon_service.cache_clear()
+    get_catalog_service.cache_clear()
+    get_output_coordinator.cache_clear()
+    get_ocr_coordinator.cache_clear()
+    get_notification_service.cache_clear()

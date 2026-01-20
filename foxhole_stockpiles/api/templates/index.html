@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% if db_error %}
+<div class="alert alert-error">
+    <span class="alert-icon">!</span>
+    <div>
+        <strong>Database Error</strong><br>
+        {{ db_error }}
+    </div>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h2>Upload Screenshots</h2>
+    </div>
+    <div class="card-body">
+        <form id="scan-form" action="/web/scan" method="post" enctype="multipart/form-data">
+            <div class="file-input-wrapper" id="drop-zone">
+                <input type="file" id="images" name="images" multiple accept="image/png,image/jpeg,image/jpg" required>
+                <div class="file-input-icon">+</div>
+                <div class="file-input-text">
+                    <strong>Click to upload</strong> or drag and drop<br>
+                    PNG, JPG up to 10MB each
+                </div>
+            </div>
+
+            <div id="preview" class="preview-container"></div>
+
+            <div class="btn-group">
+                <button type="submit" name="action" value="scan" class="btn btn-primary" id="scan-btn" {% if db_error %}disabled{% endif %}>
+                    Scan Screenshots
+                </button>
+                <button type="submit" name="action" value="send" class="btn btn-secondary" id="send-btn" {% if db_error %}disabled{% endif %}>
+                    Send to Server
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="results"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const fileInput = document.getElementById('images');
+    const preview = document.getElementById('preview');
+    const form = document.getElementById('scan-form');
+    const scanBtn = document.getElementById('scan-btn');
+    const sendBtn = document.getElementById('send-btn');
+    const results = document.getElementById('results');
+    const dropZone = document.getElementById('drop-zone');
+
+    // Drag and drop handling
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+    });
+
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+    });
+
+    dropZone.addEventListener('drop', function(e) {
+        fileInput.files = e.dataTransfer.files;
+        fileInput.dispatchEvent(new Event('change'));
+    });
+
+    // Preview selected images
+    fileInput.addEventListener('change', function() {
+        preview.innerHTML = '';
+        const files = this.files;
+
+        for (let i = 0; i < files.length && i < 10; i++) {
+            const file = files[i];
+            if (file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const item = document.createElement('div');
+                    item.className = 'preview-item';
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.title = file.name;
+                    item.appendChild(img);
+                    preview.appendChild(item);
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        if (files.length > 10) {
+            const more = document.createElement('span');
+            more.textContent = `+${files.length - 10} more`;
+            more.style.padding = '10px';
+            more.style.color = 'var(--text-muted)';
+            preview.appendChild(more);
+        }
+    });
+
+    // Form submission with loading state
+    form.addEventListener('submit', function(e) {
+        const action = e.submitter.value;
+
+        // Disable buttons and show loading
+        scanBtn.disabled = true;
+        sendBtn.disabled = true;
+        scanBtn.innerHTML = '<span class="loading-spinner"></span> Processing...';
+
+        // For scan action, we use AJAX to get HTML results
+        if (action === 'scan') {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+            formData.set('action', 'scan');
+
+            fetch('/web/scan', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.text())
+            .then(html => {
+                results.innerHTML = html;
+                scanBtn.innerHTML = 'Scan Screenshots';
+                scanBtn.disabled = false;
+                sendBtn.disabled = false;
+                // Scroll to results
+                results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            })
+            .catch(error => {
+                results.innerHTML = '<div class="alert alert-error"><span class="alert-icon">!</span><div>Error: ' + error.message + '</div></div>';
+                scanBtn.innerHTML = 'Scan Screenshots';
+                scanBtn.disabled = false;
+                sendBtn.disabled = false;
+            });
+        }
+        // For send action, let the form submit normally
+    });
+})();
+</script>
+{% endblock %}

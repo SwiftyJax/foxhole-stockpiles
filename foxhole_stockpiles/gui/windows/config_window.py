@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from foxhole_stockpiles.core.settings import reload_settings
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections import (
     DatabaseBuilderSettings,
@@ -240,6 +241,9 @@ class ConfigWindow(QMainWindow):
 
             if success:
                 self.settings = new_settings
+                # Clear the settings cache so new settings take effect
+                # Note: dependency caches are cleared when server stops
+                reload_settings()
                 self.status_bar.showMessage("Configuration saved successfully!", 3000)
                 logger.info("Settings saved successfully")
             else:

@@ -53,6 +53,13 @@ class APIServerSettings(BaseModel):
         ),
         default=True,
     )
+    web_icon_mod: str = Field(
+        description=(
+            "Mod to use for icons in the web interface. "
+            "Falls back to 'vanilla' if the specified mod doesn't have the icon."
+        ),
+        default="vanilla",
+    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -66,6 +73,7 @@ class APIServerSettings(BaseModel):
                 "log_level": "info",
                 "enable_memory_monitoring": False,
                 "auto_trim_memory": True,
+                "web_icon_mod": "vanilla",
             }
         },
     )

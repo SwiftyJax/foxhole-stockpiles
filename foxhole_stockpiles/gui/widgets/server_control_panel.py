@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from foxhole_stockpiles.api.dependencies import clear_dependency_caches
 from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 from foxhole_stockpiles.gui.utils.scan_worker import ScanWorker
 from foxhole_stockpiles.gui.utils.scanner_client import ScannerClient
@@ -269,6 +270,9 @@ class ServerControlPanel(QWidget):
         if self.server_thread:
             self.server_thread.stop()
             self.server_thread = None
+
+        # Clear all dependency caches so next start picks up fresh settings
+        clear_dependency_caches()
 
         # Close and remove log handler
         root_logger = logging.getLogger()
