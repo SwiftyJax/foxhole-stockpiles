@@ -25,6 +25,7 @@ from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.mod_import_config import ModImportConfig
 from foxhole_stockpiles.models.mod_import_progress import ModImportProgress
 from foxhole_stockpiles.models.mod_import_result import ModImportResult
+from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
 logger = logging.getLogger(__name__)
@@ -126,9 +127,9 @@ class ModImporter:
 
         # Also log
         if is_error:
-            logger.error("Step %d/%d (%s): %s - %s", step, 4, step_name, message, error_message)
+            logger.error("Step %d/%d (%s): %s - %s", step, 5, step_name, message, error_message)
         else:
-            logger.info("Step %d/%d (%s): %s", step, 4, step_name, message)
+            logger.info("Step %d/%d (%s): %s", step, 5, step_name, message)
 
     def _should_cancel(self) -> bool:
         """Check if operation should be cancelled.
@@ -285,8 +286,36 @@ class ModImporter:
                 logger.info("Import cancelled before starting")
                 return result
 
-            # Step 0: Check catalog against database
-            self._report_progress(0, "Checking catalog", "Loading catalog and checking database...")
+            # Step 0: Validate PAK files contain required assets
+            self._report_progress(
+                0, "Validating PAK files", "Checking for required assets (crate icon, subicons)..."
+            )
+
+            validation_result = await self._validate_pak_files()
+            if not validation_result.is_valid:
+                result.success = False
+                result.error_message = validation_result.error_message
+                self._report_progress(
+                    0,
+                    "Validation failed",
+                    "Required assets missing",
+                    is_error=True,
+                    error_message=validation_result.error_message,
+                )
+                return result
+
+            logger.info(
+                "PAK validation passed: crate_icon=%s, subicons=%d",
+                validation_result.has_crate_icon,
+                validation_result.subicons_count,
+            )
+
+            if self._should_cancel():
+                logger.info("Import cancelled after validation")
+                return result
+
+            # Step 1: Check catalog against database
+            self._report_progress(1, "Checking catalog", "Loading catalog and checking database...")
 
             catalog = load_catalog(self.config.catalog_path)
             total_items = len(catalog)
@@ -304,7 +333,7 @@ class ModImporter:
                     result.success = True
                     result.templates_skipped = total_items
                     self._report_progress(
-                        4, "Complete", "All items already in database", is_complete=True
+                        5, "Complete", "All items already in database", is_complete=True
                     )
                     return result
                 else:
@@ -322,9 +351,9 @@ class ModImporter:
                 logger.info("Import cancelled before extraction")
                 return result
 
-            # Step 1: Extract assets from PAK files
+            # Step 2: Extract assets from PAK files
             msg = f"Extracting {len(items_to_extract)} items from PAK files..."
-            self._report_progress(1, "Extracting assets", msg)
+            self._report_progress(2, "Extracting assets", msg)
             await self._extract_assets(extracted_assets_dir, existing_codes)
 
             if self._should_cancel():
@@ -343,7 +372,7 @@ class ModImporter:
                         len(existing_codes),
                     )
                     result.success = True
-                    self._report_progress(4, "Complete", "No new items to add", is_complete=True)
+                    self._report_progress(5, "Complete", "No new items to add", is_complete=True)
                 else:
                     result.warnings.append(
                         "No items extracted from PAK files. "
@@ -351,7 +380,7 @@ class ModImporter:
                     )
                     result.success = True
                     self._report_progress(
-                        4, "Complete", "No items found in PAK files", is_complete=True
+                        5, "Complete", "No items found in PAK files", is_complete=True
                     )
                 return result
 
@@ -359,22 +388,22 @@ class ModImporter:
                 "Extracted %d assets, continuing with template generation...", extracted_count
             )
 
-            # Step 2: Generate templates
-            self._report_progress(2, "Generating templates", "Creating templates from assets...")
+            # Step 3: Generate templates
+            self._report_progress(3, "Generating templates", "Creating templates from assets...")
             await self._generate_templates(extracted_assets_dir.parent, templates_dir)
 
             if self._should_cancel():
                 logger.info("Import cancelled after template generation")
                 return result
 
-            # Step 3: Build database
-            self._report_progress(3, "Building database", "Adding templates to database...")
+            # Step 4: Build database
+            self._report_progress(4, "Building database", "Adding templates to database...")
             await self._build_database(templates_dir)
 
             result.success = True
             result.templates_added = extracted_count  # Approximate
             msg = f"Successfully imported {extracted_count} templates"
-            self._report_progress(4, "Complete", msg, is_complete=True)
+            self._report_progress(5, "Complete", msg, is_complete=True)
             logger.info("Mod import pipeline completed successfully")
 
         except Exception as e:
@@ -431,6 +460,29 @@ class ModImporter:
 
         if self.config.vanilla_pak_file and not Path(self.config.vanilla_pak_file).exists():
             raise FileNotFoundError(f"Vanilla PAK file not found: {self.config.vanilla_pak_file}")
+
+    async def _validate_pak_files(self) -> PakValidationResult:
+        """Validate that PAK files contain required assets before extraction.
+
+        Checks for crate icon and subicons in the combined list of mod and vanilla PAK files.
+
+        Returns:
+            PakValidationResult: Validation result with details
+        """
+        # Combine mod PAK files and vanilla PAK file for validation
+        all_pak_files: list[str] = list(self.config.mod_pak_files)
+        if self.config.vanilla_pak_file:
+            all_pak_files.append(self.config.vanilla_pak_file)
+
+        logger.info("Validating %d PAK file(s) for required assets...", len(all_pak_files))
+
+        # extractor_tool is validated in _validate_config before this is called
+        assert self.config.extractor_tool is not None
+
+        return await PakExtractor.validate_required_assets(
+            pak_files=all_pak_files,
+            extractor_tool=self.config.extractor_tool,
+        )
 
     async def _extract_assets(self, output_dir: Path, existing_codes: set[str]) -> None:
         """Extract assets from PAK files.
@@ -495,7 +547,9 @@ class ModImporter:
             )
 
             def vanilla_filter(file_path: str) -> bool:
-                return "Subicons/" in file_path or "IconFilterCrates" in file_path
+                # Extract subicons (files with "Subtype" in filename) and crate icon
+                filename = file_path.split("/")[-1] if "/" in file_path else file_path
+                return "Subtype" in filename or "IconFilterCrates" in file_path
 
             vanilla_extractor = PakExtractor(
                 catalog_file=str(self.config.catalog_path),

@@ -21,6 +21,7 @@ from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.core.utils import get_subprocess_kwargs, load_catalog
 from foxhole_stockpiles.models.catalog_item import CatalogItem
+from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
 
 DEFAULT_CATALOG = "catalog.json"
 DEFAULT_PAK_FILES = (
@@ -30,6 +31,12 @@ DEFAULT_PAK_FILES = (
 DEFAULT_EXTRACTOR = r"C:\repak\repak.exe"
 DEFAULT_CONVERTER = r"C:\UModel\umodel.exe"
 DEFAULT_OUTPUT = "output"
+
+# Required assets for database building
+CRATE_ICON_PATH = "War/Content/Textures/UI/Menus/IconFilterCrates.uasset"
+# Subicons are in ItemIcons folder with "Subtype" prefix (e.g., SubtypeAPIcon, SubtypeATIcon)
+SUBICONS_PATH_PREFIX = "War/Content/Textures/UI/ItemIcons/"
+SUBICONS_FILENAME_PREFIX = "Subtype"
 
 
 class PakExtractor:
@@ -122,6 +129,117 @@ class PakExtractor:
 
         # Detect if tools are Windows executables (need path conversion in WSL)
         self._tools_are_windows = self._detect_windows_tools()
+
+    @staticmethod
+    async def validate_required_assets(
+        pak_files: list[str] | list[Path],
+        extractor_tool: str | Path,
+    ) -> PakValidationResult:
+        """Validate that required assets (crate icon, subicons) exist in PAK files.
+
+        This is a pre-check to avoid expensive extraction when required assets are missing.
+
+        Args:
+            pak_files: List of PAK file paths to check
+            extractor_tool: Path to the repak tool
+
+        Returns:
+            PakValidationResult: Validation result with details about what was found
+        """
+        logger = logging.getLogger(__name__)
+        result = PakValidationResult()
+
+        if not pak_files:
+            result.error_message = "No PAK files provided"
+            return result
+
+        extractor_path = Path(extractor_tool)
+        if not extractor_path.exists():
+            result.error_message = f"Extractor tool not found: {extractor_tool}"
+            return result
+
+        # Collect all files from all PAK files
+        all_files: set[str] = set()
+
+        for pak_file in pak_files:
+            pak_path = Path(pak_file)
+            if not pak_path.exists():
+                logger.warning("PAK file not found: %s", pak_file)
+                continue
+
+            try:
+                # Run repak list to get all files in the PAK
+                command = [str(extractor_path), "list", str(pak_path)]
+                logger.debug("Listing files in PAK: %s", pak_path)
+
+                process = await asyncio.create_subprocess_exec(
+                    *command,
+                    stdout=asyncio.subprocess.PIPE,
+                    stderr=asyncio.subprocess.PIPE,
+                    **get_subprocess_kwargs(),
+                )
+                stdout, stderr = await process.communicate()
+
+                if process.returncode == 0:
+                    # Parse the file list (one file per line)
+                    files = stdout.decode().strip().split("\n")
+                    all_files.update(f.strip() for f in files if f.strip())
+                    logger.debug("Found %d files in %s", len(files), pak_path.name)
+                else:
+                    logger.warning("Failed to list files in %s: %s", pak_path, stderr.decode())
+
+            except Exception as e:
+                logger.error("Error listing files in %s: %s", pak_file, e)
+
+        if not all_files:
+            result.error_message = "Could not list any files from the provided PAK files"
+            return result
+
+        result.files_found = all_files
+
+        # Check for crate icon
+        result.has_crate_icon = CRATE_ICON_PATH in all_files
+
+        # Check for subicons (files in ItemIcons folder with "Subtype" in the filename)
+        subicons = [
+            f
+            for f in all_files
+            if SUBICONS_PATH_PREFIX in f and SUBICONS_FILENAME_PREFIX in f.split("/")[-1]
+        ]
+        result.subicons_count = len(subicons)
+        result.has_subicons = result.subicons_count > 0
+
+        # Determine validity - we need both crate icon and subicons
+        if not result.has_crate_icon and not result.has_subicons:
+            result.error_message = (
+                "The PAK files are missing required assets:\n"
+                "  - Crate icon (IconFilterCrates)\n"
+                "  - Subicons\n\n"
+                "These assets are required to build template databases.\n"
+                "Please include the vanilla game PAK file (War-WindowsNoEditor.pak) "
+                "in your import."
+            )
+        elif not result.has_crate_icon:
+            result.error_message = (
+                "The PAK files are missing the crate icon (IconFilterCrates).\n"
+                "This asset is required to build template databases.\n"
+                "Please include the vanilla game PAK file."
+            )
+        elif not result.has_subicons:
+            result.error_message = (
+                "The PAK files are missing subicons.\n"
+                "Subicons are required to build template databases.\n"
+                "Please include the vanilla game PAK file."
+            )
+        else:
+            result.is_valid = True
+            logger.info(
+                "PAK validation passed: crate_icon=%s, subicons=%d",
+                result.has_crate_icon,
+                result.subicons_count,
+            )
+
+        return result
 
     def _detect_windows_tools(self) -> bool:
         """Detect if the tools are Windows executables.

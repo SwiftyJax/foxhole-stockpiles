@@ -30,10 +30,12 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles.core.settings import get_settings, reload_settings
 from foxhole_stockpiles.gui.utils.icon_import_worker import IconImportWorker
+from foxhole_stockpiles.gui.utils.pak_validation_worker import PakValidationWorker
 from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 from foxhole_stockpiles.gui.windows.database_builder_settings_dialog import (
     DatabaseBuilderSettingsDialog,
 )
+from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -49,8 +51,18 @@ class IconImportWindow(QMainWindow):
         """
         super().__init__(parent)
         self.import_worker: IconImportWorker | None = None
+        self.validation_worker: PakValidationWorker | None = None
         self.vanilla_pak_file: str | None = None
         self.mod_pak_files: list[str] = []
+
+        # Validation state for mod PAK files
+        self._validation_result: PakValidationResult | None = None
+        self._is_validating = False
+
+        # Validation state for vanilla PAK file
+        self._vanilla_validation_result: PakValidationResult | None = None
+        self._is_validating_vanilla = False
+        self.vanilla_validation_worker: PakValidationWorker | None = None
 
         # Check if database builder is configured
         self.settings = get_settings()
@@ -79,27 +91,27 @@ class IconImportWindow(QMainWindow):
 
         layout = QVBoxLayout(central_widget)
 
-        # Vanilla PAK Section
-        vanilla_group = QGroupBox("Vanilla PAK File (Optional)")
+        # Vanilla PAK Section (initially hidden, shown when mod PAK lacks required assets)
+        self.vanilla_group = QGroupBox("Vanilla PAK File (Required)")
         vanilla_layout = QVBoxLayout()
-        vanilla_group.setLayout(vanilla_layout)
+        self.vanilla_group.setLayout(vanilla_layout)
 
-        # Info text about vanilla PAK
-        vanilla_info = QLabel(
-            "ℹ️ Contains shared resources (crate icon, subicons) that mods depend on. "
-            "Extracted automatically if needed."
+        # Warning text about vanilla PAK
+        self.vanilla_info = QLabel(
+            "⚠️ The selected mod PAK files are missing required assets (crate icon, subicons). "
+            "Please select the vanilla game PAK file (War-WindowsNoEditor.pak)."
         )
-        vanilla_info.setWordWrap(True)
-        vanilla_info.setStyleSheet(
+        self.vanilla_info.setWordWrap(True)
+        self.vanilla_info.setStyleSheet(
             "QLabel { "
-            "border: 2px solid #2196F3; "
+            "border: 2px solid #FF9800; "
             "border-radius: 4px; "
             "padding: 6px; "
             "font-size: 11px; "
             "background-color: palette(alternate-base); "
             "}"
         )
-        vanilla_layout.addWidget(vanilla_info)
+        vanilla_layout.addWidget(self.vanilla_info)
 
         # Vanilla PAK file path display
         vanilla_path_layout = QHBoxLayout()
@@ -109,16 +121,20 @@ class IconImportWindow(QMainWindow):
         vanilla_path_layout.addWidget(self.vanilla_pak_display)
 
         # Vanilla PAK buttons
-        vanilla_browse_button = QPushButton("Browse...")
-        vanilla_browse_button.clicked.connect(self.select_vanilla_pak)
-        vanilla_path_layout.addWidget(vanilla_browse_button)
+        self.vanilla_browse_button = QPushButton("Browse...")
+        self.vanilla_browse_button.clicked.connect(self.select_vanilla_pak)
+        vanilla_path_layout.addWidget(self.vanilla_browse_button)
 
-        vanilla_clear_button = QPushButton("Clear")
-        vanilla_clear_button.clicked.connect(self.clear_vanilla_pak)
-        vanilla_path_layout.addWidget(vanilla_clear_button)
+        self.vanilla_clear_button = QPushButton("Clear")
+        self.vanilla_clear_button.clicked.connect(self.clear_vanilla_pak)
+        vanilla_path_layout.addWidget(self.vanilla_clear_button)
 
         vanilla_layout.addLayout(vanilla_path_layout)
-        layout.addWidget(vanilla_group)
+
+        layout.addWidget(self.vanilla_group)
+
+        # Initially hide vanilla section until validation shows it's needed
+        self.vanilla_group.setVisible(False)
 
         # Mod PAK Files Section
         mod_pak_group = QGroupBox("Mod PAK Files")
@@ -137,19 +153,18 @@ class IconImportWindow(QMainWindow):
 
         # Mod PAK file buttons
         mod_pak_buttons_layout = QHBoxLayout()
-        add_mod_pak_button = QPushButton("Add PAK Files...")
-        add_mod_pak_button.clicked.connect(self.add_mod_pak_files)
-        mod_pak_buttons_layout.addWidget(add_mod_pak_button)
+        self.add_mod_pak_button = QPushButton("Add PAK Files...")
+        self.add_mod_pak_button.clicked.connect(self.add_mod_pak_files)
+        mod_pak_buttons_layout.addWidget(self.add_mod_pak_button)
 
-        remove_mod_pak_button = QPushButton("Remove Selected")
-        remove_mod_pak_button.clicked.connect(self.remove_selected_mod_paks)
-        mod_pak_buttons_layout.addWidget(remove_mod_pak_button)
+        self.remove_mod_pak_button = QPushButton("Remove Selected")
+        self.remove_mod_pak_button.clicked.connect(self.remove_selected_mod_paks)
+        mod_pak_buttons_layout.addWidget(self.remove_mod_pak_button)
 
-        clear_mod_pak_button = QPushButton("Clear All")
-        clear_mod_pak_button.clicked.connect(self.clear_all_mod_paks)
-        mod_pak_buttons_layout.addWidget(clear_mod_pak_button)
+        self.clear_mod_pak_button = QPushButton("Clear All")
+        self.clear_mod_pak_button.clicked.connect(self.clear_all_mod_paks)
+        mod_pak_buttons_layout.addWidget(self.clear_mod_pak_button)
 
-        mod_pak_buttons_layout.addStretch()
         mod_pak_layout.addLayout(mod_pak_buttons_layout)
 
         layout.addWidget(mod_pak_group)
@@ -263,6 +278,11 @@ class IconImportWindow(QMainWindow):
         self.cancel_button.clicked.connect(self.cancel_import)
         self.cancel_button.setEnabled(False)
         action_buttons_layout.addWidget(self.cancel_button)
+
+        # Validation status label (shows validation state)
+        self.validation_status_label = QLabel("")
+        self.validation_status_label.setStyleSheet("font-size: 11px;")
+        action_buttons_layout.addWidget(self.validation_status_label)
 
         action_buttons_layout.addStretch()
 
@@ -411,11 +431,21 @@ class IconImportWindow(QMainWindow):
         if file_path:
             self.vanilla_pak_file = file_path
             self.vanilla_pak_display.setText(file_path)
+            # Trigger validation to verify vanilla PAK has required assets
+            self._trigger_vanilla_validation()
 
     def clear_vanilla_pak(self) -> None:
         """Clear the vanilla PAK file selection."""
         self.vanilla_pak_file = None
         self.vanilla_pak_display.clear()
+        self._vanilla_validation_result = None
+
+        # If mod PAK validation showed missing assets, restore the warning state
+        if self._validation_result and not self._validation_result.is_valid:
+            self.vanilla_info.setVisible(True)
+            self.validation_status_label.setText("Missing required assets")
+            self.validation_status_label.setStyleSheet("color: #FF9800; font-size: 11px;")
+            self._update_start_button_state()
 
     def select_database_path(self) -> None:
         """Open file dialog to select database file."""
@@ -444,24 +474,40 @@ class IconImportWindow(QMainWindow):
             "PAK Files (*.pak);;All Files (*)",
         )
         if files:
+            added = False
             for file_path in files:
                 if file_path not in self.mod_pak_files:
                     self.mod_pak_files.append(file_path)
                     self.mod_pak_list_widget.addItem(file_path)
+                    added = True
+            if added:
+                self._trigger_validation()
 
     def remove_selected_mod_paks(self) -> None:
         """Remove selected mod PAK files from the list."""
         selected_items = self.mod_pak_list_widget.selectedItems()
+        removed = False
         for item in selected_items:
             row = self.mod_pak_list_widget.row(item)
             self.mod_pak_list_widget.takeItem(row)
             if item.text() in self.mod_pak_files:
                 self.mod_pak_files.remove(item.text())
+                removed = True
+        if removed:
+            self._trigger_validation()
 
     def clear_all_mod_paks(self) -> None:
         """Clear all mod PAK files from the list."""
         self.mod_pak_list_widget.clear()
         self.mod_pak_files.clear()
+        # Clear validation state and hide vanilla section
+        self._validation_result = None
+        self._vanilla_validation_result = None
+        self.vanilla_pak_file = None
+        self.vanilla_pak_display.clear()
+        self.validation_status_label.setText("")
+        self.vanilla_group.setVisible(False)
+        self._update_start_button_state()
 
     def pak_drag_enter_event(self, e: QDragEnterEvent | None) -> None:
         """Handle drag enter event for PAK files.
@@ -470,7 +516,11 @@ class IconImportWindow(QMainWindow):
             e (QDragEnterEvent | None): Drag event
         """
         if e:
-            e.accept()
+            # Don't accept drags while validating
+            if self._is_validating:
+                e.ignore()
+            else:
+                e.accept()
 
     def pak_drop_event(self, event: QDropEvent | None) -> None:
         """Handle drop event for mod PAK files.
@@ -481,7 +531,13 @@ class IconImportWindow(QMainWindow):
         if not event:
             return
 
+        # Don't accept drops while validating
+        if self._is_validating:
+            event.ignore()
+            return
+
         mime_data = event.mimeData()
+        added = False
         if mime_data:
             urls = mime_data.urls()
             if urls:
@@ -491,7 +547,213 @@ class IconImportWindow(QMainWindow):
                         if filepath not in self.mod_pak_files:
                             self.mod_pak_files.append(filepath)
                             self.mod_pak_list_widget.addItem(filepath)
+                            added = True
         event.accept()
+        if added:
+            self._trigger_validation()
+
+    def _trigger_validation(self) -> None:
+        """Trigger PAK file validation in a background thread."""
+        # Don't validate if no PAK files or already validating
+        if not self.mod_pak_files:
+            return
+
+        # Cancel any existing validation
+        if self.validation_worker and self.validation_worker.isRunning():
+            self.validation_worker.wait()
+
+        # Check if extractor tool is configured
+        extractor_tool = self.settings.database_builder.extractor_tool
+        if not extractor_tool or not extractor_tool.exists():
+            logger.warning("Cannot validate PAK files: extractor tool not configured")
+            return
+
+        # Disable PAK controls while validating
+        self._set_pak_controls_enabled(False)
+        self._is_validating = True
+        self.validation_status_label.setText("Validating PAK files...")
+        self.validation_status_label.setStyleSheet("color: #2196F3; font-size: 11px;")
+        self._update_start_button_state()
+
+        # Start validation worker
+        self.validation_worker = PakValidationWorker(
+            pak_files=self.mod_pak_files.copy(),
+            extractor_tool=extractor_tool,
+            parent=self,
+        )
+        self.validation_worker.validation_complete.connect(self._on_validation_complete)
+        self.validation_worker.start()
+
+    def _on_validation_complete(self, result: PakValidationResult) -> None:
+        """Handle validation completion.
+
+        Args:
+            result: The validation result
+        """
+        self._is_validating = False
+        self._validation_result = result
+        self._set_pak_controls_enabled(True)
+
+        if result.is_valid:
+            # PAK files have all required assets - hide vanilla section
+            self.validation_status_label.setText("All required assets found")
+            self.validation_status_label.setStyleSheet("color: #4CAF50; font-size: 11px;")
+            self.vanilla_group.setVisible(False)
+            self.clear_vanilla_pak()
+            logger.info(
+                "PAK validation passed: crate_icon=%s, subicons=%d",
+                result.has_crate_icon,
+                result.subicons_count,
+            )
+        else:
+            # PAK files are missing required assets - show vanilla section
+            self.validation_status_label.setText("⚠ Missing required assets")
+            self.validation_status_label.setStyleSheet("color: #FF9800; font-size: 11px;")
+            self.vanilla_group.setVisible(True)
+
+            # Update the info label with specific missing assets
+            missing = []
+            if not result.has_crate_icon:
+                missing.append("crate icon")
+            if not result.has_subicons:
+                missing.append("subicons")
+            missing_text = " and ".join(missing)
+            self.vanilla_info.setText(
+                f"⚠️ The selected mod PAK files are missing required assets ({missing_text}). "
+                "Please select the vanilla game PAK file (War-WindowsNoEditor.pak)."
+            )
+            logger.info("PAK validation: missing %s", missing_text)
+
+        self._update_start_button_state()
+
+    def _set_pak_controls_enabled(self, enabled: bool) -> None:
+        """Enable or disable PAK file controls.
+
+        Args:
+            enabled: Whether to enable or disable controls
+        """
+        self.add_mod_pak_button.setEnabled(enabled)
+        self.remove_mod_pak_button.setEnabled(enabled)
+        self.clear_mod_pak_button.setEnabled(enabled)
+        self.mod_pak_list_widget.setAcceptDrops(enabled)
+
+    def _trigger_vanilla_validation(self) -> None:
+        """Trigger validation of the vanilla PAK file."""
+        if not self.vanilla_pak_file:
+            return
+
+        extractor_tool = self.settings.database_builder.extractor_tool
+        if not extractor_tool or not extractor_tool.exists():
+            logger.warning("Cannot validate vanilla PAK: extractor tool not configured")
+            return
+
+        # Disable vanilla PAK controls while validating
+        self._set_vanilla_controls_enabled(False)
+        self._is_validating_vanilla = True
+        self.validation_status_label.setText("Validating vanilla PAK...")
+        self.validation_status_label.setStyleSheet("color: #2196F3; font-size: 11px;")
+        self._update_start_button_state()
+
+        # Start validation worker for vanilla PAK only
+        self.vanilla_validation_worker = PakValidationWorker(
+            pak_files=[self.vanilla_pak_file],
+            extractor_tool=extractor_tool,
+            parent=self,
+        )
+        self.vanilla_validation_worker.validation_complete.connect(
+            self._on_vanilla_validation_complete
+        )
+        self.vanilla_validation_worker.start()
+
+    def _on_vanilla_validation_complete(self, result: PakValidationResult) -> None:
+        """Handle vanilla PAK validation completion.
+
+        Args:
+            result: The validation result
+        """
+        self._is_validating_vanilla = False
+        self._vanilla_validation_result = result
+        self._set_vanilla_controls_enabled(True)
+
+        if result.is_valid:
+            # Vanilla PAK has all required assets - hide warning and show success
+            self.vanilla_info.setVisible(False)
+            self.validation_status_label.setText("All required assets found")
+            self.validation_status_label.setStyleSheet("color: #4CAF50; font-size: 11px;")
+            logger.info(
+                "Vanilla PAK validation passed: crate_icon=%s, subicons=%d",
+                result.has_crate_icon,
+                result.subicons_count,
+            )
+        else:
+            # Vanilla PAK is missing required assets - this is the wrong file!
+            self.vanilla_info.setVisible(True)
+            self.validation_status_label.setText("Invalid vanilla PAK")
+            self.validation_status_label.setStyleSheet("color: #F44336; font-size: 11px;")
+
+            # Show specific error message
+            missing = []
+            if not result.has_crate_icon:
+                missing.append("crate icon")
+            if not result.has_subicons:
+                missing.append("subicons")
+            missing_text = " and ".join(missing)
+
+            QMessageBox.warning(
+                self,
+                "Invalid Vanilla PAK",
+                f"The selected PAK file does not contain the required assets ({missing_text}).\n\n"
+                "Please select the correct vanilla game PAK file:\n"
+                "War-WindowsNoEditor.pak\n\n"
+                "This file is typically located in:\n"
+                "Steam/steamapps/common/Foxhole/War/Content/Paks/",
+            )
+            logger.warning("Vanilla PAK validation failed: missing %s", missing_text)
+
+        self._update_start_button_state()
+
+    def _set_vanilla_controls_enabled(self, enabled: bool) -> None:
+        """Enable or disable vanilla PAK file controls.
+
+        Args:
+            enabled: Whether to enable or disable controls
+        """
+        self.vanilla_browse_button.setEnabled(enabled)
+        self.vanilla_clear_button.setEnabled(enabled)
+
+    def _update_start_button_state(self) -> None:
+        """Update the start button enabled state based on validation results.
+
+        The start button is disabled when:
+        - Validation is in progress (mod or vanilla)
+        - Mod PAK validation failed and no valid vanilla PAK is selected
+        """
+        # Disable if any validation is in progress
+        if self._is_validating or self._is_validating_vanilla:
+            self.start_button.setEnabled(False)
+            return
+
+        # If no mod PAK files selected, enable (will be caught by validate_inputs)
+        if not self.mod_pak_files:
+            self.start_button.setEnabled(True)
+            return
+
+        # If mod PAK validation passed, enable
+        if self._validation_result and self._validation_result.is_valid:
+            self.start_button.setEnabled(True)
+            return
+
+        # If mod PAK validation failed, check vanilla PAK status
+        if self._validation_result and not self._validation_result.is_valid:
+            # Vanilla PAK must be valid to proceed
+            if self._vanilla_validation_result and self._vanilla_validation_result.is_valid:
+                self.start_button.setEnabled(True)
+            else:
+                self.start_button.setEnabled(False)
+            return
+
+        # Default: enable (no validation result yet means we haven't validated)
+        self.start_button.setEnabled(True)
 
     def validate_inputs(self) -> tuple[bool, str]:
         """Validate user inputs before starting import.
@@ -501,6 +763,30 @@ class IconImportWindow(QMainWindow):
         """
         if not self.mod_pak_files:
             return False, "Please add at least one mod PAK file"
+
+        # Check if validation is still running
+        if self._is_validating:
+            return False, "Please wait for mod PAK file validation to complete"
+
+        if self._is_validating_vanilla:
+            return False, "Please wait for vanilla PAK file validation to complete"
+
+        # Check if vanilla PAK is required but not selected or invalid
+        if self._validation_result and not self._validation_result.is_valid:
+            if not self.vanilla_pak_file:
+                return False, (
+                    "The mod PAK files are missing required assets. "
+                    "Please select the vanilla game PAK file."
+                )
+            # Check if vanilla PAK was validated and is valid
+            if self._vanilla_validation_result and not self._vanilla_validation_result.is_valid:
+                return False, (
+                    "The selected vanilla PAK file does not contain the required assets. "
+                    "Please select the correct vanilla game PAK file (War-WindowsNoEditor.pak)."
+                )
+            # If vanilla PAK selected but not validated yet, wait
+            if not self._vanilla_validation_result:
+                return False, "Please wait for vanilla PAK file validation to complete"
 
         mod_name = self.mod_name_input.text().strip()
         if not mod_name:
@@ -748,6 +1034,11 @@ class IconImportWindow(QMainWindow):
             else:
                 event.ignore()  # type: ignore[attr-defined]
         else:
+            # Stop validation workers if running
+            if self.validation_worker and self.validation_worker.isRunning():
+                self.validation_worker.wait()
+            if self.vanilla_validation_worker and self.vanilla_validation_worker.isRunning():
+                self.vanilla_validation_worker.wait()
             self._cleanup_and_accept(event)
 
     def _cleanup_and_accept(self, event: object) -> None:

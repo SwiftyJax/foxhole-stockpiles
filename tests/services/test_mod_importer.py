@@ -15,8 +15,19 @@ from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.mod_import_config import ModImportConfig
 from foxhole_stockpiles.models.mod_import_progress import ModImportProgress
 from foxhole_stockpiles.models.mod_import_result import ModImportResult
+from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
 from foxhole_stockpiles.services.mod_importer import ModImporter
 from foxhole_stockpiles.services.template_database import TemplateDatabase
+
+
+def create_valid_pak_validation_result() -> PakValidationResult:
+    """Create a valid PakValidationResult for test mocking."""
+    result = PakValidationResult()
+    result.is_valid = True
+    result.has_crate_icon = True
+    result.has_subicons = True
+    result.subicons_count = 10
+    return result
 
 
 @pytest.fixture
@@ -522,30 +533,34 @@ class TestFullPipeline:
 
         importer = ModImporter(config=mock_config)
 
+        async def mock_validate() -> PakValidationResult:
+            return create_valid_pak_validation_result()
+
         with patch.object(ModImporter, "get_wsl_temp_dir", return_value=None):
             with patch("tempfile.mkdtemp", return_value=str(test_import_dir)):
                 with patch("shutil.rmtree"):
-                    with patch.object(
-                        importer, "_get_existing_item_codes_from_database", return_value=set()
-                    ):
-                        with patch(
-                            "foxhole_stockpiles.services.mod_importer.load_catalog",
-                            return_value=mock_catalog,
+                    with patch.object(importer, "_validate_pak_files", side_effect=mock_validate):
+                        with patch.object(
+                            importer, "_get_existing_item_codes_from_database", return_value=set()
                         ):
-
-                            async def mock_extract(*args: Any, **kwargs: Any) -> None:
-                                (extracted_assets_dir / "icon1.png").touch()
-
-                            with patch.object(
-                                importer, "_extract_assets", side_effect=mock_extract
+                            with patch(
+                                "foxhole_stockpiles.services.mod_importer.load_catalog",
+                                return_value=mock_catalog,
                             ):
+
+                                async def mock_extract(*args: Any, **kwargs: Any) -> None:
+                                    (extracted_assets_dir / "icon1.png").touch()
+
                                 with patch.object(
-                                    importer, "_generate_templates", new_callable=AsyncMock
+                                    importer, "_extract_assets", side_effect=mock_extract
                                 ):
                                     with patch.object(
-                                        importer, "_build_database", new_callable=AsyncMock
+                                        importer, "_generate_templates", new_callable=AsyncMock
                                     ):
-                                        result = await importer.run()
+                                        with patch.object(
+                                            importer, "_build_database", new_callable=AsyncMock
+                                        ):
+                                            result = await importer.run()
 
         assert result.success is True
 
@@ -771,19 +786,23 @@ class TestFullPipelineExtended:
 
         importer = ModImporter(config=mock_config)
 
+        async def mock_validate() -> PakValidationResult:
+            return create_valid_pak_validation_result()
+
         with patch.object(ModImporter, "get_wsl_temp_dir", return_value=None):
             with patch("tempfile.mkdtemp", return_value=str(test_import_dir)):
                 with patch("shutil.rmtree"):
-                    with patch.object(
-                        importer,
-                        "_get_existing_item_codes_from_database",
-                        return_value={"ITEM001"},
-                    ):
-                        with patch(
-                            "foxhole_stockpiles.services.mod_importer.load_catalog",
-                            return_value=mock_catalog,
+                    with patch.object(importer, "_validate_pak_files", side_effect=mock_validate):
+                        with patch.object(
+                            importer,
+                            "_get_existing_item_codes_from_database",
+                            return_value={"ITEM001"},
                         ):
-                            result = await importer.run()
+                            with patch(
+                                "foxhole_stockpiles.services.mod_importer.load_catalog",
+                                return_value=mock_catalog,
+                            ):
+                                result = await importer.run()
 
         assert result.success is True
         assert result.templates_skipped == 1
@@ -809,32 +828,36 @@ class TestFullPipelineExtended:
 
         importer = ModImporter(config=mock_config)
 
+        async def mock_validate() -> PakValidationResult:
+            return create_valid_pak_validation_result()
+
         with patch.object(ModImporter, "get_wsl_temp_dir", return_value=None):
             with patch("tempfile.mkdtemp", return_value=str(test_import_dir)):
                 with patch("shutil.rmtree"):
-                    with patch.object(
-                        importer,
-                        "_get_existing_item_codes_from_database",
-                        return_value={"ITEM001"},
-                    ):
-                        with patch(
-                            "foxhole_stockpiles.services.mod_importer.load_catalog",
-                            return_value=mock_catalog,
+                    with patch.object(importer, "_validate_pak_files", side_effect=mock_validate):
+                        with patch.object(
+                            importer,
+                            "_get_existing_item_codes_from_database",
+                            return_value={"ITEM001"},
                         ):
-
-                            async def mock_extract(*args: Any, **kwargs: Any) -> None:
-                                (extracted_assets_dir / "icon1.png").touch()
-
-                            with patch.object(
-                                importer, "_extract_assets", side_effect=mock_extract
+                            with patch(
+                                "foxhole_stockpiles.services.mod_importer.load_catalog",
+                                return_value=mock_catalog,
                             ):
+
+                                async def mock_extract(*args: Any, **kwargs: Any) -> None:
+                                    (extracted_assets_dir / "icon1.png").touch()
+
                                 with patch.object(
-                                    importer, "_generate_templates", new_callable=AsyncMock
+                                    importer, "_extract_assets", side_effect=mock_extract
                                 ):
                                     with patch.object(
-                                        importer, "_build_database", new_callable=AsyncMock
+                                        importer, "_generate_templates", new_callable=AsyncMock
                                     ):
-                                        result = await importer.run()
+                                        with patch.object(
+                                            importer, "_build_database", new_callable=AsyncMock
+                                        ):
+                                            result = await importer.run()
 
         assert result.success is True
         assert result.templates_skipped == 0
@@ -856,29 +879,32 @@ class TestFullPipelineExtended:
             ),
         ]
 
-        cancel_after_first = [False]
+        # Cancel on third check (after catalog check, before extraction)
+        cancel_count = [0]
 
         def should_cancel() -> bool:
-            if cancel_after_first[0]:
-                return True
-            cancel_after_first[0] = True
-            return False
+            cancel_count[0] += 1
+            return cancel_count[0] >= 3
 
         importer = ModImporter(config=mock_config, cancel_check=should_cancel)
+
+        async def mock_validate() -> PakValidationResult:
+            return create_valid_pak_validation_result()
 
         with patch.object(ModImporter, "get_wsl_temp_dir", return_value=None):
             with patch("tempfile.mkdtemp", return_value=str(test_import_dir)):
                 with patch("shutil.rmtree"):
-                    with patch.object(
-                        importer,
-                        "_get_existing_item_codes_from_database",
-                        return_value=set(),
-                    ):
-                        with patch(
-                            "foxhole_stockpiles.services.mod_importer.load_catalog",
-                            return_value=mock_catalog,
+                    with patch.object(importer, "_validate_pak_files", side_effect=mock_validate):
+                        with patch.object(
+                            importer,
+                            "_get_existing_item_codes_from_database",
+                            return_value=set(),
                         ):
-                            result = await importer.run()
+                            with patch(
+                                "foxhole_stockpiles.services.mod_importer.load_catalog",
+                                return_value=mock_catalog,
+                            ):
+                                result = await importer.run()
 
         assert result.templates_added == 0
 
@@ -908,20 +934,26 @@ class TestFullPipelineExtended:
 
         importer = ModImporter(config=mock_config)
 
+        async def mock_validate() -> PakValidationResult:
+            return create_valid_pak_validation_result()
+
         with patch.object(ModImporter, "get_wsl_temp_dir", return_value=None):
             with patch("tempfile.mkdtemp", return_value=str(test_import_dir)):
                 with patch("shutil.rmtree"):
-                    with patch.object(
-                        importer,
-                        "_get_existing_item_codes_from_database",
-                        return_value={"ITEM001"},
-                    ):
-                        with patch(
-                            "foxhole_stockpiles.services.mod_importer.load_catalog",
-                            return_value=mock_catalog,
+                    with patch.object(importer, "_validate_pak_files", side_effect=mock_validate):
+                        with patch.object(
+                            importer,
+                            "_get_existing_item_codes_from_database",
+                            return_value={"ITEM001"},
                         ):
-                            with patch.object(importer, "_extract_assets", new_callable=AsyncMock):
-                                result = await importer.run()
+                            with patch(
+                                "foxhole_stockpiles.services.mod_importer.load_catalog",
+                                return_value=mock_catalog,
+                            ):
+                                with patch.object(
+                                    importer, "_extract_assets", new_callable=AsyncMock
+                                ):
+                                    result = await importer.run()
 
         assert result.success is True
 
@@ -945,20 +977,26 @@ class TestFullPipelineExtended:
 
         importer = ModImporter(config=mock_config)
 
+        async def mock_validate() -> PakValidationResult:
+            return create_valid_pak_validation_result()
+
         with patch.object(ModImporter, "get_wsl_temp_dir", return_value=None):
             with patch("tempfile.mkdtemp", return_value=str(test_import_dir)):
                 with patch("shutil.rmtree"):
-                    with patch.object(
-                        importer,
-                        "_get_existing_item_codes_from_database",
-                        return_value=set(),
-                    ):
-                        with patch(
-                            "foxhole_stockpiles.services.mod_importer.load_catalog",
-                            return_value=mock_catalog,
+                    with patch.object(importer, "_validate_pak_files", side_effect=mock_validate):
+                        with patch.object(
+                            importer,
+                            "_get_existing_item_codes_from_database",
+                            return_value=set(),
                         ):
-                            with patch.object(importer, "_extract_assets", new_callable=AsyncMock):
-                                result = await importer.run()
+                            with patch(
+                                "foxhole_stockpiles.services.mod_importer.load_catalog",
+                                return_value=mock_catalog,
+                            ):
+                                with patch.object(
+                                    importer, "_extract_assets", new_callable=AsyncMock
+                                ):
+                                    result = await importer.run()
 
         assert result.success is True
         assert len(result.warnings) > 0
@@ -981,34 +1019,39 @@ class TestFullPipelineExtended:
             ),
         ]
 
+        # Cancel on fourth check (after extraction)
         cancel_count = [0]
 
         def should_cancel() -> bool:
             cancel_count[0] += 1
-            return cancel_count[0] >= 3
+            return cancel_count[0] >= 4
 
         importer = ModImporter(config=mock_config, cancel_check=should_cancel)
+
+        async def mock_validate() -> PakValidationResult:
+            return create_valid_pak_validation_result()
 
         with patch.object(ModImporter, "get_wsl_temp_dir", return_value=None):
             with patch("tempfile.mkdtemp", return_value=str(test_import_dir)):
                 with patch("shutil.rmtree"):
-                    with patch.object(
-                        importer,
-                        "_get_existing_item_codes_from_database",
-                        return_value=set(),
-                    ):
-                        with patch(
-                            "foxhole_stockpiles.services.mod_importer.load_catalog",
-                            return_value=mock_catalog,
+                    with patch.object(importer, "_validate_pak_files", side_effect=mock_validate):
+                        with patch.object(
+                            importer,
+                            "_get_existing_item_codes_from_database",
+                            return_value=set(),
                         ):
-
-                            async def mock_extract(*args: Any, **kwargs: Any) -> None:
-                                (extracted_assets_dir / "icon1.png").touch()
-
-                            with patch.object(
-                                importer, "_extract_assets", side_effect=mock_extract
+                            with patch(
+                                "foxhole_stockpiles.services.mod_importer.load_catalog",
+                                return_value=mock_catalog,
                             ):
-                                result = await importer.run()
+
+                                async def mock_extract(*args: Any, **kwargs: Any) -> None:
+                                    (extracted_assets_dir / "icon1.png").touch()
+
+                                with patch.object(
+                                    importer, "_extract_assets", side_effect=mock_extract
+                                ):
+                                    result = await importer.run()
 
         assert result.templates_added == 0
 
@@ -1030,37 +1073,42 @@ class TestFullPipelineExtended:
             ),
         ]
 
+        # Cancel on fifth check (after template generation)
         cancel_count = [0]
 
         def should_cancel() -> bool:
             cancel_count[0] += 1
-            return cancel_count[0] >= 4
+            return cancel_count[0] >= 5
 
         importer = ModImporter(config=mock_config, cancel_check=should_cancel)
+
+        async def mock_validate() -> PakValidationResult:
+            return create_valid_pak_validation_result()
 
         with patch.object(ModImporter, "get_wsl_temp_dir", return_value=None):
             with patch("tempfile.mkdtemp", return_value=str(test_import_dir)):
                 with patch("shutil.rmtree"):
-                    with patch.object(
-                        importer,
-                        "_get_existing_item_codes_from_database",
-                        return_value=set(),
-                    ):
-                        with patch(
-                            "foxhole_stockpiles.services.mod_importer.load_catalog",
-                            return_value=mock_catalog,
+                    with patch.object(importer, "_validate_pak_files", side_effect=mock_validate):
+                        with patch.object(
+                            importer,
+                            "_get_existing_item_codes_from_database",
+                            return_value=set(),
                         ):
-
-                            async def mock_extract(*args: Any, **kwargs: Any) -> None:
-                                (extracted_assets_dir / "icon1.png").touch()
-
-                            with patch.object(
-                                importer, "_extract_assets", side_effect=mock_extract
+                            with patch(
+                                "foxhole_stockpiles.services.mod_importer.load_catalog",
+                                return_value=mock_catalog,
                             ):
+
+                                async def mock_extract(*args: Any, **kwargs: Any) -> None:
+                                    (extracted_assets_dir / "icon1.png").touch()
+
                                 with patch.object(
-                                    importer, "_generate_templates", new_callable=AsyncMock
+                                    importer, "_extract_assets", side_effect=mock_extract
                                 ):
-                                    result = await importer.run()
+                                    with patch.object(
+                                        importer, "_generate_templates", new_callable=AsyncMock
+                                    ):
+                                        result = await importer.run()
 
         assert result.templates_added == 0
 
@@ -1383,3 +1431,207 @@ class TestCreateConfigFromSettings:
                 mod_pak_files=["test.pak"],
                 mod_name="TestMod",
             )
+
+
+# ===== PAK Validation Tests =====
+
+
+class TestPakValidation:
+    """Test suite for PAK file validation."""
+
+    @pytest.mark.asyncio
+    async def test_validate_pak_files_with_vanilla(
+        self, mock_config: ModImportConfig, tmp_path: Path
+    ) -> None:
+        """Test PAK validation includes vanilla PAK file when configured."""
+        vanilla_pak = tmp_path / "vanilla.pak"
+        vanilla_pak.touch()
+        mock_config.vanilla_pak_file = str(vanilla_pak)
+
+        importer = ModImporter(config=mock_config)
+
+        mock_result = create_valid_pak_validation_result()
+
+        with patch(
+            "foxhole_stockpiles.services.mod_importer.PakExtractor.validate_required_assets",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ) as mock_validate:
+            result = await importer._validate_pak_files()
+
+        # Verify vanilla PAK was included in the validation
+        call_args = mock_validate.call_args
+        pak_files = call_args[1]["pak_files"]
+        assert str(vanilla_pak) in pak_files
+        assert result.is_valid is True
+
+    @pytest.mark.asyncio
+    async def test_pipeline_cancel_after_validation(
+        self, mock_config: ModImportConfig, tmp_path: Path
+    ) -> None:
+        """Test pipeline can be cancelled immediately after validation."""
+        test_import_dir = tmp_path / "test_import"
+        test_import_dir.mkdir(parents=True, exist_ok=True)
+
+        # Cancel on second check (after validation)
+        cancel_count = [0]
+
+        def should_cancel() -> bool:
+            cancel_count[0] += 1
+            return cancel_count[0] >= 2
+
+        importer = ModImporter(config=mock_config, cancel_check=should_cancel)
+
+        async def mock_validate() -> PakValidationResult:
+            return create_valid_pak_validation_result()
+
+        with patch.object(ModImporter, "get_wsl_temp_dir", return_value=None):
+            with patch("tempfile.mkdtemp", return_value=str(test_import_dir)):
+                with patch("shutil.rmtree"):
+                    with patch.object(importer, "_validate_pak_files", side_effect=mock_validate):
+                        result = await importer.run()
+
+        # Should have cancelled after validation, before catalog check
+        assert result.templates_added == 0
+
+
+# ===== Extract Assets Filter Tests =====
+
+
+class TestExtractAssetsFilters:
+    """Test suite for asset extraction filter functions."""
+
+    @pytest.mark.asyncio
+    async def test_extract_assets_filter_with_subicon(
+        self, mock_config: ModImportConfig, tmp_path: Path
+    ) -> None:
+        """Test asset extraction filter correctly handles subicon_path."""
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        mock_catalog = [
+            CatalogItem(
+                code="ITEM001",
+                category=ItemCategory.Item,
+                icon_path="War/Content/Textures/UI/ItemIcons/Icon1",
+                subicon_path="War/Content/Textures/UI/ItemIcons/SubtypeAmmoIcon",
+            ),
+            CatalogItem(
+                code="ITEM002",
+                category=ItemCategory.Item,
+                icon_path="War/Content/Textures/UI/ItemIcons/Icon2",
+                subicon_path="",
+            ),
+        ]
+
+        captured_filter = [None]
+
+        class MockExtractor:
+            def __init__(self, **kwargs: Any) -> None:
+                captured_filter[0] = kwargs.get("filter_assets")
+
+            async def process_files(self) -> bool:
+                return True
+
+        importer = ModImporter(config=mock_config)
+
+        with patch(
+            "foxhole_stockpiles.services.mod_importer.load_catalog",
+            return_value=mock_catalog,
+        ):
+            with patch(
+                "foxhole_stockpiles.services.mod_importer.PakExtractor",
+                MockExtractor,
+            ):
+                # Pass existing codes to trigger filter creation
+                await importer._extract_assets(output_dir, {"ITEM001"})
+
+        # Verify filter was created and works correctly
+        filter_fn = captured_filter[0]
+        assert filter_fn is not None
+
+        # Icon for ITEM001 should be filtered out (exists in database)
+        assert filter_fn("War/Content/Textures/UI/ItemIcons/Icon1.uasset") is False
+        # Subicon for ITEM001 should also be filtered out
+        assert filter_fn("War/Content/Textures/UI/ItemIcons/SubtypeAmmoIcon.uasset") is False
+        # Icon for ITEM002 should be allowed (not in existing codes)
+        assert filter_fn("War/Content/Textures/UI/ItemIcons/Icon2.uasset") is True
+        # Unknown path should be allowed
+        assert filter_fn("War/Content/Other/Something.uasset") is True
+
+    @pytest.mark.asyncio
+    async def test_extract_assets_vanilla_filter(
+        self, mock_config: ModImportConfig, tmp_path: Path
+    ) -> None:
+        """Test vanilla extraction filter correctly identifies dependencies."""
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        vanilla_pak = tmp_path / "vanilla.pak"
+        vanilla_pak.touch()
+        mock_config.vanilla_pak_file = str(vanilla_pak)
+
+        captured_filters: list[Any] = []
+
+        class MockExtractor:
+            def __init__(self, **kwargs: Any) -> None:
+                captured_filters.append(kwargs.get("filter_assets"))
+
+            async def process_files(self) -> bool:
+                return True
+
+        importer = ModImporter(config=mock_config)
+
+        with patch(
+            "foxhole_stockpiles.services.mod_importer.PakExtractor",
+            MockExtractor,
+        ):
+            # Create a PNG file to trigger vanilla extraction
+            (output_dir / "icon.png").touch()
+            await importer._extract_assets(output_dir, set())
+
+        # Second filter should be the vanilla filter
+        assert len(captured_filters) == 2
+        vanilla_filter = captured_filters[1]
+        assert vanilla_filter is not None
+
+        # Test vanilla filter logic - subicons have "Subtype" in filename
+        assert vanilla_filter("War/Content/Textures/UI/ItemIcons/SubtypeAmmoIcon.uasset") is True
+        assert vanilla_filter("War/Content/IconFilterCrates.uasset") is True
+        assert vanilla_filter("War/Content/Icons/random.uasset") is False
+
+    @pytest.mark.asyncio
+    async def test_extract_assets_vanilla_extraction_fails(
+        self, mock_config: ModImportConfig, tmp_path: Path
+    ) -> None:
+        """Test warning is logged when vanilla PAK extraction fails."""
+        output_dir = tmp_path / "output"
+        output_dir.mkdir()
+
+        vanilla_pak = tmp_path / "vanilla.pak"
+        vanilla_pak.touch()
+        mock_config.vanilla_pak_file = str(vanilla_pak)
+
+        call_count = [0]
+
+        class MockExtractor:
+            def __init__(self, **kwargs: Any) -> None:
+                pass
+
+            async def process_files(self) -> bool:
+                call_count[0] += 1
+                # First call (mod) succeeds, second call (vanilla) fails
+                return call_count[0] == 1
+
+        importer = ModImporter(config=mock_config)
+
+        with patch(
+            "foxhole_stockpiles.services.mod_importer.PakExtractor",
+            MockExtractor,
+        ):
+            # Create a PNG file to trigger vanilla extraction
+            (output_dir / "icon.png").touch()
+            # Should not raise, just log warning
+            await importer._extract_assets(output_dir, set())
+
+        assert call_count[0] == 2

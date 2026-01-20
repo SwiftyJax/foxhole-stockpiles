@@ -13,9 +13,12 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 import pytest
 
 from foxhole_stockpiles.commands.uasset_extractor.uasset_extractor import (
+    CRATE_ICON_PATH,
+    SUBICONS_PATH_PREFIX,
     PakExtractor,
     main,
 )
+from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
 
 
 class TestPakExtractorInitialization:
@@ -1916,3 +1919,206 @@ class TestWSLPathConversion:
             assert result is False
             mock_process.terminate.assert_called_once()
             mock_process.wait.assert_called_once()
+
+
+class TestPakValidation:
+    """Test suite for PAK validation functionality."""
+
+    def test_pak_validation_result_init(self) -> None:
+        """Test PakValidationResult initialization."""
+        result = PakValidationResult()
+
+        assert result.is_valid is False
+        assert result.has_crate_icon is False
+        assert result.has_subicons is False
+        assert result.subicons_count == 0
+        assert result.error_message == ""
+        assert result.files_found == set()
+
+    def test_pak_validation_result_str_valid(self) -> None:
+        """Test PakValidationResult string representation when valid."""
+        result = PakValidationResult()
+        result.is_valid = True
+        result.has_crate_icon = True
+        result.subicons_count = 10
+
+        str_repr = str(result)
+        assert "Valid" in str_repr
+        assert "crate_icon=True" in str_repr
+        assert "subicons=10" in str_repr
+
+    def test_pak_validation_result_str_invalid(self) -> None:
+        """Test PakValidationResult string representation when invalid."""
+        result = PakValidationResult()
+        result.is_valid = False
+        result.error_message = "Missing required assets"
+
+        str_repr = str(result)
+        assert "Invalid" in str_repr
+        assert "Missing required assets" in str_repr
+
+    @pytest.mark.asyncio
+    async def test_validate_required_assets_no_pak_files(self, tmp_path: Path) -> None:
+        """Test validation fails when no PAK files provided."""
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        result = await PakExtractor.validate_required_assets(
+            pak_files=[],
+            extractor_tool=extractor_tool,
+        )
+
+        assert result.is_valid is False
+        assert "No PAK files provided" in result.error_message
+
+    @pytest.mark.asyncio
+    async def test_validate_required_assets_extractor_not_found(self, tmp_path: Path) -> None:
+        """Test validation fails when extractor tool not found."""
+        result = await PakExtractor.validate_required_assets(
+            pak_files=[str(tmp_path / "test.pak")],
+            extractor_tool=tmp_path / "nonexistent_repak.exe",
+        )
+
+        assert result.is_valid is False
+        assert "Extractor tool not found" in result.error_message
+
+    @pytest.mark.asyncio
+    async def test_validate_required_assets_success(self, tmp_path: Path) -> None:
+        """Test validation succeeds when all required assets are found."""
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        # Mock the PAK file listing to include required assets
+        # Subicons must have "Subtype" in the filename
+        pak_contents = (
+            f"{CRATE_ICON_PATH}\n"
+            f"{SUBICONS_PATH_PREFIX}SubtypeAmmoIcon.uasset\n"
+            f"{SUBICONS_PATH_PREFIX}SubtypeDamageIcon.uasset\n"
+            "War/Content/Icons/Item1.uasset\n"
+        )
+
+        mock_process = AsyncMock()
+        mock_process.returncode = 0
+        mock_process.communicate.return_value = (pak_contents.encode(), b"")
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await PakExtractor.validate_required_assets(
+                pak_files=[str(pak_file)],
+                extractor_tool=extractor_tool,
+            )
+
+        assert result.is_valid is True
+        assert result.has_crate_icon is True
+        assert result.has_subicons is True
+        assert result.subicons_count == 2
+
+    @pytest.mark.asyncio
+    async def test_validate_required_assets_missing_crate(self, tmp_path: Path) -> None:
+        """Test validation fails when crate icon is missing."""
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        # Mock the PAK file listing without crate icon
+        # Subicons must have "Subtype" in the filename
+        pak_contents = (
+            f"{SUBICONS_PATH_PREFIX}SubtypeAmmoIcon.uasset\n"
+            f"{SUBICONS_PATH_PREFIX}SubtypeDamageIcon.uasset\n"
+            "War/Content/Icons/Item1.uasset\n"
+        )
+
+        mock_process = AsyncMock()
+        mock_process.returncode = 0
+        mock_process.communicate.return_value = (pak_contents.encode(), b"")
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await PakExtractor.validate_required_assets(
+                pak_files=[str(pak_file)],
+                extractor_tool=extractor_tool,
+            )
+
+        assert result.is_valid is False
+        assert result.has_crate_icon is False
+        assert result.has_subicons is True
+        assert "crate icon" in result.error_message.lower()
+
+    @pytest.mark.asyncio
+    async def test_validate_required_assets_missing_subicons(self, tmp_path: Path) -> None:
+        """Test validation fails when subicons are missing."""
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        # Mock the PAK file listing without subicons
+        pak_contents = f"{CRATE_ICON_PATH}\nWar/Content/Icons/Item1.uasset\n"
+
+        mock_process = AsyncMock()
+        mock_process.returncode = 0
+        mock_process.communicate.return_value = (pak_contents.encode(), b"")
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await PakExtractor.validate_required_assets(
+                pak_files=[str(pak_file)],
+                extractor_tool=extractor_tool,
+            )
+
+        assert result.is_valid is False
+        assert result.has_crate_icon is True
+        assert result.has_subicons is False
+        assert "subicons" in result.error_message.lower()
+
+    @pytest.mark.asyncio
+    async def test_validate_required_assets_missing_both(self, tmp_path: Path) -> None:
+        """Test validation fails when both crate icon and subicons are missing."""
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        # Mock the PAK file listing without required assets
+        pak_contents = "War/Content/Icons/Item1.uasset\n"
+
+        mock_process = AsyncMock()
+        mock_process.returncode = 0
+        mock_process.communicate.return_value = (pak_contents.encode(), b"")
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await PakExtractor.validate_required_assets(
+                pak_files=[str(pak_file)],
+                extractor_tool=extractor_tool,
+            )
+
+        assert result.is_valid is False
+        assert result.has_crate_icon is False
+        assert result.has_subicons is False
+        assert "vanilla" in result.error_message.lower()
+
+    @pytest.mark.asyncio
+    async def test_validate_required_assets_repak_fails(self, tmp_path: Path) -> None:
+        """Test validation handles repak failure gracefully."""
+        extractor_tool = tmp_path / "repak.exe"
+        extractor_tool.touch()
+
+        pak_file = tmp_path / "test.pak"
+        pak_file.touch()
+
+        mock_process = AsyncMock()
+        mock_process.returncode = 1
+        mock_process.communicate.return_value = (b"", b"Error reading PAK")
+
+        with patch("asyncio.create_subprocess_exec", return_value=mock_process):
+            result = await PakExtractor.validate_required_assets(
+                pak_files=[str(pak_file)],
+                extractor_tool=extractor_tool,
+            )
+
+        assert result.is_valid is False
+        assert "Could not list any files" in result.error_message
