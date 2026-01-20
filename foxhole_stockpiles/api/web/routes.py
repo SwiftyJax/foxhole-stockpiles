@@ -19,6 +19,7 @@ from foxhole_stockpiles.api.dependencies import (
     get_ocr_coordinator,
 )
 from foxhole_stockpiles.api.web.services import IconService
+from foxhole_stockpiles.core.utils import get_bundled_resource_path, is_frozen
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.catalog_service import CatalogService
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
@@ -27,8 +28,17 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["web"])
 
+
+def _get_templates_dir() -> Path:
+    """Get the templates directory, handling both dev and PyInstaller bundle."""
+    if is_frozen():
+        return get_bundled_resource_path("foxhole_stockpiles/api/templates")
+    # Development mode
+    return Path(__file__).parent.parent / "templates"
+
+
 # Set up Jinja2 templates
-templates_dir = Path(__file__).parent.parent / "templates"
+templates_dir = _get_templates_dir()
 templates = Jinja2Templates(directory=str(templates_dir))
 
 

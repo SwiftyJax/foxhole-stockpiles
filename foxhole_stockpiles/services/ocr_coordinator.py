@@ -12,7 +12,12 @@ from numpy.typing import NDArray
 
 from foxhole_stockpiles.core.events import EventBus, get_event_bus
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
-from foxhole_stockpiles.core.utils import extract_day_and_hour, most_frequent
+from foxhole_stockpiles.core.utils import (
+    extract_day_and_hour,
+    get_bundled_resource_path,
+    is_frozen,
+    most_frequent,
+)
 from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
@@ -50,10 +55,15 @@ class OCRCoordinator:
         self._event_bus = event_bus or get_event_bus()
         self.logger = logging.getLogger(__name__)
 
+        # Resolve tessdata path for PyInstaller bundles
+        tessdata_path = config.tessdata_path
+        if is_frozen() and tessdata_path in ("./tessdata", "tessdata"):
+            tessdata_path = str(get_bundled_resource_path("tessdata"))
+
         # Initialize services
         self._text_extractor = StockpileTextExtractor(
             custom_model=config.custom_model,
-            tessdata_path=config.tessdata_path,
+            tessdata_path=tessdata_path,
         )
         self._template_manager = TemplateManager(
             database_path=config.database_path, cache_size=config.template_cache_size

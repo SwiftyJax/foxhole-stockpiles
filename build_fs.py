@@ -1,5 +1,6 @@
 """Build script for creating fs executable (unified CLI and GUI)."""
 
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -45,10 +46,17 @@ def get_hidden_imports() -> list[str]:
         "starlette.routing",
         "starlette.middleware",
         "multipart",
+        # Jinja2 for web templates
+        "jinja2",
         # API modules
         "foxhole_stockpiles.api",
         "foxhole_stockpiles.api.server",
         "foxhole_stockpiles.api.auth",
+        "foxhole_stockpiles.api.dependencies",
+        "foxhole_stockpiles.api.memory_middleware",
+        "foxhole_stockpiles.api.web",
+        "foxhole_stockpiles.api.web.routes",
+        "foxhole_stockpiles.api.web.services",
         # All command modules
         "foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner",
         "foxhole_stockpiles.commands.database_builder.database_builder",
@@ -130,6 +138,16 @@ def build_executable(project_root: Path) -> bool:
         "fs",
         "--windowed",
     ]
+
+    # Add data files (templates for web interface, tessdata for OCR)
+    # Use os.pathsep for cross-platform compatibility (';' on Windows, ':' on Unix)
+    templates_src = project_root / "foxhole_stockpiles" / "api" / "templates"
+    templates_dst = os.path.join("foxhole_stockpiles", "api", "templates")
+    cmd.extend(["--add-data", f"{templates_src}{os.pathsep}{templates_dst}"])
+
+    tessdata_src = project_root / "tessdata"
+    tessdata_dst = "tessdata"
+    cmd.extend(["--add-data", f"{tessdata_src}{os.pathsep}{tessdata_dst}"])
 
     # Add all hidden imports
     for import_name in hidden_imports:

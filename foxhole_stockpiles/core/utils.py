@@ -31,6 +31,43 @@ def get_subprocess_kwargs() -> dict[str, Any]:
     return {}
 
 
+def is_frozen() -> bool:
+    """Check if running as a PyInstaller frozen executable.
+
+    Returns:
+        bool: True if running as frozen executable, False otherwise
+    """
+    return getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS")
+
+
+def get_bundled_resource_path(relative_path: str) -> Path:
+    """Get the path to a bundled resource, handling both dev and PyInstaller modes.
+
+    When running as a PyInstaller bundle, resources are extracted to a temporary
+    directory (sys._MEIPASS). This function resolves the correct path for both
+    development mode (relative to current directory) and frozen mode.
+
+    Args:
+        relative_path (str): Path relative to project root (e.g., "tessdata" or
+            "foxhole_stockpiles/api/templates")
+
+    Returns:
+        Path: Absolute path to the resource
+
+    Example:
+        >>> tessdata_path = get_bundled_resource_path("tessdata")
+        >>> templates_path = get_bundled_resource_path("foxhole_stockpiles/api/templates")
+    """
+    if is_frozen():
+        # Running as PyInstaller bundle - use _MEIPASS
+        base_path = Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    else:
+        # Development mode - use current working directory
+        base_path = Path.cwd()
+
+    return base_path / relative_path
+
+
 def load_catalog(path: Path) -> list[CatalogItem]:
     """Load catalog.json file with item definitions.
 
