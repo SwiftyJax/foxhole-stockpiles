@@ -32,13 +32,17 @@ class ServerThread(threading.Thread):
             )
 
             # Create uvicorn config
+            # log_config=None prevents uvicorn from reconfiguring logging,
+            # which would remove the Qt log handler we attached in the GUI
+            # Note: We don't pass log_level here so that our custom logger
+            # settings (from Logging tab) are respected for uvicorn loggers
             config = uvicorn.Config(
                 "foxhole_stockpiles.api.server:app",
                 host=settings.api_server.host,
                 port=settings.api_server.port,
                 workers=1,  # Force single worker for thread safety
                 reload=False,  # Disable reload in GUI mode
-                log_level=settings.api_server.log_level,
+                log_config=None,
             )
 
             # Create and run server

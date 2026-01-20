@@ -2,11 +2,60 @@
 
 import logging
 import sys
-from collections.abc import Sequence
 from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
 
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
+
+# Handler names used to identify handlers and avoid duplicates
+QT_GUI_HANDLER_NAME = "foxhole_qt_gui_handler"
+APP_STREAM_HANDLER_NAME = "foxhole_app_stream_handler"
+APP_FILE_HANDLER_NAME = "foxhole_app_file_handler"
+
+
+def _get_handler_by_name(logger: logging.Logger, name: str) -> logging.Handler | None:
+    """Get a handler by name from a logger.
+
+    Args:
+        logger: Logger to search
+        name: Handler name to find
+
+    Returns:
+        Handler if found, None otherwise
+    """
+    for handler in logger.handlers:
+        if getattr(handler, "name", None) == name:
+            return handler
+    return None
+
+
+def _remove_handler_by_name(logger: logging.Logger, name: str) -> None:
+    """Remove a handler by name from a logger.
+
+    Args:
+        logger: Logger to remove from
+        name: Handler name to remove
+    """
+    handler = _get_handler_by_name(logger, name)
+    if handler:
+        logger.removeHandler(handler)
+        handler.close()
+
+
+def _get_min_level(root_level: str, loggers: dict[str, str]) -> int:
+    """Get the minimum log level from root and all custom loggers.
+
+    Args:
+        root_level: The root logger level string
+        loggers: Dict of logger name to level string
+
+    Returns:
+        The minimum numeric log level
+    """
+    levels: list[int] = [logging.getLevelName(root_level.upper())]
+    for level in loggers.values():
+        levels.append(logging.getLevelName(level.upper()))
+    return min(levels)
 
 
 def setup_logging(settings: LoggingSettings) -> None:
@@ -14,45 +63,64 @@ def setup_logging(settings: LoggingSettings) -> None:
 
     Args:
         settings (LoggingSettings): Logging settings to configure logging.
-    """
-    # Save any existing handlers that should be preserved (e.g., GUI handlers)
-    root_logger = logging.getLogger()
-    existing_handlers = root_logger.handlers.copy()
 
-    handlers: Sequence[logging.Handler]
+    Note:
+        This function manages handlers by name to avoid duplicates and preserve
+        existing handlers (like the Qt GUI handler). It does NOT use force=True
+        to avoid removing handlers added by other parts of the application.
+
+        Handler level is set to the minimum of all configured levels so that
+        child loggers with lower levels than root can still output messages.
+    """
+    root_logger = logging.getLogger()
+
+    # Calculate minimum level across root and all custom loggers
+    # This ensures handlers accept messages from loggers with lower levels than root
+    min_level = _get_min_level(settings.log_level, settings.loggers)
+
+    # Set the root logger level (controls default for loggers without explicit level)
+    root_logger.setLevel(settings.log_level)
+
+    # Remove any existing app handlers (we'll recreate them with new settings)
+    _remove_handler_by_name(root_logger, APP_STREAM_HANDLER_NAME)
+    _remove_handler_by_name(root_logger, APP_FILE_HANDLER_NAME)
+
+    # Create formatter
+    formatter = logging.Formatter(fmt=settings.log_format, datefmt=settings.date_format)
+
+    # Create and add the appropriate handler
     if settings.log_file:
         log_path = Path(settings.log_file)
         log_path.parent.mkdir(parents=True, exist_ok=True)
+
         if settings.rotate_logs:
-            handlers = [
-                TimedRotatingFileHandler(
-                    filename=log_path,
-                    when="midnight",
-                    encoding="utf-8",
-                )
-            ]
+            handler: logging.Handler = TimedRotatingFileHandler(
+                filename=log_path,
+                when="midnight",
+                encoding="utf-8",
+            )
         else:
-            handlers = [logging.FileHandler(log_path)]
+            handler = logging.FileHandler(log_path)
+
+        handler.set_name(APP_FILE_HANDLER_NAME)
     else:
-        handlers = [logging.StreamHandler(sys.stdout)]
+        handler = logging.StreamHandler(sys.stdout)
+        handler.set_name(APP_STREAM_HANDLER_NAME)
 
-    handlers[0].setFormatter(
-        logging.Formatter(fmt=settings.log_format, datefmt=settings.date_format)
-    )
-    logging.basicConfig(
-        level=settings.log_level,
-        format=settings.log_format,
-        handlers=handlers,
-        force=True,
-    )
+    handler.setFormatter(formatter)
+    handler.setLevel(min_level)
+    root_logger.addHandler(handler)
 
-    # Restore any existing handlers that were removed by force=True
-    for handler in existing_handlers:
-        # Only add back handlers that aren't StreamHandler or FileHandler
-        # to avoid duplicates with what we just configured
-        if not isinstance(handler, (logging.StreamHandler, logging.FileHandler)):
-            root_logger.addHandler(handler)
+    # Update Qt GUI handler level if present
+    qt_handler = _get_handler_by_name(root_logger, QT_GUI_HANDLER_NAME)
+    if qt_handler:
+        qt_handler.setLevel(min_level)
 
-    # Configure individual logger levels
+    # Reset common loggers to NOTSET so they inherit from root
+    # This ensures log level changes take effect for all loggers
+    for logger_name in ["uvicorn", "uvicorn.error", "uvicorn.access", "fastapi"]:
+        logging.getLogger(logger_name).setLevel(logging.NOTSET)
+
+    # Configure individual logger levels from settings
     for logger_name, level in settings.loggers.items():
         logging.getLogger(logger_name).setLevel(level)

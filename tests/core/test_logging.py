@@ -5,12 +5,20 @@ including various logging levels, file outputs, formatting, and error handling.
 """
 
 import logging
+from collections.abc import Generator
+from logging.handlers import TimedRotatingFileHandler
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from foxhole_stockpiles.core.logging import setup_logging
+from foxhole_stockpiles.core.logging import (
+    APP_FILE_HANDLER_NAME,
+    APP_STREAM_HANDLER_NAME,
+    QT_GUI_HANDLER_NAME,
+    _get_handler_by_name,
+    _remove_handler_by_name,
+    setup_logging,
+)
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 
 
@@ -24,6 +32,65 @@ def default_logging_settings() -> LoggingSettings:
     return LoggingSettings()
 
 
+@pytest.fixture
+def clean_root_logger() -> Generator[logging.Logger, None, None]:
+    """Get root logger and clean up app handlers before/after test.
+
+    Yields:
+        logging.Logger: The root logger with app handlers removed.
+    """
+    root_logger = logging.getLogger()
+    # Remove app handlers before test
+    _remove_handler_by_name(root_logger, APP_STREAM_HANDLER_NAME)
+    _remove_handler_by_name(root_logger, APP_FILE_HANDLER_NAME)
+
+    yield root_logger
+
+    # Clean up after test
+    _remove_handler_by_name(root_logger, APP_STREAM_HANDLER_NAME)
+    _remove_handler_by_name(root_logger, APP_FILE_HANDLER_NAME)
+
+
+class TestHelperFunctions:
+    """Tests for helper functions."""
+
+    def test_get_handler_by_name_found(self) -> None:
+        """Test finding a handler by name."""
+        logger = logging.getLogger("test_get_handler")
+        handler = logging.StreamHandler()
+        handler.set_name("test_handler")
+        logger.addHandler(handler)
+
+        result = _get_handler_by_name(logger, "test_handler")
+        assert result is handler
+
+        # Cleanup
+        logger.removeHandler(handler)
+
+    def test_get_handler_by_name_not_found(self) -> None:
+        """Test that None is returned when handler not found."""
+        logger = logging.getLogger("test_get_handler_not_found")
+        result = _get_handler_by_name(logger, "nonexistent")
+        assert result is None
+
+    def test_remove_handler_by_name(self) -> None:
+        """Test removing a handler by name."""
+        logger = logging.getLogger("test_remove_handler")
+        handler = logging.StreamHandler()
+        handler.set_name("to_remove")
+        logger.addHandler(handler)
+
+        _remove_handler_by_name(logger, "to_remove")
+
+        assert _get_handler_by_name(logger, "to_remove") is None
+
+    def test_remove_handler_by_name_not_found(self) -> None:
+        """Test that removing nonexistent handler doesn't raise."""
+        logger = logging.getLogger("test_remove_nonexistent")
+        # Should not raise
+        _remove_handler_by_name(logger, "nonexistent")
+
+
 class TestSetupLogging:
     """Test suite for the setup_logging function.
 
@@ -31,132 +98,115 @@ class TestSetupLogging:
     including different handlers, log levels, formats, and file operations.
     """
 
-    def test_default_setup(self, default_logging_settings: LoggingSettings) -> None:
+    def test_default_setup(
+        self, default_logging_settings: LoggingSettings, clean_root_logger: logging.Logger
+    ) -> None:
         """Test default logging setup with stdout handler.
 
         Args:
-            default_logging_settings (LoggingSettings): Default logging settings fixture.
-
-        Validates that the default configuration creates a StreamHandler
-        with INFO level logging to stdout.
+            default_logging_settings: Default logging settings fixture.
+            clean_root_logger: Clean root logger fixture.
         """
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(default_logging_settings)
+        setup_logging(default_logging_settings)
 
-            mock_config.assert_called_once()
-            args, kwargs = mock_config.call_args
+        handler = _get_handler_by_name(clean_root_logger, APP_STREAM_HANDLER_NAME)
+        assert handler is not None
+        assert isinstance(handler, logging.StreamHandler)
+        assert clean_root_logger.level == logging.INFO
 
-            assert kwargs["level"] == "INFO"  # LoggingSettings uses string levels
-            assert len(kwargs["handlers"]) == 1
-            assert isinstance(kwargs["handlers"][0], logging.StreamHandler)
-            assert kwargs["force"] is True
-            assert kwargs["format"] == "[%(asctime)s] %(levelname)s [%(name)s] %(message)s"
-
-    def test_custom_log_level(self) -> None:
-        """Test setting custom log level.
-
-        Validates that custom log levels are properly applied to the
-        logging configuration.
-        """
+    def test_custom_log_level(self, clean_root_logger: logging.Logger) -> None:
+        """Test setting custom log level."""
         settings = LoggingSettings(log_level="DEBUG")
 
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(settings)
+        setup_logging(settings)
 
-            args, kwargs = mock_config.call_args
-            assert kwargs["level"] == "DEBUG"
+        assert clean_root_logger.level == logging.DEBUG
+        handler = _get_handler_by_name(clean_root_logger, APP_STREAM_HANDLER_NAME)
+        assert handler is not None
+        assert handler.level == logging.DEBUG
 
-    def test_file_logging(self, tmp_path: Path) -> None:
+    def test_file_logging(self, tmp_path: Path, clean_root_logger: logging.Logger) -> None:
         """Test logging to a file.
 
         Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
+            tmp_path: Temporary directory path from pytest fixture.
+            clean_root_logger: Clean root logger fixture.
         """
         log_file = tmp_path / "test.log"
         settings = LoggingSettings(log_file=str(log_file))
 
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(settings)
+        setup_logging(settings)
 
-            args, kwargs = mock_config.call_args
-            assert len(kwargs["handlers"]) == 1
-            assert isinstance(kwargs["handlers"][0], logging.FileHandler)
+        handler = _get_handler_by_name(clean_root_logger, APP_FILE_HANDLER_NAME)
+        assert handler is not None
+        assert isinstance(handler, logging.FileHandler)
 
-    def test_file_logging_creates_directory(self, tmp_path: Path) -> None:
+    def test_file_logging_creates_directory(
+        self, tmp_path: Path, clean_root_logger: logging.Logger
+    ) -> None:
         """Test that log directory is created if it doesn't exist.
 
         Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
+            tmp_path: Temporary directory path from pytest fixture.
+            clean_root_logger: Clean root logger fixture.
         """
         log_file = tmp_path / "subdir" / "test.log"
         settings = LoggingSettings(log_file=str(log_file))
 
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(settings)
+        setup_logging(settings)
 
-            assert log_file.parent.exists()
-            args, kwargs = mock_config.call_args
-            assert isinstance(kwargs["handlers"][0], logging.FileHandler)
+        assert log_file.parent.exists()
+        handler = _get_handler_by_name(clean_root_logger, APP_FILE_HANDLER_NAME)
+        assert isinstance(handler, logging.FileHandler)
 
-    def test_file_logging_with_rotation(self, tmp_path: Path) -> None:
+    def test_file_logging_with_rotation(
+        self, tmp_path: Path, clean_root_logger: logging.Logger
+    ) -> None:
         """Test logging to a file with rotation enabled.
 
         Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
+            tmp_path: Temporary directory path from pytest fixture.
+            clean_root_logger: Clean root logger fixture.
         """
         log_file = tmp_path / "test.log"
         settings = LoggingSettings(log_file=str(log_file), rotate_logs=True)
 
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(settings)
+        setup_logging(settings)
 
-            args, kwargs = mock_config.call_args
-            assert len(kwargs["handlers"]) == 1
-            # Should be TimedRotatingFileHandler when rotation is enabled
-            from logging.handlers import TimedRotatingFileHandler
+        handler = _get_handler_by_name(clean_root_logger, APP_FILE_HANDLER_NAME)
+        assert handler is not None
+        assert isinstance(handler, TimedRotatingFileHandler)
 
-            assert isinstance(kwargs["handlers"][0], TimedRotatingFileHandler)
-
-    def test_custom_format_string(self) -> None:
-        """Test setting custom format string.
-
-        Validates that custom format strings are properly applied to
-        the logging configuration.
-        """
+    def test_custom_format_string(self, clean_root_logger: logging.Logger) -> None:
+        """Test setting custom format string."""
         custom_format = "%(levelname)s: %(message)s"
         settings = LoggingSettings(log_format=custom_format)
 
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(settings)
+        setup_logging(settings)
 
-            args, kwargs = mock_config.call_args
-            assert kwargs["format"] == custom_format
+        handler = _get_handler_by_name(clean_root_logger, APP_STREAM_HANDLER_NAME)
+        assert handler is not None
+        assert handler.formatter is not None
+        assert handler.formatter._fmt == custom_format
 
-    def test_custom_date_format(self) -> None:
-        """Test setting custom date format.
-
-        Validates that custom date formats are properly applied to
-        the logging configuration.
-        """
+    def test_custom_date_format(self, clean_root_logger: logging.Logger) -> None:
+        """Test setting custom date format."""
         custom_date_format = "%Y/%m/%d %H:%M:%S"
         settings = LoggingSettings(date_format=custom_date_format)
 
-        with (
-            patch("logging.basicConfig"),
-            patch("logging.Formatter") as mock_formatter,
-        ):
-            setup_logging(settings)
+        setup_logging(settings)
 
-            # Check that Formatter was called with the custom date format
-            mock_formatter.assert_called_once_with(
-                fmt="[%(asctime)s] %(levelname)s [%(name)s] %(message)s", datefmt=custom_date_format
-            )
+        handler = _get_handler_by_name(clean_root_logger, APP_STREAM_HANDLER_NAME)
+        assert handler is not None
+        assert handler.formatter is not None
+        assert handler.formatter.datefmt == custom_date_format
 
-    def test_all_parameters(self, tmp_path: Path) -> None:
+    def test_all_parameters(self, tmp_path: Path, clean_root_logger: logging.Logger) -> None:
         """Test with all parameters customized.
 
         Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
+            tmp_path: Temporary directory path from pytest fixture.
+            clean_root_logger: Clean root logger fixture.
         """
         log_file = tmp_path / "custom.log"
         custom_format = "%(levelname)s: %(message)s"
@@ -170,67 +220,54 @@ class TestSetupLogging:
             rotate_logs=True,
         )
 
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(settings)
+        setup_logging(settings)
 
-            args, kwargs = mock_config.call_args
-            assert kwargs["level"] == "WARNING"
-            assert kwargs["format"] == custom_format
-            from logging.handlers import TimedRotatingFileHandler
+        assert clean_root_logger.level == logging.WARNING
+        handler = _get_handler_by_name(clean_root_logger, APP_FILE_HANDLER_NAME)
+        assert handler is not None
+        assert isinstance(handler, TimedRotatingFileHandler)
+        assert handler.formatter is not None
+        assert handler.formatter._fmt == custom_format
+        assert handler.formatter.datefmt == custom_date_format
 
-            assert isinstance(kwargs["handlers"][0], TimedRotatingFileHandler)
-            assert kwargs["force"] is True
-
-    def test_empty_log_file_uses_stdout(self) -> None:
-        """Test that empty log_file string uses stdout handler.
-
-        Validates that providing an empty string for log_file falls back
-        to using a StreamHandler for stdout output.
-        """
+    def test_empty_log_file_uses_stdout(self, clean_root_logger: logging.Logger) -> None:
+        """Test that empty log_file string uses stdout handler."""
         settings = LoggingSettings(log_file="")
 
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(settings)
+        setup_logging(settings)
 
-            args, kwargs = mock_config.call_args
-            assert isinstance(kwargs["handlers"][0], logging.StreamHandler)
+        handler = _get_handler_by_name(clean_root_logger, APP_STREAM_HANDLER_NAME)
+        assert handler is not None
+        assert isinstance(handler, logging.StreamHandler)
 
-    def test_none_log_file_uses_stdout(self) -> None:
-        """Test that None log_file uses stdout handler.
-
-        Validates that providing None for log_file uses a StreamHandler
-        for stdout output.
-        """
+    def test_none_log_file_uses_stdout(self, clean_root_logger: logging.Logger) -> None:
+        """Test that None log_file uses stdout handler."""
         settings = LoggingSettings(log_file=None)
 
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(settings)
+        setup_logging(settings)
 
-            args, kwargs = mock_config.call_args
-            assert isinstance(kwargs["handlers"][0], logging.StreamHandler)
+        handler = _get_handler_by_name(clean_root_logger, APP_STREAM_HANDLER_NAME)
+        assert handler is not None
+        assert isinstance(handler, logging.StreamHandler)
 
-    def test_logger_specific_settings(self) -> None:
-        """Test logger-specific settings configuration.
-
-        Validates that logger-specific settings are handled correctly.
-        """
+    def test_logger_specific_settings(self, clean_root_logger: logging.Logger) -> None:
+        """Test logger-specific settings configuration."""
         settings = LoggingSettings(loggers={"foxhole_stockpiles": "DEBUG", "uvicorn": "WARNING"})
 
-        with patch("logging.basicConfig") as mock_config:
-            setup_logging(settings)
+        setup_logging(settings)
 
-            # The function should still call basicConfig
-            mock_config.assert_called_once()
+        # Verify logger-specific levels were set
+        assert logging.getLogger("foxhole_stockpiles").level == logging.DEBUG
+        assert logging.getLogger("uvicorn").level == logging.WARNING
 
-            # Logger-specific settings would be handled elsewhere in the application
-            # This test just verifies the settings can be created and passed to setup_logging
-            assert settings.loggers == {"foxhole_stockpiles": "DEBUG", "uvicorn": "WARNING"}
-
-    def test_handler_formatter_setup(self, tmp_path: Path) -> None:
+    def test_handler_formatter_setup(
+        self, tmp_path: Path, clean_root_logger: logging.Logger
+    ) -> None:
         """Test that handler formatter is properly configured.
 
         Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
+            tmp_path: Temporary directory path from pytest fixture.
+            clean_root_logger: Clean root logger fixture.
         """
         log_file = tmp_path / "test.log"
         custom_format = "%(message)s"
@@ -240,15 +277,59 @@ class TestSetupLogging:
             log_file=str(log_file), log_format=custom_format, date_format=custom_date_format
         )
 
-        with (
-            patch("logging.basicConfig"),
-            patch("logging.Formatter") as mock_formatter,
-            patch("logging.FileHandler.setFormatter") as mock_set_formatter,
-        ):
-            setup_logging(settings)
+        setup_logging(settings)
 
-            # Verify formatter was created with correct parameters
-            mock_formatter.assert_called_once_with(fmt=custom_format, datefmt=custom_date_format)
+        handler = _get_handler_by_name(clean_root_logger, APP_FILE_HANDLER_NAME)
+        assert handler is not None
+        assert handler.formatter is not None
+        assert handler.formatter._fmt == custom_format
+        assert handler.formatter.datefmt == custom_date_format
 
-            # Verify setFormatter was called on the handler
-            mock_set_formatter.assert_called_once()
+    def test_preserves_qt_handler(self, clean_root_logger: logging.Logger) -> None:
+        """Test that Qt GUI handler is preserved when setup_logging is called."""
+        # Add a mock Qt handler
+        qt_handler = logging.StreamHandler()
+        qt_handler.set_name(QT_GUI_HANDLER_NAME)
+        clean_root_logger.addHandler(qt_handler)
+
+        settings = LoggingSettings()
+        setup_logging(settings)
+
+        # Qt handler should still be there
+        preserved_handler = _get_handler_by_name(clean_root_logger, QT_GUI_HANDLER_NAME)
+        assert preserved_handler is qt_handler
+
+        # Cleanup
+        clean_root_logger.removeHandler(qt_handler)
+
+    def test_replaces_existing_app_handler(self, clean_root_logger: logging.Logger) -> None:
+        """Test that existing app handler is replaced on subsequent calls."""
+        settings1 = LoggingSettings(log_level="INFO")
+        setup_logging(settings1)
+
+        handler1 = _get_handler_by_name(clean_root_logger, APP_STREAM_HANDLER_NAME)
+        assert handler1 is not None
+
+        settings2 = LoggingSettings(log_level="DEBUG")
+        setup_logging(settings2)
+
+        handler2 = _get_handler_by_name(clean_root_logger, APP_STREAM_HANDLER_NAME)
+        assert handler2 is not None
+        assert handler2 is not handler1
+        assert handler2.level == logging.DEBUG
+
+    def test_no_duplicate_handlers(self, clean_root_logger: logging.Logger) -> None:
+        """Test that calling setup_logging multiple times doesn't create duplicates."""
+        settings = LoggingSettings()
+
+        setup_logging(settings)
+        setup_logging(settings)
+        setup_logging(settings)
+
+        # Count handlers with our name
+        count = sum(
+            1
+            for h in clean_root_logger.handlers
+            if getattr(h, "name", None) == APP_STREAM_HANDLER_NAME
+        )
+        assert count == 1

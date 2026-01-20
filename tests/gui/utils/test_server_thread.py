@@ -56,13 +56,14 @@ def test_server_thread_run(
     thread.run()
 
     # Verify config was created with correct parameters
+    # Note: log_level is not passed to let custom logger settings take effect
     mock_config.assert_called_once_with(
         "foxhole_stockpiles.api.server:app",
         host="127.0.0.1",
         port=8000,
         workers=1,
         reload=False,
-        log_level="info",
+        log_config=None,
     )
 
     # Verify server was created and run

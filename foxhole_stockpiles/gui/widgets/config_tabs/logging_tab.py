@@ -9,10 +9,72 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QPushButton,
+    QScrollArea,
+    QVBoxLayout,
     QWidget,
 )
 
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
+
+LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+
+
+class CustomLoggerRowWidget(QWidget):
+    """Widget for a custom logger entry with name, level dropdown, and remove button."""
+
+    def __init__(
+        self,
+        logger_name: str,
+        level: str,
+        parent: QWidget | None = None,
+    ) -> None:
+        """Initialize the custom logger row widget.
+
+        Args:
+            logger_name: Name of the logger
+            level: Log level for this logger
+            parent: Parent widget
+        """
+        super().__init__(parent)
+        self._removed = False
+
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(0, 2, 0, 2)
+
+        # Logger name input
+        self.name_input = QLineEdit(logger_name)
+        self.name_input.setPlaceholderText("e.g., uvicorn.access")
+        layout.addWidget(self.name_input, 1)  # stretch factor 1
+
+        # Level dropdown
+        self.level_combo = QComboBox()
+        self.level_combo.addItems(LOG_LEVELS)
+        self.level_combo.setCurrentText(level.upper())
+        self.level_combo.setFixedWidth(100)
+        layout.addWidget(self.level_combo)
+
+        # Remove button
+        self.remove_btn = QPushButton("Remove")
+        self.remove_btn.setFixedWidth(80)
+        self.remove_btn.clicked.connect(self._on_remove)
+        layout.addWidget(self.remove_btn)
+
+    def _on_remove(self) -> None:
+        """Handle remove button click."""
+        self._removed = True
+        self.setVisible(False)
+
+    def is_removed(self) -> bool:
+        """Check if this row was removed."""
+        return self._removed
+
+    def get_logger_name(self) -> str:
+        """Get the logger name."""
+        return self.name_input.text().strip()
+
+    def get_level(self) -> str:
+        """Get the selected log level."""
+        return self.level_combo.currentText()
 
 
 class LoggingTab(QWidget):
@@ -25,26 +87,28 @@ class LoggingTab(QWidget):
             parent (QWidget | None): Parent widget. Defaults to None.
         """
         super().__init__(parent)
+        self.custom_logger_rows: list[CustomLoggerRowWidget] = []
         self.init_ui()
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        layout = QFormLayout(self)
+        layout = QVBoxLayout(self)
 
-        # Log Level
-        log_level_label = QLabel("Log Level:")
-        log_level_label.setToolTip(
-            "Minimum log level to record:\n\n"
-            "• DEBUG - Very detailed logs for troubleshooting\n"
-            "• INFO - General operational information (recommended)\n"
-            "• WARNING - Warning messages and errors\n"
-            "• ERROR - Only error messages\n"
-            "• CRITICAL - Only critical failures"
+        # Form section for basic settings
+        form_layout = QFormLayout()
+        form_layout.setContentsMargins(0, 0, 0, 0)
+
+        # Root Log Level
+        root_level_label = QLabel("Root Log Level:")
+        root_level_label.setToolTip(
+            "Global default log level for all loggers.\n\n"
+            "Messages below this level are filtered out unless\n"
+            "a custom logger overrides it."
         )
-        self.log_level_input = QComboBox()
-        self.log_level_input.addItems(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"])
-        self.log_level_input.setCurrentText("INFO")
-        layout.addRow(log_level_label, self.log_level_input)
+        self.root_level_combo = QComboBox()
+        self.root_level_combo.addItems(LOG_LEVELS)
+        self.root_level_combo.setCurrentText("INFO")
+        form_layout.addRow(root_level_label, self.root_level_combo)
 
         # Log Format
         log_format_label = QLabel("Log Format:")
@@ -61,7 +125,7 @@ class LoggingTab(QWidget):
         self.log_format_input.setPlaceholderText(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
-        layout.addRow(log_format_label, self.log_format_input)
+        form_layout.addRow(log_format_label, self.log_format_input)
 
         # Date Format
         date_format_label = QLabel("Date Format:")
@@ -78,7 +142,7 @@ class LoggingTab(QWidget):
         )
         self.date_format_input = QLineEdit()
         self.date_format_input.setPlaceholderText("%Y-%m-%d %H:%M:%S")
-        layout.addRow(date_format_label, self.date_format_input)
+        form_layout.addRow(date_format_label, self.date_format_input)
 
         # Rotate Logs
         rotate_logs_label = QLabel("Rotate Logs:")
@@ -88,7 +152,7 @@ class LoggingTab(QWidget):
             "Prevents log files from consuming too much disk space."
         )
         self.rotate_logs_input = QCheckBox("Enable log rotation")
-        layout.addRow(rotate_logs_label, self.rotate_logs_input)
+        form_layout.addRow(rotate_logs_label, self.rotate_logs_input)
 
         # Log File
         log_file_label = QLabel("Log File:")
@@ -101,12 +165,64 @@ class LoggingTab(QWidget):
         self.log_file_input = QLineEdit()
         self.log_file_input.setPlaceholderText("Optional: path to log file")
         log_browse = QPushButton("Browse...")
-        log_browse.clicked.connect(self.browse_log_file)
+        log_browse.clicked.connect(self._browse_log_file)
         log_file_layout.addWidget(self.log_file_input)
         log_file_layout.addWidget(log_browse)
-        layout.addRow(log_file_label, log_file_layout)
+        form_layout.addRow(log_file_label, log_file_layout)
 
-    def browse_log_file(self) -> None:
+        layout.addLayout(form_layout)
+
+        # Custom Log Levels header with Add button
+        header_layout = QHBoxLayout()
+        custom_loggers_label = QLabel("Custom Log Levels:")
+        custom_loggers_label.setToolTip(
+            "Override log levels for specific loggers.\n\n"
+            "Common loggers:\n"
+            "• uvicorn - Web server logs\n"
+            "• uvicorn.access - HTTP request logs\n"
+            "• foxhole_stockpiles - Application logs"
+        )
+        add_btn = QPushButton("Add")
+        add_btn.clicked.connect(self._on_add_logger)
+        header_layout.addWidget(custom_loggers_label)
+        header_layout.addStretch()
+        header_layout.addWidget(add_btn)
+        layout.addLayout(header_layout)
+
+        # Scroll area for custom logger rows (expands to fill remaining space)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+
+        self.loggers_container = QWidget()
+        self.loggers_list_layout = QVBoxLayout(self.loggers_container)
+        self.loggers_list_layout.setContentsMargins(0, 0, 0, 0)
+        self.loggers_list_layout.setSpacing(4)
+        self.loggers_list_layout.addStretch()
+
+        scroll.setWidget(self.loggers_container)
+        layout.addWidget(scroll, 1)  # stretch factor 1 to fill remaining space
+
+    def _add_custom_logger_row(self, logger_name: str, level: str) -> CustomLoggerRowWidget:
+        """Add a custom logger row to the list.
+
+        Args:
+            logger_name: Name of the logger
+            level: Log level
+
+        Returns:
+            The created CustomLoggerRowWidget
+        """
+        row = CustomLoggerRowWidget(logger_name, level)
+        self.custom_logger_rows.append(row)
+        # Insert before the stretch
+        self.loggers_list_layout.insertWidget(self.loggers_list_layout.count() - 1, row)
+        return row
+
+    def _on_add_logger(self) -> None:
+        """Handle add logger button click."""
+        self._add_custom_logger_row("", "INFO")
+
+    def _browse_log_file(self) -> None:
         """Open file dialog for log file path."""
         filepath, _ = QFileDialog.getSaveFileName(
             self,
@@ -117,17 +233,34 @@ class LoggingTab(QWidget):
         if filepath:
             self.log_file_input.setText(filepath)
 
+    def _clear_custom_logger_rows(self) -> None:
+        """Clear all custom logger rows (for reloading)."""
+        for row in self.custom_logger_rows:
+            row.setParent(None)
+            row.deleteLater()
+        self.custom_logger_rows.clear()
+
     def set_values(self, settings: LoggingSettings) -> None:
         """Set widget values from settings.
 
         Args:
             settings (LoggingSettings): LoggingSettings instance to load values from.
         """
-        self.log_level_input.setCurrentText(settings.log_level.upper())
+        # Set root log level
+        self.root_level_combo.setCurrentText(settings.log_level.upper())
+
+        # Set other values
         self.log_format_input.setText(settings.log_format)
         self.date_format_input.setText(settings.date_format)
         self.rotate_logs_input.setChecked(settings.rotate_logs)
         self.log_file_input.setText(str(settings.log_file) if settings.log_file else "")
+
+        # Clear existing custom logger rows and recreate
+        self._clear_custom_logger_rows()
+
+        # Add custom loggers from settings
+        for logger_name, level in settings.loggers.items():
+            self._add_custom_logger_row(logger_name, level)
 
     def get_values(self) -> LoggingSettings:
         """Get current values from widgets.
@@ -135,8 +268,26 @@ class LoggingTab(QWidget):
         Returns:
             LoggingSettings: LoggingSettings instance with current values from widgets
         """
+        # Get root log level
+        log_level = self.root_level_combo.currentText()
+
+        # Collect custom logger levels
+        loggers: dict[str, str] = {}
+        for row in self.custom_logger_rows:
+            if row.is_removed():
+                continue
+
+            name = row.get_logger_name()
+            level = row.get_level()
+
+            if not name:
+                continue
+
+            loggers[name] = level
+
         return LoggingSettings(
-            log_level=self.log_level_input.currentText(),
+            log_level=log_level,
+            loggers=loggers,
             log_format=self.log_format_input.text(),
             date_format=self.date_format_input.text(),
             rotate_logs=self.rotate_logs_input.isChecked(),

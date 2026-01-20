@@ -9,6 +9,9 @@ from PyQt6.QtCore import QObject, pyqtSignal
 class QtLogHandler(logging.Handler, QObject):
     """Custom log handler that emits log records as Qt signals."""
 
+    # Identifier to recognize this handler type in logging configuration
+    HANDLER_NAME = "foxhole_qt_gui_handler"
+
     log_message = pyqtSignal(dict)
 
     def __init__(self) -> None:
@@ -16,6 +19,8 @@ class QtLogHandler(logging.Handler, QObject):
         logging.Handler.__init__(self)
         QObject.__init__(self)
         self._is_closed = False
+        # Set name to identify this handler
+        self.set_name(self.HANDLER_NAME)
         # Prevent logging.shutdown() from trying to flush this handler
         # since Qt may delete the C++ object before Python cleanup
         self.flushOnClose = False

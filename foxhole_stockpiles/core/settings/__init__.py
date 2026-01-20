@@ -1,6 +1,7 @@
 """Configuration module for the app."""
 
 import json
+import logging
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -8,6 +9,8 @@ from typing import Any
 from pydantic_settings import InitSettingsSource, JsonConfigSettingsSource
 
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
+
+logger = logging.getLogger(__name__)
 
 
 class MigratingInitSettingsSource(InitSettingsSource):
@@ -67,11 +70,22 @@ def get_settings() -> AppSettings:
 def reload_settings() -> AppSettings:
     """Reload the settings by clearing the cache.
 
+    Always reconfigures logging to ensure changes take effect.
+
     Returns:
         AppSettings: Newly loaded settings
     """
+    # Clear cache and get new settings
     get_settings.cache_clear()
-    return get_settings()
+    new_settings = get_settings()
+
+    # Always reconfigure logging to ensure any changes take effect
+    # Import here to avoid circular import (settings/__init__ <-> core/logging)
+    from foxhole_stockpiles.core.logging import setup_logging
+
+    setup_logging(new_settings.logging)
+
+    return new_settings
 
 
 __all__ = [

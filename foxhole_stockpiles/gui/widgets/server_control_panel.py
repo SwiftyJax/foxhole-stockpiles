@@ -44,9 +44,11 @@ class ServerControlPanel(QWidget):
         self.server_running = False
         self.server_thread: ServerThread | None = None
 
-        # Setup log handler
+        # Setup log handler and attach to root logger immediately
+        # This allows capturing logs even before the server starts
         self.log_handler = QtLogHandler()
         self.log_handler.log_message.connect(self.append_log)
+        self._attach_log_handler()
 
         # Setup scanner client
         self.scanner_client = ScannerClient()
@@ -244,13 +246,20 @@ class ServerControlPanel(QWidget):
         else:
             self.start_server()
 
+    def _attach_log_handler(self) -> None:
+        """Attach the Qt log handler to root logger if not already attached."""
+        root_logger = logging.getLogger()
+
+        # Check if our handler is already attached (by name)
+        for handler in root_logger.handlers:
+            if getattr(handler, "name", None) == QtLogHandler.HANDLER_NAME:
+                return  # Already attached
+
+        root_logger.addHandler(self.log_handler)
+
     def start_server(self) -> None:
         """Start the FastAPI server."""
         logger.info("Starting server...")
-
-        # Add log handler to root logger to capture all logs
-        root_logger = logging.getLogger()
-        root_logger.addHandler(self.log_handler)
 
         # Create and start server thread
         self.server_thread = ServerThread()
@@ -274,10 +283,8 @@ class ServerControlPanel(QWidget):
         # Clear all dependency caches so next start picks up fresh settings
         clear_dependency_caches()
 
-        # Close and remove log handler
-        root_logger = logging.getLogger()
-        root_logger.removeHandler(self.log_handler)
-        self.log_handler.close()
+        # Note: Keep the log handler attached so we continue to see logs
+        # even when the server is stopped
 
         self.server_running = False
         self.start_stop_button.setText("Start Server")
