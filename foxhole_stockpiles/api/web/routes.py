@@ -55,9 +55,9 @@ async def web_index(request: Request) -> HTMLResponse:
         db_error = f"Database error: {e}"
 
     return templates.TemplateResponse(
+        request,
         "index.html",
         {
-            "request": request,
             "version": __version__,
             "db_error": db_error,
         },
