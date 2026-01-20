@@ -565,7 +565,6 @@ class IconImportWindow(QMainWindow):
         # Check if extractor tool is configured
         extractor_tool = self.settings.database_builder.extractor_tool
         if not extractor_tool or not extractor_tool.exists():
-            logger.warning("Cannot validate PAK files: extractor tool not configured")
             return
 
         # Disable PAK controls while validating
@@ -600,11 +599,6 @@ class IconImportWindow(QMainWindow):
             self.validation_status_label.setStyleSheet("color: #4CAF50; font-size: 11px;")
             self.vanilla_group.setVisible(False)
             self.clear_vanilla_pak()
-            logger.info(
-                "PAK validation passed: crate_icon=%s, subicons=%d",
-                result.has_crate_icon,
-                result.subicons_count,
-            )
         else:
             # PAK files are missing required assets - show vanilla section
             self.validation_status_label.setText("⚠ Missing required assets")
@@ -622,7 +616,6 @@ class IconImportWindow(QMainWindow):
                 f"⚠️ The selected mod PAK files are missing required assets ({missing_text}). "
                 "Please select the vanilla game PAK file (War-WindowsNoEditor.pak)."
             )
-            logger.info("PAK validation: missing %s", missing_text)
 
         self._update_start_button_state()
 
@@ -644,7 +637,6 @@ class IconImportWindow(QMainWindow):
 
         extractor_tool = self.settings.database_builder.extractor_tool
         if not extractor_tool or not extractor_tool.exists():
-            logger.warning("Cannot validate vanilla PAK: extractor tool not configured")
             return
 
         # Disable vanilla PAK controls while validating
@@ -680,11 +672,6 @@ class IconImportWindow(QMainWindow):
             self.vanilla_info.setVisible(False)
             self.validation_status_label.setText("All required assets found")
             self.validation_status_label.setStyleSheet("color: #4CAF50; font-size: 11px;")
-            logger.info(
-                "Vanilla PAK validation passed: crate_icon=%s, subicons=%d",
-                result.has_crate_icon,
-                result.subicons_count,
-            )
         else:
             # Vanilla PAK is missing required assets - this is the wrong file!
             self.vanilla_info.setVisible(True)
@@ -708,7 +695,6 @@ class IconImportWindow(QMainWindow):
                 "This file is typically located in:\n"
                 "Steam/steamapps/common/Foxhole/War/Content/Paks/",
             )
-            logger.warning("Vanilla PAK validation failed: missing %s", missing_text)
 
         self._update_start_button_state()
 
