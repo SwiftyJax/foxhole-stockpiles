@@ -31,6 +31,30 @@ def get_subprocess_kwargs() -> dict[str, Any]:
     return {}
 
 
+def get_tesseract_version() -> str | None:
+    """Get Tesseract version without showing console window on Windows.
+
+    Returns:
+        str | None: Tesseract version string, or None if not found
+    """
+    try:
+        result = subprocess.run(
+            ["tesseract", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=10,
+            **get_subprocess_kwargs(),
+        )
+        if result.returncode == 0:
+            # First line is typically "tesseract X.X.X"
+            stdout: str = result.stdout
+            first_line = stdout.strip().split("\n")[0]
+            return first_line
+        return None
+    except (subprocess.SubprocessError, FileNotFoundError, subprocess.TimeoutExpired):
+        return None
+
+
 def is_frozen() -> bool:
     """Check if running as a PyInstaller frozen executable.
 

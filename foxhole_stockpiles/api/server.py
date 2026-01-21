@@ -8,11 +8,9 @@ from typing import Annotated, Any
 
 import cv2
 import numpy as np
-import pytesseract
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from pytesseract import TesseractNotFoundError
 
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.auth import create_auth_dependency
@@ -26,6 +24,7 @@ from foxhole_stockpiles.api.web.routes import router as web_router
 from foxhole_stockpiles.core.events import get_event_bus
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
+from foxhole_stockpiles.core.utils import get_tesseract_version
 from foxhole_stockpiles.core.version import get_version_info
 from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.enums.item_faction import ItemFaction
@@ -65,11 +64,11 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Database path: %s", app_settings.scanner.database_path)
     logger.info("Web icon mod: %s", app_settings.api_server.web_icon_mod)
 
-    # Check if Tesseract is accessible
-    try:
-        version = pytesseract.get_tesseract_version()
+    # Check if Tesseract is accessible (using our wrapper to avoid console flash on Windows)
+    version = get_tesseract_version()
+    if version:
         logger.info("Tesseract OCR version: %s", version)
-    except TesseractNotFoundError as e:
+    else:
         error_msg = (
             "Tesseract OCR not found. Required for processing stockpile scans.\n\n"
             "Download and install Tesseract:\n"
@@ -79,7 +78,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             "After installation, ensure tesseract is in your system PATH."
         )
         logger.error(error_msg)
-        raise RuntimeError(error_msg) from e
+        raise RuntimeError(error_msg)
 
     # Initialize notification service if enabled
     if app_settings.notifications.enabled:
