@@ -62,7 +62,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger = logging.getLogger(__name__)
     logger.info("Starting Foxhole Stockpile Scanner API v%s", get_version_info())
     logger.info("Database path: %s", app_settings.scanner.database_path)
-    logger.info("Web icon mod: %s", app_settings.api_server.web_icon_mod)
 
     # Check if Tesseract is accessible (using our wrapper to avoid console flash on Windows)
     version = get_tesseract_version()
