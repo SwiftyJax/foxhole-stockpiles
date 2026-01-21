@@ -217,6 +217,9 @@ class MainWindow(QMainWindow):
         import_window = IconImportWindow(self)
         import_window.setWindowModality(Qt.WindowModality.ApplicationModal)
 
+        # Connect signal to handle database updates
+        import_window.database_updated.connect(self.server_panel.on_database_updated)
+
         # Center the import window on the main window
         main_geometry = self.geometry()
         import_geometry = import_window.geometry()

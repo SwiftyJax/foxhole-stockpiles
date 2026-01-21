@@ -1,6 +1,7 @@
 """Server control panel widget for managing the FastAPI server and scanning screenshots."""
 
 import logging
+from pathlib import Path
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor
@@ -144,6 +145,46 @@ class ServerControlPanel(QWidget):
     def refresh_db_info(self) -> None:
         """Refresh the database info and validation state."""
         self._update_validation_state()
+
+    def on_database_updated(self, updated_db_path: Path) -> None:
+        """Handle database file being updated.
+
+        Called when the database builder successfully updates a database file.
+        If the updated file matches the configured database, refresh the info
+        and restart the server to pick up the changes.
+
+        Args:
+            updated_db_path: Path to the database file that was updated
+        """
+        from foxhole_stockpiles.core.settings.app_settings import AppSettings
+
+        # Check if the updated database is the one we're using
+        try:
+            settings = AppSettings()
+            configured_path = settings.scanner.database_path
+            if configured_path is None:
+                return
+
+            # Resolve both paths for comparison
+            configured_resolved = Path(configured_path).resolve()
+            updated_resolved = Path(updated_db_path).resolve()
+
+            if configured_resolved != updated_resolved:
+                return
+
+            logger.info("Configured database was updated")
+
+            # Refresh the database info display
+            self._update_validation_state()
+
+            # Restart server to pick up the new database
+            if self.server_running:
+                logger.info("Restarting server to load updated database...")
+                self.stop_server()
+                self.start_server()
+
+        except Exception as e:
+            logger.warning("Error checking database update: %s", e)
 
     def _update_validation_state(self) -> None:
         """Update the validation state and show/hide appropriate panels."""

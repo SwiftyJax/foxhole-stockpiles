@@ -5,7 +5,7 @@ import os
 import platform
 from pathlib import Path
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QDragEnterEvent, QDropEvent, QKeyEvent, QKeySequence
 from PyQt6.QtWidgets import (
     QAbstractItemView,
@@ -42,6 +42,9 @@ logger = logging.getLogger(__name__)
 
 class IconImportWindow(QMainWindow):
     """Window for importing new icons to the database."""
+
+    # Signal emitted when database is successfully updated (passes the database path)
+    database_updated = pyqtSignal(Path)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the icon import window.
@@ -794,6 +797,7 @@ class IconImportWindow(QMainWindow):
 
         mod_name = self.mod_name_input.text().strip()
         db_path = Path(self.db_path_input.text().strip())
+        self._current_import_db_path = db_path  # Store for signal emission
 
         # Disable inputs and start button
         self.start_button.setEnabled(False)
@@ -888,6 +892,10 @@ class IconImportWindow(QMainWindow):
         self.overwrite_checkbox.setEnabled(True)
         self.db_path_input.setEnabled(True)
         self.workers_spinbox.setEnabled(True)
+
+        # Emit signal when database was successfully updated
+        if success and hasattr(self, "_current_import_db_path"):
+            self.database_updated.emit(self._current_import_db_path)
 
     def on_import_error(self, error_msg: str) -> None:
         """Handle import process error.
