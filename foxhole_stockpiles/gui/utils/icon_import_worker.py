@@ -114,6 +114,7 @@ class IconImportWorker(QThread):
 
         try:
             # Build configuration from settings
+            external_tools = self.settings.external_tools
             db_builder = self.settings.database_builder
             # Use custom database path if provided, otherwise fall back to settings
             database_path = self.database_path or self.settings.scanner.database_path
@@ -123,8 +124,8 @@ class IconImportWorker(QThread):
                 catalog_path=self.catalog_path,
                 overwrite=self.overwrite,
                 vanilla_pak_file=self.vanilla_pak_file,
-                extractor_tool=db_builder.extractor_tool,
-                converter_tool=db_builder.converter_tool,
+                extractor_tool=external_tools.repak,
+                converter_tool=external_tools.umodel,
                 database_path=database_path,
                 target_resolutions=db_builder.target_resolutions,
                 template_settings=self.settings.templates,

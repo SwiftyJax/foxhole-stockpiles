@@ -305,13 +305,16 @@ class IconImportWindow(QMainWindow):
         Returns:
             bool: True if all required settings are configured, False otherwise
         """
+        external_tools = self.settings.external_tools
         db_builder = self.settings.database_builder
 
-        # Check if all three required paths are configured and exist
-        if not db_builder.extractor_tool or not db_builder.extractor_tool.exists():
+        # Check if external tools are configured and exist
+        if not external_tools.repak or not external_tools.repak.exists():
             return False
-        if not db_builder.converter_tool or not db_builder.converter_tool.exists():
+        if not external_tools.umodel or not external_tools.umodel.exists():
             return False
+
+        # Check if catalog file is configured and exists
         if not db_builder.catalog_file or not db_builder.catalog_file.exists():
             return False
 
@@ -566,7 +569,7 @@ class IconImportWindow(QMainWindow):
             self.validation_worker.wait()
 
         # Check if extractor tool is configured
-        extractor_tool = self.settings.database_builder.extractor_tool
+        extractor_tool = self.settings.external_tools.repak
         if not extractor_tool or not extractor_tool.exists():
             return
 
@@ -638,7 +641,7 @@ class IconImportWindow(QMainWindow):
         if not self.vanilla_pak_file:
             return
 
-        extractor_tool = self.settings.database_builder.extractor_tool
+        extractor_tool = self.settings.external_tools.repak
         if not extractor_tool or not extractor_tool.exists():
             return
 

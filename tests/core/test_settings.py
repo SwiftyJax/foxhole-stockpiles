@@ -323,7 +323,7 @@ class TestConfigMigration:
         settings = AppSettings(**v1_config)  # type: ignore[arg-type]
 
         # Verify migration occurred
-        assert settings.config_version == 2
+        assert settings.config_version == 3
         assert settings.output.destination == OutputDestination.WEBHOOK
         assert settings.output.file.path == "/tmp/output.json"
         assert settings.output.webhook.url == "https://example.com/webhook"
@@ -369,14 +369,14 @@ class TestConfigMigration:
                 settings = AppSettings(**v2_config)  # type: ignore[arg-type]
 
         # Should remain v2
-        assert settings.config_version == 2
+        assert settings.config_version == 3
         assert settings.output.destination == OutputDestination.FILE
         assert settings.output.file.path == "/custom/output.json"
 
     def test_default_config_is_v2(self) -> None:
         """Test that default config is version 2."""
         settings = AppSettings()
-        assert settings.config_version == 2
+        assert settings.config_version == 3
 
     def test_migrate_v1_to_v2_with_scanner_fields_cleanup(self) -> None:
         """Test migration removes deprecated scanner fields."""
@@ -398,7 +398,7 @@ class TestConfigMigration:
         settings = AppSettings(**v1_config)  # type: ignore[arg-type]
 
         # Verify migration occurred
-        assert settings.config_version == 2
+        assert settings.config_version == 3
         # Verify deprecated fields are not in scanner settings
         assert not hasattr(settings.scanner, "confidence_threshold")
         assert not hasattr(settings.scanner, "confidence_by_resolution")

@@ -14,6 +14,7 @@ from foxhole_stockpiles.core.settings.sections import (
     APIAuthSettings,
     APIServerSettings,
     DatabaseBuilderSettings,
+    ExternalToolsSettings,
     LoggingSettings,
     NotificationsSettings,
     OCRSettings,
@@ -28,7 +29,7 @@ class AppSettings(BaseSettings):
     """Application Settings."""
 
     config_version: int = Field(
-        default=2,
+        default=3,
         description="Configuration format version for migration purposes",
     )
     api_server: APIServerSettings = Field(
@@ -36,6 +37,9 @@ class AppSettings(BaseSettings):
     )
     api_auth: APIAuthSettings = Field(
         description="API authentication settings", default_factory=APIAuthSettings
+    )
+    external_tools: ExternalToolsSettings = Field(
+        description="External tools settings", default_factory=ExternalToolsSettings
     )
     logging: LoggingSettings = Field(
         description="Logging settings", default_factory=LoggingSettings
@@ -86,11 +90,11 @@ class AppSettings(BaseSettings):
         if version == 1:
             data = cls._migrate_v1_to_v2(data)
             data["config_version"] = 2
+            version = 2
 
-        # Future migrations would go here:
-        # if version == 2:
-        #     data = cls._migrate_v2_to_v3(data)
-        #     data["config_version"] = 3
+        if version == 2:
+            data = cls._migrate_v2_to_v3(data)
+            data["config_version"] = 3
 
         return data
 
@@ -150,6 +154,37 @@ class AppSettings(BaseSettings):
         if "scanner" in data and isinstance(data["scanner"], dict):
             data["scanner"].pop("confidence_threshold", None)
             data["scanner"].pop("confidence_by_resolution", None)
+
+        return data
+
+    @staticmethod
+    def _migrate_v2_to_v3(data: dict[str, Any]) -> dict[str, Any]:
+        """Migrate from v2 to v3 (move tools from database_builder to external_tools).
+
+        V2 had: database_builder.{extractor_tool, converter_tool, catalog_file, ...}
+        V3 has: external_tools.{repak, umodel, uassetgui} + database_builder.{catalog_file, ...}
+
+        Args:
+            data: V2 configuration data
+
+        Returns:
+            V3 configuration data
+        """
+        # Initialize external_tools if not present
+        if "external_tools" not in data:
+            data["external_tools"] = {}
+
+        # Move tools from database_builder to external_tools
+        if "database_builder" in data and isinstance(data["database_builder"], dict):
+            db_builder = data["database_builder"]
+
+            # Move extractor_tool -> repak
+            if "extractor_tool" in db_builder:
+                data["external_tools"]["repak"] = db_builder.pop("extractor_tool")
+
+            # Move converter_tool -> umodel
+            if "converter_tool" in db_builder:
+                data["external_tools"]["umodel"] = db_builder.pop("converter_tool")
 
         return data
 

@@ -22,6 +22,7 @@ from foxhole_stockpiles.core.settings import reload_settings
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections import (
     DatabaseBuilderSettings,
+    ExternalToolsSettings,
     LoggingSettings,
     NotificationsSettings,
     OCRSettings,
@@ -33,6 +34,7 @@ from foxhole_stockpiles.gui.widgets.config_tabs.api_auth_tab import APIAuthTab
 from foxhole_stockpiles.gui.widgets.config_tabs.api_server_tab import APIServerTab
 from foxhole_stockpiles.gui.widgets.config_tabs.basic_config_tab import BasicConfigTab
 from foxhole_stockpiles.gui.widgets.config_tabs.database_builder_tab import DatabaseBuilderTab
+from foxhole_stockpiles.gui.widgets.config_tabs.external_tools_tab import ExternalToolsTab
 from foxhole_stockpiles.gui.widgets.config_tabs.logging_tab import LoggingTab
 from foxhole_stockpiles.gui.widgets.config_tabs.ocr_tab import OCRTab
 from foxhole_stockpiles.gui.widgets.config_tabs.output_tab import OutputTab
@@ -64,7 +66,7 @@ class ConfigWindow(QMainWindow):
     def init_ui(self) -> None:
         """Initialize the user interface."""
         self.setWindowTitle("Configuration")
-        self.setGeometry(100, 100, 800, 600)
+        self.setGeometry(100, 100, 950, 600)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -104,6 +106,7 @@ class ConfigWindow(QMainWindow):
         self.output_tab = OutputTab()
         self.ocr_tab = OCRTab()
         self.template_tab = TemplateTab()
+        self.external_tools_tab = ExternalToolsTab()
         self.database_builder_tab = DatabaseBuilderTab()
         self.logging_tab = LoggingTab()
 
@@ -140,6 +143,7 @@ class ConfigWindow(QMainWindow):
             self.tab_widget.addTab(self.output_tab, "Output")
             self.tab_widget.addTab(self.ocr_tab, "OCR")
             self.tab_widget.addTab(self.template_tab, "Templates")
+            self.tab_widget.addTab(self.external_tools_tab, "External Tools")
             self.tab_widget.addTab(self.database_builder_tab, "Database Builder")
             self.tab_widget.addTab(self.logging_tab, "Logging")
         else:
@@ -180,6 +184,7 @@ class ConfigWindow(QMainWindow):
         self.output_tab.set_values(self.settings.output)
         self.ocr_tab.set_values(self.settings.ocr)
         self.template_tab.set_values(self.settings.templates)
+        self.external_tools_tab.set_values(self.settings.external_tools)
         self.database_builder_tab.set_values(self.settings.database_builder)
         self.logging_tab.set_values(self.settings.logging)
 
@@ -198,6 +203,7 @@ class ConfigWindow(QMainWindow):
                 output=self.output_tab.get_values(),
                 ocr=self.ocr_tab.get_values(),
                 templates=self.template_tab.get_values(),
+                external_tools=self.external_tools_tab.get_values(),
                 database_builder=self.database_builder_tab.get_values(),
                 logging=self.logging_tab.get_values(),
                 notifications=(
@@ -219,6 +225,9 @@ class ConfigWindow(QMainWindow):
                 # Preserve advanced settings from loaded config
                 ocr=self.settings.ocr if self.settings else OCRSettings(),
                 templates=self.settings.templates if self.settings else TemplateSettings(),
+                external_tools=(
+                    self.settings.external_tools if self.settings else ExternalToolsSettings()
+                ),
                 database_builder=(
                     self.settings.database_builder if self.settings else DatabaseBuilderSettings()
                 ),

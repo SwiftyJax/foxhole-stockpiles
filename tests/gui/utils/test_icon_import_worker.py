@@ -12,6 +12,7 @@ import pytest
 
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseBuilderSettings
+from foxhole_stockpiles.core.settings.sections.external_tools import ExternalToolsSettings
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.core.settings.sections.templates import TemplateSettings
 from foxhole_stockpiles.gui.utils.icon_import_worker import IconImportWorker
@@ -42,10 +43,12 @@ def mock_settings(tmp_path: Path) -> AppSettings:
 
     return AppSettings(
         database_builder=DatabaseBuilderSettings(
-            extractor_tool=extractor_tool,
-            converter_tool=converter_tool,
             catalog_file=catalog_file,
             target_resolutions=None,
+        ),
+        external_tools=ExternalToolsSettings(
+            repak=extractor_tool,
+            umodel=converter_tool,
         ),
         scanner=ScannerSettings(
             database_path=database_path,

@@ -171,14 +171,17 @@ Enable by checking **"Show Advanced Settings"** to access all configuration opti
    - Crate detection RGB multipliers and offsets
    - Cache configuration
 
-7. **Database Builder**:
-   - Extractor tool (repak) path
-   - Converter tool (umodel) path
+7. **External Tools**:
+   - Extractor tool (repak) path - for PAK extraction
+   - Converter tool (umodel) path - for UAsset to PNG conversion
+   - JSON Converter (UAssetGUI) path - for UAsset to JSON conversion
+
+9. **Database Builder**:
    - Catalog file path
    - Workers count (0 = auto-detect, 1-N for specific count)
    - Target resolutions selection
 
-8. **Logging**:
+10. **Logging**:
    - Log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
    - File output configuration
    - Log format customization
@@ -231,7 +234,8 @@ Access via **Database > Build**. Provides a user-friendly interface for building
 
 **Configuration Verification:**
 - Checks if Database Builder is properly configured
-- Verifies required tools (repak, umodel, catalog.json) are configured
+- Verifies required tools (repak, umodel) are configured in External Tools tab
+- Verifies catalog.json path is configured
 - Shows warning and disables UI if configuration is incomplete
 - Helpful error messages directing users to configuration dialog
 
@@ -260,6 +264,9 @@ Access via **Database > Build**. Provides a user-friendly interface for building
 - **Scan Screenshot...**: Opens file dialog to select and scan a screenshot
   - Requires server to be running
   - Supports PNG, JPG, and JPEG formats
+- **Build Catalog...**: Opens the catalog builder window for generating item catalogs from PAK files
+  - Rarely needed - most users download pre-built catalogs
+  - Requires External Tools configuration (repak, UAssetGUI)
 - **Minimize to Tray on Close**: Toggle whether closing the window minimizes to system tray (unchecked by default)
 - **Exit**: Quits the application completely
 
@@ -326,9 +333,9 @@ The application supports system tray for background operation (opt-in):
 
 1. Open Database Builder window (Database > Build)
 2. If configuration warning appears:
-   - Click "Open Configuration" to set up Database Builder settings
-   - Configure paths for repak (extractor), umodel (converter), and catalog.json
-   - Configure workers count (0 = auto, or set specific count)
+   - Click "Open Configuration" to set up settings
+   - Go to External Tools tab: configure paths for repak (extractor) and umodel (converter)
+   - Go to Database Builder tab: configure catalog.json path and workers count
    - Save and return to Database Builder window
 3. (Optional) Select vanilla PAK file if needed
 4. Add mod PAK file(s) via Browse or drag & drop
@@ -435,8 +442,9 @@ The Start Server button will automatically enable once configuration is valid.
 
 ### Database Builder Fails
 
-- Verify Database Builder configuration is complete
-- Check that repak and umodel paths are correct
+- Verify External Tools configuration is complete (repak, umodel paths)
+- Verify Database Builder configuration (catalog.json path)
+- Check that repak and umodel paths are correct in External Tools tab
 - Verify catalog.json file exists and is valid
 - Ensure PAK files are valid Foxhole PAK files
 - Review import logs for specific errors

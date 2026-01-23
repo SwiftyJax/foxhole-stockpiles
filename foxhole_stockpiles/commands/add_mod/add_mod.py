@@ -117,12 +117,12 @@ Prerequisites:
     parser.add_argument(
         "--extractor",
         type=Path,
-        help="Path to repak.exe (default: from database_builder.extractor_tool setting)",
+        help="Path to repak.exe (default: from external_tools.repak setting)",
     )
     parser.add_argument(
         "--converter",
         type=Path,
-        help="Path to umodel.exe (default: from database_builder.converter_tool setting)",
+        help="Path to umodel.exe (default: from external_tools.umodel setting)",
     )
 
     # Behavior options
@@ -194,18 +194,16 @@ Prerequisites:
             "Database path must be provided via --database or scanner.database_path setting"
         )
 
-    extractor_tool = args.extractor or settings.database_builder.extractor_tool
+    extractor_tool = args.extractor or settings.external_tools.repak
     if not extractor_tool:
         parser.error(
-            "Extractor tool must be provided via --extractor "
-            "or database_builder.extractor_tool setting"
+            "Extractor tool must be provided via --extractor or external_tools.repak setting"
         )
 
-    converter_tool = args.converter or settings.database_builder.converter_tool
+    converter_tool = args.converter or settings.external_tools.umodel
     if not converter_tool:
         parser.error(
-            "Converter tool must be provided via --converter "
-            "or database_builder.converter_tool setting"
+            "Converter tool must be provided via --converter or external_tools.umodel setting"
         )
 
     # Validate PAK files exist

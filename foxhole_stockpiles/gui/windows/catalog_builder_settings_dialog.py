@@ -1,4 +1,4 @@
-"""Database builder settings dialog."""
+"""Catalog builder settings dialog."""
 
 import logging
 
@@ -12,22 +12,20 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.gui.utils.config_manager import ConfigManager
-from foxhole_stockpiles.gui.widgets.config_tabs.database_builder_tab import DatabaseBuilderTab
 from foxhole_stockpiles.gui.widgets.config_tabs.external_tools_tab import ExternalToolsTab
 
 logger = logging.getLogger(__name__)
 
 
-class DatabaseBuilderSettingsDialog(QDialog):
-    """Dialog for configuring database builder settings.
+class CatalogBuilderSettingsDialog(QDialog):
+    """Dialog for configuring catalog builder settings.
 
     This dialog configures:
-    - External tools: repak (extractor) and umodel (converter)
-    - Database builder settings: catalog file, resolutions, workers
+    - External tools: repak (extractor) and uassetgui (JSON converter)
     """
 
     def __init__(self, parent: QWidget | None = None) -> None:
-        """Initialize the database builder settings dialog.
+        """Initialize the catalog builder settings dialog.
 
         Args:
             parent (QWidget | None): Parent widget. Defaults to None.
@@ -39,15 +37,15 @@ class DatabaseBuilderSettingsDialog(QDialog):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Database Builder Settings")
+        self.setWindowTitle("Catalog Builder Settings")
         self.setMinimumWidth(600)
-        self.setMinimumHeight(700)
+        self.setMinimumHeight(300)
 
         layout = QVBoxLayout(self)
 
         # Add info header
         info_label = QLabel(
-            "Configure the tools and settings required for building the template database."
+            "Configure the tools required for building the item catalog from PAK files."
         )
         info_label.setWordWrap(True)
         info_label.setStyleSheet(
@@ -56,17 +54,13 @@ class DatabaseBuilderSettingsDialog(QDialog):
         )
         layout.addWidget(info_label)
 
-        # Add external tools tab (repak + umodel, not uassetgui)
+        # Add external tools tab (repak + uassetgui, not umodel)
         self.external_tools_tab = ExternalToolsTab(
             show_repak=True,
-            show_umodel=True,
-            show_uassetgui=False,
+            show_umodel=False,
+            show_uassetgui=True,
         )
         layout.addWidget(self.external_tools_tab)
-
-        # Add the database builder tab
-        self.db_builder_tab = DatabaseBuilderTab()
-        layout.addWidget(self.db_builder_tab)
 
         # Add status label for error messages
         self.status_label = QLabel()
@@ -74,6 +68,8 @@ class DatabaseBuilderSettingsDialog(QDialog):
         self.status_label.setStyleSheet("QLabel { color: red; padding: 5px; }")
         self.status_label.hide()
         layout.addWidget(self.status_label)
+
+        layout.addStretch()
 
         # Add dialog buttons
         button_box = QDialogButtonBox(
@@ -84,27 +80,22 @@ class DatabaseBuilderSettingsDialog(QDialog):
         layout.addWidget(button_box)
 
     def _load_current_settings(self) -> None:
-        """Load current settings into the tabs."""
+        """Load current settings into the tab."""
         settings = get_settings()
         self.external_tools_tab.set_values(settings.external_tools)
-        self.db_builder_tab.set_values(settings.database_builder)
 
     def _save_and_accept(self) -> None:
         """Save settings and accept dialog."""
-        # Get current settings and update both sections
+        # Get current settings and update external_tools section
         current_settings = get_settings()
 
-        # Merge external tools (only update repak and umodel, preserve uassetgui)
+        # Merge external tools (only update repak and uassetgui, preserve umodel)
         new_external_tools = self.external_tools_tab.merge_with_existing(
             current_settings.external_tools
         )
-        new_db_builder_settings = self.db_builder_tab.get_values()
 
         updated_settings = current_settings.model_copy(
-            update={
-                "external_tools": new_external_tools,
-                "database_builder": new_db_builder_settings,
-            }
+            update={"external_tools": new_external_tools}
         )
 
         # Save settings
@@ -117,7 +108,7 @@ class DatabaseBuilderSettingsDialog(QDialog):
             return
 
         if success:
-            logger.info("Database builder settings saved successfully")
+            logger.info("Catalog builder settings saved successfully")
             self.accept()
         else:
             logger.error("Failed to save settings: %s", msg)

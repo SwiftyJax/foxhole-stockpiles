@@ -35,8 +35,7 @@ def test_database_builder_tab_initialization(database_builder_tab: DatabaseBuild
     Args:
         database_builder_tab: DatabaseBuilderTab instance
     """
-    assert database_builder_tab.extractor_tool_input is not None
-    assert database_builder_tab.converter_tool_input is not None
+    # Note: extractor_tool_input and converter_tool_input are now in ExternalToolsTab
     assert database_builder_tab.catalog_file_input is not None
     assert database_builder_tab.resolution_list is not None
     assert database_builder_tab.workers_spinbox is not None
@@ -96,47 +95,8 @@ def test_database_builder_tab_default_all_resolutions_checked(
 # ===== Browse Tests =====
 
 
-def test_database_builder_tab_browse_extractor_tool(
-    qtbot: Any, database_builder_tab: DatabaseBuilderTab
-) -> None:
-    """Test browse extractor tool button.
-
-    Args:
-        qtbot: PyQt test fixture
-        database_builder_tab: DatabaseBuilderTab instance
-    """
-    test_path = "C:\\repak\\repak.exe"
-
-    with patch(
-        "foxhole_stockpiles.gui.widgets.config_tabs.database_builder_tab.QFileDialog.getOpenFileName"
-    ) as mock_dialog:
-        mock_dialog.return_value = (test_path, "Executable Files (*.exe)")
-
-        database_builder_tab.browse_extractor_tool()
-
-        assert database_builder_tab.extractor_tool_input.text() == test_path
-        mock_dialog.assert_called_once()
-
-
-def test_database_builder_tab_browse_converter_tool(
-    qtbot: Any, database_builder_tab: DatabaseBuilderTab
-) -> None:
-    """Test browse converter tool button.
-
-    Args:
-        qtbot: PyQt test fixture
-        database_builder_tab: DatabaseBuilderTab instance
-    """
-    test_path = "C:\\UModel\\umodel.exe"
-
-    with patch(
-        "foxhole_stockpiles.gui.widgets.config_tabs.database_builder_tab.QFileDialog.getOpenFileName"
-    ) as mock_dialog:
-        mock_dialog.return_value = (test_path, "Executable Files (*.exe)")
-
-        database_builder_tab.browse_converter_tool()
-
-        assert database_builder_tab.converter_tool_input.text() == test_path
+# Note: browse_extractor_tool and browse_converter_tool tests removed -
+# these methods are now in ExternalToolsTab
 
 
 def test_database_builder_tab_browse_catalog_file(
@@ -171,17 +131,14 @@ def test_database_builder_tab_set_values_all_fields(
     Args:
         database_builder_tab: DatabaseBuilderTab instance
     """
+    # Note: extractor_tool and converter_tool are now in ExternalToolsSettings
     settings = DatabaseBuilderSettings(
-        extractor_tool=Path("C:\\repak\\repak.exe"),
-        converter_tool=Path("C:\\UModel\\umodel.exe"),
         catalog_file=Path("C:\\foxhole\\catalog.json"),
         target_resolutions=None,  # None means all
     )
 
     database_builder_tab.set_values(settings)
 
-    assert database_builder_tab.extractor_tool_input.text() == "C:\\repak\\repak.exe"
-    assert database_builder_tab.converter_tool_input.text() == "C:\\UModel\\umodel.exe"
     assert database_builder_tab.catalog_file_input.text() == "C:\\foxhole\\catalog.json"
 
 
@@ -221,14 +178,11 @@ def test_database_builder_tab_get_values_all_fields_set(
     Args:
         database_builder_tab: DatabaseBuilderTab instance
     """
-    database_builder_tab.extractor_tool_input.setText("C:\\repak\\repak.exe")
-    database_builder_tab.converter_tool_input.setText("C:\\UModel\\umodel.exe")
+    # Note: extractor_tool and converter_tool are now in ExternalToolsTab
     database_builder_tab.catalog_file_input.setText("C:\\foxhole\\catalog.json")
 
     settings = database_builder_tab.get_values()
 
-    assert settings.extractor_tool == Path("C:\\repak\\repak.exe")
-    assert settings.converter_tool == Path("C:\\UModel\\umodel.exe")
     assert settings.catalog_file == Path("C:\\foxhole\\catalog.json")
 
 
@@ -240,14 +194,11 @@ def test_database_builder_tab_get_values_empty_fields(
     Args:
         database_builder_tab: DatabaseBuilderTab instance
     """
-    database_builder_tab.extractor_tool_input.setText("")
-    database_builder_tab.converter_tool_input.setText("")
+    # Note: extractor_tool and converter_tool are now in ExternalToolsTab
     database_builder_tab.catalog_file_input.setText("")
 
     settings = database_builder_tab.get_values()
 
-    assert settings.extractor_tool is None
-    assert settings.converter_tool is None
     assert settings.catalog_file is None
 
 
@@ -274,10 +225,9 @@ def test_database_builder_tab_roundtrip_specific_resolutions(
     Args:
         database_builder_tab: DatabaseBuilderTab instance
     """
+    # Note: extractor_tool and converter_tool are now in ExternalToolsTab
     target_resolutions = ["720", "1080", "1440"]
     original_settings = DatabaseBuilderSettings(
-        extractor_tool=Path("/opt/repak/repak"),
-        converter_tool=Path("/opt/umodel/umodel"),
         catalog_file=Path("/data/catalog.json"),
         target_resolutions=target_resolutions,
     )
@@ -285,8 +235,6 @@ def test_database_builder_tab_roundtrip_specific_resolutions(
     database_builder_tab.set_values(original_settings)
     retrieved_settings = database_builder_tab.get_values()
 
-    assert retrieved_settings.extractor_tool == original_settings.extractor_tool
-    assert retrieved_settings.converter_tool == original_settings.converter_tool
     assert retrieved_settings.catalog_file == original_settings.catalog_file
     # Should match the original list
     assert set(retrieved_settings.target_resolutions or []) == set(target_resolutions)

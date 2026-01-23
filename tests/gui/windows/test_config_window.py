@@ -106,7 +106,7 @@ def test_config_window_advanced_mode_by_default(config_window: ConfigWindow) -> 
         config_window: ConfigWindow instance
     """
     assert config_window.advanced_mode_checkbox.isChecked()
-    assert config_window.tab_widget.count() == 8
+    assert config_window.tab_widget.count() == 9
     assert config_window.tab_widget.tabText(0) == "API Server"
 
 
@@ -118,7 +118,7 @@ def test_config_window_toggle_to_basic_mode(qtbot: Any, config_window: ConfigWin
         config_window: ConfigWindow instance
     """
     # Start in advanced mode
-    assert config_window.tab_widget.count() == 8
+    assert config_window.tab_widget.count() == 9
 
     # Toggle to basic mode
     config_window.advanced_mode_checkbox.setChecked(False)
@@ -143,7 +143,7 @@ def test_config_window_toggle_back_to_advanced_mode(
 
     # Toggle back to advanced
     config_window.advanced_mode_checkbox.setChecked(True)
-    assert config_window.tab_widget.count() == 8
+    assert config_window.tab_widget.count() == 9
     assert config_window.tab_widget.tabText(0) == "API Server"
 
 
@@ -436,7 +436,7 @@ def test_config_window_checkbox_state_change(qtbot: Any, config_window: ConfigWi
         config_window: ConfigWindow instance
     """
     # Start in advanced mode
-    assert config_window.tab_widget.count() == 8
+    assert config_window.tab_widget.count() == 9
 
     # Change checkbox state
     config_window.advanced_mode_checkbox.setChecked(False)

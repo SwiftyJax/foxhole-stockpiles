@@ -639,8 +639,8 @@ Each CLI tool has detailed documentation in its directory:
 
 ## Credits
 
-This project was heavily influenced by the [FIR (Foxhole Item Recognition)](https://github.com/GICodeWarrior/fir) project:
-- **catalog.json**: Directly copied from FIR project
+This project was inspired by the [FIR (Foxhole Item Recognition)](https://github.com/GICodeWarrior/fir) project:
+- **catalog.json**: Used FIR's catalog until we developed our own catalog builder
 - **Conceptual approach**: Image generation from PAK extraction inspired by FIR
 
 ## License

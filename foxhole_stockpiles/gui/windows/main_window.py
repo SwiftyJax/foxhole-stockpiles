@@ -14,6 +14,7 @@ from PyQt6.QtWidgets import (
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
+from foxhole_stockpiles.gui.windows.catalog_builder_window import CatalogBuilderWindow
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
 from foxhole_stockpiles.gui.windows.database_info_window import DatabaseInfoWindow
 from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
@@ -56,6 +57,9 @@ class MainWindow(QMainWindow):
 
         scan_action = file_menu.addAction("&Scan Screenshot...")  # type: ignore[union-attr]
         scan_action.triggered.connect(self.scan_screenshot)  # type: ignore[union-attr]
+
+        build_catalog_action = file_menu.addAction("Build &Catalog...")  # type: ignore[union-attr]
+        build_catalog_action.triggered.connect(self.show_catalog_builder)  # type: ignore[union-attr]
 
         file_menu.addSeparator()  # type: ignore[union-attr]
 
@@ -229,6 +233,21 @@ class MainWindow(QMainWindow):
 
         import_window.move(center_x, center_y)
         import_window.show()
+
+    def show_catalog_builder(self) -> None:
+        """Show catalog builder window as modal dialog centered on main window."""
+        catalog_window = CatalogBuilderWindow(self)
+        catalog_window.setWindowModality(Qt.WindowModality.ApplicationModal)
+
+        # Center the catalog window on the main window
+        main_geometry = self.geometry()
+        catalog_geometry = catalog_window.geometry()
+
+        center_x = main_geometry.x() + (main_geometry.width() - catalog_geometry.width()) // 2
+        center_y = main_geometry.y() + (main_geometry.height() - catalog_geometry.height()) // 2
+
+        catalog_window.move(center_x, center_y)
+        catalog_window.show()
 
     def show_database_info(self) -> None:
         """Show database information window."""

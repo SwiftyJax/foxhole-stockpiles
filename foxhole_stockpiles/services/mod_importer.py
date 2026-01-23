@@ -429,14 +429,12 @@ class ModImporter:
         """
         if not self.config.extractor_tool:
             raise ValueError(
-                "Extractor tool not configured. "
-                "Please configure database_builder.extractor_tool in settings."
+                "Extractor tool not configured. Please configure external_tools.repak in settings."
             )
 
         if not self.config.converter_tool:
             raise ValueError(
-                "Converter tool not configured. "
-                "Please configure database_builder.converter_tool in settings."
+                "Converter tool not configured. Please configure external_tools.umodel in settings."
             )
 
         if not self.config.extractor_tool.exists():
@@ -662,6 +660,7 @@ def create_config_from_settings(
     Raises:
         ValueError: If required settings are not configured
     """
+    external_tools = settings.external_tools
     db_builder = settings.database_builder
 
     if not db_builder.catalog_file:
@@ -673,8 +672,8 @@ def create_config_from_settings(
         catalog_path=db_builder.catalog_file,
         overwrite=overwrite,
         vanilla_pak_file=vanilla_pak_file,
-        extractor_tool=db_builder.extractor_tool,
-        converter_tool=db_builder.converter_tool,
+        extractor_tool=external_tools.repak,
+        converter_tool=external_tools.umodel,
         database_path=settings.scanner.database_path,
         target_resolutions=db_builder.target_resolutions,
         template_settings=settings.templates,

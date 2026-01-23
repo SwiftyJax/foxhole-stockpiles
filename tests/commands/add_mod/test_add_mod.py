@@ -71,9 +71,10 @@ class TestMainFunction:
         """Create mock settings."""
         settings = MagicMock()
         settings.database_builder.catalog_file = tmp_path / "catalog.json"
-        settings.database_builder.extractor_tool = tmp_path / "repak.exe"
-        settings.database_builder.converter_tool = tmp_path / "umodel.exe"
         settings.database_builder.target_resolutions = None
+        settings.database_builder.workers = None
+        settings.external_tools.repak = tmp_path / "repak.exe"
+        settings.external_tools.umodel = tmp_path / "umodel.exe"
         settings.scanner.database_path = tmp_path / "database.h5"
         settings.templates = None
         settings.logging = MagicMock()
@@ -192,8 +193,8 @@ class TestMainFunction:
         mock_settings = MagicMock()
         mock_settings.database_builder.catalog_file = None
         mock_settings.scanner.database_path = tmp_path / "db.h5"
-        mock_settings.database_builder.extractor_tool = tmp_path / "repak.exe"
-        mock_settings.database_builder.converter_tool = tmp_path / "umodel.exe"
+        mock_settings.external_tools.repak = tmp_path / "repak.exe"
+        mock_settings.external_tools.umodel = tmp_path / "umodel.exe"
 
         mock_get_settings.return_value = mock_settings
         mock_args.return_value = argparse.Namespace(
@@ -488,8 +489,8 @@ class TestMainFunction:
 
         mock_settings = MagicMock()
         mock_settings.database_builder.catalog_file = tmp_path / "catalog.json"
-        mock_settings.database_builder.extractor_tool = tmp_path / "repak.exe"
-        mock_settings.database_builder.converter_tool = tmp_path / "umodel.exe"
+        mock_settings.external_tools.repak = tmp_path / "repak.exe"
+        mock_settings.external_tools.umodel = tmp_path / "umodel.exe"
         mock_settings.scanner.database_path = None
         mock_settings.logging = MagicMock()
         mock_settings.logging.log_level = "INFO"
@@ -537,8 +538,8 @@ class TestMainFunction:
 
         mock_settings = MagicMock()
         mock_settings.database_builder.catalog_file = tmp_path / "catalog.json"
-        mock_settings.database_builder.extractor_tool = None
-        mock_settings.database_builder.converter_tool = tmp_path / "umodel.exe"
+        mock_settings.external_tools.repak = None
+        mock_settings.external_tools.umodel = tmp_path / "umodel.exe"
         mock_settings.scanner.database_path = tmp_path / "db.h5"
         mock_settings.logging = MagicMock()
         mock_settings.logging.log_level = "INFO"
@@ -585,8 +586,8 @@ class TestMainFunction:
 
         mock_settings = MagicMock()
         mock_settings.database_builder.catalog_file = tmp_path / "catalog.json"
-        mock_settings.database_builder.extractor_tool = tmp_path / "repak.exe"
-        mock_settings.database_builder.converter_tool = None
+        mock_settings.external_tools.repak = tmp_path / "repak.exe"
+        mock_settings.external_tools.umodel = None
         mock_settings.scanner.database_path = tmp_path / "db.h5"
         mock_settings.logging = MagicMock()
         mock_settings.logging.log_level = "INFO"
@@ -719,9 +720,10 @@ class TestMainFunction:
 
         mock_settings = MagicMock()
         mock_settings.database_builder.catalog_file = tmp_path / "catalog.json"
-        mock_settings.database_builder.extractor_tool = tmp_path / "repak.exe"
-        mock_settings.database_builder.converter_tool = tmp_path / "umodel.exe"
         mock_settings.database_builder.target_resolutions = ["1080", "2160"]
+        mock_settings.database_builder.workers = None
+        mock_settings.external_tools.repak = tmp_path / "repak.exe"
+        mock_settings.external_tools.umodel = tmp_path / "umodel.exe"
         mock_settings.scanner.database_path = tmp_path / "database.h5"
         mock_settings.templates = None
         mock_settings.logging = MagicMock()

@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import QMessageBox, QTableWidget
 
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseBuilderSettings
+from foxhole_stockpiles.core.settings.sections.external_tools import ExternalToolsSettings
 from foxhole_stockpiles.gui.utils.icon_import_worker import IconImportWorker
 from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
 
@@ -47,9 +48,11 @@ def mock_configured_settings(tmp_path: Path) -> AppSettings:
     converter_tool.write_text("")
 
     return AppSettings(
+        external_tools=ExternalToolsSettings(
+            repak=extractor_tool,
+            umodel=converter_tool,
+        ),
         database_builder=DatabaseBuilderSettings(
-            extractor_tool=extractor_tool,
-            converter_tool=converter_tool,
             catalog_file=catalog_file,
         ),
     )
@@ -63,6 +66,7 @@ def mock_unconfigured_settings() -> AppSettings:
         AppSettings: Mock settings with missing tools
     """
     return AppSettings(
+        external_tools=ExternalToolsSettings(),
         database_builder=DatabaseBuilderSettings(),
     )
 
@@ -191,9 +195,11 @@ def test_check_configuration_all_present(tmp_path: Path) -> None:
     converter_tool.write_text("")
 
     settings = AppSettings(
+        external_tools=ExternalToolsSettings(
+            repak=extractor_tool,
+            umodel=converter_tool,
+        ),
         database_builder=DatabaseBuilderSettings(
-            extractor_tool=extractor_tool,
-            converter_tool=converter_tool,
             catalog_file=catalog_file,
         ),
     )
@@ -218,9 +224,11 @@ def test_check_configuration_missing_extractor(tmp_path: Path) -> None:
     converter_tool.write_text("")
 
     settings = AppSettings(
+        external_tools=ExternalToolsSettings(
+            repak=None,
+            umodel=converter_tool,
+        ),
         database_builder=DatabaseBuilderSettings(
-            extractor_tool=None,
-            converter_tool=converter_tool,
             catalog_file=catalog_file,
         ),
     )
@@ -245,9 +253,11 @@ def test_check_configuration_missing_converter(tmp_path: Path) -> None:
     extractor_tool.write_text("")
 
     settings = AppSettings(
+        external_tools=ExternalToolsSettings(
+            repak=extractor_tool,
+            umodel=None,
+        ),
         database_builder=DatabaseBuilderSettings(
-            extractor_tool=extractor_tool,
-            converter_tool=None,
             catalog_file=catalog_file,
         ),
     )
@@ -272,9 +282,11 @@ def test_check_configuration_missing_catalog(tmp_path: Path) -> None:
     converter_tool.write_text("")
 
     settings = AppSettings(
+        external_tools=ExternalToolsSettings(
+            repak=extractor_tool,
+            umodel=converter_tool,
+        ),
         database_builder=DatabaseBuilderSettings(
-            extractor_tool=extractor_tool,
-            converter_tool=converter_tool,
             catalog_file=None,
         ),
     )
@@ -293,9 +305,11 @@ def test_check_configuration_file_not_exists(tmp_path: Path) -> None:
         tmp_path: Temporary directory path
     """
     settings = AppSettings(
+        external_tools=ExternalToolsSettings(
+            repak=Path("/nonexistent/repak.exe"),
+            umodel=Path("/nonexistent/umodel.exe"),
+        ),
         database_builder=DatabaseBuilderSettings(
-            extractor_tool=Path("/nonexistent/repak.exe"),
-            converter_tool=Path("/nonexistent/umodel.exe"),
             catalog_file=Path("/nonexistent/catalog.json"),
         ),
     )
@@ -1812,7 +1826,7 @@ def test_trigger_vanilla_validation_no_extractor(configured_window: IconImportWi
         configured_window: Configured window instance
     """
     configured_window.vanilla_pak_file = "test.pak"
-    configured_window.settings.database_builder.extractor_tool = None
+    configured_window.settings.external_tools.repak = None
 
     # Should return early without starting validation
     configured_window._trigger_vanilla_validation()
@@ -1831,7 +1845,7 @@ def test_trigger_vanilla_validation_starts_worker(
     """
     extractor = tmp_path / "repak.exe"
     extractor.touch()
-    configured_window.settings.database_builder.extractor_tool = extractor
+    configured_window.settings.external_tools.repak = extractor
     configured_window.vanilla_pak_file = str(tmp_path / "vanilla.pak")
 
     with patch(
@@ -1928,7 +1942,7 @@ def test_trigger_validation_cancels_existing(
     """
     extractor = tmp_path / "repak.exe"
     extractor.touch()
-    configured_window.settings.database_builder.extractor_tool = extractor
+    configured_window.settings.external_tools.repak = extractor
     configured_window.mod_pak_files = ["test.pak"]
 
     # Create a mock worker that appears to be running

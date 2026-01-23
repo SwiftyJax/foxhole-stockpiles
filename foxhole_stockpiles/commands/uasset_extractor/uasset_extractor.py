@@ -768,14 +768,10 @@ async def main() -> None:
         else DEFAULT_CATALOG
     )
     extractor_tool = args.extractor_tool or (
-        str(settings.database_builder.extractor_tool)
-        if settings.database_builder.extractor_tool
-        else DEFAULT_EXTRACTOR
+        str(settings.external_tools.repak) if settings.external_tools.repak else DEFAULT_EXTRACTOR
     )
     converter_tool = args.converter_tool or (
-        str(settings.database_builder.converter_tool)
-        if settings.database_builder.converter_tool
-        else DEFAULT_CONVERTER
+        str(settings.external_tools.umodel) if settings.external_tools.umodel else DEFAULT_CONVERTER
     )
 
     # Build filter_assets from CLI arguments

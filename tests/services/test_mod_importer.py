@@ -1398,9 +1398,9 @@ class TestCreateConfigFromSettings:
 
         settings = MagicMock()
         settings.database_builder.catalog_file = catalog
-        settings.database_builder.extractor_tool = tmp_path / "repak.exe"
-        settings.database_builder.converter_tool = tmp_path / "umodel.exe"
         settings.database_builder.target_resolutions = ["1080"]
+        settings.external_tools.repak = tmp_path / "repak.exe"
+        settings.external_tools.umodel = tmp_path / "umodel.exe"
         settings.scanner.database_path = tmp_path / "db.h5"
         settings.templates = None
 

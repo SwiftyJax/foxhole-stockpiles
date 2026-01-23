@@ -6,16 +6,11 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class DatabaseBuilderSettings(BaseModel):
-    """Settings for the database builder (icon import)."""
+    """Settings for the database builder (icon import).
 
-    extractor_tool: Path | None = Field(
-        description="Path to repak.exe for extracting PAK files",
-        default=None,
-    )
-    converter_tool: Path | None = Field(
-        description="Path to umodel.exe for converting UAsset files to PNG",
-        default=None,
-    )
+    Note: External tools (repak, umodel) are configured in ExternalToolsSettings.
+    """
+
     catalog_file: Path | None = Field(
         description="Path to catalog.json file for building the database",
         default=None,
@@ -41,8 +36,6 @@ class DatabaseBuilderSettings(BaseModel):
         extra="forbid",
         json_schema_extra={
             "example": {
-                "extractor_tool": "C:/repak/repak.exe",
-                "converter_tool": "C:/UModel/umodel.exe",
                 "catalog_file": "C:/foxhole/catalog.json",
                 "target_resolutions": None,  # None = all resolutions
                 "workers": None,  # None = auto-detect (CPU count)
