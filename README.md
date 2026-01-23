@@ -73,6 +73,9 @@ For technical details on the system design and implementation decisions, see the
 
 ## Available Command-Line Tools
 
+### fs catalog-builder
+Builds catalog.json from Foxhole PAK files by extracting game blueprints, converting them to JSON, and parsing item definitions. Generates the complete item catalog automatically without manual data entry.
+
 ### fs extract-assets
 Extracts icon assets from Foxhole PAK files and converts them to PNG format.
 
@@ -611,6 +614,7 @@ Test coverage includes:
 
 Each CLI tool has detailed documentation in its directory:
 
+- [Catalog Builder](foxhole_stockpiles/commands/catalog_builder/README.md) - Build catalog.json from PAK files
 - [Asset Extractor](foxhole_stockpiles/commands/uasset_extractor/README.md) - Extract icons from PAK files
 - [Template Generator](foxhole_stockpiles/commands/generate_templates/README.md) - Generate resolution-specific templates
 - [Database Builder](foxhole_stockpiles/commands/database_builder/README.md) - Build optimized template databases

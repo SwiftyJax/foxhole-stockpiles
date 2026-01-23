@@ -124,6 +124,11 @@ class CLIDispatcher:
                 module="foxhole_stockpiles.commands.gui.gui",
                 aliases=["ui", "app"],
             ),
+            "catalog": CommandInfo(
+                description="Build item catalog from game PAK files",
+                module="foxhole_stockpiles.commands.catalog_builder.catalog_builder",
+                aliases=["catalog-builder"],
+            ),
         }
 
     def resolve_command_alias(self, command: str) -> str | None:
