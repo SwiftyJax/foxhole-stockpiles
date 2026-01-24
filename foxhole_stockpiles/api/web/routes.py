@@ -1,6 +1,7 @@
 """Web interface routes for the API server."""
 
 import base64
+import json
 import logging
 import time
 from pathlib import Path
@@ -101,6 +102,7 @@ async def web_scan(
             '<div class="alert alert-error"><span class="alert-icon">!</span>'
             "<div>No images uploaded</div></div>",
             status_code=400,
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
         )
 
     stockpiles: list[Stockpile] = []
@@ -140,7 +142,11 @@ async def web_scan(
         if errors:
             error_html += "<br>" + "<br>".join(errors)
         error_html += "</div></div>"
-        return HTMLResponse(error_html, status_code=400)
+        return HTMLResponse(
+            error_html,
+            status_code=400,
+            headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+        )
 
     # Build icon cache for all items
     logger.info(
@@ -180,10 +186,25 @@ async def web_scan(
         item.quantity for s in stockpiles for item in s.items if item.quantity >= 0
     )
 
+    # Serialize stockpiles to JSON for download functionality
+    stockpiles_json = json.dumps(
+        [s.model_dump(mode="json") for s in stockpiles],
+        ensure_ascii=False,
+    )
+
     html_parts.append(f"""
+    <script id="stockpile-data" type="application/json">{stockpiles_json}</script>
     <div class="card">
         <div class="card-header">
             <h2>Scan Results</h2>
+            <div class="download-buttons">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="downloadJSON()">
+                    Download JSON
+                </button>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="downloadTSV()">
+                    Download TSV
+                </button>
+            </div>
         </div>
         <div class="card-body">
             <div class="summary">
@@ -236,7 +257,10 @@ async def web_scan(
             )
         )
 
-    return HTMLResponse("\n".join(html_parts))
+    return HTMLResponse(
+        content="\n".join(html_parts),
+        headers={"Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"},
+    )
 
 
 @router.get("/web/icon/{code}")

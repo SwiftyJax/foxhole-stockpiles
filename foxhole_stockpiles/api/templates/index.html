@@ -45,6 +45,90 @@
 
 {% block scripts %}
 <script>
+// Download functions for scan results
+function generateFilename(stockpiles, extension) {
+    const now = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const timestamp = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+
+    let stockpileType, stockpileName, resolution;
+    if (stockpiles.length === 1) {
+        stockpileType = stockpiles[0].type || 'Unknown';
+        stockpileName = stockpiles[0].name || 'Unknown';
+        resolution = stockpiles[0].resolution || '';
+    } else {
+        stockpileType = 'Combined';
+        stockpileName = `${stockpiles.length}_stockpiles`;
+        // Use first stockpile's resolution or empty
+        resolution = stockpiles[0]?.resolution || '';
+    }
+
+    // Sanitize for filename (replace spaces and special chars)
+    const sanitize = (s) => String(s).replace(/[^a-zA-Z0-9_-]/g, '_');
+
+    let filename = `${timestamp}_${sanitize(stockpileType)}_${sanitize(stockpileName)}`;
+    if (resolution) {
+        filename += `_${sanitize(resolution)}`;
+    }
+    return `${filename}.${extension}`;
+}
+
+function downloadJSON() {
+    const dataEl = document.getElementById('stockpile-data');
+    if (!dataEl) return;
+
+    const data = JSON.parse(dataEl.textContent);
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    downloadBlob(blob, generateFilename(data, 'json'));
+}
+
+function downloadTSV() {
+    const dataEl = document.getElementById('stockpile-data');
+    if (!dataEl) return;
+
+    const stockpiles = JSON.parse(dataEl.textContent);
+    const lines = [];
+
+    // Header row
+    lines.push(['Code', 'Crated', 'Quantity', 'Confidence', 'Stockpile Name', 'Stockpile Type', 'Shard', 'Ingame Time'].join('\t'));
+
+    // Data rows
+    for (const stockpile of stockpiles) {
+        for (const item of stockpile.items) {
+            const row = [
+                item.code,
+                item.crated ? '1' : '0',
+                item.quantity,
+                item.confidence !== null ? item.confidence.toFixed(3) : '',
+                escapeTSV(stockpile.name || ''),
+                stockpile.type || '',
+                stockpile.shard || '',
+                stockpile.ingame_timestamp || ''
+            ];
+            lines.push(row.join('\t'));
+        }
+    }
+
+    const blob = new Blob([lines.join('\n')], { type: 'text/tab-separated-values' });
+    downloadBlob(blob, generateFilename(stockpiles, 'tsv'));
+}
+
+function escapeTSV(value) {
+    // TSV doesn't need much escaping, but handle tabs and newlines
+    return String(value).replace(/[\t\n\r]/g, ' ');
+}
+
+function downloadBlob(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
 (function() {
     const fileInput = document.getElementById('images');
     const preview = document.getElementById('preview');
