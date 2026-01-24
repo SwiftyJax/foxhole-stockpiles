@@ -10,7 +10,11 @@ class FileHandlerSettings(BaseModel):
 
     type: OutputHandlerType = Field(default=OutputHandlerType.FILE, description="Handler type")
     path: str = Field(
-        description="Path to the output file. Supports {timestamp} placeholder.",
+        description=(
+            "Path to the output file. Supports placeholders: "
+            "{timestamp}, {year}, {month}, {day}, {hour}, {minute}, {second}, "
+            "{stockpile_type}, {stockpile_name}, {resolution}"
+        ),
         default="output.json",
     )
 

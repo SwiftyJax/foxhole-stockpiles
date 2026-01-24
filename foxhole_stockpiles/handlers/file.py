@@ -40,10 +40,28 @@ class FileOutputHandler(BaseOutputDestinationHandler):
 
         file = str(file_path_arg) if file_path_arg else self.default_file_path or "output.json"
 
-        # Support {timestamp} placeholder in filename
-        if "{timestamp}" in file:
-            timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-            file = file.replace("{timestamp}", timestamp)
+        # Support placeholders in filename/path
+        now = datetime.datetime.now()
+        placeholders = {
+            "{timestamp}": now.strftime("%Y-%m-%d_%H-%M-%S"),
+            "{year}": now.strftime("%Y"),
+            "{month}": now.strftime("%m"),
+            "{day}": now.strftime("%d"),
+            "{hour}": now.strftime("%H"),
+            "{minute}": now.strftime("%M"),
+            "{second}": now.strftime("%S"),
+            "{stockpile_type}": (
+                stockpile.type.title()
+                if isinstance(stockpile.type, str)
+                else stockpile.type.value.title()
+            )
+            if stockpile.type
+            else "Unknown",
+            "{stockpile_name}": stockpile.name or "Unknown",
+            "{resolution}": stockpile.resolution or "Unknown",
+        }
+        for placeholder, value in placeholders.items():
+            file = file.replace(placeholder, value)
 
         output_path = Path(file)
         output_path.parent.mkdir(parents=True, exist_ok=True)

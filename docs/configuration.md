@@ -194,7 +194,17 @@ For CSV/TSV formats, additional settings are available:
 | Setting | Type | Required | Description |
 |---------|------|----------|-------------|
 | `type` | string | Yes | Must be `"file"` |
-| `path` | string | Yes | File path (supports `{timestamp}` placeholder) |
+| `path` | string | Yes | File path with optional placeholders |
+
+Supported placeholders for file path:
+- `{timestamp}` - Full timestamp (e.g., 2025-01-24_14-30-52)
+- `{year}`, `{month}`, `{day}` - Date components (e.g., 2025, 01, 24)
+- `{hour}`, `{minute}`, `{second}` - Time components (e.g., 14, 30, 52)
+- `{stockpile_type}` - Stockpile type (e.g., Seaport, Storage Depot)
+- `{stockpile_name}` - Name of the stockpile
+- `{resolution}` - Screen resolution (e.g., 1920x1080)
+
+Example: `{timestamp}_{stockpile_type}_{stockpile_name}_{resolution}.json` → `2025-01-24_14-30-52_Seaport_MyStockpile_1920x1080.json`
 
 **Webhook Handler** - POSTs results to a URL:
 | Setting | Type | Required | Description |
@@ -224,7 +234,7 @@ For CSV/TSV formats, additional settings are available:
       {
         "name": "File Backup",
         "format": {"type": "json"},
-        "handler": {"type": "file", "path": "backups/stockpile_{timestamp}.json"}
+        "handler": {"type": "file", "path": "backups/{year}-{month}-{day}/stockpile_{timestamp}.json"}
       },
       {
         "name": "Discord Webhook",

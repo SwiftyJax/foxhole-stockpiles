@@ -138,9 +138,94 @@ class TestFileOutputHandler:
         with (
             patch("pathlib.Path.open") as mock_open,
             patch("pathlib.Path.mkdir"),
-            patch("datetime.datetime") as mock_datetime,
+            patch("foxhole_stockpiles.handlers.file.datetime") as mock_datetime_module,
         ):
-            mock_datetime.now.return_value.strftime.return_value = "20240104_090000"
+            mock_now = Mock()
+            mock_now.strftime.side_effect = lambda fmt: {
+                "%Y-%m-%d_%H-%M-%S": "2025-01-24_14-30-52",
+                "%Y": "2025",
+                "%m": "01",
+                "%d": "24",
+                "%H": "14",
+                "%M": "30",
+                "%S": "52",
+            }.get(fmt, "")
+            mock_datetime_module.datetime.now.return_value = mock_now
+            mock_file = Mock()
+            mock_open.return_value.__enter__.return_value = mock_file
+
+            await handler.handle(sample_stockpile)
+
+            mock_file.write.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_file_output_with_date_placeholders(self, sample_stockpile: Stockpile) -> None:
+        """Test file output with year/month/day placeholders for folder structure.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        handler = FileOutputHandler(
+            default_file_path="{year}-{month}-{day}/stockpile_{hour}{minute}{second}.json"
+        )
+
+        with (
+            patch("pathlib.Path.open") as mock_open,
+            patch("pathlib.Path.mkdir") as mock_mkdir,
+            patch("foxhole_stockpiles.handlers.file.datetime") as mock_datetime_module,
+        ):
+            # Create a mock datetime object
+            mock_now = Mock()
+            mock_now.strftime.side_effect = lambda fmt: {
+                "%Y-%m-%d_%H-%M-%S": "2025-01-24_14-30-52",
+                "%Y": "2025",
+                "%m": "01",
+                "%d": "24",
+                "%H": "14",
+                "%M": "30",
+                "%S": "52",
+            }.get(fmt, "")
+            mock_datetime_module.datetime.now.return_value = mock_now
+
+            mock_file = Mock()
+            mock_open.return_value.__enter__.return_value = mock_file
+
+            await handler.handle(sample_stockpile)
+
+            # Verify mkdir was called to create the date-based directory
+            mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
+            mock_file.write.assert_called_once()
+
+    @pytest.mark.asyncio
+    async def test_file_output_with_stockpile_placeholders(
+        self, sample_stockpile: Stockpile
+    ) -> None:
+        """Test file output with stockpile-related placeholders.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        handler = FileOutputHandler(
+            default_file_path="{timestamp}_{stockpile_type}_{stockpile_name}_{resolution}.json"
+        )
+
+        with (
+            patch("pathlib.Path.open") as mock_open,
+            patch("pathlib.Path.mkdir"),
+            patch("foxhole_stockpiles.handlers.file.datetime") as mock_datetime_module,
+        ):
+            mock_now = Mock()
+            mock_now.strftime.side_effect = lambda fmt: {
+                "%Y-%m-%d_%H-%M-%S": "2025-01-24_14-30-52",
+                "%Y": "2025",
+                "%m": "01",
+                "%d": "24",
+                "%H": "14",
+                "%M": "30",
+                "%S": "52",
+            }.get(fmt, "")
+            mock_datetime_module.datetime.now.return_value = mock_now
+
             mock_file = Mock()
             mock_open.return_value.__enter__.return_value = mock_file
 

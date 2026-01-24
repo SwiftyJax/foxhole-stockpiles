@@ -91,12 +91,20 @@ class OutputHandlerDialog(QDialog):
         file_path_label = QLabel("File Path:")
         file_path_label.setToolTip(
             "Path where scan results will be saved.\n\n"
-            "Can be absolute or relative path.\n"
-            "File will be created or overwritten with each scan."
+            "Supported placeholders:\n"
+            "  {timestamp} - Full timestamp (YYYY-MM-DD_HH-MM-SS)\n"
+            "  {year}, {month}, {day} - Date components\n"
+            "  {hour}, {minute}, {second} - Time components\n"
+            "  {stockpile_type} - Type (Seaport, Storage Depot, etc.)\n"
+            "  {stockpile_name} - Name of the stockpile\n"
+            "  {resolution} - Screen resolution (e.g., 1920x1080)\n\n"
+            "Example: {timestamp}_{stockpile_type}_{stockpile_name}_{resolution}.json"
         )
         file_path_layout = QHBoxLayout()
         self.file_path_input = QLineEdit()
-        self.file_path_input.setPlaceholderText("output.json")
+        self.file_path_input.setPlaceholderText(
+            "{timestamp}_{stockpile_type}_{stockpile_name}_{resolution}.json"
+        )
         file_browse = QPushButton("Browse...")
         file_browse.clicked.connect(self._browse_file)
         file_path_layout.addWidget(self.file_path_input)
