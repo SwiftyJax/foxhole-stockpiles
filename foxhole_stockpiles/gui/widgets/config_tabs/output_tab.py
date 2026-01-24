@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles.core.settings.sections.output import (
     ConsoleHandlerSettings,
+    CsvFormatSettings,
     FileHandlerSettings,
     JsonFormatSettings,
     OutputHandlerConfig,
@@ -28,6 +29,7 @@ from foxhole_stockpiles.core.settings.sections.output import (
     WebhookHandlerSettings,
 )
 from foxhole_stockpiles.enums.auth_type import AuthType
+from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.enums.output_handler_type import OutputHandlerType
 
 
@@ -72,7 +74,7 @@ class OutputHandlerDialog(QDialog):
         handler_type_label.setToolTip(
             "Where to send scan results:\n\n"
             "• return - Return data to caller (API mode)\n"
-            "• file - Save to a JSON file\n"
+            "• file - Save to a file\n"
             "• webhook - POST to a webhook URL\n"
             "• console - Print to console output"
         )
@@ -80,6 +82,17 @@ class OutputHandlerDialog(QDialog):
         self.handler_type_input.addItems(["return", "file", "webhook", "console"])
         self.handler_type_input.currentTextChanged.connect(self._on_handler_type_changed)
         basic_layout.addRow(handler_type_label, self.handler_type_input)
+
+        self.format_label = QLabel("Output Format:")
+        self.format_label.setToolTip(
+            "Format for the output data:\n\n"
+            "• json - Full JSON with all stockpile data\n"
+            "• csv - Comma-separated values (one row per item)\n"
+            "• tsv - Tab-separated values (one row per item)"
+        )
+        self.format_input = QComboBox()
+        self.format_input.addItems(["json", "csv", "tsv"])
+        basic_layout.addRow(self.format_label, self.format_input)
 
         layout.addWidget(basic_group)
 
@@ -182,6 +195,10 @@ class OutputHandlerDialog(QDialog):
         handler_type = self.handler_type_input.currentText()
         self.file_group.setVisible(handler_type == "file")
         self.webhook_group.setVisible(handler_type == "webhook")
+        # Show format selection only for file and webhook handlers
+        show_format = handler_type in ("file", "webhook")
+        self.format_label.setVisible(show_format)
+        self.format_input.setVisible(show_format)
 
     def _on_webhook_auth_changed(self) -> None:
         """Handle webhook auth type change to show/hide relevant fields."""
@@ -217,6 +234,13 @@ class OutputHandlerDialog(QDialog):
         self.name_input.setText(handler_config.name)
         handler = handler_config.handler
         self.handler_type_input.setCurrentText(handler.type)
+
+        # Load format setting
+        format_type = handler_config.format.type
+        if isinstance(format_type, OutputFormat):
+            self.format_input.setCurrentText(format_type.value)
+        else:
+            self.format_input.setCurrentText(str(format_type))
 
         if isinstance(handler, FileHandlerSettings):
             self.file_path_input.setText(handler.path)
@@ -258,6 +282,16 @@ class OutputHandlerDialog(QDialog):
         handler_type = OutputHandlerType(self.handler_type_input.currentText())
         name = self.name_input.text().strip()
 
+        # Create format settings based on selection
+        format_type_str = self.format_input.currentText()
+        format_settings: JsonFormatSettings | CsvFormatSettings
+        if format_type_str == "csv":
+            format_settings = CsvFormatSettings(type=OutputFormat.CSV)
+        elif format_type_str == "tsv":
+            format_settings = CsvFormatSettings(type=OutputFormat.TSV)
+        else:
+            format_settings = JsonFormatSettings()
+
         # Create appropriate handler settings based on type
         handler_settings: (
             ReturnHandlerSettings
@@ -266,9 +300,7 @@ class OutputHandlerDialog(QDialog):
             | ConsoleHandlerSettings
         )
         if handler_type == OutputHandlerType.FILE:
-            handler_settings = FileHandlerSettings(
-                path=self.file_path_input.text() or "output.json"
-            )
+            handler_settings = FileHandlerSettings(path=self.file_path_input.text() or "output")
             if not name:
                 name = "File Output"
         elif handler_type == OutputHandlerType.WEBHOOK:
@@ -295,7 +327,7 @@ class OutputHandlerDialog(QDialog):
 
         return OutputHandlerConfig(
             name=name,
-            format=JsonFormatSettings(),
+            format=format_settings,
             handler=handler_settings,
         )
 
@@ -377,18 +409,23 @@ class OutputTab(QWidget):
         for handler_config in self._handlers:
             handler = handler_config.handler
             handler_type = handler.type
+            format_type = handler_config.format.type
+            if isinstance(format_type, OutputFormat):
+                format_str = format_type.value.upper()
+            else:
+                format_str = str(format_type).upper()
             item_text = f"{handler_config.name} ({handler_type})"
 
             # Add extra info based on type
             if isinstance(handler, FileHandlerSettings):
-                item_text = f"{handler_config.name} - {handler.path}"
+                item_text = f"{handler_config.name} [{format_str}] - {handler.path}"
             elif isinstance(handler, WebhookHandlerSettings):
                 url = handler.url or ""
                 truncated_url = url[:40] + "..." if len(url) > 40 else url
-                item_text = f"{handler_config.name} - {truncated_url}"
+                item_text = f"{handler_config.name} [{format_str}] - {truncated_url}"
 
             item = QListWidgetItem(item_text)
-            item.setToolTip(f"Type: {handler_type}")
+            item.setToolTip(f"Type: {handler_type}, Format: {format_str}")
             self.handlers_list.addItem(item)
         self._update_buttons_state()
 

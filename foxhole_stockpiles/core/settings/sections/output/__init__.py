@@ -4,8 +4,8 @@ from foxhole_stockpiles.core.settings.sections.output.console_handler import (
     ConsoleHandlerSettings,
 )
 from foxhole_stockpiles.core.settings.sections.output.csv_format import (
-    AVAILABLE_FIELDS,
-    DEFAULT_FIELDS,
+    CSV_FIELDS,
+    CSV_HEADERS,
     CsvFormatSettings,
 )
 from foxhole_stockpiles.core.settings.sections.output.file_handler import FileHandlerSettings
@@ -22,8 +22,8 @@ from foxhole_stockpiles.core.settings.sections.output.webhook_handler import (
 )
 
 __all__ = [
-    "AVAILABLE_FIELDS",
-    "DEFAULT_FIELDS",
+    "CSV_FIELDS",
+    "CSV_HEADERS",
     "ConsoleHandlerSettings",
     "CsvFormatSettings",
     "FileHandlerSettings",

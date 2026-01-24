@@ -13,6 +13,13 @@ import pytest
 from foxhole_stockpiles.core.settings.sections.output import (
     WebhookHandlerSettings,
 )
+from foxhole_stockpiles.core.settings.sections.output.csv_format import (
+    CsvFormatSettings,
+)
+from foxhole_stockpiles.core.settings.sections.output.json_format import (
+    JsonFormatSettings,
+)
+from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.enums.stockpile_type import StockpileType
 from foxhole_stockpiles.handlers.console import ConsoleOutputHandler
 from foxhole_stockpiles.handlers.file import FileOutputHandler
@@ -244,6 +251,125 @@ class TestFileOutputHandler:
 
         with pytest.raises(ValueError, match="File path must be provided"):
             await handler.handle(sample_stockpile)
+
+    @pytest.mark.asyncio
+    async def test_file_output_csv_format(self, sample_stockpile: Stockpile) -> None:
+        """Test file output with CSV format.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        csv_settings = CsvFormatSettings(type=OutputFormat.CSV, include_header=True)
+        handler = FileOutputHandler(default_file_path="output.csv", format_settings=csv_settings)
+
+        with patch("pathlib.Path.open") as mock_open, patch("pathlib.Path.mkdir"):
+            mock_file = Mock()
+            mock_open.return_value.__enter__.return_value = mock_file
+
+            await handler.handle(sample_stockpile)
+
+            mock_file.write.assert_called_once()
+            written_data = mock_file.write.call_args[0][0]
+
+            # Verify CSV structure
+            lines = written_data.split("\n")
+            assert len(lines) == 4  # 1 header + 3 items
+            assert (
+                lines[0]
+                == "Code,Crated,Quantity,Confidence,Stockpile Name,Stockpile Type,Shard,Ingame Time"
+            )
+            # Check first data row
+            assert "BasicMaterialsIcon" in lines[1]
+            assert ",0," in lines[1]  # crated = 0 (false)
+            assert "100" in lines[1]
+            assert "0.95" in lines[1]  # confidence
+            assert "Test Stockpile" in lines[1]
+            assert "Seaport" in lines[1]
+
+    @pytest.mark.asyncio
+    async def test_file_output_tsv_format(self, sample_stockpile: Stockpile) -> None:
+        """Test file output with TSV format.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        tsv_settings = CsvFormatSettings(type=OutputFormat.TSV, include_header=True)
+        handler = FileOutputHandler(default_file_path="output.tsv", format_settings=tsv_settings)
+
+        with patch("pathlib.Path.open") as mock_open, patch("pathlib.Path.mkdir"):
+            mock_file = Mock()
+            mock_open.return_value.__enter__.return_value = mock_file
+
+            await handler.handle(sample_stockpile)
+
+            mock_file.write.assert_called_once()
+            written_data = mock_file.write.call_args[0][0]
+
+            # Verify TSV structure (tab-separated)
+            lines = written_data.split("\n")
+            assert len(lines) == 4  # 1 header + 3 items
+            assert "\t" in lines[0]  # Tab separator
+            assert (
+                "Code\tCrated\tQuantity\tConfidence"
+                "\tStockpile Name\tStockpile Type\tShard\tIngame Time" == lines[0]
+            )
+
+    @pytest.mark.asyncio
+    async def test_file_output_csv_no_header(self, sample_stockpile: Stockpile) -> None:
+        """Test file output with CSV format without header.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        csv_settings = CsvFormatSettings(type=OutputFormat.CSV, include_header=False)
+        handler = FileOutputHandler(default_file_path="output.csv", format_settings=csv_settings)
+
+        with patch("pathlib.Path.open") as mock_open, patch("pathlib.Path.mkdir"):
+            mock_file = Mock()
+            mock_open.return_value.__enter__.return_value = mock_file
+
+            await handler.handle(sample_stockpile)
+
+            mock_file.write.assert_called_once()
+            written_data = mock_file.write.call_args[0][0]
+
+            # Verify no header - only data rows
+            lines = written_data.split("\n")
+            assert len(lines) == 3  # 3 items, no header
+            assert "BasicMaterialsIcon" in lines[0]
+
+    def test_fix_extension_replaces_wrong_extension(self) -> None:
+        """Test that _fix_extension replaces wrong extensions."""
+        # CSV format with .json extension should become .csv
+        csv_settings = CsvFormatSettings(type=OutputFormat.CSV)
+        handler = FileOutputHandler(format_settings=csv_settings)
+        assert handler._fix_extension("output.json") == "output.csv"
+        assert handler._fix_extension("folder/output.json") == "folder/output.csv"
+
+        # TSV format with .csv extension should become .tsv
+        tsv_settings = CsvFormatSettings(type=OutputFormat.TSV)
+        handler = FileOutputHandler(format_settings=tsv_settings)
+        assert handler._fix_extension("output.csv") == "output.tsv"
+
+        # JSON format with .csv extension should become .json
+        json_settings = JsonFormatSettings()
+        handler = FileOutputHandler(format_settings=json_settings)
+        assert handler._fix_extension("output.csv") == "output.json"
+
+    def test_fix_extension_adds_missing_extension(self) -> None:
+        """Test that _fix_extension adds extension when missing."""
+        # No extension should add the correct one
+        csv_settings = CsvFormatSettings(type=OutputFormat.CSV)
+        handler = FileOutputHandler(format_settings=csv_settings)
+        assert handler._fix_extension("output") == "output.csv"
+
+        tsv_settings = CsvFormatSettings(type=OutputFormat.TSV)
+        handler = FileOutputHandler(format_settings=tsv_settings)
+        assert handler._fix_extension("output") == "output.tsv"
+
+        json_settings = JsonFormatSettings()
+        handler = FileOutputHandler(format_settings=json_settings)
+        assert handler._fix_extension("output") == "output.json"
 
 
 class TestWebhookOutputHandler:

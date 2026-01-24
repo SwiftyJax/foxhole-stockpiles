@@ -4,21 +4,29 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from foxhole_stockpiles.enums.output_format import OutputFormat
 
-# Available fields for CSV/TSV export
-AVAILABLE_FIELDS = [
+# Fixed fields for CSV/TSV export (order matters)
+CSV_FIELDS = [
     "code",
-    "quantity",
     "crated",
+    "quantity",
     "confidence",
     "stockpile_name",
     "stockpile_type",
     "shard",
-    "timestamp",
-    "resolution",
+    "ingame_timestamp",
 ]
 
-# Default fields for minimal export
-DEFAULT_FIELDS = ["code", "quantity", "crated"]
+# Header names for CSV/TSV export
+CSV_HEADERS = [
+    "Code",
+    "Crated",
+    "Quantity",
+    "Confidence",
+    "Stockpile Name",
+    "Stockpile Type",
+    "Shard",
+    "Ingame Time",
+]
 
 
 class CsvFormatSettings(BaseModel):
@@ -26,14 +34,6 @@ class CsvFormatSettings(BaseModel):
 
     type: OutputFormat = Field(
         default=OutputFormat.CSV, description="Output format type (csv or tsv)"
-    )
-    separator: str = Field(
-        default=",",
-        description="Field separator character. Use ',' for CSV, '\\t' for TSV.",
-    )
-    fields: list[str] = Field(
-        default_factory=lambda: DEFAULT_FIELDS.copy(),
-        description=f"Fields to include in output. Available: {', '.join(AVAILABLE_FIELDS)}",
     )
     include_header: bool = Field(
         default=True,

@@ -50,7 +50,10 @@ class OutputCoordinator:
             case ReturnHandlerSettings():
                 return ReturnOutputHandler()
             case FileHandlerSettings():
-                return FileOutputHandler(default_file_path=handler_settings.path)
+                return FileOutputHandler(
+                    default_file_path=handler_settings.path,
+                    format_settings=handler_config.format,
+                )
             case WebhookHandlerSettings():
                 return WebhookOutputHandler(webhook_settings=handler_settings)
             case ConsoleHandlerSettings():
