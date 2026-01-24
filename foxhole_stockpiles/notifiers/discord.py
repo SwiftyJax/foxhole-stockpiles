@@ -29,7 +29,7 @@ class DiscordNotifier(BaseNotifier):
         """
         super().__init__("Discord")
         self.webhook_url = webhook_url
-        self.username = username or "Foxhole Stockpiles"
+        self.username = f"FS ({username or 'Foxhole Stockpiles'})"
         self.message_templates = message_templates or {}
 
     async def send(self, event_type: str, data: dict[str, Any]) -> None:

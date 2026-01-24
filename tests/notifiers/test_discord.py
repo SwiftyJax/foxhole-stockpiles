@@ -26,7 +26,7 @@ class TestDiscordNotifierInitialization:
         notifier = DiscordNotifier(webhook_url="https://discord.com/api/webhooks/123/abc")
 
         assert notifier.webhook_url == "https://discord.com/api/webhooks/123/abc"
-        assert notifier.username == "Foxhole Stockpiles"
+        assert notifier.username == "FS (Foxhole Stockpiles)"
         assert notifier.name == "Discord"
         assert notifier.enabled is True
 
@@ -36,7 +36,7 @@ class TestDiscordNotifierInitialization:
             webhook_url="https://discord.com/api/webhooks/123/abc", username="Custom Bot"
         )
 
-        assert notifier.username == "Custom Bot"
+        assert notifier.username == "FS (Custom Bot)"
 
 
 class TestSend:
