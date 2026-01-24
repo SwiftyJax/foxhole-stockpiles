@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
+from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
 from foxhole_stockpiles.gui.windows.catalog_builder_window import CatalogBuilderWindow
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
@@ -28,10 +29,27 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         """Initialize the main window."""
         super().__init__()
-        # Preference to minimize to tray on close (disabled by default)
-        self.minimize_to_tray = False
+        # Load minimize_to_tray preference from config (default: False)
+        self.minimize_to_tray = self._load_minimize_to_tray_setting()
+        # Track menu actions that should be hidden based on config level
+        self._advanced_menu_actions: list[QAction] = []
         self.init_ui()
         self.create_tray_icon()
+        # Apply config level to menu visibility
+        self._apply_config_level_to_menus()
+
+    def _load_minimize_to_tray_setting(self) -> bool:
+        """Load minimize_to_tray setting from config.
+
+        Returns:
+            bool: The minimize_to_tray setting value
+        """
+        try:
+            settings = AppSettings()
+            return settings.gui.minimize_to_tray
+        except Exception as e:
+            logger.warning(f"Failed to load minimize_to_tray setting: {e}")
+            return False
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
@@ -58,15 +76,10 @@ class MainWindow(QMainWindow):
         scan_action = file_menu.addAction("&Scan Screenshot...")  # type: ignore[union-attr]
         scan_action.triggered.connect(self.scan_screenshot)  # type: ignore[union-attr]
 
+        # Build Catalog - hidden at Basic config level
         build_catalog_action = file_menu.addAction("Build &Catalog...")  # type: ignore[union-attr]
         build_catalog_action.triggered.connect(self.show_catalog_builder)  # type: ignore[union-attr]
-
-        file_menu.addSeparator()  # type: ignore[union-attr]
-
-        minimize_to_tray_action = file_menu.addAction("Minimize to &Tray on Close")  # type: ignore[union-attr]
-        minimize_to_tray_action.setCheckable(True)  # type: ignore[union-attr]
-        minimize_to_tray_action.setChecked(self.minimize_to_tray)  # type: ignore[union-attr]
-        minimize_to_tray_action.triggered.connect(self.toggle_minimize_to_tray)  # type: ignore[union-attr]
+        self._advanced_menu_actions.append(build_catalog_action)  # type: ignore[arg-type]
 
         file_menu.addSeparator()  # type: ignore[union-attr]
 
@@ -76,8 +89,10 @@ class MainWindow(QMainWindow):
         # Database menu
         database_menu = menu_bar.addMenu("&Database")  # type: ignore[union-attr]
 
+        # Build Database - hidden at Basic config level
         build_database_action = database_menu.addAction("&Build...")  # type: ignore[union-attr]
         build_database_action.triggered.connect(self.show_icon_import)  # type: ignore[union-attr]
+        self._advanced_menu_actions.append(build_database_action)  # type: ignore[arg-type]
 
         info_database_action = database_menu.addAction("&Information...")  # type: ignore[union-attr]
         info_database_action.triggered.connect(self.show_database_info)  # type: ignore[union-attr]
@@ -86,6 +101,17 @@ class MainWindow(QMainWindow):
         help_menu = menu_bar.addMenu("&Help")  # type: ignore[union-attr]
         about_action = help_menu.addAction("&About")  # type: ignore[union-attr]
         about_action.triggered.connect(self.show_about)  # type: ignore[union-attr]
+
+    def _apply_config_level_to_menus(self) -> None:
+        """Apply config level settings to menu visibility."""
+        try:
+            settings = AppSettings()
+            config_level = settings.gui.config_level
+            # Advanced menu actions are visible at advanced and developer levels
+            for action in self._advanced_menu_actions:
+                action.setVisible(config_level.is_at_least(ConfigLevel.ADVANCED))
+        except Exception as e:
+            logger.warning(f"Failed to apply config level to menus: {e}")
 
     def create_tray_icon(self) -> None:
         """Create system tray icon with menu."""
@@ -184,15 +210,6 @@ class MainWindow(QMainWindow):
         self.activateWindow()
         self.raise_()
 
-    def toggle_minimize_to_tray(self, checked: bool) -> None:
-        """Toggle minimize to tray preference.
-
-        Args:
-            checked (bool): Whether minimize to tray is enabled
-        """
-        self.minimize_to_tray = checked
-        logger.info(f"Minimize to tray: {self.minimize_to_tray}")
-
     def scan_screenshot(self) -> None:
         """Open file dialog to scan a screenshot."""
         self.server_panel.scan_screenshot_from_menu()
@@ -211,10 +228,19 @@ class MainWindow(QMainWindow):
 
         config_window.move(center_x, center_y)
 
-        # Connect to refresh DB info when config window closes
+        # Connect to refresh DB info and settings when config window closes
         config_window.closed.connect(self.server_panel.refresh_db_info)
+        config_window.closed.connect(self._on_config_closed)
 
         config_window.show()
+
+    def _on_config_closed(self) -> None:
+        """Handle config window closed - refresh settings from config."""
+        # Reload minimize_to_tray setting
+        self.minimize_to_tray = self._load_minimize_to_tray_setting()
+        # Refresh menu visibility based on config level
+        self._apply_config_level_to_menus()
+        logger.info(f"Config reloaded - minimize_to_tray: {self.minimize_to_tray}")
 
     def show_icon_import(self) -> None:
         """Show icon import window as modal dialog centered on main window."""

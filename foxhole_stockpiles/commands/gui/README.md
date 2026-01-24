@@ -108,42 +108,22 @@ The main window validates your configuration on startup and after changes:
 
 Access via **File > Configuration**. Opens as a centered modal dialog.
 
-#### Basic Configuration Mode (Default)
+#### Configuration Tabs
 
-A simplified interface designed for non-technical users with only essential settings:
-
-**Server Settings:**
-- Port: API server port (default: 8000)
-
-**Authentication:**
-- Auth Type: None or Basic (HTTP Basic Auth)
-- Username/Password: Shown only when Basic auth is selected
-
-**Scanner Settings:**
-- Database Path: Path to template database (.h5 file) with browse button
-
-**Output Settings:**
-- Destination: console (default), return, file, or webhook
-- Dynamic sections that appear based on destination:
-  - **File**: Path input with browse button
-  - **Webhook**: URL and optional Basic authentication
-
-#### Advanced Configuration Mode
-
-Enable by checking **"Show Advanced Settings"** to access all configuration options across detailed tabs:
+All configuration options are organized across detailed tabs:
 
 1. **API Server**:
    - Host and port configuration
-   - Reload on code changes (development)
-   - Log level selection
+   - Workers count
    - CORS origins
    - Memory monitoring options
+   - Web icon mod
+   - **Authentication** (at the bottom of the tab):
+     - Auth type selection (none, bearer, basic)
+     - Username/password for basic auth
+     - Token for bearer auth
 
-2. **API Authentication**:
-   - Auth type selection (none, bearer, basic)
-   - Token/credentials management
-
-3. **Scanner**:
+2. **Scanner**:
    - Database path and cache settings
    - Faction filter options
    - Confidence thresholds
@@ -151,14 +131,14 @@ Enable by checking **"Show Advanced Settings"** to access all configuration opti
    - pHash settings
    - Debug options (save debug images)
 
-4. **Output**:
+3. **Output**:
    - Format (JSON)
    - Destination (return, file, webhook, console)
    - File settings (path with timestamp support)
    - Webhook settings (URL, auth type, token, custom headers)
    - Console settings
 
-5. **OCR**:
+4. **OCR**:
    - Layout detection parameters
    - Box dimensions (width, height)
    - Offsets (column, row, group, icon-to-quantity)
@@ -166,29 +146,29 @@ Enable by checking **"Show Advanced Settings"** to access all configuration opti
    - Gray threshold values
    - Pixel difference tolerance
 
-6. **Templates**:
+5. **Templates**:
    - Template matching settings
    - Crate detection RGB multipliers and offsets
    - Cache configuration
 
-7. **External Tools**:
+6. **External Tools**:
    - Extractor tool (repak) path - for PAK extraction
    - Converter tool (umodel) path - for UAsset to PNG conversion
    - JSON Converter (UAssetGUI) path - for UAsset to JSON conversion
 
-9. **Database Builder**:
+7. **Database Builder**:
    - Catalog file path
    - Workers count (0 = auto-detect, 1-N for specific count)
    - Target resolutions selection
 
-10. **Logging**:
+8. **Logging**:
    - Log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
    - File output configuration
    - Log format customization
    - Date format
    - Log rotation settings
 
-**⚠️ Warning**: Advanced settings include critical parameters. Misconfiguring OCR or Templates settings can break stockpile scanning completely. Only modify if you understand the implications.
+**⚠️ Warning**: Some settings are critical parameters. Misconfiguring OCR or Templates settings can break stockpile scanning completely. Only modify if you understand the implications.
 
 #### Configuration Validation
 

@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
+from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab import ScannerTab
 
 
@@ -473,3 +474,110 @@ def test_scanner_tab_set_values_default_settings(scanner_tab: ScannerTab) -> Non
     assert scanner_tab.cache_size_input.value() == settings.template_cache_size
     assert scanner_tab.early_exit_input.value() == settings.early_exit_threshold
     assert scanner_tab.confidence_gap_input.value() == settings.confidence_gap
+
+
+def test_scanner_tab_set_config_level_basic(scanner_tab: ScannerTab) -> None:
+    """Test set_config_level with BASIC level hides advanced and developer widgets.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.set_config_level(ConfigLevel.BASIC)
+
+    # Advanced widgets should be hidden
+    # Use isHidden() instead of isVisible() since parent widget is not shown
+    assert scanner_tab._ncc_label.isHidden()
+    assert scanner_tab.max_ncc_input.isHidden()
+    assert scanner_tab._phash_label.isHidden()
+    assert scanner_tab.phash_threshold_input.isHidden()
+    assert scanner_tab._debug_label.isHidden()
+    assert scanner_tab.debug_mode_input.isHidden()
+    assert scanner_tab._extract_label.isHidden()
+    assert scanner_tab.extract_icons_input.isHidden()
+
+    # Developer widgets should be hidden
+    assert scanner_tab._custom_model_label.isHidden()
+    assert scanner_tab._custom_model_widget.isHidden()
+    assert scanner_tab._tessdata_label.isHidden()
+    assert scanner_tab._tessdata_widget.isHidden()
+
+
+def test_scanner_tab_set_config_level_advanced(scanner_tab: ScannerTab) -> None:
+    """Test set_config_level with ADVANCED level shows advanced but hides developer widgets.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.set_config_level(ConfigLevel.ADVANCED)
+
+    # Advanced widgets should be visible
+    # Use isHidden() instead of isVisible() since parent widget is not shown
+    assert not scanner_tab._ncc_label.isHidden()
+    assert not scanner_tab.max_ncc_input.isHidden()
+    assert not scanner_tab._phash_label.isHidden()
+    assert not scanner_tab.phash_threshold_input.isHidden()
+    assert not scanner_tab._debug_label.isHidden()
+    assert not scanner_tab.debug_mode_input.isHidden()
+    assert not scanner_tab._extract_label.isHidden()
+    assert not scanner_tab.extract_icons_input.isHidden()
+
+    # Developer widgets should be hidden
+    assert scanner_tab._custom_model_label.isHidden()
+    assert scanner_tab._custom_model_widget.isHidden()
+    assert scanner_tab._tessdata_label.isHidden()
+    assert scanner_tab._tessdata_widget.isHidden()
+
+
+def test_scanner_tab_set_config_level_developer(scanner_tab: ScannerTab) -> None:
+    """Test set_config_level with DEVELOPER level shows all widgets.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.set_config_level(ConfigLevel.DEVELOPER)
+
+    # Advanced widgets should be visible
+    # Use isHidden() instead of isVisible() since parent widget is not shown
+    assert not scanner_tab._ncc_label.isHidden()
+    assert not scanner_tab.max_ncc_input.isHidden()
+    assert not scanner_tab._phash_label.isHidden()
+    assert not scanner_tab.phash_threshold_input.isHidden()
+    assert not scanner_tab._debug_label.isHidden()
+    assert not scanner_tab.debug_mode_input.isHidden()
+    assert not scanner_tab._extract_label.isHidden()
+    assert not scanner_tab.extract_icons_input.isHidden()
+
+    # Developer widgets should be visible
+    assert not scanner_tab._custom_model_label.isHidden()
+    assert not scanner_tab._custom_model_widget.isHidden()
+    assert not scanner_tab._tessdata_label.isHidden()
+    assert not scanner_tab._tessdata_widget.isHidden()
+
+
+def test_scanner_tab_config_level_transition(scanner_tab: ScannerTab) -> None:
+    """Test transitioning between config levels.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    # Use isHidden() instead of isVisible() since parent widget is not shown
+
+    # Start with developer
+    scanner_tab.set_config_level(ConfigLevel.DEVELOPER)
+    assert not scanner_tab._custom_model_label.isHidden()
+    assert not scanner_tab._ncc_label.isHidden()
+
+    # Transition to advanced
+    scanner_tab.set_config_level(ConfigLevel.ADVANCED)
+    assert scanner_tab._custom_model_label.isHidden()
+    assert not scanner_tab._ncc_label.isHidden()
+
+    # Transition to basic
+    scanner_tab.set_config_level(ConfigLevel.BASIC)
+    assert scanner_tab._custom_model_label.isHidden()
+    assert scanner_tab._ncc_label.isHidden()
+
+    # Back to developer
+    scanner_tab.set_config_level(ConfigLevel.DEVELOPER)
+    assert not scanner_tab._custom_model_label.isHidden()
+    assert not scanner_tab._ncc_label.isHidden()

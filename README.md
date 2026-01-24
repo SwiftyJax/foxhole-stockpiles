@@ -112,6 +112,16 @@ Launches the PyQt6 graphical user interface for managing configurations and runn
 - `fs gui` - Launches GUI via CLI dispatcher
 - `fs-gui` - Direct GUI launcher (no console window on Windows, recommended for building standalone executables)
 
+**Configuration Levels:**
+
+The GUI uses a tiered configuration system to avoid overwhelming users with advanced options:
+
+- **Basic** (default): Essential settings only - API Server, Scanner, Output, Logging, and GUI tabs. Suitable for most users.
+- **Advanced**: Adds External Tools and Database Builder tabs, plus additional fields like CORS settings, debug mode, log file configuration, and custom loggers.
+- **Developer**: Full access including OCR and Templates tabs for fine-tuning recognition parameters. Only use this if you understand the impact of these settings.
+
+Change the configuration level in the GUI tab within the Configuration window.
+
 ## Requirements
 
 - Python 3.12 or higher

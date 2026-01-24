@@ -3,6 +3,7 @@
 from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings, APIServerSettings
 from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseBuilderSettings
 from foxhole_stockpiles.core.settings.sections.external_tools import ExternalToolsSettings
+from foxhole_stockpiles.core.settings.sections.gui import GUISettings
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 from foxhole_stockpiles.core.settings.sections.notifications import NotificationsSettings
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
@@ -23,6 +24,7 @@ __all__ = [
     "DatabaseBuilderSettings",
     "ExternalToolsSettings",
     "FileOutputSettings",
+    "GUISettings",
     "LoggingSettings",
     "NotificationsSettings",
     "OCRSettings",

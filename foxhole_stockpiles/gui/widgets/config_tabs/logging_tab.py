@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
+from foxhole_stockpiles.enums.config_level import ConfigLevel
 
 LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -88,6 +89,8 @@ class LoggingTab(QWidget):
         """
         super().__init__(parent)
         self.custom_logger_rows: list[CustomLoggerRowWidget] = []
+        # Track widgets that should be hidden at basic level
+        self._advanced_widgets: list[QWidget] = []
         self.init_ui()
 
     def init_ui(self) -> None:
@@ -110,9 +113,9 @@ class LoggingTab(QWidget):
         self.root_level_combo.setCurrentText("INFO")
         form_layout.addRow(root_level_label, self.root_level_combo)
 
-        # Log Format
-        log_format_label = QLabel("Log Format:")
-        log_format_label.setToolTip(
+        # Log Format - ADVANCED
+        self._log_format_label = QLabel("Log Format:")
+        self._log_format_label.setToolTip(
             "Python logging format string.\n\n"
             "Common placeholders:\n"
             "• %(asctime)s - Timestamp\n"
@@ -125,11 +128,12 @@ class LoggingTab(QWidget):
         self.log_format_input.setPlaceholderText(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
         )
-        form_layout.addRow(log_format_label, self.log_format_input)
+        form_layout.addRow(self._log_format_label, self.log_format_input)
+        self._advanced_widgets.extend([self._log_format_label, self.log_format_input])
 
-        # Date Format
-        date_format_label = QLabel("Date Format:")
-        date_format_label.setToolTip(
+        # Date Format - ADVANCED
+        self._date_format_label = QLabel("Date Format:")
+        self._date_format_label.setToolTip(
             "Date/time format for log timestamps.\n\n"
             "Uses Python strftime format codes:\n"
             "• %Y - 4-digit year\n"
@@ -142,38 +146,45 @@ class LoggingTab(QWidget):
         )
         self.date_format_input = QLineEdit()
         self.date_format_input.setPlaceholderText("%Y-%m-%d %H:%M:%S")
-        form_layout.addRow(date_format_label, self.date_format_input)
+        form_layout.addRow(self._date_format_label, self.date_format_input)
+        self._advanced_widgets.extend([self._date_format_label, self.date_format_input])
 
-        # Rotate Logs
-        rotate_logs_label = QLabel("Rotate Logs:")
-        rotate_logs_label.setToolTip(
+        # Rotate Logs - ADVANCED
+        self._rotate_logs_label = QLabel("Rotate Logs:")
+        self._rotate_logs_label.setToolTip(
             "Automatically rotate log files when they get too large.\n\n"
             "When enabled, old logs are archived and new log files are created.\n"
             "Prevents log files from consuming too much disk space."
         )
         self.rotate_logs_input = QCheckBox("Enable log rotation")
-        form_layout.addRow(rotate_logs_label, self.rotate_logs_input)
+        form_layout.addRow(self._rotate_logs_label, self.rotate_logs_input)
+        self._advanced_widgets.extend([self._rotate_logs_label, self.rotate_logs_input])
 
-        # Log File
-        log_file_label = QLabel("Log File:")
-        log_file_label.setToolTip(
+        # Log File - ADVANCED
+        self._log_file_label = QLabel("Log File:")
+        self._log_file_label.setToolTip(
             "Optional path to save log messages to a file.\n\n"
             "If not specified, logs are only written to console.\n"
             "Useful for debugging and keeping a record of operations."
         )
-        log_file_layout = QHBoxLayout()
+        self._log_file_widget = QWidget()
+        log_file_layout = QHBoxLayout(self._log_file_widget)
+        log_file_layout.setContentsMargins(0, 0, 0, 0)
         self.log_file_input = QLineEdit()
         self.log_file_input.setPlaceholderText("Optional: path to log file")
         log_browse = QPushButton("Browse...")
         log_browse.clicked.connect(self._browse_log_file)
         log_file_layout.addWidget(self.log_file_input)
         log_file_layout.addWidget(log_browse)
-        form_layout.addRow(log_file_label, log_file_layout)
+        form_layout.addRow(self._log_file_label, self._log_file_widget)
+        self._advanced_widgets.extend([self._log_file_label, self._log_file_widget])
 
         layout.addLayout(form_layout)
 
-        # Custom Log Levels header with Add button
-        header_layout = QHBoxLayout()
+        # Custom Log Levels header with Add button - ADVANCED
+        self._custom_loggers_header = QWidget()
+        header_layout = QHBoxLayout(self._custom_loggers_header)
+        header_layout.setContentsMargins(0, 0, 0, 0)
         custom_loggers_label = QLabel("Custom Log Levels:")
         custom_loggers_label.setToolTip(
             "Override log levels for specific loggers.\n\n"
@@ -187,11 +198,12 @@ class LoggingTab(QWidget):
         header_layout.addWidget(custom_loggers_label)
         header_layout.addStretch()
         header_layout.addWidget(add_btn)
-        layout.addLayout(header_layout)
+        layout.addWidget(self._custom_loggers_header)
+        self._advanced_widgets.append(self._custom_loggers_header)
 
-        # Scroll area for custom logger rows (expands to fill remaining space)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
+        # Scroll area for custom logger rows (expands to fill remaining space) - ADVANCED
+        self._loggers_scroll = QScrollArea()
+        self._loggers_scroll.setWidgetResizable(True)
 
         self.loggers_container = QWidget()
         self.loggers_list_layout = QVBoxLayout(self.loggers_container)
@@ -199,8 +211,19 @@ class LoggingTab(QWidget):
         self.loggers_list_layout.setSpacing(4)
         self.loggers_list_layout.addStretch()
 
-        scroll.setWidget(self.loggers_container)
-        layout.addWidget(scroll, 1)  # stretch factor 1 to fill remaining space
+        self._loggers_scroll.setWidget(self.loggers_container)
+        layout.addWidget(self._loggers_scroll, 1)  # stretch factor 1 to fill space
+        self._advanced_widgets.append(self._loggers_scroll)
+
+    def set_config_level(self, level: ConfigLevel) -> None:
+        """Show or hide fields based on the configuration level.
+
+        Args:
+            level (ConfigLevel): The configuration level to set.
+        """
+        # Advanced widgets are visible at advanced and developer levels
+        for widget in self._advanced_widgets:
+            widget.setVisible(level.is_at_least(ConfigLevel.ADVANCED))
 
     def _add_custom_logger_row(self, logger_name: str, level: str) -> CustomLoggerRowWidget:
         """Add a custom logger row to the list.

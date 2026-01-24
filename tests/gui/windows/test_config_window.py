@@ -13,6 +13,7 @@ from foxhole_stockpiles.core.settings.sections import (
     APIAuthSettings,
     APIServerSettings,
     DatabaseBuilderSettings,
+    ExternalToolsSettings,
     LoggingSettings,
     NotificationsSettings,
     OCRSettings,
@@ -22,6 +23,7 @@ from foxhole_stockpiles.core.settings.sections import (
     TemplateSettings,
 )
 from foxhole_stockpiles.enums.auth_type import AuthType
+from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
 
 
@@ -42,12 +44,26 @@ def mock_config_manager() -> Any:
     Returns:
         MagicMock: Mock ConfigManager
     """
+    from foxhole_stockpiles.core.settings.sections.gui import GUISettings
+
     with patch("foxhole_stockpiles.gui.windows.config_window.ConfigManager") as mock_class:
         mock_instance = MagicMock()
         mock_class.return_value = mock_instance
 
-        # Create default settings
-        default_settings = AppSettings()
+        # Create default settings with explicit BASIC config level
+        default_settings = MagicMock(spec=AppSettings)
+        default_settings.gui = GUISettings(config_level=ConfigLevel.BASIC)
+        default_settings.api_server = APIServerSettings()
+        default_settings.api_auth = APIAuthSettings()
+        default_settings.scanner = ScannerSettings()
+        default_settings.output = OutputSettings()
+        default_settings.ocr = OCRSettings()
+        default_settings.templates = TemplateSettings()
+        default_settings.external_tools = ExternalToolsSettings()
+        default_settings.database_builder = DatabaseBuilderSettings()
+        default_settings.logging = LoggingSettings()
+        default_settings.notifications = NotificationsSettings()
+        default_settings.stockpile_types = StockpileTypesSettings()
         mock_instance.load_config.return_value = default_settings
 
         yield mock_instance
@@ -78,8 +94,8 @@ def test_config_window_initialization(config_window: ConfigWindow) -> None:
     assert config_window.windowTitle() == "Configuration"
     assert config_window.config_manager is not None
     assert config_window.settings is not None
-    assert config_window.advanced_mode_checkbox is not None
     assert config_window.tab_widget is not None
+    assert config_window.gui_tab is not None
 
 
 def test_config_window_has_all_tabs(config_window: ConfigWindow) -> None:
@@ -88,63 +104,62 @@ def test_config_window_has_all_tabs(config_window: ConfigWindow) -> None:
     Args:
         config_window: ConfigWindow instance
     """
-    assert config_window.basic_config_tab is not None
     assert config_window.api_server_tab is not None
-    assert config_window.api_auth_tab is not None
     assert config_window.scanner_tab is not None
     assert config_window.output_tab is not None
     assert config_window.ocr_tab is not None
     assert config_window.template_tab is not None
+    assert config_window.external_tools_tab is not None
     assert config_window.database_builder_tab is not None
     assert config_window.logging_tab is not None
 
 
-def test_config_window_advanced_mode_by_default(config_window: ConfigWindow) -> None:
-    """Test ConfigWindow starts in advanced mode.
+def test_config_window_basic_level_by_default(config_window: ConfigWindow) -> None:
+    """Test ConfigWindow starts with basic config level (5 tabs).
 
     Args:
         config_window: ConfigWindow instance
     """
-    assert config_window.advanced_mode_checkbox.isChecked()
-    assert config_window.tab_widget.count() == 9
+    # Default config level is BASIC which shows 5 tabs
+    assert config_window._current_config_level == ConfigLevel.BASIC
+    assert config_window.tab_widget.count() == 5
     assert config_window.tab_widget.tabText(0) == "API Server"
 
 
-def test_config_window_toggle_to_basic_mode(qtbot: Any, config_window: ConfigWindow) -> None:
-    """Test toggling to basic mode.
+def test_config_window_config_level_tabs(qtbot: Any, mock_config_manager: MagicMock) -> None:
+    """Test tab count at different config levels.
 
     Args:
         qtbot: PyQt test fixture
-        config_window: ConfigWindow instance
+        mock_config_manager: Mock ConfigManager
     """
-    # Start in advanced mode
-    assert config_window.tab_widget.count() == 9
+    from foxhole_stockpiles.core.settings.sections.gui import GUISettings
 
-    # Toggle to basic mode
-    config_window.advanced_mode_checkbox.setChecked(False)
+    # Test BASIC level (5 tabs)
+    settings = AppSettings()
+    settings.gui = GUISettings(config_level=ConfigLevel.BASIC)
+    mock_config_manager.load_config.return_value = settings
 
-    # Should have 1 basic tab
-    assert config_window.tab_widget.count() == 1
-    assert config_window.tab_widget.tabText(0) == "Configuration"
+    window = ConfigWindow()
+    qtbot.addWidget(window)
+    assert window.tab_widget.count() == 5
 
+    # Test ADVANCED level (7 tabs: + External Tools, Database Builder)
+    settings.gui = GUISettings(config_level=ConfigLevel.ADVANCED)
+    mock_config_manager.load_config.return_value = settings
 
-def test_config_window_toggle_back_to_advanced_mode(
-    qtbot: Any, config_window: ConfigWindow
-) -> None:
-    """Test toggling back to advanced mode.
+    window2 = ConfigWindow()
+    qtbot.addWidget(window2)
+    assert window2.tab_widget.count() == 7
 
-    Args:
-        qtbot: PyQt test fixture
-        config_window: ConfigWindow instance
-    """
-    # Toggle to basic
-    config_window.advanced_mode_checkbox.setChecked(False)
-    assert config_window.tab_widget.count() == 1
+    # Test DEVELOPER level (9 tabs: + OCR, Templates)
+    settings.gui = GUISettings(config_level=ConfigLevel.DEVELOPER)
+    mock_config_manager.load_config.return_value = settings
 
-    # Toggle back to advanced
-    config_window.advanced_mode_checkbox.setChecked(True)
-    assert config_window.tab_widget.count() == 9
-    assert config_window.tab_widget.tabText(0) == "API Server"
+    window3 = ConfigWindow()
+    qtbot.addWidget(window3)
+    assert window3.tab_widget.count() == 9
+    assert window3.tab_widget.tabText(0) == "API Server"
 
 
 def test_config_window_load_settings_populates_tabs(
@@ -195,10 +210,10 @@ def test_config_window_load_settings_error_handling(
         assert "Load failed" in args[2]
 
 
-def test_config_window_save_settings_basic_mode(
+def test_config_window_save_settings_success(
     qtbot: Any, config_window: ConfigWindow, mock_config_manager: MagicMock
 ) -> None:
-    """Test saving settings in basic mode.
+    """Test saving settings successfully.
 
     Args:
         qtbot: PyQt test fixture
@@ -216,19 +231,16 @@ def test_config_window_save_settings_basic_mode(
     assert "saved successfully" in config_window.status_bar.currentMessage().lower()
 
 
-def test_config_window_save_settings_advanced_mode(
+def test_config_window_save_settings_collects_from_tabs(
     qtbot: Any, config_window: ConfigWindow, mock_config_manager: MagicMock
 ) -> None:
-    """Test saving settings in advanced mode.
+    """Test saving settings collects values from all tabs.
 
     Args:
         qtbot: PyQt test fixture
         config_window: ConfigWindow instance
         mock_config_manager: Mock ConfigManager
     """
-    # Switch to advanced mode
-    config_window.advanced_mode_checkbox.setChecked(True)
-
     mock_config_manager.save_config.return_value = (True, "Success")
 
     config_window.save_settings()
@@ -284,39 +296,32 @@ def test_config_window_save_settings_exception(
         assert "Unexpected error" in args[2]
 
 
-def test_config_window_collect_settings_basic_mode(config_window: ConfigWindow) -> None:
-    """Test collecting settings in basic mode.
+def test_config_window_collect_settings_preserves_types(config_window: ConfigWindow) -> None:
+    """Test collecting settings preserves all settings types.
 
     Args:
         config_window: ConfigWindow instance
     """
-    # Ensure in basic mode
-    config_window.advanced_mode_checkbox.setChecked(False)
-
     # Collect settings
     settings = config_window.collect_settings()
 
-    # Should return AppSettings instance
+    # Should return AppSettings instance with proper types
     assert isinstance(settings, AppSettings)
-    # Should preserve non-basic settings from loaded config
     assert isinstance(settings.ocr, OCRSettings)
     assert isinstance(settings.templates, TemplateSettings)
     assert isinstance(settings.logging, LoggingSettings)
 
 
-def test_config_window_collect_settings_advanced_mode(config_window: ConfigWindow) -> None:
-    """Test collecting settings in advanced mode.
+def test_config_window_collect_settings_all_sections(config_window: ConfigWindow) -> None:
+    """Test collecting settings returns all settings sections.
 
     Args:
         config_window: ConfigWindow instance
     """
-    # Switch to advanced mode
-    config_window.advanced_mode_checkbox.setChecked(True)
-
     # Collect settings
     settings = config_window.collect_settings()
 
-    # Should return AppSettings instance
+    # Should return AppSettings instance with all sections
     assert isinstance(settings, AppSettings)
     assert isinstance(settings.api_server, APIServerSettings)
     assert isinstance(settings.api_auth, APIAuthSettings)
@@ -343,8 +348,8 @@ def test_config_window_populate_tabs(config_window: ConfigWindow) -> None:
     config_window.settings = custom_settings
     config_window.populate_tabs()
 
-    # Verify basic tab was populated
-    assert config_window.basic_config_tab.port_input.value() == 5000
+    # Verify api_server_tab was populated
+    assert config_window.api_server_tab.port_input.value() == 5000
 
 
 def test_config_window_populate_tabs_none_settings(config_window: ConfigWindow) -> None:
@@ -428,21 +433,23 @@ def test_config_window_geometry(config_window: ConfigWindow) -> None:
     assert config_window.geometry().height() >= 400  # Might be larger than 600 depending on DPI
 
 
-def test_config_window_checkbox_state_change(qtbot: Any, config_window: ConfigWindow) -> None:
-    """Test checkbox state change triggers toggle_mode.
+def test_config_window_gui_tab_exists(config_window: ConfigWindow) -> None:
+    """Test GUI tab exists and has config level control.
 
     Args:
-        qtbot: PyQt test fixture
         config_window: ConfigWindow instance
     """
-    # Start in advanced mode
-    assert config_window.tab_widget.count() == 9
+    # GUI tab should exist
+    assert config_window.gui_tab is not None
+    assert config_window.gui_tab.config_level_input is not None
 
-    # Change checkbox state
-    config_window.advanced_mode_checkbox.setChecked(False)
-
-    # Should show basic tab (toggle_mode was called)
-    assert config_window.tab_widget.count() == 1
+    # GUI tab should be in the tab widget
+    gui_tab_index = -1
+    for i in range(config_window.tab_widget.count()):
+        if config_window.tab_widget.tabText(i) == "GUI":
+            gui_tab_index = i
+            break
+    assert gui_tab_index >= 0
 
 
 class TestCloseEvent:

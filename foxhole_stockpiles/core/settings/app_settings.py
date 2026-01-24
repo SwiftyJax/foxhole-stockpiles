@@ -15,6 +15,7 @@ from foxhole_stockpiles.core.settings.sections import (
     APIServerSettings,
     DatabaseBuilderSettings,
     ExternalToolsSettings,
+    GUISettings,
     LoggingSettings,
     NotificationsSettings,
     OCRSettings,
@@ -61,6 +62,7 @@ class AppSettings(BaseSettings):
     notifications: NotificationsSettings = Field(
         description="Notifications settings", default_factory=NotificationsSettings
     )
+    gui: GUISettings = Field(description="GUI settings", default_factory=GUISettings)
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",
         env_prefix="FS_",
