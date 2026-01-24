@@ -17,10 +17,8 @@ export FS_API_AUTH__AUTH_TOKEN=your-secret-token
 export FS_SCANNER__DATABASE_PATH=/path/to/database.h5
 export FS_SCANNER__FACTION_FILTER=colonials
 
-# Output destination and format
-export FS_OUTPUT__FORMAT=json
-export FS_OUTPUT__DESTINATION=webhook
-export FS_OUTPUT__WEBHOOK__URL=https://example.com/webhook
+# Output handlers (JSON array)
+export FS_OUTPUT__HANDLERS='[{"name":"API Response","format":{"type":"json"},"handler":{"type":"return"}}]'
 
 # Logging
 export FS_LOGGING__LOG_LEVEL=DEBUG
@@ -31,11 +29,11 @@ export FS_LOGGING__LOG_FILE=/var/log/foxhole-scanner.log
 
 Create a file at `~/.fs_config` with JSON configuration:
 
-**Note on Config Versioning:** The configuration includes a `config_version` field (current: **2**). Old V1 configs are automatically migrated to V2 when loaded - no manual action required. V1 had a flat `output_format` structure; V2 has nested `output.{file, webhook, console}` structure.
+**Note on Config Versioning:** The configuration includes a `config_version` field (current: **5**). Old configs are automatically migrated when loaded - no manual action required. V5 introduced a new `output.handlers` array structure supporting multiple output destinations.
 
 ```json
 {
-  "config_version": 2,
+  "config_version": 5,
   "api_server": {
     "cors_allow_origins": ["*"],
     "enable_memory_monitoring": false,
@@ -51,18 +49,13 @@ Create a file at `~/.fs_config` with JSON configuration:
     "screenshots_folder": ""
   },
   "output": {
-    "format": "json",
-    "destination": "return",
-    "file": {
-      "path": "output.json"
-    },
-    "webhook": {
-      "url": null,
-      "auth_type": null,
-      "token": null,
-      "client_auth_header": null
-    },
-    "console": {}
+    "handlers": [
+      {
+        "name": "API Response",
+        "format": {"type": "json"},
+        "handler": {"type": "return"}
+      }
+    ]
   },
   "logging": {
     "log_level": "INFO",
@@ -161,31 +154,92 @@ Settings for the stockpile scanner.
 
 ### Output (`output`)
 
-Controls how scanner results are formatted and where they are sent. All destinations can be pre-configured; only the active destination (specified by `destination`) will be validated.
+Controls how scanner results are formatted and where they are sent. The output system supports multiple handlers, allowing results to be sent to different destinations simultaneously.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `format` | string | `"json"` | Data serialization format. Currently only `"json"` is supported |
-| `destination` | string | `"return"` | Active output destination. Valid values: `"return"` (to caller), `"file"`, `"webhook"`, `"console"` |
+| `handlers` | array | `[]` | List of output handler configurations |
 
-#### File Output Settings (`output.file`)
+#### Handler Configuration (`output.handlers[]`)
+
+Each handler in the array has the following structure:
+
+| Setting | Type | Required | Description |
+|---------|------|----------|-------------|
+| `name` | string | Yes | Friendly name for this handler (e.g., "API Response", "File Backup") |
+| `format` | object | Yes | Format settings for serialization |
+| `handler` | object | Yes | Handler-specific settings |
+
+#### Format Settings (`output.handlers[].format`)
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `path` | string | `"output.json"` | File path for output (supports `{timestamp}` placeholder). Required when `destination` is `"file"` |
+| `type` | string | `"json"` | Data serialization format: `"json"`, `"csv"`, or `"tsv"` |
 
-#### Webhook Output Settings (`output.webhook`)
+For CSV/TSV formats, additional settings are available:
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `url` | string\|null | `null` | Webhook URL for sending results. Required when `destination` is `"webhook"` |
-| `auth_type` | string\|null | `null` | Webhook authentication method. Valid values: `"basic"`, `"bearer"`, `"forward"`, or `null` |
-| `token` | string\|null | `null` | Token for webhook authentication (required when `auth_type` is `"basic"` or `"bearer"`) |
-| `client_auth_header` | string\|null | `null` | Header name to pass through from API client to webhook (required when `auth_type` is `"forward"`) |
+| `fields` | array | all fields | List of fields to include in output |
+| `include_header` | boolean | `true` | Whether to include a header row |
 
-#### Console Output Settings (`output.console`)
+#### Handler Types (`output.handlers[].handler`)
 
-No additional settings required.
+**Return Handler** - Returns data to the API caller:
+```json
+{"type": "return"}
+```
+
+**File Handler** - Saves results to a file:
+| Setting | Type | Required | Description |
+|---------|------|----------|-------------|
+| `type` | string | Yes | Must be `"file"` |
+| `path` | string | Yes | File path (supports `{timestamp}` placeholder) |
+
+**Webhook Handler** - POSTs results to a URL:
+| Setting | Type | Required | Description |
+|---------|------|----------|-------------|
+| `type` | string | Yes | Must be `"webhook"` |
+| `url` | string | Yes | Webhook URL |
+| `auth_type` | string\|null | No | Auth method: `"basic"`, `"bearer"`, `"forward"`, or `null` |
+| `token` | string\|null | No | Auth token (required for `"basic"` or `"bearer"`) |
+| `client_auth_header` | string\|null | No | Header to forward (required for `"forward"`) |
+
+**Console Handler** - Prints results to console:
+```json
+{"type": "console"}
+```
+
+#### Example: Multiple Handlers
+
+```json
+{
+  "output": {
+    "handlers": [
+      {
+        "name": "API Response",
+        "format": {"type": "json"},
+        "handler": {"type": "return"}
+      },
+      {
+        "name": "File Backup",
+        "format": {"type": "json"},
+        "handler": {"type": "file", "path": "backups/stockpile_{timestamp}.json"}
+      },
+      {
+        "name": "Discord Webhook",
+        "format": {"type": "json"},
+        "handler": {
+          "type": "webhook",
+          "url": "https://api.example.com/stockpiles",
+          "auth_type": "bearer",
+          "token": "your-token"
+        }
+      }
+    ]
+  }
+}
+```
 
 See [Webhooks](webhooks.md) for webhook configuration details.
 
@@ -275,10 +329,27 @@ export FS_API_AUTH__AUTH_TOKEN=my-secret-token-123
 ### Scanner with Webhook Output
 
 ```bash
-export FS_OUTPUT__DESTINATION=webhook
-export FS_OUTPUT__WEBHOOK__URL=https://api.example.com/stockpiles
-export FS_OUTPUT__WEBHOOK__AUTH_TYPE=bearer
-export FS_OUTPUT__WEBHOOK__TOKEN=webhook-token-456
+export FS_OUTPUT__HANDLERS='[{"name":"Webhook","format":{"type":"json"},"handler":{"type":"webhook","url":"https://api.example.com/stockpiles","auth_type":"bearer","token":"webhook-token-456"}}]'
+```
+
+Or in your `.fs_config`:
+```json
+{
+  "output": {
+    "handlers": [
+      {
+        "name": "Webhook",
+        "format": {"type": "json"},
+        "handler": {
+          "type": "webhook",
+          "url": "https://api.example.com/stockpiles",
+          "auth_type": "bearer",
+          "token": "webhook-token-456"
+        }
+      }
+    ]
+  }
+}
 ```
 
 ### Debug Mode with File Logging
@@ -303,6 +374,7 @@ export FS_SCANNER__SCREENSHOTS_FOLDER=screenshots
 
 ```json
 {
+  "config_version": 5,
   "api_server": {
     "cors_allow_origins": ["https://myapp.com", "https://app.myapp.com"],
     "enable_memory_monitoring": false,
@@ -321,13 +393,23 @@ export FS_SCANNER__SCREENSHOTS_FOLDER=screenshots
     "database_path": "/opt/foxhole/templates.h5"
   },
   "output": {
-    "format": "json",
-    "destination": "webhook",
-    "webhook": {
-      "url": "https://api.myapp.com/stockpiles",
-      "auth_type": "bearer",
-      "token": "internal-webhook-secret"
-    }
+    "handlers": [
+      {
+        "name": "API Response",
+        "format": {"type": "json"},
+        "handler": {"type": "return"}
+      },
+      {
+        "name": "Webhook",
+        "format": {"type": "json"},
+        "handler": {
+          "type": "webhook",
+          "url": "https://api.myapp.com/stockpiles",
+          "auth_type": "bearer",
+          "token": "internal-webhook-secret"
+        }
+      }
+    ]
   }
 }
 ```
@@ -350,6 +432,7 @@ This example shows all available settings with their default values:
 
 ```json
 {
+  "config_version": 5,
   "api_server": {
     "cors_allow_origins": ["*"],
     "enable_memory_monitoring": false,
@@ -383,18 +466,13 @@ This example shows all available settings with their default values:
     "pixel_diff_tolerance": 2
   },
   "output": {
-    "format": "json",
-    "destination": "return",
-    "file": {
-      "path": "output.json"
-    },
-    "webhook": {
-      "url": null,
-      "auth_type": null,
-      "token": null,
-      "client_auth_header": null
-    },
-    "console": {}
+    "handlers": [
+      {
+        "name": "API Response",
+        "format": {"type": "json"},
+        "handler": {"type": "return"}
+      }
+    ]
   },
   "scanner": {
     "database_path": "database.h5",
@@ -473,13 +551,7 @@ This table lists all available environment variables with their default values:
 | `FS_OCR__GRAY_UPPER` | integer | `98` | Quantity box bright threshold |
 | `FS_OCR__PIXEL_DIFF_TOLERANCE` | integer | `2` | Pixel error tolerance |
 | **Output** | | | |
-| `FS_OUTPUT__FORMAT` | string | `"json"` | Data serialization format (currently only `"json"` supported) |
-| `FS_OUTPUT__DESTINATION` | string | `"return"` | Active output destination (`"return"`, `"file"`, `"webhook"`, `"console"`) |
-| `FS_OUTPUT__FILE__PATH` | string | `"output.json"` | File output path (required when destination is `"file"`) |
-| `FS_OUTPUT__WEBHOOK__URL` | string\|null | `null` | Webhook URL (required when destination is `"webhook"`) |
-| `FS_OUTPUT__WEBHOOK__AUTH_TYPE` | string\|null | `null` | Webhook auth type (`"basic"`, `"bearer"`, `"forward"`, or `null`) |
-| `FS_OUTPUT__WEBHOOK__TOKEN` | string\|null | `null` | Webhook auth token |
-| `FS_OUTPUT__WEBHOOK__CLIENT_AUTH_HEADER` | string\|null | `null` | Client auth header to pass through |
+| `FS_OUTPUT__HANDLERS` | JSON array | `[]` | List of output handler configurations (see examples below) |
 | **Scanner** | | | |
 | `FS_SCANNER__DATABASE_PATH` | string | `"database.h5"` | Template database path |
 | `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.0` | Early exit threshold |
@@ -536,3 +608,33 @@ export FS_LOGGING__LOGGERS='{"foxhole_stockpiles":"DEBUG","uvicorn":"WARNING"}'
 Valid log levels: `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
 
 When a logger-specific level is set, it overrides the global `log_level` for that logger only.
+
+#### Output Handlers Configuration
+
+The `handlers` setting is a JSON array. Configure via environment variable:
+
+**Single handler (return results to API caller):**
+```bash
+export FS_OUTPUT__HANDLERS='[{"name":"API Response","format":{"type":"json"},"handler":{"type":"return"}}]'
+```
+
+**File output:**
+```bash
+export FS_OUTPUT__HANDLERS='[{"name":"File Output","format":{"type":"json"},"handler":{"type":"file","path":"output.json"}}]'
+```
+
+**Webhook with authentication:**
+```bash
+export FS_OUTPUT__HANDLERS='[{"name":"Webhook","format":{"type":"json"},"handler":{"type":"webhook","url":"https://api.example.com/stockpiles","auth_type":"bearer","token":"your-token"}}]'
+```
+
+**Multiple handlers (results sent to all destinations):**
+```bash
+export FS_OUTPUT__HANDLERS='[
+  {"name":"API Response","format":{"type":"json"},"handler":{"type":"return"}},
+  {"name":"Backup","format":{"type":"json"},"handler":{"type":"file","path":"backup.json"}}
+]'
+```
+
+Handler types: `return`, `file`, `webhook`, `console`
+Format types: `json`, `csv`, `tsv`

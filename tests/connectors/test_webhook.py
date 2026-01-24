@@ -12,18 +12,18 @@ import pytest
 from httpx import ConnectTimeout, HTTPStatusError
 
 from foxhole_stockpiles.connectors.webhook import WebhookConnector, async_retry_on_connect_timeout
-from foxhole_stockpiles.core.settings.sections.output import WebhookOutputSettings
+from foxhole_stockpiles.core.settings.sections.output import WebhookHandlerSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
 
 
 @pytest.fixture
-def output_settings() -> WebhookOutputSettings:
-    """Create WebhookOutputSettings instance for testing.
+def output_settings() -> WebhookHandlerSettings:
+    """Create WebhookHandlerSettings instance for testing.
 
     Returns:
-        WebhookOutputSettings: A configured settings instance for webhook testing.
+        WebhookHandlerSettings: A configured settings instance for webhook testing.
     """
-    return WebhookOutputSettings(
+    return WebhookHandlerSettings(
         url="https://example.com/webhook",
         auth_type=AuthType.BEARER,
         token="test_token_123",
@@ -31,11 +31,11 @@ def output_settings() -> WebhookOutputSettings:
 
 
 @pytest.fixture
-def webhook_connector(output_settings: WebhookOutputSettings) -> WebhookConnector:
+def webhook_connector(output_settings: WebhookHandlerSettings) -> WebhookConnector:
     """Create a webhook connector instance.
 
     Args:
-        output_settings (WebhookOutputSettings): Output settings fixture.
+        output_settings (WebhookHandlerSettings): Output settings fixture.
 
     Returns:
         WebhookConnector: A configured webhook connector instance for testing.
@@ -62,11 +62,13 @@ def sample_payload() -> dict[str, Any]:
 class TestWebhookConnector:
     """Test cases for WebhookConnector."""
 
-    def test_webhook_connector_initialization(self, output_settings: WebhookOutputSettings) -> None:
+    def test_webhook_connector_initialization(
+        self, output_settings: WebhookHandlerSettings
+    ) -> None:
         """Test webhook connector initialization.
 
         Args:
-            output_settings (WebhookOutputSettings): Output settings fixture.
+            output_settings (WebhookHandlerSettings): Output settings fixture.
         """
         connector = WebhookConnector(output_settings)
         assert isinstance(connector, WebhookConnector)
@@ -76,11 +78,11 @@ class TestWebhookConnector:
         assert connector._client is not None
 
     @pytest.mark.asyncio
-    async def test_webhook_connector_close(self, output_settings: WebhookOutputSettings) -> None:
+    async def test_webhook_connector_close(self, output_settings: WebhookHandlerSettings) -> None:
         """Test webhook connector cleanup.
 
         Args:
-            output_settings (WebhookOutputSettings): Output settings fixture.
+            output_settings (WebhookHandlerSettings): Output settings fixture.
         """
         connector = WebhookConnector(output_settings)
         assert not connector._client.is_closed
@@ -88,22 +90,22 @@ class TestWebhookConnector:
         await connector.close()
         assert connector._client.is_closed
 
-    def test_build_auth_headers_bearer(self, output_settings: WebhookOutputSettings) -> None:
+    def test_build_auth_headers_bearer(self, output_settings: WebhookHandlerSettings) -> None:
         """Test building bearer auth headers.
 
         Args:
-            output_settings (WebhookOutputSettings): Output settings fixture.
+            output_settings (WebhookHandlerSettings): Output settings fixture.
         """
         connector = WebhookConnector(output_settings)
         headers = connector._build_auth_headers()
 
         assert headers == {"Authorization": "Bearer test_token_123"}
 
-    def test_build_auth_headers_basic(self, output_settings: WebhookOutputSettings) -> None:
+    def test_build_auth_headers_basic(self, output_settings: WebhookHandlerSettings) -> None:
         """Test building basic auth headers.
 
         Args:
-            output_settings (WebhookOutputSettings): Output settings fixture.
+            output_settings (WebhookHandlerSettings): Output settings fixture.
         """
         output_settings.auth_type = AuthType.BASIC
         output_settings.token = "dGVzdDpwYXNzd29yZA=="  # base64 of test:password
@@ -113,11 +115,11 @@ class TestWebhookConnector:
 
         assert headers == {"Authorization": "Basic dGVzdDpwYXNzd29yZA=="}
 
-    def test_build_auth_headers_forward(self, output_settings: WebhookOutputSettings) -> None:
+    def test_build_auth_headers_forward(self, output_settings: WebhookHandlerSettings) -> None:
         """Test building forward auth headers.
 
         Args:
-            output_settings (WebhookOutputSettings): Output settings fixture.
+            output_settings (WebhookHandlerSettings): Output settings fixture.
         """
         output_settings.auth_type = AuthType.FORWARD
         output_settings.client_auth_header = "X-API-Key"
@@ -128,11 +130,11 @@ class TestWebhookConnector:
 
         assert headers == {"X-API-Key": "secret_api_key"}
 
-    def test_build_auth_headers_no_auth(self, output_settings: WebhookOutputSettings) -> None:
+    def test_build_auth_headers_no_auth(self, output_settings: WebhookHandlerSettings) -> None:
         """Test building headers with no auth configured.
 
         Args:
-            output_settings (WebhookOutputSettings): Output settings fixture.
+            output_settings (WebhookHandlerSettings): Output settings fixture.
         """
         output_settings.auth_type = None
         output_settings.token = None
@@ -143,12 +145,12 @@ class TestWebhookConnector:
         assert headers == {}
 
     def test_build_auth_headers_override_token(
-        self, output_settings: WebhookOutputSettings
+        self, output_settings: WebhookHandlerSettings
     ) -> None:
         """Test building headers with token override.
 
         Args:
-            output_settings (WebhookOutputSettings): Output settings fixture.
+            output_settings (WebhookHandlerSettings): Output settings fixture.
         """
         connector = WebhookConnector(output_settings)
         headers = connector._build_auth_headers(token="override_token")
@@ -195,12 +197,12 @@ class TestWebhookConnector:
 
     @pytest.mark.asyncio
     async def test_send_stockpile_no_url_configured(
-        self, output_settings: WebhookOutputSettings, sample_payload: dict[str, Any]
+        self, output_settings: WebhookHandlerSettings, sample_payload: dict[str, Any]
     ) -> None:
         """Test sending when no webhook URL is configured.
 
         Args:
-            output_settings (WebhookOutputSettings): Output settings fixture.
+            output_settings (WebhookHandlerSettings): Output settings fixture.
             sample_payload (dict[str, Any]): Sample payload fixture.
         """
         output_settings.url = None

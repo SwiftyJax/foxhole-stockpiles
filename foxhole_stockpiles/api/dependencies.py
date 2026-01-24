@@ -70,7 +70,7 @@ def get_output_coordinator() -> OutputCoordinator:
         OutputCoordinator: The output coordinator instance
     """
     settings = get_settings()
-    return OutputCoordinator(settings=settings)
+    return OutputCoordinator(output_settings=settings.output)
 
 
 @lru_cache

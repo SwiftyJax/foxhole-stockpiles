@@ -18,8 +18,8 @@ class TestUpdateConfigCommand:
     """Test cases for update-config command."""
 
     @pytest.mark.asyncio
-    async def test_update_v1_to_v2_success(self, tmp_path: Path, capsys: Any) -> None:
-        """Test successful update from v1 to v2.
+    async def test_update_v1_to_latest_success(self, tmp_path: Path, capsys: Any) -> None:
+        """Test successful update from v1 to latest version (v5).
 
         Args:
             tmp_path (Path): Temporary directory from pytest fixture.
@@ -47,19 +47,24 @@ class TestUpdateConfigCommand:
         backup_path = Path(str(config_path) + ".backup")
         assert backup_path.exists()
 
-        # Verify config was updated
+        # Verify config was updated to v5 with handlers structure
         updated_config = json.loads(config_path.read_text())
-        assert updated_config["config_version"] == 2
+        assert updated_config["config_version"] == 5
         assert "output" in updated_config
-        assert updated_config["output"]["destination"] == "webhook"
-        assert updated_config["output"]["webhook"]["url"] == "https://example.com/webhook"
-        assert updated_config["output"]["webhook"]["auth_type"] == "bearer"
-        assert updated_config["output"]["webhook"]["token"] == "secret123"
+        assert "handlers" in updated_config["output"]
+        # Verify the webhook handler was migrated
+        handlers = updated_config["output"]["handlers"]
+        assert len(handlers) == 1
+        handler = handlers[0]
+        assert handler["handler"]["type"] == "webhook"
+        assert handler["handler"]["url"] == "https://example.com/webhook"
+        assert handler["handler"]["auth_type"] == "bearer"
+        assert handler["handler"]["token"] == "secret123"
 
         # Verify output messages
         captured = capsys.readouterr()
         assert "Update complete" in captured.out
-        assert "Config version: 2" in captured.out
+        assert "Config version: 5" in captured.out
 
     @pytest.mark.asyncio
     async def test_already_at_latest_version(self, tmp_path: Path, capsys: Any) -> None:
@@ -69,18 +74,21 @@ class TestUpdateConfigCommand:
             tmp_path (Path): Temporary directory from pytest fixture.
             capsys: Pytest fixture to capture stdout/stderr.
         """
-        # Create v2 config file
+        # Create v5 config file (latest version)
         config_path = tmp_path / "config.json"
-        v2_config = {
-            "config_version": 2,
+        v5_config = {
+            "config_version": 5,
             "output": {
-                "format": "json",
-                "destination": "return",
-                "file": {"path": "output.json"},
-                "webhook": {"url": None},
+                "handlers": [
+                    {
+                        "name": "API Response",
+                        "format": {"type": "json"},
+                        "handler": {"type": "return"},
+                    }
+                ]
             },
         }
-        config_path.write_text(json.dumps(v2_config, indent=2))
+        config_path.write_text(json.dumps(v5_config, indent=2))
 
         # Run update command
         with patch("sys.argv", ["update-config", "--config", str(config_path)]):
@@ -92,7 +100,7 @@ class TestUpdateConfigCommand:
 
         # Verify config unchanged
         unchanged_config = json.loads(config_path.read_text())
-        assert unchanged_config == v2_config
+        assert unchanged_config == v5_config
 
         # Verify output message
         captured = capsys.readouterr()
@@ -357,10 +365,10 @@ class TestUpdateConfigCommand:
         # Mock home directory
         monkeypatch.setattr(Path, "home", lambda: tmp_path)
 
-        # Create v2 config at default location
+        # Create v5 config at default location (latest version)
         config_path = tmp_path / ".fs_config"
-        v2_config = {"config_version": 2}
-        config_path.write_text(json.dumps(v2_config, indent=2))
+        v5_config = {"config_version": 5}
+        config_path.write_text(json.dumps(v5_config, indent=2))
 
         # Run update command without --config argument
         with patch("sys.argv", ["update-config"]):
@@ -416,10 +424,11 @@ class TestUpdateConfigEdgeCases:
         with patch("sys.argv", ["update-config", "--config", str(config_path)]):
             await main()
 
-        # Verify config was updated
+        # Verify config was updated to latest version (v5)
         updated_config = json.loads(config_path.read_text())
-        assert updated_config["config_version"] == 2
+        assert updated_config["config_version"] == 5
         assert "output" in updated_config
+        assert "handlers" in updated_config["output"]
 
     @pytest.mark.asyncio
     async def test_preserves_other_config_fields(self, tmp_path: Path) -> None:

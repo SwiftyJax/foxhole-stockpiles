@@ -8,10 +8,14 @@ from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 from foxhole_stockpiles.core.settings.sections.notifications import NotificationsSettings
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.core.settings.sections.output import (
-    ConsoleOutputSettings,
-    FileOutputSettings,
+    ConsoleHandlerSettings,
+    CsvFormatSettings,
+    FileHandlerSettings,
+    JsonFormatSettings,
+    OutputHandlerConfig,
     OutputSettings,
-    WebhookOutputSettings,
+    ReturnHandlerSettings,
+    WebhookHandlerSettings,
 )
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
@@ -20,17 +24,21 @@ from foxhole_stockpiles.core.settings.sections.templates import TemplateSettings
 __all__ = [
     "APIAuthSettings",
     "APIServerSettings",
-    "ConsoleOutputSettings",
+    "ConsoleHandlerSettings",
+    "CsvFormatSettings",
     "DatabaseBuilderSettings",
     "ExternalToolsSettings",
-    "FileOutputSettings",
+    "FileHandlerSettings",
     "GUISettings",
+    "JsonFormatSettings",
     "LoggingSettings",
     "NotificationsSettings",
     "OCRSettings",
+    "OutputHandlerConfig",
     "OutputSettings",
+    "ReturnHandlerSettings",
     "ScannerSettings",
     "StockpileTypesSettings",
     "TemplateSettings",
-    "WebhookOutputSettings",
+    "WebhookHandlerSettings",
 ]

@@ -2,78 +2,86 @@
 
 from PyQt6.QtWidgets import (
     QComboBox,
+    QDialog,
+    QDialogButtonBox,
     QFileDialog,
     QFormLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
+    QListWidget,
+    QListWidgetItem,
+    QMessageBox,
     QPushButton,
-    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
 
 from foxhole_stockpiles.core.settings.sections.output import (
-    FileOutputSettings,
+    ConsoleHandlerSettings,
+    FileHandlerSettings,
+    JsonFormatSettings,
+    OutputHandlerConfig,
     OutputSettings,
-    WebhookOutputSettings,
+    ReturnHandlerSettings,
+    WebhookHandlerSettings,
 )
 from foxhole_stockpiles.enums.auth_type import AuthType
-from foxhole_stockpiles.enums.output_destination import OutputDestination
-from foxhole_stockpiles.enums.output_format import OutputFormat
+from foxhole_stockpiles.enums.output_handler_type import OutputHandlerType
 
 
-class OutputTab(QWidget):
-    """Tab for Output configuration."""
+class OutputHandlerDialog(QDialog):
+    """Dialog for adding or editing an output handler."""
 
-    def __init__(self, parent: QWidget | None = None) -> None:
-        """Initialize the Output tab.
+    def __init__(
+        self,
+        parent: QWidget | None = None,
+        handler_config: OutputHandlerConfig | None = None,
+    ) -> None:
+        """Initialize the output handler dialog.
 
         Args:
-            parent (QWidget | None): Parent widget. Defaults to None.
+            parent: Parent widget.
+            handler_config: Existing handler config to edit, or None for new handler.
         """
         super().__init__(parent)
+        self.handler_config = handler_config
         self.init_ui()
+        if handler_config:
+            self.load_handler(handler_config)
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        # Use scroll area
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll_content = QWidget()
-        main_layout = QVBoxLayout(scroll_content)
-        scroll.setWidget(scroll_content)
+        self.setWindowTitle("Edit Handler" if self.handler_config else "Add Handler")
+        self.setMinimumWidth(500)
 
         layout = QVBoxLayout(self)
-        layout.addWidget(scroll)
 
-        form_layout = QFormLayout()
-        main_layout.addLayout(form_layout)
+        # Basic settings
+        basic_group = QGroupBox("Basic Settings")
+        basic_layout = QFormLayout()
+        basic_group.setLayout(basic_layout)
 
-        # Format
-        format_label = QLabel("Format:")
-        format_label.setToolTip(
-            "Output format for scan results.\n\n"
-            "Determines how the detected stockpile data is structured."
-        )
-        self.format_input = QComboBox()
-        self.format_input.addItems(["json"])
-        form_layout.addRow(format_label, self.format_input)
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("e.g., File Backup")
+        self.name_input.setToolTip("A friendly name to identify this output handler")
+        basic_layout.addRow("Name:", self.name_input)
 
-        # Destination
-        destination_label = QLabel("Destination:")
-        destination_label.setToolTip(
+        handler_type_label = QLabel("Handler Type:")
+        handler_type_label.setToolTip(
             "Where to send scan results:\n\n"
             "• return - Return data to caller (API mode)\n"
             "• file - Save to a JSON file\n"
             "• webhook - POST to a webhook URL\n"
             "• console - Print to console output"
         )
-        self.destination_input = QComboBox()
-        self.destination_input.addItems(["return", "file", "webhook", "console"])
-        self.destination_input.currentTextChanged.connect(self.on_destination_changed)
-        form_layout.addRow(destination_label, self.destination_input)
+        self.handler_type_input = QComboBox()
+        self.handler_type_input.addItems(["return", "file", "webhook", "console"])
+        self.handler_type_input.currentTextChanged.connect(self._on_handler_type_changed)
+        basic_layout.addRow(handler_type_label, self.handler_type_input)
+
+        layout.addWidget(basic_group)
 
         # File Settings Group
         self.file_group = QGroupBox("File Output Settings")
@@ -90,12 +98,12 @@ class OutputTab(QWidget):
         self.file_path_input = QLineEdit()
         self.file_path_input.setPlaceholderText("output.json")
         file_browse = QPushButton("Browse...")
-        file_browse.clicked.connect(self.browse_file)
+        file_browse.clicked.connect(self._browse_file)
         file_path_layout.addWidget(self.file_path_input)
         file_path_layout.addWidget(file_browse)
         file_layout.addRow(file_path_label, file_path_layout)
 
-        main_layout.addWidget(self.file_group)
+        layout.addWidget(self.file_group)
 
         # Webhook Settings Group
         self.webhook_group = QGroupBox("Webhook Output Settings")
@@ -122,7 +130,7 @@ class OutputTab(QWidget):
         )
         self.webhook_auth_type_input = QComboBox()
         self.webhook_auth_type_input.addItems(["null", "basic", "bearer", "forward"])
-        self.webhook_auth_type_input.currentTextChanged.connect(self.on_webhook_auth_changed)
+        self.webhook_auth_type_input.currentTextChanged.connect(self._on_webhook_auth_changed)
         webhook_layout.addRow(auth_type_label, self.webhook_auth_type_input)
 
         self.auth_token_label = QLabel("Auth Token:")
@@ -147,19 +155,27 @@ class OutputTab(QWidget):
         self.webhook_client_auth_input.setPlaceholderText("e.g., Authorization")
         webhook_layout.addRow(self.client_auth_label, self.webhook_client_auth_input)
 
-        main_layout.addWidget(self.webhook_group)
+        layout.addWidget(self.webhook_group)
 
-        # Initially show/hide based on destination and auth type
-        self.on_destination_changed()
-        self.on_webhook_auth_changed()
+        # Button box
+        button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel
+        )
+        button_box.accepted.connect(self._validate_and_accept)
+        button_box.rejected.connect(self.reject)
+        layout.addWidget(button_box)
 
-    def on_destination_changed(self) -> None:
-        """Handle destination change to show/hide relevant sections."""
-        destination = self.destination_input.currentText()
-        self.file_group.setVisible(destination == "file")
-        self.webhook_group.setVisible(destination == "webhook")
+        # Initially show/hide based on handler type and auth type
+        self._on_handler_type_changed()
+        self._on_webhook_auth_changed()
 
-    def on_webhook_auth_changed(self) -> None:
+    def _on_handler_type_changed(self) -> None:
+        """Handle handler type change to show/hide relevant sections."""
+        handler_type = self.handler_type_input.currentText()
+        self.file_group.setVisible(handler_type == "file")
+        self.webhook_group.setVisible(handler_type == "webhook")
+
+    def _on_webhook_auth_changed(self) -> None:
         """Handle webhook auth type change to show/hide relevant fields."""
         auth_type = self.webhook_auth_type_input.currentText()
 
@@ -173,7 +189,7 @@ class OutputTab(QWidget):
         self.client_auth_label.setVisible(show_client_auth)
         self.webhook_client_auth_input.setVisible(show_client_auth)
 
-    def browse_file(self) -> None:
+    def _browse_file(self) -> None:
         """Open file dialog for output file path."""
         filepath, _ = QFileDialog.getSaveFileName(
             self,
@@ -184,25 +200,239 @@ class OutputTab(QWidget):
         if filepath:
             self.file_path_input.setText(filepath)
 
+    def load_handler(self, handler_config: OutputHandlerConfig) -> None:
+        """Load handler config settings into the dialog.
+
+        Args:
+            handler_config: Handler config to load.
+        """
+        self.name_input.setText(handler_config.name)
+        handler = handler_config.handler
+        self.handler_type_input.setCurrentText(handler.type)
+
+        if isinstance(handler, FileHandlerSettings):
+            self.file_path_input.setText(handler.path)
+        elif isinstance(handler, WebhookHandlerSettings):
+            self.webhook_url_input.setText(handler.url or "")
+            self.webhook_auth_type_input.setCurrentText(handler.auth_type or "null")
+            self.webhook_token_input.setText(handler.token or "")
+            self.webhook_client_auth_input.setText(handler.client_auth_header or "")
+
+        self._on_handler_type_changed()
+        self._on_webhook_auth_changed()
+
+    def _validate_and_accept(self) -> None:
+        """Validate input and accept dialog if valid."""
+        handler_type = self.handler_type_input.currentText()
+
+        if handler_type == "file":
+            path = self.file_path_input.text().strip()
+            if not path:
+                QMessageBox.warning(self, "Validation Error", "File path is required.")
+                self.file_path_input.setFocus()
+                return
+
+        elif handler_type == "webhook":
+            url = self.webhook_url_input.text().strip()
+            if not url:
+                QMessageBox.warning(self, "Validation Error", "Webhook URL is required.")
+                self.webhook_url_input.setFocus()
+                return
+
+        self.accept()
+
+    def get_handler_config(self) -> OutputHandlerConfig:
+        """Get handler config from dialog input.
+
+        Returns:
+            OutputHandlerConfig with current values.
+        """
+        handler_type = OutputHandlerType(self.handler_type_input.currentText())
+        name = self.name_input.text().strip()
+
+        # Create appropriate handler settings based on type
+        handler_settings: (
+            ReturnHandlerSettings
+            | FileHandlerSettings
+            | WebhookHandlerSettings
+            | ConsoleHandlerSettings
+        )
+        if handler_type == OutputHandlerType.FILE:
+            handler_settings = FileHandlerSettings(
+                path=self.file_path_input.text() or "output.json"
+            )
+            if not name:
+                name = "File Output"
+        elif handler_type == OutputHandlerType.WEBHOOK:
+            webhook_auth_type_str = self.webhook_auth_type_input.currentText()
+            webhook_auth_type: AuthType | None = (
+                None if webhook_auth_type_str == "null" else AuthType(webhook_auth_type_str)
+            )
+            handler_settings = WebhookHandlerSettings(
+                url=self.webhook_url_input.text() or "https://example.com/webhook",
+                auth_type=webhook_auth_type,
+                token=self.webhook_token_input.text() or None,
+                client_auth_header=self.webhook_client_auth_input.text() or None,
+            )
+            if not name:
+                name = "Webhook"
+        elif handler_type == OutputHandlerType.CONSOLE:
+            handler_settings = ConsoleHandlerSettings()
+            if not name:
+                name = "Console"
+        else:  # RETURN
+            handler_settings = ReturnHandlerSettings()
+            if not name:
+                name = "API Response"
+
+        return OutputHandlerConfig(
+            name=name,
+            format=JsonFormatSettings(),
+            handler=handler_settings,
+        )
+
+
+class OutputTab(QWidget):
+    """Tab for Output configuration."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        """Initialize the Output tab.
+
+        Args:
+            parent (QWidget | None): Parent widget. Defaults to None.
+        """
+        super().__init__(parent)
+        self._handlers: list[OutputHandlerConfig] = []
+        self.init_ui()
+
+    def init_ui(self) -> None:
+        """Initialize the user interface."""
+        layout = QVBoxLayout(self)
+
+        # Description
+        description = QLabel(
+            "Configure output handlers for scan results.\n"
+            "You can add multiple handlers to send results to different destinations."
+        )
+        description.setWordWrap(True)
+        description.setStyleSheet("QLabel { color: gray; margin-bottom: 10px; }")
+        layout.addWidget(description)
+
+        # Handlers group
+        handlers_group = QGroupBox("Output Handlers")
+        handlers_layout = QVBoxLayout()
+        handlers_group.setLayout(handlers_layout)
+
+        # List widget
+        self.handlers_list = QListWidget()
+        self.handlers_list.setMinimumHeight(150)
+        self.handlers_list.itemDoubleClicked.connect(self._on_edit_clicked)
+        self.handlers_list.itemSelectionChanged.connect(self._update_buttons_state)
+        handlers_layout.addWidget(self.handlers_list)
+
+        # Buttons
+        buttons_layout = QHBoxLayout()
+
+        self.add_button = QPushButton("Add")
+        self.add_button.setToolTip("Add a new output handler")
+        self.add_button.clicked.connect(self._on_add_clicked)
+        buttons_layout.addWidget(self.add_button)
+
+        self.edit_button = QPushButton("Edit")
+        self.edit_button.setToolTip("Edit the selected handler")
+        self.edit_button.clicked.connect(self._on_edit_clicked)
+        buttons_layout.addWidget(self.edit_button)
+
+        self.remove_button = QPushButton("Remove")
+        self.remove_button.setToolTip("Remove the selected handler")
+        self.remove_button.clicked.connect(self._on_remove_clicked)
+        buttons_layout.addWidget(self.remove_button)
+
+        buttons_layout.addStretch()
+        handlers_layout.addLayout(buttons_layout)
+
+        layout.addWidget(handlers_group)
+        layout.addStretch()
+
+        # Initial state
+        self._update_buttons_state()
+
+    def _update_buttons_state(self) -> None:
+        """Update button enabled states based on selection."""
+        has_selection = self.handlers_list.currentRow() >= 0
+        self.edit_button.setEnabled(has_selection)
+        self.remove_button.setEnabled(has_selection)
+
+    def _update_list(self) -> None:
+        """Update the handlers list widget."""
+        self.handlers_list.clear()
+        for handler_config in self._handlers:
+            handler = handler_config.handler
+            handler_type = handler.type
+            item_text = f"{handler_config.name} ({handler_type})"
+
+            # Add extra info based on type
+            if isinstance(handler, FileHandlerSettings):
+                item_text = f"{handler_config.name} - {handler.path}"
+            elif isinstance(handler, WebhookHandlerSettings):
+                url = handler.url or ""
+                truncated_url = url[:40] + "..." if len(url) > 40 else url
+                item_text = f"{handler_config.name} - {truncated_url}"
+
+            item = QListWidgetItem(item_text)
+            item.setToolTip(f"Type: {handler_type}")
+            self.handlers_list.addItem(item)
+        self._update_buttons_state()
+
+    def _on_add_clicked(self) -> None:
+        """Handle add button click."""
+        dialog = OutputHandlerDialog(self)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            handler_config = dialog.get_handler_config()
+            self._handlers.append(handler_config)
+            self._update_list()
+            # Select the new item
+            self.handlers_list.setCurrentRow(len(self._handlers) - 1)
+
+    def _on_edit_clicked(self) -> None:
+        """Handle edit button click."""
+        row = self.handlers_list.currentRow()
+        if row < 0:
+            return
+
+        handler_config = self._handlers[row]
+        dialog = OutputHandlerDialog(self, handler_config)
+        if dialog.exec() == QDialog.DialogCode.Accepted:
+            self._handlers[row] = dialog.get_handler_config()
+            self._update_list()
+            self.handlers_list.setCurrentRow(row)
+
+    def _on_remove_clicked(self) -> None:
+        """Handle remove button click."""
+        row = self.handlers_list.currentRow()
+        if row < 0:
+            return
+
+        handler_config = self._handlers[row]
+        reply = QMessageBox.question(
+            self,
+            "Remove Handler",
+            f"Are you sure you want to remove '{handler_config.name}'?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if reply == QMessageBox.StandardButton.Yes:
+            del self._handlers[row]
+            self._update_list()
+
     def set_values(self, settings: OutputSettings) -> None:
         """Set widget values from settings.
 
         Args:
             settings (OutputSettings): OutputSettings instance to load values from.
         """
-        self.format_input.setCurrentText(settings.format)
-        self.destination_input.setCurrentText(settings.destination)
-
-        # File settings
-        if settings.file:
-            self.file_path_input.setText(str(settings.file.path))
-
-        # Webhook settings
-        if settings.webhook:
-            self.webhook_url_input.setText(settings.webhook.url or "")
-            self.webhook_auth_type_input.setCurrentText(settings.webhook.auth_type or "null")
-            self.webhook_token_input.setText(settings.webhook.token or "")
-            self.webhook_client_auth_input.setText(settings.webhook.client_auth_header or "")
+        self._handlers = list(settings.handlers)
+        self._update_list()
 
     def get_values(self) -> OutputSettings:
         """Get current values from widgets.
@@ -210,19 +440,4 @@ class OutputTab(QWidget):
         Returns:
             OutputSettings: OutputSettings instance with current values from widgets
         """
-        webhook_auth_type_str = self.webhook_auth_type_input.currentText()
-        webhook_auth_type: AuthType | None = (
-            None if webhook_auth_type_str == "null" else AuthType(webhook_auth_type_str)
-        )
-
-        return OutputSettings(
-            format=OutputFormat(self.format_input.currentText()),
-            destination=OutputDestination(self.destination_input.currentText()),
-            file=FileOutputSettings(path=self.file_path_input.text()),
-            webhook=WebhookOutputSettings(
-                url=self.webhook_url_input.text() or None,
-                auth_type=webhook_auth_type,
-                token=self.webhook_token_input.text() or None,
-                client_auth_header=self.webhook_client_auth_input.text() or None,
-            ),
-        )
+        return OutputSettings(handlers=list(self._handlers))

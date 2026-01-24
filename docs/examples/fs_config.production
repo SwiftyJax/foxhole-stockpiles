@@ -1,5 +1,5 @@
 {
-  "config_version": 2,
+  "config_version": 5,
   "api_server": {
     "cors_allow_origins": ["https://yourdomain.com", "https://app.yourdomain.com"],
     "host": "0.0.0.0",
@@ -17,18 +17,23 @@
     "debug_mode": false
   },
   "output": {
-    "format": "json",
-    "destination": "webhook",
-    "file": {
-      "path": "output.json"
-    },
-    "webhook": {
-      "url": "https://api.yourdomain.com/stockpiles",
-      "auth_type": "bearer",
-      "token": "your-webhook-secret-token-here",
-      "client_auth_header": null
-    },
-    "console": {}
+    "handlers": [
+      {
+        "name": "API Response",
+        "format": {"type": "json"},
+        "handler": {"type": "return"}
+      },
+      {
+        "name": "Webhook",
+        "format": {"type": "json"},
+        "handler": {
+          "type": "webhook",
+          "url": "https://api.yourdomain.com/stockpiles",
+          "auth_type": "bearer",
+          "token": "your-webhook-secret-token-here"
+        }
+      }
+    ]
   },
   "logging": {
     "log_level": "INFO",

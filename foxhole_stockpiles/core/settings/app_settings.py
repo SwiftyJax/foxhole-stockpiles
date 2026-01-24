@@ -30,7 +30,7 @@ class AppSettings(BaseSettings):
     """Application Settings."""
 
     config_version: int = Field(
-        default=4,
+        default=5,
         description="Configuration format version for migration purposes",
     )
     api_server: APIServerSettings = Field(
@@ -102,6 +102,11 @@ class AppSettings(BaseSettings):
         if version == 3:
             data = cls._migrate_v3_to_v4(data)
             data["config_version"] = 4
+            version = 4
+
+        if version == 4:
+            data = cls._migrate_v4_to_v5(data)
+            data["config_version"] = 5
 
         return data
 
@@ -236,6 +241,70 @@ class AppSettings(BaseSettings):
                 stockpile_types[field_name] = [
                     alias for alias in stockpile_types[field_name] if alias not in defaults
                 ]
+
+        return data
+
+    @staticmethod
+    def _migrate_v4_to_v5(data: dict[str, Any]) -> dict[str, Any]:
+        """Migrate from v4 to v5 (output now supports multiple handlers).
+
+        V4 had: output.{format, destination, file.{path}, webhook.{...}, console.{}}
+        V5 has: output.{handlers: [{name, format: {type, ...}, handler: {type, ...}}, ...]}
+
+        Args:
+            data: V4 configuration data
+
+        Returns:
+            V5 configuration data
+        """
+        if "output" not in data or not isinstance(data["output"], dict):
+            return data
+
+        old_output = data["output"]
+
+        # Get old values with defaults
+        old_format = old_output.get("format", "json")
+        old_destination = old_output.get("destination", "return")
+        old_file = old_output.get("file", {})
+        old_webhook = old_output.get("webhook", {})
+
+        # Build format settings
+        format_settings: dict[str, Any] = {"type": old_format}
+
+        # Build handler settings based on destination
+        handler_settings: dict[str, Any] = {"type": old_destination}
+
+        if old_destination == "file":
+            handler_settings["path"] = old_file.get("path", "output.json")
+        elif old_destination == "webhook":
+            if old_webhook.get("url"):
+                handler_settings["url"] = old_webhook["url"]
+            if old_webhook.get("auth_type"):
+                handler_settings["auth_type"] = old_webhook["auth_type"]
+            if old_webhook.get("token"):
+                handler_settings["token"] = old_webhook["token"]
+            if old_webhook.get("client_auth_header"):
+                handler_settings["client_auth_header"] = old_webhook["client_auth_header"]
+
+        # Determine handler name based on destination
+        destination_names = {
+            "return": "API Response",
+            "file": "File Output",
+            "webhook": "Webhook",
+            "console": "Console",
+        }
+        handler_name = destination_names.get(old_destination, "Output")
+
+        # Build new structure with single handler
+        data["output"] = {
+            "handlers": [
+                {
+                    "name": handler_name,
+                    "format": format_settings,
+                    "handler": handler_settings,
+                }
+            ]
+        }
 
         return data
 

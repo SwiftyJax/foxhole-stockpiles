@@ -17,14 +17,13 @@ from foxhole_stockpiles.core.settings import AppSettings, get_settings, reload_s
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.core.settings.sections.output import (
-    FileOutputSettings,
+    FileHandlerSettings,
+    OutputHandlerConfig,
     OutputSettings,
-    WebhookOutputSettings,
+    WebhookHandlerSettings,
 )
 from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
-from foxhole_stockpiles.enums.output_destination import OutputDestination
-from foxhole_stockpiles.enums.output_format import OutputFormat
 
 
 class TestLoggingSettings:
@@ -142,34 +141,26 @@ class TestOCRSettings:
         assert "greater than 0" in str(exc_info.value)
 
 
-class TestFileOutputSettings:
-    """Test cases for FileOutputSettings."""
+class TestFileHandlerSettings:
+    """Test cases for FileHandlerSettings."""
 
-    def test_file_output_defaults(self) -> None:
-        """Test default file output settings."""
-        settings = FileOutputSettings()
+    def test_file_handler_defaults(self) -> None:
+        """Test default file handler settings."""
+        settings = FileHandlerSettings()
         assert settings.path == "output.json"
 
-    def test_file_output_custom_path(self) -> None:
-        """Test file output with custom path."""
-        settings = FileOutputSettings(path="custom.txt")
+    def test_file_handler_custom_path(self) -> None:
+        """Test file handler with custom path."""
+        settings = FileHandlerSettings(path="custom.txt")
         assert settings.path == "custom.txt"
 
 
-class TestWebhookOutputSettings:
-    """Test cases for WebhookOutputSettings."""
+class TestWebhookHandlerSettings:
+    """Test cases for WebhookHandlerSettings."""
 
-    def test_webhook_output_defaults(self) -> None:
-        """Test default webhook output settings."""
-        settings = WebhookOutputSettings()
-        assert settings.url is None
-        assert settings.auth_type is None
-        assert settings.token is None
-        assert settings.client_auth_header is None
-
-    def test_webhook_output_custom_values(self) -> None:
-        """Test webhook output with custom values."""
-        settings = WebhookOutputSettings(
+    def test_webhook_handler_custom_values(self) -> None:
+        """Test webhook handler with custom values."""
+        settings = WebhookHandlerSettings(
             url="https://example.com/webhook",
             auth_type=AuthType.BEARER,
             token="secret_token",
@@ -182,11 +173,13 @@ class TestWebhookOutputSettings:
         """Test bearer auth validation."""
         # Should fail when bearer auth_type is provided without token
         with pytest.raises(ValidationError) as exc_info:
-            WebhookOutputSettings(auth_type=AuthType.BEARER)
+            WebhookHandlerSettings(url="https://example.com", auth_type=AuthType.BEARER)
         assert "token must be set when auth_type is 'bearer'" in str(exc_info.value)
 
         # Should pass when bearer and token are provided
-        settings = WebhookOutputSettings(auth_type=AuthType.BEARER, token="token")
+        settings = WebhookHandlerSettings(
+            url="https://example.com", auth_type=AuthType.BEARER, token="token"
+        )
         assert settings.auth_type == AuthType.BEARER
         assert settings.token == "token"
 
@@ -194,75 +187,44 @@ class TestWebhookOutputSettings:
         """Test forward auth validation."""
         # Should fail when forward auth_type is provided without client header
         with pytest.raises(ValidationError) as exc_info:
-            WebhookOutputSettings(auth_type=AuthType.FORWARD)
+            WebhookHandlerSettings(url="https://example.com", auth_type=AuthType.FORWARD)
         assert "client_auth_header must be set when auth_type is 'forward'" in str(exc_info.value)
 
         # Should pass when forward and client_auth_header are provided
-        settings = WebhookOutputSettings(auth_type=AuthType.FORWARD, client_auth_header="X-Auth")
+        settings = WebhookHandlerSettings(
+            url="https://example.com", auth_type=AuthType.FORWARD, client_auth_header="X-Auth"
+        )
         assert settings.auth_type == AuthType.FORWARD
         assert settings.client_auth_header == "X-Auth"
 
 
 class TestOutputSettings:
-    """Test cases for OutputSettings."""
+    """Test cases for OutputSettings (v5 with handlers)."""
 
     def test_output_settings_defaults(self) -> None:
-        """Test default output settings."""
+        """Test default output settings has empty handlers list."""
         settings = OutputSettings()
-        assert settings.format == OutputFormat.JSON
-        assert settings.destination == OutputDestination.RETURN
-        assert settings.file.path == "output.json"
-        assert settings.webhook.url is None
-        assert settings.webhook.auth_type is None
-        assert settings.webhook.token is None
-        assert settings.webhook.client_auth_header is None
+        assert settings.handlers == []
 
-    def test_output_settings_webhook_destination(self) -> None:
-        """Test webhook destination validation."""
-        # Should fail when webhook destination is used without URL
-        with pytest.raises(ValidationError) as exc_info:
-            OutputSettings(destination=OutputDestination.WEBHOOK)
-        assert "webhook.url must be provided when destination is 'webhook'" in str(exc_info.value)
-
-        # Should pass when URL is provided
+    def test_output_settings_with_handlers(self) -> None:
+        """Test output settings with handler configurations."""
         settings = OutputSettings(
-            destination=OutputDestination.WEBHOOK,
-            webhook=WebhookOutputSettings(url="https://example.com/webhook"),
+            handlers=[
+                OutputHandlerConfig(
+                    name="Webhook",
+                    handler=WebhookHandlerSettings(
+                        url="https://example.com/webhook",
+                        auth_type=AuthType.BEARER,
+                        token="token123",
+                    ),
+                )
+            ]
         )
-        assert settings.webhook.url == "https://example.com/webhook"
-
-    def test_output_settings_file_destination(self) -> None:
-        """Test file destination validation."""
-        # Should fail when file destination is used without path
-        with pytest.raises(ValidationError) as exc_info:
-            OutputSettings(
-                destination=OutputDestination.FILE,
-                file=FileOutputSettings(path=""),
-            )
-        assert "file.path must be provided when destination is 'file'" in str(exc_info.value)
-
-        # Should pass when path is provided
-        settings = OutputSettings(
-            destination=OutputDestination.FILE,
-            file=FileOutputSettings(path="output.json"),
-        )
-        assert settings.file.path == "output.json"
-
-    def test_output_settings_preconfigure_all_destinations(self) -> None:
-        """Test that all destinations can be pre-configured."""
-        # All destinations configured, only webhook is active and validated
-        settings = OutputSettings(
-            destination=OutputDestination.WEBHOOK,
-            file=FileOutputSettings(path="/backup/output.json"),
-            webhook=WebhookOutputSettings(
-                url="https://example.com/webhook",
-                auth_type=AuthType.BEARER,
-                token="token123",
-            ),
-        )
-        assert settings.destination == OutputDestination.WEBHOOK
-        assert settings.file.path == "/backup/output.json"  # Pre-configured but not active
-        assert settings.webhook.url == "https://example.com/webhook"  # Active and validated
+        assert len(settings.handlers) == 1
+        assert settings.handlers[0].name == "Webhook"
+        handler = settings.handlers[0].handler
+        assert isinstance(handler, WebhookHandlerSettings)
+        assert handler.url == "https://example.com/webhook"
 
 
 class TestStockpileTypesSettings:
@@ -306,8 +268,8 @@ class TestStockpileTypesSettings:
 class TestConfigMigration:
     """Test cases for config version migration."""
 
-    def test_migrate_v1_to_v2_with_output_format(self) -> None:
-        """Test migration from v1 (flat output) to v2 (nested output)."""
+    def test_migrate_v1_to_v5_with_output_format(self) -> None:
+        """Test migration from v1 (flat output) to v5 (handlers list)."""
         # V1 config with old flat structure
         v1_config = {
             "output_format": {
@@ -321,20 +283,23 @@ class TestConfigMigration:
             }
         }
 
-        # Should auto-migrate to v2
+        # Should auto-migrate to v5
         settings = AppSettings(**v1_config)  # type: ignore[arg-type]
 
-        # Verify migration occurred (v1 -> v2 -> v3 -> v4)
-        assert settings.config_version == 4
-        assert settings.output.destination == OutputDestination.WEBHOOK
-        assert settings.output.file.path == "/tmp/output.json"
-        assert settings.output.webhook.url == "https://example.com/webhook"
-        assert settings.output.webhook.auth_type == AuthType.BEARER
-        assert settings.output.webhook.token == "secret123"
-        assert settings.output.webhook.client_auth_header == "X-API-TOKEN"
+        # Verify migration occurred (v1 -> v2 -> v3 -> v4 -> v5)
+        assert settings.config_version == 5
+        assert len(settings.output.handlers) == 1
+        handler_config = settings.output.handlers[0]
+        assert handler_config.handler.type == "webhook"
+        handler = handler_config.handler
+        assert isinstance(handler, WebhookHandlerSettings)
+        assert handler.url == "https://example.com/webhook"
+        assert handler.auth_type == AuthType.BEARER
+        assert handler.token == "secret123"
+        assert handler.client_auth_header == "X-API-TOKEN"
 
-    def test_v2_config_no_migration_needed(self) -> None:
-        """Test that v2 configs load without migration."""
+    def test_v2_config_migrates_to_v5(self) -> None:
+        """Test that v2 configs migrate to v5."""
         import warnings
 
         # V2 config with nested structure
@@ -370,15 +335,19 @@ class TestConfigMigration:
             ):
                 settings = AppSettings(**v2_config)  # type: ignore[arg-type]
 
-        # Should migrate to v4 (v2 -> v3 -> v4)
-        assert settings.config_version == 4
-        assert settings.output.destination == OutputDestination.FILE
-        assert settings.output.file.path == "/custom/output.json"
+        # Should migrate to v5 (v2 -> v3 -> v4 -> v5)
+        assert settings.config_version == 5
+        assert len(settings.output.handlers) == 1
+        handler_config = settings.output.handlers[0]
+        assert handler_config.handler.type == "file"
+        handler = handler_config.handler
+        assert isinstance(handler, FileHandlerSettings)
+        assert handler.path == "/custom/output.json"
 
-    def test_default_config_is_v4(self) -> None:
-        """Test that default config is version 4."""
+    def test_default_config_is_v5(self) -> None:
+        """Test that default config is version 5."""
         settings = AppSettings()
-        assert settings.config_version == 4
+        assert settings.config_version == 5
 
     def test_migrate_v1_to_v2_with_scanner_fields_cleanup(self) -> None:
         """Test migration removes deprecated scanner fields."""
@@ -400,7 +369,7 @@ class TestConfigMigration:
         settings = AppSettings(**v1_config)  # type: ignore[arg-type]
 
         # Verify migration occurred (v1 -> v2 -> v3 -> v4)
-        assert settings.config_version == 4
+        assert settings.config_version == 5
         # Verify deprecated fields are not in scanner settings
         assert not hasattr(settings.scanner, "confidence_threshold")
         assert not hasattr(settings.scanner, "confidence_by_resolution")
@@ -426,7 +395,7 @@ class TestConfigMigration:
 
         settings = AppSettings(**v3_config)  # type: ignore[arg-type]
 
-        assert settings.config_version == 4
+        assert settings.config_version == 5
         assert settings.stockpile_types.seaport == ["custom_alias"]
         # undefined field should not exist on the model
         assert not hasattr(settings.stockpile_types, "undefined")
@@ -449,7 +418,7 @@ class TestConfigMigration:
 
         settings = AppSettings(**v3_config)  # type: ignore[arg-type]
 
-        assert settings.config_version == 4
+        assert settings.config_version == 5
         # Only custom aliases should remain
         assert settings.stockpile_types.seaport == ["seapon", "5eaport"]
         assert settings.stockpile_types.storage_depot == ["Storage Depo"]
@@ -467,7 +436,7 @@ class TestConfigMigration:
 
         settings = AppSettings(**v3_config)  # type: ignore[arg-type]
 
-        assert settings.config_version == 4
+        assert settings.config_version == 5
         assert settings.stockpile_types.bunker_base == ["MyCustomBase"]
         assert settings.stockpile_types.town_base == ["custom_town"]
 
@@ -511,8 +480,12 @@ class TestAppSettings:
                     logging=LoggingSettings(log_level="DEBUG", rotate_logs=True),
                     ocr=OCRSettings(height=1080, box_width=100),
                     output=OutputSettings(
-                        destination=OutputDestination.FILE,
-                        file=FileOutputSettings(path="custom.txt"),
+                        handlers=[
+                            OutputHandlerConfig(
+                                name="File Output",
+                                handler=FileHandlerSettings(path="custom.txt"),
+                            )
+                        ]
                     ),
                 )
 
@@ -520,8 +493,10 @@ class TestAppSettings:
         assert settings.logging.rotate_logs is True
         assert settings.ocr.height == 1080
         assert settings.ocr.box_width == 100
-        assert settings.output.destination == OutputDestination.FILE
-        assert settings.output.file.path == "custom.txt"
+        assert len(settings.output.handlers) == 1
+        handler = settings.output.handlers[0].handler
+        assert isinstance(handler, FileHandlerSettings)
+        assert handler.path == "custom.txt"
 
     def test_app_settings_nested_configuration(self) -> None:
         """Test app settings with nested configuration."""
@@ -541,9 +516,8 @@ class TestAppSettings:
         """Test loading app settings from environment variables."""
         import warnings
 
+        # Only test non-output env vars since the output structure is now handlers-based
         env_vars = {
-            "FS_OUTPUT__DESTINATION": "file",
-            "FS_OUTPUT__FILE__PATH": "env.txt",
             "FS_OCR__BOX_WIDTH": "100",
             "FS_LOGGING__LOG_LEVEL": "WARNING",
         }
@@ -568,8 +542,6 @@ class TestAppSettings:
                 ):
                     settings = AppSettings()
 
-                    assert settings.output.destination == OutputDestination.FILE
-                    assert settings.output.file.path == "env.txt"
                     assert settings.ocr.box_width == 100
                     assert settings.logging.log_level == "WARNING"
 

@@ -24,8 +24,10 @@ from foxhole_stockpiles.api.web.routes import router as web_router
 from foxhole_stockpiles.core.events import get_event_bus
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
+from foxhole_stockpiles.core.settings.sections.output import WebhookHandlerSettings
 from foxhole_stockpiles.core.utils import get_tesseract_version
 from foxhole_stockpiles.core.version import get_version_info
+from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
@@ -207,15 +209,17 @@ async def scan_stockpile(
             image=image_bgr, language=language, faction=faction_filter
         )
 
-        # Read the token from the specified header if configured
-        if app_settings.output.webhook.client_auth_header:
-            token = request.headers.get(app_settings.output.webhook.client_auth_header)
-        else:
-            token = None
+        # Read the token from the specified header if any webhook handler uses forward auth
+        token = None
+        for handler_config in app_settings.output.handlers:
+            handler = handler_config.handler
+            if isinstance(handler, WebhookHandlerSettings):
+                if handler.auth_type == AuthType.FORWARD and handler.client_auth_header:
+                    token = request.headers.get(handler.client_auth_header)
+                    break  # Use the first forward auth header found
 
         return await output_coordinator.handle_output(
             stockpile=stockpile,
-            destination=app_settings.output.destination,
             token=token,
         )
 

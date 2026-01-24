@@ -9,7 +9,7 @@ from typing import Any, Final, TypeVar
 import httpx
 from httpx import AsyncClient, ConnectTimeout
 
-from foxhole_stockpiles.core.settings.sections.output import WebhookOutputSettings
+from foxhole_stockpiles.core.settings.sections.output import WebhookHandlerSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
 
 F = TypeVar("F", bound=Callable[..., Any])
@@ -85,11 +85,11 @@ class WebhookConnector:
     DEFAULT_MESSAGE_NO_URL: Final[str] = "FS: Webhook URL is not set"
     DEFAULT_ERROR_PREFIX: Final[str] = "FS: Error sending stockpile to the webhook"
 
-    def __init__(self, output_settings: WebhookOutputSettings) -> None:
+    def __init__(self, output_settings: WebhookHandlerSettings) -> None:
         """Initialize the WebhookConnector.
 
         Args:
-            output_settings (WebhookOutputSettings): Webhook configuration
+            output_settings (WebhookHandlerSettings): Webhook configuration
         """
         self._output_settings = output_settings
         self._logger = logging.getLogger(__name__)

@@ -7,3 +7,5 @@ class OutputFormat(StrEnum):
     """Supported data serialization formats."""
 
     JSON = "json"
+    CSV = "csv"
+    TSV = "tsv"

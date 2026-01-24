@@ -23,6 +23,11 @@ from foxhole_stockpiles.api.dependencies import (
 from foxhole_stockpiles.api.server import app, auth_dependency
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
+from foxhole_stockpiles.core.settings.sections.output import (
+    OutputHandlerConfig,
+    ReturnHandlerSettings,
+    WebhookHandlerSettings,
+)
 from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 
@@ -610,16 +615,22 @@ class TestAuthHeaderHandling:
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        # Configure mock settings with auth header
-        mock_settings.output.webhook.client_auth_header = "X-API-Key"
-        mock_settings.output.format = "json"
+        # Configure mock settings with webhook handler using forward auth
+        handler_config = OutputHandlerConfig(
+            name="Test Webhook",
+            handler=WebhookHandlerSettings(
+                url="https://example.com/webhook",
+                auth_type=AuthType.FORWARD,
+                client_auth_header="X-API-Key",
+            ),
+        )
+        mock_settings.output.handlers = [handler_config]
 
         # Mock the coordinator dependency
         mock_coordinator = Mock()
         mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
         app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
 
-        # Mock the output handler
         # Mock the output coordinator dependency
         mock_output_coordinator = Mock()
         mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
@@ -645,7 +656,7 @@ class TestAuthHeaderHandling:
         mock_settings: Mock,
         client: TestClient,
     ) -> None:
-        """Test that token is None when client_auth_header is not configured.
+        """Test that token is None when no webhook handler uses forward auth.
 
         Args:
             mock_settings (Mock): Mocked app settings.
@@ -655,9 +666,12 @@ class TestAuthHeaderHandling:
         _, buffer = cv2.imencode(".png", img)
         image_bytes = buffer.tobytes()
 
-        # Configure mock settings without auth header
-        mock_settings.output.webhook.client_auth_header = None
-        mock_settings.output.format = "json"
+        # Configure mock settings with return handler only (no forward auth)
+        handler_config = OutputHandlerConfig(
+            name="API Response",
+            handler=ReturnHandlerSettings(),
+        )
+        mock_settings.output.handlers = [handler_config]
 
         mock_coordinator = Mock()
         mock_coordinator.analyze_stockpile = AsyncMock(return_value=Mock())
@@ -985,8 +999,6 @@ class TestMemoryMonitoringEndpoints:
         Args:
             client (TestClient): FastAPI test client from fixture.
         """
-        from foxhole_stockpiles.api.server import auth_dependency
-
         endpoints = [
             ("/memory/stats", "GET"),
             ("/memory/current", "GET"),

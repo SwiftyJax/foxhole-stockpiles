@@ -20,7 +20,7 @@ from typing import Any
 from foxhole_stockpiles.core.settings import AppSettings
 
 # Current latest config version
-LATEST_CONFIG_VERSION = 2
+LATEST_CONFIG_VERSION = 5
 
 
 async def main() -> None:

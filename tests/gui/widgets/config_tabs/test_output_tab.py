@@ -4,16 +4,21 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
+from PyQt6.QtWidgets import QDialog, QLineEdit, QMessageBox
 
 from foxhole_stockpiles.core.settings.sections.output import (
-    FileOutputSettings,
+    FileHandlerSettings,
+    JsonFormatSettings,
+    OutputHandlerConfig,
     OutputSettings,
-    WebhookOutputSettings,
+    WebhookHandlerSettings,
 )
 from foxhole_stockpiles.enums.auth_type import AuthType
-from foxhole_stockpiles.enums.output_destination import OutputDestination
-from foxhole_stockpiles.enums.output_format import OutputFormat
-from foxhole_stockpiles.gui.widgets.config_tabs.output_tab import OutputTab
+from foxhole_stockpiles.enums.output_handler_type import OutputHandlerType
+from foxhole_stockpiles.gui.widgets.config_tabs.output_tab import (
+    OutputHandlerDialog,
+    OutputTab,
+)
 
 
 @pytest.fixture
@@ -31,525 +36,711 @@ def output_tab(qtbot: Any) -> OutputTab:
     return tab
 
 
-def test_output_tab_initialization(output_tab: OutputTab) -> None:
-    """Test OutputTab initialization.
+@pytest.fixture
+def sample_file_handler() -> OutputHandlerConfig:
+    """Create a sample file handler config.
 
-    Args:
-        output_tab: OutputTab instance
+    Returns:
+        OutputHandlerConfig: Sample file handler
     """
-    assert output_tab.format_input is not None
-    assert output_tab.destination_input is not None
-    assert output_tab.file_group is not None
-    assert output_tab.webhook_group is not None
-    assert output_tab.file_path_input is not None
-    assert output_tab.webhook_url_input is not None
-    assert output_tab.webhook_auth_type_input is not None
-    assert output_tab.webhook_token_input is not None
-    assert output_tab.webhook_client_auth_input is not None
-
-
-def test_output_tab_destination_options(output_tab: OutputTab) -> None:
-    """Test destination combo box has correct options.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    destinations = [
-        output_tab.destination_input.itemText(i)
-        for i in range(output_tab.destination_input.count())
-    ]
-    assert "return" in destinations
-    assert "file" in destinations
-    assert "webhook" in destinations
-    assert "console" in destinations
-
-
-def test_output_tab_webhook_auth_options(output_tab: OutputTab) -> None:
-    """Test webhook auth type combo box has correct options.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    auth_types = [
-        output_tab.webhook_auth_type_input.itemText(i)
-        for i in range(output_tab.webhook_auth_type_input.count())
-    ]
-    assert "null" in auth_types
-    assert "basic" in auth_types
-    assert "bearer" in auth_types
-    assert "forward" in auth_types
-
-
-def test_output_tab_destination_return_hides_groups(output_tab: OutputTab) -> None:
-    """Test return destination hides both groups.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.destination_input.setCurrentText("return")
-    output_tab.on_destination_changed()
-
-    assert not output_tab.file_group.isVisible()
-    assert not output_tab.webhook_group.isVisible()
-
-
-def test_output_tab_destination_file_shows_file_group(output_tab: OutputTab) -> None:
-    """Test file destination shows file group.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.show()  # Need to show widget for visibility to work
-    output_tab.destination_input.setCurrentText("file")
-    output_tab.on_destination_changed()
-
-    assert output_tab.file_group.isVisible()
-    assert not output_tab.webhook_group.isVisible()
-
-
-def test_output_tab_destination_webhook_shows_webhook_group(output_tab: OutputTab) -> None:
-    """Test webhook destination shows webhook group.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.show()  # Need to show widget for visibility to work
-    output_tab.destination_input.setCurrentText("webhook")
-    output_tab.on_destination_changed()
-
-    assert not output_tab.file_group.isVisible()
-    assert output_tab.webhook_group.isVisible()
-
-
-def test_output_tab_destination_console_hides_groups(output_tab: OutputTab) -> None:
-    """Test console destination hides both groups.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.destination_input.setCurrentText("console")
-    output_tab.on_destination_changed()
-
-    assert not output_tab.file_group.isVisible()
-    assert not output_tab.webhook_group.isVisible()
-
-
-def test_output_tab_webhook_auth_null_hides_fields(output_tab: OutputTab) -> None:
-    """Test null auth type hides token and client auth fields.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.webhook_auth_type_input.setCurrentText("null")
-    output_tab.on_webhook_auth_changed()
-
-    assert not output_tab.auth_token_label.isVisible()
-    assert not output_tab.webhook_token_input.isVisible()
-    assert not output_tab.client_auth_label.isVisible()
-    assert not output_tab.webhook_client_auth_input.isVisible()
-
-
-def test_output_tab_webhook_auth_basic_shows_token(output_tab: OutputTab) -> None:
-    """Test basic auth type shows token field.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.show()  # Need to show widget for visibility to work
-    output_tab.webhook_group.show()  # Also show the group
-    output_tab.webhook_auth_type_input.setCurrentText("basic")
-    output_tab.on_webhook_auth_changed()
-
-    assert output_tab.auth_token_label.isVisible()
-    assert output_tab.webhook_token_input.isVisible()
-    assert not output_tab.client_auth_label.isVisible()
-    assert not output_tab.webhook_client_auth_input.isVisible()
-
-
-def test_output_tab_webhook_auth_bearer_shows_token(output_tab: OutputTab) -> None:
-    """Test bearer auth type shows token field.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.show()  # Need to show widget for visibility to work
-    output_tab.webhook_group.show()  # Also show the group
-    output_tab.webhook_auth_type_input.setCurrentText("bearer")
-    output_tab.on_webhook_auth_changed()
-
-    assert output_tab.auth_token_label.isVisible()
-    assert output_tab.webhook_token_input.isVisible()
-    assert not output_tab.client_auth_label.isVisible()
-    assert not output_tab.webhook_client_auth_input.isVisible()
-
-
-def test_output_tab_webhook_auth_forward_shows_client_auth(output_tab: OutputTab) -> None:
-    """Test forward auth type shows client auth header field.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.show()  # Need to show widget for visibility to work
-    output_tab.webhook_group.show()  # Also show the group
-    output_tab.webhook_auth_type_input.setCurrentText("forward")
-    output_tab.on_webhook_auth_changed()
-
-    assert not output_tab.auth_token_label.isVisible()
-    assert not output_tab.webhook_token_input.isVisible()
-    assert output_tab.client_auth_label.isVisible()
-    assert output_tab.webhook_client_auth_input.isVisible()
-
-
-def test_output_tab_browse_file(qtbot: Any, output_tab: OutputTab) -> None:
-    """Test browse file button.
-
-    Args:
-        qtbot: PyQt test fixture
-        output_tab: OutputTab instance
-    """
-    test_path = "/path/to/output.json"
-
-    with patch(
-        "foxhole_stockpiles.gui.widgets.config_tabs.output_tab.QFileDialog.getSaveFileName"
-    ) as mock_dialog:
-        mock_dialog.return_value = (test_path, "JSON Files (*.json)")
-
-        output_tab.browse_file()
-
-        assert output_tab.file_path_input.text() == test_path
-
-
-def test_output_tab_browse_file_cancel(qtbot: Any, output_tab: OutputTab) -> None:
-    """Test browse file cancel.
-
-    Args:
-        qtbot: PyQt test fixture
-        output_tab: OutputTab instance
-    """
-    original_text = output_tab.file_path_input.text()
-
-    with patch(
-        "foxhole_stockpiles.gui.widgets.config_tabs.output_tab.QFileDialog.getSaveFileName"
-    ) as mock_dialog:
-        mock_dialog.return_value = ("", "")
-
-        output_tab.browse_file()
-
-        assert output_tab.file_path_input.text() == original_text
-
-
-def test_output_tab_set_values_file_output(output_tab: OutputTab) -> None:
-    """Test setting values with file output.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    settings = OutputSettings(
-        format=OutputFormat.JSON,
-        destination=OutputDestination.FILE,
-        file=FileOutputSettings(path="/output/data.json"),
+    return OutputHandlerConfig(
+        name="File Backup",
+        format=JsonFormatSettings(),
+        handler=FileHandlerSettings(path="/output/data.json"),
     )
 
-    output_tab.set_values(settings)
 
-    assert output_tab.format_input.currentText() == "json"
-    assert output_tab.destination_input.currentText() == "file"
-    assert output_tab.file_path_input.text() == "/output/data.json"
+@pytest.fixture
+def sample_webhook_handler() -> OutputHandlerConfig:
+    """Create a sample webhook handler config.
 
-
-def test_output_tab_set_values_webhook_basic_auth(output_tab: OutputTab) -> None:
-    """Test setting values with webhook basic auth.
-
-    Args:
-        output_tab: OutputTab instance
+    Returns:
+        OutputHandlerConfig: Sample webhook handler
     """
-    settings = OutputSettings(
-        format=OutputFormat.JSON,
-        destination=OutputDestination.WEBHOOK,
-        webhook=WebhookOutputSettings(
-            url="https://example.com/hook",
-            auth_type=AuthType.BASIC,
-            token="user:pass",
-        ),
-    )
-
-    output_tab.set_values(settings)
-
-    assert output_tab.destination_input.currentText() == "webhook"
-    assert output_tab.webhook_url_input.text() == "https://example.com/hook"
-    assert output_tab.webhook_auth_type_input.currentText() == "basic"
-    assert output_tab.webhook_token_input.text() == "user:pass"
-
-
-def test_output_tab_set_values_webhook_bearer_auth(output_tab: OutputTab) -> None:
-    """Test setting values with webhook bearer auth.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    settings = OutputSettings(
-        format=OutputFormat.JSON,
-        destination=OutputDestination.WEBHOOK,
-        webhook=WebhookOutputSettings(
-            url="https://example.com/hook",
+    return OutputHandlerConfig(
+        name="API Webhook",
+        format=JsonFormatSettings(),
+        handler=WebhookHandlerSettings(
+            url="https://example.com/webhook",
             auth_type=AuthType.BEARER,
             token="secret-token",
         ),
     )
 
-    output_tab.set_values(settings)
 
-    assert output_tab.webhook_auth_type_input.currentText() == "bearer"
-    assert output_tab.webhook_token_input.text() == "secret-token"
+class TestOutputTabInitialization:
+    """Tests for OutputTab initialization."""
 
+    def test_initialization(self, output_tab: OutputTab) -> None:
+        """Test OutputTab initialization.
+
+        Args:
+            output_tab: OutputTab instance
+        """
+        assert output_tab.handlers_list is not None
+        assert output_tab.add_button is not None
+        assert output_tab.edit_button is not None
+        assert output_tab.remove_button is not None
+
+    def test_initial_state(self, output_tab: OutputTab) -> None:
+        """Test initial state is empty with no handlers.
+
+        Args:
+            output_tab: OutputTab instance
+        """
+        assert output_tab.handlers_list.count() == 0
+        assert len(output_tab._handlers) == 0
 
-def test_output_tab_set_values_webhook_forward_auth(output_tab: OutputTab) -> None:
-    """Test setting values with webhook forward auth.
+    def test_edit_remove_buttons_disabled_initially(self, output_tab: OutputTab) -> None:
+        """Test edit and remove buttons are disabled when no selection.
 
-    Args:
-        output_tab: OutputTab instance
-    """
-    settings = OutputSettings(
-        format=OutputFormat.JSON,
-        destination=OutputDestination.WEBHOOK,
-        webhook=WebhookOutputSettings(
-            url="https://example.com/hook",
-            auth_type=AuthType.FORWARD,
-            client_auth_header="X-Custom-Auth",
-        ),
-    )
+        Args:
+            output_tab: OutputTab instance
+        """
+        assert not output_tab.edit_button.isEnabled()
+        assert not output_tab.remove_button.isEnabled()
 
-    output_tab.set_values(settings)
 
-    assert output_tab.webhook_auth_type_input.currentText() == "forward"
-    assert output_tab.webhook_client_auth_input.text() == "X-Custom-Auth"
+class TestOutputTabSetValues:
+    """Tests for OutputTab set_values method."""
 
+    def test_set_values_with_handler(
+        self, output_tab: OutputTab, sample_file_handler: OutputHandlerConfig
+    ) -> None:
+        """Test setting values with a handler.
 
-def test_output_tab_set_values_webhook_no_auth(output_tab: OutputTab) -> None:
-    """Test setting values with webhook no auth.
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        settings = OutputSettings(handlers=[sample_file_handler])
 
-    Args:
-        output_tab: OutputTab instance
-    """
-    settings = OutputSettings(
-        format=OutputFormat.JSON,
-        destination=OutputDestination.WEBHOOK,
-        webhook=WebhookOutputSettings(
-            url="https://example.com/hook",
-            auth_type=None,
-        ),
-    )
+        output_tab.set_values(settings)
 
-    output_tab.set_values(settings)
+        assert output_tab.handlers_list.count() == 1
+        assert len(output_tab._handlers) == 1
 
-    assert output_tab.webhook_auth_type_input.currentText() == "null"
+    def test_set_values_empty(self, output_tab: OutputTab) -> None:
+        """Test setting empty values.
 
+        Args:
+            output_tab: OutputTab instance
+        """
+        settings = OutputSettings(handlers=[])
 
-def test_output_tab_get_values_file_output(output_tab: OutputTab) -> None:
-    """Test getting values with file output.
+        output_tab.set_values(settings)
+
+        assert output_tab.handlers_list.count() == 0
+        assert len(output_tab._handlers) == 0
+
+    def test_set_values_multiple_handlers(
+        self,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+        sample_webhook_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test setting values with multiple handlers.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+            sample_webhook_handler: Sample webhook handler
+        """
+        settings = OutputSettings(handlers=[sample_file_handler, sample_webhook_handler])
 
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.format_input.setCurrentText("json")
-    output_tab.destination_input.setCurrentText("file")
-    output_tab.file_path_input.setText("/test/output.json")
-
-    settings = output_tab.get_values()
-
-    assert settings.format == OutputFormat.JSON
-    assert settings.destination == OutputDestination.FILE
-    assert settings.file.path == "/test/output.json"
-
-
-def test_output_tab_get_values_webhook_basic_auth(output_tab: OutputTab) -> None:
-    """Test getting values with webhook basic auth.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.destination_input.setCurrentText("webhook")
-    output_tab.webhook_url_input.setText("https://test.com/webhook")
-    output_tab.webhook_auth_type_input.setCurrentText("basic")
-    output_tab.webhook_token_input.setText("testuser:testpass")
-
-    settings = output_tab.get_values()
-
-    assert settings.destination == OutputDestination.WEBHOOK
-    assert settings.webhook.url == "https://test.com/webhook"
-    assert settings.webhook.auth_type == AuthType.BASIC
-    assert settings.webhook.token == "testuser:testpass"
-
-
-def test_output_tab_get_values_webhook_bearer_auth(output_tab: OutputTab) -> None:
-    """Test getting values with webhook bearer auth.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.destination_input.setCurrentText("webhook")
-    output_tab.webhook_url_input.setText("https://test.com/webhook")
-    output_tab.webhook_auth_type_input.setCurrentText("bearer")
-    output_tab.webhook_token_input.setText("my-token")
-
-    settings = output_tab.get_values()
-
-    assert settings.webhook.auth_type == AuthType.BEARER
-    assert settings.webhook.token == "my-token"
-
-
-def test_output_tab_get_values_webhook_forward_auth(output_tab: OutputTab) -> None:
-    """Test getting values with webhook forward auth.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.destination_input.setCurrentText("webhook")
-    output_tab.webhook_url_input.setText("https://test.com/webhook")
-    output_tab.webhook_auth_type_input.setCurrentText("forward")
-    output_tab.webhook_client_auth_input.setText("Authorization")
-
-    settings = output_tab.get_values()
-
-    assert settings.webhook.auth_type == AuthType.FORWARD
-    assert settings.webhook.client_auth_header == "Authorization"
-
-
-def test_output_tab_get_values_webhook_no_auth(output_tab: OutputTab) -> None:
-    """Test getting values with webhook no auth.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.destination_input.setCurrentText("webhook")
-    output_tab.webhook_url_input.setText("https://test.com/webhook")
-    output_tab.webhook_auth_type_input.setCurrentText("null")
-
-    settings = output_tab.get_values()
-
-    assert settings.webhook.auth_type is None
-
-
-def test_output_tab_get_values_console_output(output_tab: OutputTab) -> None:
-    """Test getting values with console output.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.destination_input.setCurrentText("console")
-
-    settings = output_tab.get_values()
-
-    assert settings.destination == OutputDestination.CONSOLE
-
-
-def test_output_tab_get_values_return_output(output_tab: OutputTab) -> None:
-    """Test getting values with return output.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    output_tab.destination_input.setCurrentText("return")
-
-    settings = output_tab.get_values()
-
-    assert settings.destination == OutputDestination.RETURN
-
-
-def test_output_tab_webhook_token_password_echo_mode(output_tab: OutputTab) -> None:
-    """Test webhook token uses password echo mode.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    from PyQt6.QtWidgets import QLineEdit
-
-    assert output_tab.webhook_token_input.echoMode() == QLineEdit.EchoMode.Password
-
-
-def test_output_tab_get_values_empty_webhook_url(output_tab: OutputTab) -> None:
-    """Test getting values with empty webhook URL when destination is not webhook.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    # Use console destination instead of webhook to avoid validation error
-    # (webhook destination requires url to be set)
-    output_tab.destination_input.setCurrentText("console")
-    output_tab.webhook_url_input.setText("")
-
-    settings = output_tab.get_values()
-
-    # Webhook settings are still created, but url can be None when not using webhook destination
-    assert settings.webhook.url is None
-    assert settings.destination == OutputDestination.CONSOLE
-
-
-def test_output_tab_get_values_empty_webhook_token(output_tab: OutputTab) -> None:
-    """Test getting values with empty webhook token when auth is null.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    # Use null auth to avoid validation error (basic/bearer require token)
-    output_tab.destination_input.setCurrentText("webhook")
-    output_tab.webhook_url_input.setText("https://example.com/webhook")
-    output_tab.webhook_auth_type_input.setCurrentText("null")
-    output_tab.webhook_token_input.setText("")
-
-    settings = output_tab.get_values()
-
-    assert settings.webhook.token is None
-    assert settings.webhook.auth_type is None
-
-
-def test_output_tab_get_values_empty_client_auth_header(output_tab: OutputTab) -> None:
-    """Test getting values with empty client auth header when auth is null.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    # Use null auth to avoid validation error (forward requires client_auth_header)
-    output_tab.destination_input.setCurrentText("webhook")
-    output_tab.webhook_url_input.setText("https://example.com/webhook")
-    output_tab.webhook_auth_type_input.setCurrentText("null")
-    output_tab.webhook_client_auth_input.setText("")
-
-    settings = output_tab.get_values()
-
-    assert settings.webhook.client_auth_header is None
-    assert settings.webhook.auth_type is None
-
-
-def test_output_tab_set_values_no_file_settings(output_tab: OutputTab) -> None:
-    """Test setting values when using console destination.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    # File settings use default_factory, so they're never None
-    # Just test with console destination
-    settings = OutputSettings(
-        destination=OutputDestination.CONSOLE,
-    )
-
-    # Should not raise error
-    output_tab.set_values(settings)
-    assert output_tab.destination_input.currentText() == "console"
-
-
-def test_output_tab_set_values_no_webhook_settings(output_tab: OutputTab) -> None:
-    """Test setting values when using return destination.
-
-    Args:
-        output_tab: OutputTab instance
-    """
-    # Webhook settings use default_factory, so they're never None
-    # Just test with return destination
-    settings = OutputSettings(
-        destination=OutputDestination.RETURN,
-    )
-
-    # Should not raise error
-    output_tab.set_values(settings)
-    assert output_tab.destination_input.currentText() == "return"
+        output_tab.set_values(settings)
+
+        assert output_tab.handlers_list.count() == 2
+        assert len(output_tab._handlers) == 2
+
+    def test_set_values_list_display_file(
+        self, output_tab: OutputTab, sample_file_handler: OutputHandlerConfig
+    ) -> None:
+        """Test list display for file handler shows path.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        settings = OutputSettings(handlers=[sample_file_handler])
+
+        output_tab.set_values(settings)
+
+        item = output_tab.handlers_list.item(0)
+        assert item is not None
+        assert "/output/data.json" in item.text()
+
+    def test_set_values_list_display_webhook(
+        self, output_tab: OutputTab, sample_webhook_handler: OutputHandlerConfig
+    ) -> None:
+        """Test list display for webhook handler shows URL.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_webhook_handler: Sample webhook handler
+        """
+        settings = OutputSettings(handlers=[sample_webhook_handler])
+
+        output_tab.set_values(settings)
+
+        item = output_tab.handlers_list.item(0)
+        assert item is not None
+        assert "example.com" in item.text()
+
+
+class TestOutputTabGetValues:
+    """Tests for OutputTab get_values method."""
+
+    def test_get_values_default(self, output_tab: OutputTab) -> None:
+        """Test getting default values.
+
+        Args:
+            output_tab: OutputTab instance
+        """
+        settings = output_tab.get_values()
+
+        assert len(settings.handlers) == 0
+
+    def test_get_values_with_handlers(
+        self, output_tab: OutputTab, sample_file_handler: OutputHandlerConfig
+    ) -> None:
+        """Test getting values with handlers.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        output_tab._handlers = [sample_file_handler]
+        output_tab._update_list()
+
+        settings = output_tab.get_values()
+
+        assert len(settings.handlers) == 1
+        assert settings.handlers[0].name == "File Backup"
+        assert settings.handlers[0].handler.type == OutputHandlerType.FILE
+
+    def test_roundtrip(
+        self, output_tab: OutputTab, sample_file_handler: OutputHandlerConfig
+    ) -> None:
+        """Test that set_values and get_values preserve data.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        original = OutputSettings(handlers=[sample_file_handler])
+
+        output_tab.set_values(original)
+        result = output_tab.get_values()
+
+        assert len(result.handlers) == len(original.handlers)
+        assert result.handlers[0].name == original.handlers[0].name
+        assert result.handlers[0].handler.type == original.handlers[0].handler.type
+        result_handler = result.handlers[0].handler
+        original_handler = original.handlers[0].handler
+        assert isinstance(result_handler, FileHandlerSettings)
+        assert isinstance(original_handler, FileHandlerSettings)
+        assert result_handler.path == original_handler.path
+
+
+class TestOutputTabButtons:
+    """Tests for add/edit/remove button handlers."""
+
+    def test_on_add_clicked_accepted(
+        self,
+        qtbot: Any,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test adding a handler when dialog is accepted.
+
+        Args:
+            qtbot: PyQt test fixture
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        with patch(
+            "foxhole_stockpiles.gui.widgets.config_tabs.output_tab.OutputHandlerDialog"
+        ) as mock_dialog_class:
+            mock_dialog = mock_dialog_class.return_value
+            mock_dialog.exec.return_value = QDialog.DialogCode.Accepted
+            mock_dialog.get_handler_config.return_value = sample_file_handler
+
+            output_tab._on_add_clicked()
+
+            assert len(output_tab._handlers) == 1
+            assert output_tab._handlers[0] == sample_file_handler
+            assert output_tab.handlers_list.count() == 1
+            assert output_tab.handlers_list.currentRow() == 0
+
+    def test_on_add_clicked_cancelled(self, output_tab: OutputTab) -> None:
+        """Test adding a handler when dialog is cancelled.
+
+        Args:
+            output_tab: OutputTab instance
+        """
+        with patch(
+            "foxhole_stockpiles.gui.widgets.config_tabs.output_tab.OutputHandlerDialog"
+        ) as mock_dialog_class:
+            mock_dialog = mock_dialog_class.return_value
+            mock_dialog.exec.return_value = QDialog.DialogCode.Rejected
+
+            output_tab._on_add_clicked()
+
+            assert len(output_tab._handlers) == 0
+            assert output_tab.handlers_list.count() == 0
+
+    def test_on_edit_clicked_no_selection(self, output_tab: OutputTab) -> None:
+        """Test edit click with no selection does nothing.
+
+        Args:
+            output_tab: OutputTab instance
+        """
+        # No items, no selection
+        output_tab._on_edit_clicked()
+        # Should not raise, just return early
+        assert len(output_tab._handlers) == 0
+
+    def test_on_edit_clicked_accepted(
+        self,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test editing a handler when dialog is accepted.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        # Add initial handler
+        output_tab._handlers = [sample_file_handler]
+        output_tab._update_list()
+        output_tab.handlers_list.setCurrentRow(0)
+
+        updated_handler = OutputHandlerConfig(
+            name="Updated Name",
+            format=JsonFormatSettings(),
+            handler=FileHandlerSettings(path="/updated/path.json"),
+        )
+
+        with patch(
+            "foxhole_stockpiles.gui.widgets.config_tabs.output_tab.OutputHandlerDialog"
+        ) as mock_dialog_class:
+            mock_dialog = mock_dialog_class.return_value
+            mock_dialog.exec.return_value = QDialog.DialogCode.Accepted
+            mock_dialog.get_handler_config.return_value = updated_handler
+
+            output_tab._on_edit_clicked()
+
+            assert len(output_tab._handlers) == 1
+            assert output_tab._handlers[0].name == "Updated Name"
+            assert output_tab.handlers_list.currentRow() == 0
+
+    def test_on_remove_clicked_no_selection(self, output_tab: OutputTab) -> None:
+        """Test remove click with no selection does nothing.
+
+        Args:
+            output_tab: OutputTab instance
+        """
+        # No items, no selection
+        output_tab._on_remove_clicked()
+        # Should not raise, just return early
+        assert len(output_tab._handlers) == 0
+
+    def test_on_remove_clicked_confirmed(
+        self,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test removing a handler when user confirms.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        output_tab._handlers = [sample_file_handler]
+        output_tab._update_list()
+        output_tab.handlers_list.setCurrentRow(0)
+
+        with patch(
+            "foxhole_stockpiles.gui.widgets.config_tabs.output_tab.QMessageBox.question",
+            return_value=QMessageBox.StandardButton.Yes,
+        ):
+            output_tab._on_remove_clicked()
+
+            assert len(output_tab._handlers) == 0
+            assert output_tab.handlers_list.count() == 0
+
+    def test_on_remove_clicked_cancelled(
+        self,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test removing a handler when user cancels.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        output_tab._handlers = [sample_file_handler]
+        output_tab._update_list()
+        output_tab.handlers_list.setCurrentRow(0)
+
+        with patch(
+            "foxhole_stockpiles.gui.widgets.config_tabs.output_tab.QMessageBox.question",
+            return_value=QMessageBox.StandardButton.No,
+        ):
+            output_tab._on_remove_clicked()
+
+            # Handler should still be there
+            assert len(output_tab._handlers) == 1
+            assert output_tab.handlers_list.count() == 1
+
+
+class TestOutputHandlerDialog:
+    """Tests for OutputHandlerDialog."""
+
+    def test_dialog_initialization_new(self, qtbot: Any) -> None:
+        """Test dialog initialization for new handler.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        assert dialog.windowTitle() == "Add Handler"
+        assert dialog.name_input.text() == ""
+        assert dialog.handler_type_input.currentText() == "return"
+
+    def test_dialog_initialization_edit_file(
+        self, qtbot: Any, sample_file_handler: OutputHandlerConfig
+    ) -> None:
+        """Test dialog initialization for editing file handler.
+
+        Args:
+            qtbot: PyQt test fixture
+            sample_file_handler: Sample file handler
+        """
+        dialog = OutputHandlerDialog(handler_config=sample_file_handler)
+        qtbot.addWidget(dialog)
+
+        assert dialog.windowTitle() == "Edit Handler"
+        assert dialog.name_input.text() == "File Backup"
+        assert dialog.handler_type_input.currentText() == "file"
+        assert dialog.file_path_input.text() == "/output/data.json"
+
+    def test_dialog_initialization_edit_webhook(
+        self, qtbot: Any, sample_webhook_handler: OutputHandlerConfig
+    ) -> None:
+        """Test dialog initialization for editing webhook handler.
+
+        Args:
+            qtbot: PyQt test fixture
+            sample_webhook_handler: Sample webhook handler
+        """
+        dialog = OutputHandlerDialog(handler_config=sample_webhook_handler)
+        qtbot.addWidget(dialog)
+
+        assert dialog.windowTitle() == "Edit Handler"
+        assert dialog.name_input.text() == "API Webhook"
+        assert dialog.handler_type_input.currentText() == "webhook"
+        assert dialog.webhook_url_input.text() == "https://example.com/webhook"
+        assert dialog.webhook_auth_type_input.currentText() == "bearer"
+        assert dialog.webhook_token_input.text() == "secret-token"
+
+    def test_dialog_handler_type_shows_file_group(self, qtbot: Any) -> None:
+        """Test file handler type shows file group.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+        dialog.show()
+
+        dialog.handler_type_input.setCurrentText("file")
+        dialog._on_handler_type_changed()
+
+        assert dialog.file_group.isVisible()
+        assert not dialog.webhook_group.isVisible()
+
+    def test_dialog_handler_type_shows_webhook_group(self, qtbot: Any) -> None:
+        """Test webhook handler type shows webhook group.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+        dialog.show()
+
+        dialog.handler_type_input.setCurrentText("webhook")
+        dialog._on_handler_type_changed()
+
+        assert not dialog.file_group.isVisible()
+        assert dialog.webhook_group.isVisible()
+
+    def test_dialog_handler_type_return_hides_both(self, qtbot: Any) -> None:
+        """Test return handler type hides both groups.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("return")
+        dialog._on_handler_type_changed()
+
+        assert not dialog.file_group.isVisible()
+        assert not dialog.webhook_group.isVisible()
+
+    def test_dialog_webhook_auth_bearer_shows_token(self, qtbot: Any) -> None:
+        """Test bearer auth type shows token field.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+        dialog.show()
+        dialog.webhook_group.show()
+
+        dialog.webhook_auth_type_input.setCurrentText("bearer")
+        dialog._on_webhook_auth_changed()
+
+        assert dialog.auth_token_label.isVisible()
+        assert dialog.webhook_token_input.isVisible()
+        assert not dialog.client_auth_label.isVisible()
+        assert not dialog.webhook_client_auth_input.isVisible()
+
+    def test_dialog_webhook_auth_forward_shows_client_auth(self, qtbot: Any) -> None:
+        """Test forward auth type shows client auth field.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+        dialog.show()
+        dialog.webhook_group.show()
+
+        dialog.webhook_auth_type_input.setCurrentText("forward")
+        dialog._on_webhook_auth_changed()
+
+        assert not dialog.auth_token_label.isVisible()
+        assert not dialog.webhook_token_input.isVisible()
+        assert dialog.client_auth_label.isVisible()
+        assert dialog.webhook_client_auth_input.isVisible()
+
+    def test_dialog_webhook_auth_null_hides_fields(self, qtbot: Any) -> None:
+        """Test null auth type hides token and client auth fields.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.webhook_auth_type_input.setCurrentText("null")
+        dialog._on_webhook_auth_changed()
+
+        assert not dialog.auth_token_label.isVisible()
+        assert not dialog.webhook_token_input.isVisible()
+        assert not dialog.client_auth_label.isVisible()
+        assert not dialog.webhook_client_auth_input.isVisible()
+
+    def test_dialog_get_handler_config_return(self, qtbot: Any) -> None:
+        """Test getting return handler config from dialog.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("return")
+        dialog.name_input.setText("")  # Test default name
+
+        config = dialog.get_handler_config()
+
+        assert config.name == "API Response"
+        assert config.handler.type == OutputHandlerType.RETURN
+
+    def test_dialog_get_handler_config_file(self, qtbot: Any) -> None:
+        """Test getting file handler config from dialog.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("file")
+        dialog.name_input.setText("My File Handler")
+        dialog.file_path_input.setText("/test/output.json")
+
+        config = dialog.get_handler_config()
+
+        assert config.name == "My File Handler"
+        assert config.handler.type == OutputHandlerType.FILE
+        assert isinstance(config.handler, FileHandlerSettings)
+        assert config.handler.path == "/test/output.json"
+
+    def test_dialog_get_handler_config_webhook(self, qtbot: Any) -> None:
+        """Test getting webhook handler config from dialog.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("webhook")
+        dialog.name_input.setText("My Webhook")
+        dialog.webhook_url_input.setText("https://test.com/webhook")
+        dialog.webhook_auth_type_input.setCurrentText("bearer")
+        dialog.webhook_token_input.setText("my-token")
+
+        config = dialog.get_handler_config()
+
+        assert config.name == "My Webhook"
+        assert config.handler.type == OutputHandlerType.WEBHOOK
+        assert isinstance(config.handler, WebhookHandlerSettings)
+        assert config.handler.url == "https://test.com/webhook"
+        assert config.handler.auth_type == AuthType.BEARER
+        assert config.handler.token == "my-token"
+
+    def test_dialog_get_handler_config_console(self, qtbot: Any) -> None:
+        """Test getting console handler config from dialog.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("console")
+        dialog.name_input.setText("")  # Test default name
+
+        config = dialog.get_handler_config()
+
+        assert config.name == "Console"
+        assert config.handler.type == OutputHandlerType.CONSOLE
+
+    def test_dialog_validation_file_empty_path(self, qtbot: Any) -> None:
+        """Test validation fails for empty file path.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("file")
+        dialog.file_path_input.setText("")
+
+        with (
+            patch("foxhole_stockpiles.gui.widgets.config_tabs.output_tab.QMessageBox.warning"),
+            patch.object(dialog, "accept") as mock_accept,
+        ):
+            dialog._validate_and_accept()
+            mock_accept.assert_not_called()
+
+    def test_dialog_validation_webhook_empty_url(self, qtbot: Any) -> None:
+        """Test validation fails for empty webhook URL.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("webhook")
+        dialog.webhook_url_input.setText("")
+
+        with (
+            patch("foxhole_stockpiles.gui.widgets.config_tabs.output_tab.QMessageBox.warning"),
+            patch.object(dialog, "accept") as mock_accept,
+        ):
+            dialog._validate_and_accept()
+            mock_accept.assert_not_called()
+
+    def test_dialog_validation_success_return(self, qtbot: Any) -> None:
+        """Test validation succeeds for return handler.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("return")
+
+        with patch.object(dialog, "accept") as mock_accept:
+            dialog._validate_and_accept()
+            mock_accept.assert_called_once()
+
+    def test_dialog_validation_success_file(self, qtbot: Any) -> None:
+        """Test validation succeeds for file handler with path.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("file")
+        dialog.file_path_input.setText("/valid/path.json")
+
+        with patch.object(dialog, "accept") as mock_accept:
+            dialog._validate_and_accept()
+            mock_accept.assert_called_once()
+
+    def test_dialog_validation_success_webhook(self, qtbot: Any) -> None:
+        """Test validation succeeds for webhook handler with URL.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        dialog.handler_type_input.setCurrentText("webhook")
+        dialog.webhook_url_input.setText("https://example.com/webhook")
+
+        with patch.object(dialog, "accept") as mock_accept:
+            dialog._validate_and_accept()
+            mock_accept.assert_called_once()
+
+    def test_dialog_browse_file(self, qtbot: Any) -> None:
+        """Test browse file button.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        test_path = "/path/to/output.json"
+
+        with patch(
+            "foxhole_stockpiles.gui.widgets.config_tabs.output_tab.QFileDialog.getSaveFileName"
+        ) as mock_dialog:
+            mock_dialog.return_value = (test_path, "JSON Files (*.json)")
+
+            dialog._browse_file()
+
+            assert dialog.file_path_input.text() == test_path
+
+    def test_dialog_webhook_token_password_echo_mode(self, qtbot: Any) -> None:
+        """Test webhook token uses password echo mode.
+
+        Args:
+            qtbot: PyQt test fixture
+        """
+        dialog = OutputHandlerDialog()
+        qtbot.addWidget(dialog)
+
+        assert dialog.webhook_token_input.echoMode() == QLineEdit.EchoMode.Password

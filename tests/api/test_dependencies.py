@@ -160,7 +160,7 @@ class TestGetOutputCoordinator:
         get_output_coordinator.cache_clear()
 
     def test_get_output_coordinator_creates_with_settings(self) -> None:
-        """Test that get_output_coordinator creates OutputCoordinator with settings."""
+        """Test that get_output_coordinator creates OutputCoordinator with output settings."""
         get_output_coordinator.cache_clear()
 
         with patch("foxhole_stockpiles.api.dependencies.get_settings") as mock_settings:
@@ -172,7 +172,9 @@ class TestGetOutputCoordinator:
 
                 get_output_coordinator()
 
-                mock_coordinator_class.assert_called_once_with(settings=mock_settings_obj)
+                mock_coordinator_class.assert_called_once_with(
+                    output_settings=mock_settings_obj.output
+                )
 
         get_output_coordinator.cache_clear()
 

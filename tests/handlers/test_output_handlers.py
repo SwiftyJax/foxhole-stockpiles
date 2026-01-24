@@ -10,15 +10,14 @@ from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 
-from foxhole_stockpiles.core.settings import AppSettings
 from foxhole_stockpiles.core.settings.sections.output import (
-    FileOutputSettings,
-    OutputSettings,
-    WebhookOutputSettings,
+    WebhookHandlerSettings,
 )
-from foxhole_stockpiles.enums.output_destination import OutputDestination
-from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.enums.stockpile_type import StockpileType
+from foxhole_stockpiles.handlers.console import ConsoleOutputHandler
+from foxhole_stockpiles.handlers.file import FileOutputHandler
+from foxhole_stockpiles.handlers.response import ReturnOutputHandler
+from foxhole_stockpiles.handlers.webhook import WebhookOutputHandler
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
 
@@ -46,23 +45,6 @@ def sample_stockpile() -> Stockpile:
     )
 
 
-@pytest.fixture
-def app_settings() -> AppSettings:
-    """Create app settings for testing.
-
-    Returns:
-        AppSettings: Configured app settings for testing.
-    """
-    return AppSettings(
-        output=OutputSettings(
-            format=OutputFormat.JSON,
-            destination=OutputDestination.RETURN,
-            file=FileOutputSettings(path="output.json"),
-            webhook=WebhookOutputSettings(url=None),
-        )
-    )
-
-
 class TestConsoleOutputHandler:
     """Test cases for ConsoleOutputHandler."""
 
@@ -73,8 +55,6 @@ class TestConsoleOutputHandler:
         Args:
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
         """
-        from foxhole_stockpiles.handlers.console import ConsoleOutputHandler
-
         handler = ConsoleOutputHandler()
 
         with patch.object(handler.logger, "info") as mock_logger:
@@ -96,8 +76,6 @@ class TestReturnOutputHandler:
         Args:
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
         """
-        from foxhole_stockpiles.handlers.response import ReturnOutputHandler
-
         handler = ReturnOutputHandler()
         result = await handler.handle(sample_stockpile)
 
@@ -117,8 +95,6 @@ class TestFileOutputHandler:
         Args:
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
         """
-        from foxhole_stockpiles.handlers.file import FileOutputHandler
-
         handler = FileOutputHandler(default_file_path="output.json")
 
         with patch("pathlib.Path.open") as mock_open, patch("pathlib.Path.mkdir"):
@@ -139,8 +115,6 @@ class TestFileOutputHandler:
         Args:
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
         """
-        from foxhole_stockpiles.handlers.file import FileOutputHandler
-
         handler = FileOutputHandler()
         custom_path = Path("custom/output.json")
 
@@ -159,8 +133,6 @@ class TestFileOutputHandler:
         Args:
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
         """
-        from foxhole_stockpiles.handlers.file import FileOutputHandler
-
         handler = FileOutputHandler(default_file_path="output_{timestamp}.json")
 
         with (
@@ -183,8 +155,6 @@ class TestFileOutputHandler:
         Args:
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
         """
-        from foxhole_stockpiles.handlers.file import FileOutputHandler
-
         handler = FileOutputHandler()
 
         with pytest.raises(ValueError, match="File path must be provided"):
@@ -195,20 +165,13 @@ class TestWebhookOutputHandler:
     """Test cases for WebhookOutputHandler."""
 
     @pytest.mark.asyncio
-    async def test_webhook_output_success(
-        self, app_settings: AppSettings, sample_stockpile: Stockpile
-    ) -> None:
+    async def test_webhook_output_success(self, sample_stockpile: Stockpile) -> None:
         """Test successful webhook output.
 
         Args:
-            app_settings (AppSettings): App settings fixture.
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
         """
-        from foxhole_stockpiles.handlers.webhook import WebhookOutputHandler
-
-        # Configure webhook URL
-        app_settings.output.webhook.url = "https://example.com/webhook"
-
+        webhook_settings = WebhookHandlerSettings(url="https://example.com/webhook")
         webhook_response = {"status": "success", "id": "12345"}
 
         with patch("foxhole_stockpiles.handlers.webhook.WebhookConnector") as mock_connector_class:
@@ -216,29 +179,21 @@ class TestWebhookOutputHandler:
             mock_connector.send_stockpile = AsyncMock(return_value=webhook_response)
             mock_connector_class.return_value = mock_connector
 
-            # Create handler after patching so the mock is used
-            handler = WebhookOutputHandler(webhook_settings=app_settings.output.webhook)
+            handler = WebhookOutputHandler(webhook_settings=webhook_settings)
             result = await handler.handle(sample_stockpile)
 
             assert result == webhook_response
             mock_connector.send_stockpile.assert_called_once()
 
     @pytest.mark.asyncio
-    async def test_webhook_output_with_token(
-        self, app_settings: AppSettings, sample_stockpile: Stockpile
-    ) -> None:
+    async def test_webhook_output_with_token(self, sample_stockpile: Stockpile) -> None:
         """Test webhook output with custom token.
 
         Args:
-            app_settings (AppSettings): App settings fixture.
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
         """
-        from foxhole_stockpiles.handlers.webhook import WebhookOutputHandler
-
-        # Configure webhook URL
-        app_settings.output.webhook.url = "https://example.com/webhook"
+        webhook_settings = WebhookHandlerSettings(url="https://example.com/webhook")
         custom_token = "custom_token_123"
-
         webhook_response = {"status": "success", "id": "12345"}
 
         with patch("foxhole_stockpiles.handlers.webhook.WebhookConnector") as mock_connector_class:
@@ -246,8 +201,7 @@ class TestWebhookOutputHandler:
             mock_connector.send_stockpile = AsyncMock(return_value=webhook_response)
             mock_connector_class.return_value = mock_connector
 
-            # Create handler after patching so the mock is used
-            handler = WebhookOutputHandler(webhook_settings=app_settings.output.webhook)
+            handler = WebhookOutputHandler(webhook_settings=webhook_settings)
             result = await handler.handle(sample_stockpile, token=custom_token)
 
             assert result == webhook_response

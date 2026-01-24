@@ -1022,11 +1022,12 @@ class TestMainFunction:
 
         await main()
 
-        # Verify handle_output was called with file_path
-        mock_handler.handle_output.assert_called_once()
-        call_kwargs = mock_handler.handle_output.call_args[1]
-        assert "file_path" in call_kwargs
-        assert call_kwargs["file_path"] == output_file
+        # Verify OutputCoordinator was created with file handler containing the output path
+        mock_output_coordinator_class.assert_called_once()
+        call_kwargs = mock_output_coordinator_class.call_args[1]
+        output_settings = call_kwargs["output_settings"]
+        assert len(output_settings.handlers) == 1
+        assert output_settings.handlers[0].handler.path == str(output_file)
 
 
 def test_main_module_importable() -> None:

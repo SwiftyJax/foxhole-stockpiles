@@ -12,6 +12,14 @@ import numpy as np
 
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import AppSettings, get_settings
+from foxhole_stockpiles.core.settings.sections.output import (
+    ConsoleHandlerSettings,
+    FileHandlerSettings,
+    JsonFormatSettings,
+    OutputHandlerConfig,
+    OutputSettings,
+    ReturnHandlerSettings,
+)
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.output_destination import OutputDestination
@@ -20,6 +28,44 @@ from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
+
+
+def _create_handler_config_for_destination(
+    destination: OutputDestination, output_file: Path | None = None
+) -> OutputHandlerConfig:
+    """Create a handler config for a specific output destination.
+
+    Args:
+        destination: The output destination type
+        output_file: Optional file path for file destination
+
+    Returns:
+        OutputHandlerConfig: Handler configuration for the destination
+    """
+    destination_names = {
+        OutputDestination.RETURN: "CLI Return",
+        OutputDestination.FILE: "CLI File Output",
+        OutputDestination.CONSOLE: "CLI Console",
+    }
+
+    if destination == OutputDestination.FILE:
+        return OutputHandlerConfig(
+            name=destination_names.get(destination, "CLI Output"),
+            format=JsonFormatSettings(),
+            handler=FileHandlerSettings(path=str(output_file) if output_file else "output.json"),
+        )
+    elif destination == OutputDestination.CONSOLE:
+        return OutputHandlerConfig(
+            name=destination_names.get(destination, "CLI Output"),
+            format=JsonFormatSettings(),
+            handler=ConsoleHandlerSettings(),
+        )
+    else:  # RETURN is default
+        return OutputHandlerConfig(
+            name=destination_names.get(destination, "CLI Output"),
+            format=JsonFormatSettings(),
+            handler=ReturnHandlerSettings(),
+        )
 
 
 def get_app_settings(config_file: str | None = None) -> AppSettings:
@@ -137,12 +183,23 @@ async def main() -> dict[str, Any] | None:
     # Image is already in BGR format (OpenCV default), which is what OCRCoordinator expects
     image = np.asarray(_image, dtype=np.uint8)
 
-    # Determine output destination
-    output_destination = (
-        OutputDestination(args.output_destination)
-        if args.output_destination
-        else settings.output.destination
-    )
+    # Determine output settings
+    if args.output_destination:
+        # Create a single-handler config for the specified destination
+        output_destination = OutputDestination(args.output_destination)
+        handler_config = _create_handler_config_for_destination(
+            output_destination, args.output_file
+        )
+        output_settings = OutputSettings(handlers=[handler_config])
+    elif args.output_file:
+        # If output_file is specified without destination, default to file destination
+        handler_config = _create_handler_config_for_destination(
+            OutputDestination.FILE, args.output_file
+        )
+        output_settings = OutputSettings(handlers=[handler_config])
+    else:
+        # Use configured handlers from settings
+        output_settings = settings.output
 
     logging_settings = settings.logging
     # Setup logging
@@ -176,18 +233,14 @@ async def main() -> dict[str, Any] | None:
         stockpile: Stockpile = await coordinator.analyze_stockpile(
             image, language=language_filter, faction=faction_filter
         )
-        output_coordinator = OutputCoordinator(settings=settings)
+        output_coordinator = OutputCoordinator(output_settings=output_settings)
 
         # Prepare kwargs for output coordinator
         output_kwargs: dict[str, Any] = {}
         if args.token:
             output_kwargs["token"] = args.token
-        if args.output_file:
-            output_kwargs["file_path"] = args.output_file
 
-        return await output_coordinator.handle_output(
-            stockpile=stockpile, destination=output_destination, **output_kwargs
-        )
+        return await output_coordinator.handle_output(stockpile=stockpile, **output_kwargs)
 
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)

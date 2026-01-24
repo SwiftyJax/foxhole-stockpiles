@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from foxhole_stockpiles.connectors.webhook import WebhookConnector
-from foxhole_stockpiles.core.settings.sections.output import WebhookOutputSettings
+from foxhole_stockpiles.core.settings.sections.output import WebhookHandlerSettings
 from foxhole_stockpiles.handlers.base_handler import BaseOutputDestinationHandler
 from foxhole_stockpiles.models.stockpile import Stockpile
 
@@ -12,11 +12,11 @@ from foxhole_stockpiles.models.stockpile import Stockpile
 class WebhookOutputHandler(BaseOutputDestinationHandler):
     """Handles sending stockpile data to webhook endpoints."""
 
-    def __init__(self, webhook_settings: WebhookOutputSettings) -> None:
+    def __init__(self, webhook_settings: WebhookHandlerSettings) -> None:
         """Initialize webhook output handler.
 
         Args:
-            webhook_settings (WebhookOutputSettings): Webhook configuration settings
+            webhook_settings (WebhookHandlerSettings): Webhook configuration settings
         """
         self.logger = logging.getLogger(__name__)
         self._url = webhook_settings.url
