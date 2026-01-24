@@ -285,6 +285,122 @@ class TestShutdown:
         assert service._initialized is False
 
 
+class TestSendNotification:
+    """Test suite for NotificationService.send_notification method."""
+
+    @pytest.mark.asyncio
+    async def test_send_notification_calls_notifier(self) -> None:
+        """Test that send_notification calls the notifier and waits for completion."""
+        discord_config = DiscordNotifierSettings(
+            type=NotifierType.DISCORD,
+            name="Test Discord",
+            webhook_url="https://discord.com/api/webhooks/123/abc",
+            events=[EventType.SERVER_STOPPED],
+        )
+        settings = NotificationsSettings(enabled=True, notifiers=[discord_config])
+        service = NotificationService(settings)
+
+        with patch("foxhole_stockpiles.services.notification_service.DiscordNotifier") as mock_cls:
+            mock_notifier = Mock()
+            mock_notifier.send = AsyncMock()
+            mock_notifier.name = "Test Discord"
+            mock_cls.return_value = mock_notifier
+
+            service.initialize()
+
+            await service.send_notification(EventType.SERVER_STOPPED, {})
+
+            mock_notifier.send.assert_called_once_with(EventType.SERVER_STOPPED, {})
+
+    @pytest.mark.asyncio
+    async def test_send_notification_does_nothing_when_disabled(self) -> None:
+        """Test that send_notification does nothing when notifications are disabled."""
+        settings = NotificationsSettings(enabled=False)
+        service = NotificationService(settings)
+
+        # Should not raise, just return
+        await service.send_notification(EventType.SERVER_STOPPED, {})
+
+    @pytest.mark.asyncio
+    async def test_send_notification_does_nothing_when_not_initialized(self) -> None:
+        """Test that send_notification does nothing when service is not initialized."""
+        discord_config = DiscordNotifierSettings(
+            type=NotifierType.DISCORD,
+            name="Test Discord",
+            webhook_url="https://discord.com/api/webhooks/123/abc",
+            events=[EventType.SERVER_STOPPED],
+        )
+        settings = NotificationsSettings(enabled=True, notifiers=[discord_config])
+        service = NotificationService(settings)
+
+        # Don't call initialize()
+        await service.send_notification(EventType.SERVER_STOPPED, {})
+
+        # Should not have any notifiers since not initialized
+        assert len(service.notifiers) == 0
+
+    @pytest.mark.asyncio
+    async def test_send_notification_handles_errors(self) -> None:
+        """Test that send_notification handles notifier errors gracefully."""
+        discord_config = DiscordNotifierSettings(
+            type=NotifierType.DISCORD,
+            name="Test Discord",
+            webhook_url="https://discord.com/api/webhooks/123/abc",
+            events=[EventType.SERVER_STOPPED],
+        )
+        settings = NotificationsSettings(enabled=True, notifiers=[discord_config])
+        service = NotificationService(settings)
+
+        with patch("foxhole_stockpiles.services.notification_service.DiscordNotifier") as mock_cls:
+            mock_notifier = Mock()
+            mock_notifier.send = AsyncMock(side_effect=Exception("Send failed"))
+            mock_notifier.name = "Test Discord"
+            mock_cls.return_value = mock_notifier
+
+            service.initialize()
+
+            # Should not raise, errors are logged
+            with patch("foxhole_stockpiles.services.notification_service.logger"):
+                await service.send_notification(EventType.SERVER_STOPPED, {})
+
+    @pytest.mark.asyncio
+    async def test_send_notification_only_sends_to_subscribed_notifiers(self) -> None:
+        """Test that send_notification only sends to notifiers subscribed to the event."""
+        discord_config1 = DiscordNotifierSettings(
+            type=NotifierType.DISCORD,
+            name="Discord 1",
+            webhook_url="https://discord.com/api/webhooks/111/aaa",
+            events=[EventType.SERVER_STOPPED],
+        )
+        discord_config2 = DiscordNotifierSettings(
+            type=NotifierType.DISCORD,
+            name="Discord 2",
+            webhook_url="https://discord.com/api/webhooks/222/bbb",
+            events=[EventType.STOCKPILE_SCANNED],  # Different event
+        )
+        settings = NotificationsSettings(enabled=True, notifiers=[discord_config1, discord_config2])
+        service = NotificationService(settings)
+
+        with patch("foxhole_stockpiles.services.notification_service.DiscordNotifier") as mock_cls:
+            mock_notifier1 = Mock()
+            mock_notifier1.send = AsyncMock()
+            mock_notifier1.name = "Discord 1"
+
+            mock_notifier2 = Mock()
+            mock_notifier2.send = AsyncMock()
+            mock_notifier2.name = "Discord 2"
+
+            mock_cls.side_effect = [mock_notifier1, mock_notifier2]
+
+            service.initialize()
+
+            await service.send_notification(EventType.SERVER_STOPPED, {})
+
+            # Only Discord 1 should be called
+            mock_notifier1.send.assert_called_once()
+            mock_notifier2.send.assert_not_called()
+
+
 class TestIntegration:
     """Integration tests for NotificationService.
 

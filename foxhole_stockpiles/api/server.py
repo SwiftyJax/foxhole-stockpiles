@@ -93,7 +93,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     yield
 
-    # Emit server stopped event
+    # Send server stopped notification before shutdown (must await to ensure it's sent)
+    if app_settings.notifications.enabled:
+        try:
+            notification_service = get_notification_service()
+            await notification_service.send_notification(EventType.SERVER_STOPPED, {})
+        except Exception as e:
+            logger.error("Failed to send server stopped notification: %s", e)
+
+    # Emit server stopped event for other subscribers
     event_bus.emit(EventType.SERVER_STOPPED, {})
 
     # Shutdown

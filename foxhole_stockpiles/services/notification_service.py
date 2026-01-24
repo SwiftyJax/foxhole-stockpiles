@@ -1,5 +1,6 @@
 """Notification service for managing notifiers and event subscriptions."""
 
+import asyncio
 import logging
 from typing import Any
 
@@ -105,6 +106,35 @@ class NotificationService:
                 logger.error(f"Failed to send notification via {notifier.name}: {e}")
 
         return handler
+
+    async def send_notification(self, event_type: str, data: dict[str, Any]) -> None:
+        """Send a notification directly to all notifiers subscribed to an event type.
+
+        This method waits for all notifications to complete before returning,
+        making it suitable for critical events like server shutdown where we
+        need to ensure the notification is sent before the process exits.
+
+        Args:
+            event_type: The event type to send
+            data: The event data
+        """
+        if not self._initialized or not self.settings.enabled:
+            return
+
+        tasks = []
+        for notifier_config in self.settings.notifiers:
+            if event_type in notifier_config.events:
+                # Find the matching notifier
+                for notifier in self.notifiers:
+                    if notifier.name == notifier_config.name:
+                        tasks.append(notifier.send(event_type, data))
+                        break
+
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for result in results:
+                if isinstance(result, Exception):
+                    logger.error(f"Failed to send notification: {result}")
 
     def shutdown(self) -> None:
         """Shutdown the notification service and cleanup resources."""
