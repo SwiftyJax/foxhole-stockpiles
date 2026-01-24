@@ -2,14 +2,6 @@
 
 The Foxhole Stockpile Scanner provides a REST API for analyzing stockpile screenshots via HTTP.
 
-## Installation
-
-The API server requires additional dependencies. Install with:
-
-```bash
-pip install -e .[server]
-```
-
 ## Starting the API Server
 
 ### Using fs Command (Recommended)

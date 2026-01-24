@@ -2,14 +2,6 @@
 
 Launches the PyQt6 graphical user interface for FS (Foxhole Stockpiles).
 
-## Installation
-
-The GUI requires PyQt6. Install with:
-
-```bash
-pip install -e .[gui]
-```
-
 ## Usage
 
 **Recommended:**
@@ -386,7 +378,8 @@ The application supports system tray for background operation (opt-in):
 
 **Error: `No module named 'PyQt6'`**
 ```bash
-pip install -e .[gui]
+# Reinstall the package
+pip install -e .
 ```
 
 **WSL2 Display Issues:**

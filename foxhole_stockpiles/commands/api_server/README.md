@@ -2,14 +2,6 @@
 
 Start the Foxhole Stockpile Scanner API server.
 
-## Installation
-
-The API server requires additional dependencies. Install with:
-
-```bash
-pip install -e .[server]
-```
-
 ## Usage
 
 ```bash

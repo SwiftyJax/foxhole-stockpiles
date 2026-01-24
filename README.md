@@ -171,20 +171,11 @@ source venv/bin/activate
 ### 3. Install the Package
 
 ```bash
-# Install base package (CLI tools: scanner, database-builder, etc.)
+# Install the package (includes server, GUI, and all CLI tools)
 pip install -e .
 
-# Install with API server support (adds fs server command)
-pip install -e .[server]
-
-# Install with GUI support (adds fs gui and fs-gui commands)
-pip install -e .[gui]
-
-# Install with development dependencies
+# Install with development dependencies (adds testing, linting, etc.)
 pip install -e .[dev]
-
-# Install everything (server + gui + dev)
-pip install -e .[server,gui,dev]
 ```
 
 ### 4. Install and Configure Tesseract OCR
@@ -336,11 +327,6 @@ fs scanner \
 ## API Server
 
 The project includes a FastAPI server for processing stockpile screenshots via HTTP.
-
-**Installation:** The API server requires additional dependencies. Install with:
-```bash
-pip install -e .[server]
-```
 
 **Usage:**
 ```bash

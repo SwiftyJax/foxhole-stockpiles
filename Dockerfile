@@ -22,7 +22,7 @@ RUN mkdir -p foxhole_stockpiles && touch foxhole_stockpiles/__init__.py
 
 # Install dependencies from pyproject.toml
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir .[server] && \
+    pip install --no-cache-dir . && \
     # Strip debug symbols and remove .so.dbg files
     find /opt/venv -name "*.so" -exec strip --strip-debug {} \; 2>/dev/null || true
 
