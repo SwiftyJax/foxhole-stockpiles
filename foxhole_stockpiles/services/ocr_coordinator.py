@@ -166,18 +166,31 @@ class OCRCoordinator:
             EventType.STOCKPILE_SCAN_STARTED, {"timestamp": datetime.now().isoformat()}
         )
 
-        detector = self._detect_regions(image)
-        scale_factor = detector.scale_factor
-        stockpile_images = self._extract_stockpile_images(detector)
-        quantities = await self._extract_quantities(stockpile_images)
-        await self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
-        scanned_stockpile = await self._match_icons_and_build_result(
-            stockpile_images=stockpile_images,
-            quantities=quantities,
-            scale_factor=scale_factor,
-            language=language,
-            faction=faction,
-        )
+        try:
+            detector = self._detect_regions(image)
+            scale_factor = detector.scale_factor
+            stockpile_images = self._extract_stockpile_images(detector)
+            quantities = await self._extract_quantities(stockpile_images)
+            await self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
+            scanned_stockpile = await self._match_icons_and_build_result(
+                stockpile_images=stockpile_images,
+                quantities=quantities,
+                scale_factor=scale_factor,
+                language=language,
+                faction=faction,
+            )
+        except Exception as e:
+            elapsed_time = time.perf_counter() - start_time
+            # Emit scan failed event
+            self._event_bus.emit(
+                EventType.STOCKPILE_SCAN_FAILED,
+                {
+                    "error": str(e),
+                    "duration": elapsed_time,
+                    "timestamp": datetime.now().isoformat(),
+                },
+            )
+            raise
 
         elapsed_time = time.perf_counter() - start_time
 

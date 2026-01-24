@@ -28,6 +28,7 @@ class NotificationService:
         self.notifiers: list[BaseNotifier] = []
         self._handlers: list[tuple[str, Any]] = []  # Track (event_type, handler) for cleanup
         self._initialized = False
+        self._send_lock: asyncio.Lock | None = None
 
     def initialize(self) -> None:
         """Initialize and register all configured notifiers."""
@@ -90,17 +91,13 @@ class NotificationService:
         """
 
         def handler(data: dict[str, Any]) -> None:
-            """Handle event by sending notification."""
+            """Handle event by sending notification with lock for ordering."""
             try:
-                # Note: We can't use await here since event handlers are sync
-                # We'll need to handle this differently in production
-                import asyncio
-
-                # Try to get the running loop, or create one
+                # Try to get the running loop
                 try:
                     loop = asyncio.get_running_loop()
-                    # Schedule the coroutine
-                    loop.create_task(notifier.send(event_type, data))
+                    # Schedule the send with lock to ensure ordering
+                    loop.create_task(self._send_with_lock(notifier, event_type, data))
                 except RuntimeError:
                     # No running loop, run it synchronously
                     asyncio.run(notifier.send(event_type, data))
@@ -108,6 +105,26 @@ class NotificationService:
                 logger.error(f"Failed to send notification via {notifier.name}: {e}")
 
         return handler
+
+    async def _send_with_lock(
+        self, notifier: BaseNotifier, event_type: str, data: dict[str, Any]
+    ) -> None:
+        """Send notification with lock to ensure sequential ordering.
+
+        Args:
+            notifier: The notifier to send with
+            event_type: The event type
+            data: The event data
+        """
+        # Lazily create lock (must be created in async context)
+        if self._send_lock is None:
+            self._send_lock = asyncio.Lock()
+
+        async with self._send_lock:
+            try:
+                await notifier.send(event_type, data)
+            except Exception as e:
+                logger.error(f"Failed to send notification via {notifier.name}: {e}")
 
     async def send_notification(self, event_type: str, data: dict[str, Any]) -> None:
         """Send a notification directly to all notifiers subscribed to an event type.
@@ -141,6 +158,9 @@ class NotificationService:
     def shutdown(self) -> None:
         """Shutdown the notification service and cleanup resources."""
         logger.info("Shutting down NotificationService")
+
+        # Reset the lock (will be recreated if service is restarted)
+        self._send_lock = None
 
         # Unsubscribe all handlers from the event bus
         for event_type, handler in self._handlers:

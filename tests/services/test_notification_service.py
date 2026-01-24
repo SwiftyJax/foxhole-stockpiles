@@ -5,6 +5,7 @@ which manages notification handlers and subscribes them to events.
 """
 
 import asyncio
+from typing import Any
 from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
@@ -465,3 +466,46 @@ class TestIntegration:
             # Give asyncio time to execute
 
             await asyncio.sleep(0.1)
+
+    @pytest.mark.asyncio
+    async def test_notifications_sent_in_order(self) -> None:
+        """Test that notifications are sent in the order events are emitted."""
+        discord_config = DiscordNotifierSettings(
+            type=NotifierType.DISCORD,
+            name="Test Discord",
+            webhook_url="https://discord.com/api/webhooks/123/abc",
+            events=[EventType.STOCKPILE_SCAN_STARTED, EventType.STOCKPILE_SCAN_FAILED],
+        )
+        settings = NotificationsSettings(enabled=True, notifiers=[discord_config])
+        event_bus = EventBus()
+        service = NotificationService(settings, event_bus=event_bus)
+
+        # Track the order of sends
+        send_order: list[str] = []
+
+        with patch("foxhole_stockpiles.services.notification_service.DiscordNotifier") as mock_cls:
+            mock_notifier = Mock()
+
+            async def track_send(event_type: str, data: dict[str, Any]) -> None:
+                send_order.append(event_type)
+                # Simulate some async delay
+                await asyncio.sleep(0.01)
+
+            mock_notifier.send = AsyncMock(side_effect=track_send)
+            mock_notifier.name = "Test Discord"
+            mock_cls.return_value = mock_notifier
+
+            service.initialize()
+
+            # Emit events in quick succession
+            event_bus.emit(EventType.STOCKPILE_SCAN_STARTED, {"timestamp": "2025-01-01"})
+            event_bus.emit(EventType.STOCKPILE_SCAN_FAILED, {"error": "Test error"})
+
+            # Wait for queue to process
+            await asyncio.sleep(0.1)
+
+            # Verify order matches emission order
+            assert send_order == [
+                EventType.STOCKPILE_SCAN_STARTED,
+                EventType.STOCKPILE_SCAN_FAILED,
+            ]

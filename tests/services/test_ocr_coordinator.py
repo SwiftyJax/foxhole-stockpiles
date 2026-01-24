@@ -472,6 +472,55 @@ class TestAnalyzeStockpile:
             with pytest.raises(ValueError, match="Detection failed"):
                 await coordinator.analyze_stockpile(mock_image)
 
+    async def test_analyze_stockpile_emits_scan_failed_event(
+        self,
+        mock_image: NDArray[np.uint8],
+        mock_config: ScannerSettings,
+    ) -> None:
+        """Test that STOCKPILE_SCAN_FAILED event is emitted when analysis fails.
+
+        Args:
+            mock_image (np.ndarray): Mock image from fixture.
+            mock_config (ScannerSettings): Mock config from fixture.
+        """
+        from foxhole_stockpiles.core.events import EventBus
+        from foxhole_stockpiles.enums.event_type import EventType
+
+        event_bus = EventBus()
+        coordinator = OCRCoordinator(mock_config, event_bus=event_bus)
+
+        # Track emitted events
+        emitted_events: list[tuple[str, dict[str, Any]]] = []
+
+        def track_event(event_type: str) -> Any:
+            def handler(data: dict[str, Any]) -> None:
+                emitted_events.append((event_type, data))
+
+            return handler
+
+        event_bus.subscribe(
+            EventType.STOCKPILE_SCAN_STARTED, track_event(EventType.STOCKPILE_SCAN_STARTED)
+        )
+        event_bus.subscribe(
+            EventType.STOCKPILE_SCAN_FAILED, track_event(EventType.STOCKPILE_SCAN_FAILED)
+        )
+
+        with patch.object(
+            coordinator,
+            "_detect_regions",
+            side_effect=ValueError("Detection failed"),
+        ):
+            with pytest.raises(ValueError, match="Detection failed"):
+                await coordinator.analyze_stockpile(mock_image)
+
+        # Verify both events were emitted
+        assert len(emitted_events) == 2
+        assert emitted_events[0][0] == EventType.STOCKPILE_SCAN_STARTED
+        assert emitted_events[1][0] == EventType.STOCKPILE_SCAN_FAILED
+        assert emitted_events[1][1]["error"] == "Detection failed"
+        assert "duration" in emitted_events[1][1]
+        assert "timestamp" in emitted_events[1][1]
+
 
 class TestDetectRegions:
     """Test suite for OCRCoordinator._detect_regions method.
