@@ -17,13 +17,18 @@ from foxhole_stockpiles.core.settings import AppSettings, get_settings, reload_s
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.core.settings.sections.output import (
+    ConsoleHandlerSettings,
+    CsvFormatSettings,
     FileHandlerSettings,
+    JsonFormatSettings,
     OutputHandlerConfig,
     OutputSettings,
+    ReturnHandlerSettings,
     WebhookHandlerSettings,
 )
 from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
+from foxhole_stockpiles.enums.output_format import OutputFormat
 
 
 class TestLoggingSettings:
@@ -225,6 +230,55 @@ class TestOutputSettings:
         handler = settings.handlers[0].handler
         assert isinstance(handler, WebhookHandlerSettings)
         assert handler.url == "https://example.com/webhook"
+
+    def test_output_handler_enforces_json_for_webhook(self) -> None:
+        """Test that webhook handlers are forced to use JSON format."""
+        # Try to create a webhook handler with CSV format
+        config = OutputHandlerConfig(
+            name="Webhook",
+            format=CsvFormatSettings(type=OutputFormat.CSV),
+            handler=WebhookHandlerSettings(url="https://example.com/webhook"),
+        )
+        # Should be automatically converted to JSON
+        assert isinstance(config.format, JsonFormatSettings)
+
+    def test_output_handler_enforces_json_for_return(self) -> None:
+        """Test that return handlers are forced to use JSON format."""
+        config = OutputHandlerConfig(
+            name="Return",
+            format=CsvFormatSettings(type=OutputFormat.TSV),
+            handler=ReturnHandlerSettings(),
+        )
+        assert isinstance(config.format, JsonFormatSettings)
+
+    def test_output_handler_enforces_json_for_console(self) -> None:
+        """Test that console handlers are forced to use JSON format."""
+        config = OutputHandlerConfig(
+            name="Console",
+            format=CsvFormatSettings(type=OutputFormat.CSV),
+            handler=ConsoleHandlerSettings(),
+        )
+        assert isinstance(config.format, JsonFormatSettings)
+
+    def test_output_handler_allows_csv_for_file(self) -> None:
+        """Test that file handlers allow CSV format."""
+        config = OutputHandlerConfig(
+            name="File",
+            format=CsvFormatSettings(type=OutputFormat.CSV),
+            handler=FileHandlerSettings(path="output.csv"),
+        )
+        assert isinstance(config.format, CsvFormatSettings)
+        assert config.format.type == OutputFormat.CSV
+
+    def test_output_handler_allows_tsv_for_file(self) -> None:
+        """Test that file handlers allow TSV format."""
+        config = OutputHandlerConfig(
+            name="File",
+            format=CsvFormatSettings(type=OutputFormat.TSV),
+            handler=FileHandlerSettings(path="output.tsv"),
+        )
+        assert isinstance(config.format, CsvFormatSettings)
+        assert config.format.type == OutputFormat.TSV
 
 
 class TestStockpileTypesSettings:

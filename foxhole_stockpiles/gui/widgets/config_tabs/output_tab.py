@@ -195,10 +195,13 @@ class OutputHandlerDialog(QDialog):
         handler_type = self.handler_type_input.currentText()
         self.file_group.setVisible(handler_type == "file")
         self.webhook_group.setVisible(handler_type == "webhook")
-        # Show format selection only for file and webhook handlers
-        show_format = handler_type in ("file", "webhook")
+        # Show format selection only for file handler (webhook/return are JSON-only)
+        show_format = handler_type == "file"
         self.format_label.setVisible(show_format)
         self.format_input.setVisible(show_format)
+        # Force JSON format for non-file handlers
+        if not show_format:
+            self.format_input.setCurrentText("json")
 
     def _on_webhook_auth_changed(self) -> None:
         """Handle webhook auth type change to show/hide relevant fields."""

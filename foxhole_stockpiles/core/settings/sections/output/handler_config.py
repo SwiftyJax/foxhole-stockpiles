@@ -2,7 +2,7 @@
 
 from typing import Annotated, Any
 
-from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag
+from pydantic import BaseModel, ConfigDict, Discriminator, Field, Tag, model_validator
 
 from foxhole_stockpiles.core.settings.sections.output.console_handler import (
     ConsoleHandlerSettings,
@@ -60,6 +60,24 @@ class OutputHandlerConfig(BaseModel):
         description="Output handler settings",
         default_factory=ReturnHandlerSettings,
     )
+
+    @model_validator(mode="after")
+    def enforce_json_for_non_file_handlers(self) -> "OutputHandlerConfig":
+        """Enforce JSON format for handlers that don't support CSV/TSV.
+
+        Only file handlers support CSV/TSV formats. Webhook, return, and console
+        handlers are forced to use JSON format.
+        """
+        handler_type = self.handler.type
+        if isinstance(handler_type, str):
+            handler_type = OutputHandlerType(handler_type)
+
+        # Only file handler supports CSV/TSV
+        if handler_type != OutputHandlerType.FILE:
+            if not isinstance(self.format, JsonFormatSettings):
+                self.format = JsonFormatSettings()
+
+        return self
 
     model_config = ConfigDict(
         extra="forbid",
