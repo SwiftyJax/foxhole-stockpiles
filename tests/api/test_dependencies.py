@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from foxhole_stockpiles.api.dependencies import (
+    clear_dependency_caches,
     get_event_bus_dependency,
     get_notification_service,
     get_ocr_coordinator,
@@ -174,3 +175,39 @@ class TestGetOutputCoordinator:
                 mock_coordinator_class.assert_called_once_with(settings=mock_settings_obj)
 
         get_output_coordinator.cache_clear()
+
+
+class TestClearDependencyCaches:
+    """Test suite for clear_dependency_caches function."""
+
+    def test_clear_dependency_caches_shuts_down_notification_service(self) -> None:
+        """Test that clear_dependency_caches calls shutdown on notification service."""
+        # First, populate the notification service cache
+        get_notification_service.cache_clear()
+
+        with patch("foxhole_stockpiles.api.dependencies.get_settings") as mock_settings:
+            with patch("foxhole_stockpiles.api.dependencies.get_event_bus") as mock_event_bus:
+                mock_settings.return_value.notifications.enabled = False
+                mock_event_bus.return_value = EventBus()
+
+                service = get_notification_service()
+
+                # Spy on the shutdown method
+                with patch.object(service, "shutdown") as mock_shutdown:
+                    # Clear caches
+                    clear_dependency_caches()
+
+                    # Verify shutdown was called
+                    mock_shutdown.assert_called_once()
+
+        get_notification_service.cache_clear()
+
+    def test_clear_dependency_caches_handles_empty_cache(self) -> None:
+        """Test that clear_dependency_caches handles case when no cache exists."""
+        # Clear all caches first
+        get_notification_service.cache_clear()
+        get_ocr_coordinator.cache_clear()
+        get_output_coordinator.cache_clear()
+
+        # Should not raise any exception
+        clear_dependency_caches()

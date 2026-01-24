@@ -109,6 +109,17 @@ def clear_dependency_caches() -> None:
     Call this when the server stops to ensure next start picks up fresh settings.
     """
     logger.info("Clearing all dependency caches")
+
+    # Shutdown notification service to unsubscribe event handlers before clearing cache
+    try:
+        # Check if the cache has an entry (service was initialized)
+        cache_info = get_notification_service.cache_info()
+        if cache_info.currsize > 0:
+            notification_service = get_notification_service()
+            notification_service.shutdown()
+    except Exception as e:
+        logger.warning(f"Error shutting down notification service: {e}")
+
     get_icon_service.cache_clear()
     get_catalog_service.cache_clear()
     get_output_coordinator.cache_clear()

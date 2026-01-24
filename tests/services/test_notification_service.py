@@ -284,6 +284,36 @@ class TestShutdown:
         assert len(service.notifiers) == 0
         assert service._initialized is False
 
+    def test_shutdown_unsubscribes_from_event_bus(self) -> None:
+        """Test that shutdown unsubscribes all handlers from the event bus."""
+        discord_config = DiscordNotifierSettings(
+            type=NotifierType.DISCORD,
+            name="Test Discord",
+            webhook_url="https://discord.com/api/webhooks/123/abc",
+            events=[EventType.STOCKPILE_SCANNED, EventType.STOCKPILE_SCAN_FAILED],
+        )
+        settings = NotificationsSettings(enabled=True, notifiers=[discord_config])
+        event_bus = EventBus()
+        service = NotificationService(settings, event_bus=event_bus)
+
+        with patch("foxhole_stockpiles.services.notification_service.DiscordNotifier") as mock_cls:
+            mock_notifier = Mock()
+            mock_notifier.send = AsyncMock()
+            mock_cls.return_value = mock_notifier
+
+            service.initialize()
+
+            # Verify handlers were registered
+            assert len(event_bus._subscribers[EventType.STOCKPILE_SCANNED]) == 1
+            assert len(event_bus._subscribers[EventType.STOCKPILE_SCAN_FAILED]) == 1
+
+        service.shutdown()
+
+        # Verify handlers were unsubscribed
+        assert len(event_bus._subscribers[EventType.STOCKPILE_SCANNED]) == 0
+        assert len(event_bus._subscribers[EventType.STOCKPILE_SCAN_FAILED]) == 0
+        assert len(service._handlers) == 0
+
 
 class TestSendNotification:
     """Test suite for NotificationService.send_notification method."""

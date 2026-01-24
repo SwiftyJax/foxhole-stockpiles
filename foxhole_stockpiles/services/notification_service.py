@@ -26,6 +26,7 @@ class NotificationService:
         self.settings = settings
         self.event_bus = event_bus or get_event_bus()
         self.notifiers: list[BaseNotifier] = []
+        self._handlers: list[tuple[str, Any]] = []  # Track (event_type, handler) for cleanup
         self._initialized = False
 
     def initialize(self) -> None:
@@ -74,6 +75,7 @@ class NotificationService:
         for event_type in event_types:
             handler = self._create_handler(notifier, event_type)
             self.event_bus.subscribe(event_type, handler)
+            self._handlers.append((event_type, handler))  # Track for cleanup
             logger.debug(f"Registered {notifier.name} for event '{event_type}'")
 
     def _create_handler(self, notifier: BaseNotifier, event_type: str) -> Any:
@@ -139,5 +141,11 @@ class NotificationService:
     def shutdown(self) -> None:
         """Shutdown the notification service and cleanup resources."""
         logger.info("Shutting down NotificationService")
+
+        # Unsubscribe all handlers from the event bus
+        for event_type, handler in self._handlers:
+            self.event_bus.unsubscribe(event_type, handler)
+        self._handlers.clear()
+
         self.notifiers.clear()
         self._initialized = False
