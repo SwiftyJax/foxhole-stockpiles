@@ -168,8 +168,8 @@ class TestWebIndex:
         """Test that the page contains scan buttons."""
         response = client.get("/")
 
-        assert "Scan Screenshots" in response.text
-        assert "Send to Server" in response.text
+        assert "Preview Results" in response.text
+        assert "Process with Server" in response.text
 
 
 class TestWebScan:

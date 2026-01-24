@@ -28,13 +28,19 @@
 
             <div id="preview" class="preview-container"></div>
 
-            <div class="btn-group">
-                <button type="submit" name="action" value="scan" class="btn btn-primary" id="scan-btn" {% if db_error %}disabled{% endif %}>
-                    Scan Screenshots
-                </button>
-                <button type="submit" name="action" value="send" class="btn btn-secondary" id="send-btn" {% if db_error %}disabled{% endif %}>
-                    Send to Server
-                </button>
+            <div class="btn-group-vertical">
+                <div class="btn-option">
+                    <button type="submit" name="action" value="scan" class="btn btn-primary" id="scan-btn" {% if db_error %}disabled{% endif %}>
+                        Preview Results
+                    </button>
+                    <span class="btn-description">View results here with optional JSON/TSV download</span>
+                </div>
+                <div class="btn-option">
+                    <button type="submit" name="action" value="send" class="btn btn-secondary" id="send-btn" {% if db_error %}disabled{% endif %}>
+                        Process with Server
+                    </button>
+                    <span class="btn-description">No output here - processed through server pipeline</span>
+                </div>
             </div>
         </form>
     </div>
@@ -215,7 +221,7 @@ function downloadBlob(blob, filename) {
             .then(response => response.text())
             .then(html => {
                 results.innerHTML = html;
-                scanBtn.innerHTML = 'Scan Screenshots';
+                scanBtn.innerHTML = 'Preview Results';
                 scanBtn.disabled = false;
                 sendBtn.disabled = false;
                 // Scroll to results
@@ -223,7 +229,7 @@ function downloadBlob(blob, filename) {
             })
             .catch(error => {
                 results.innerHTML = '<div class="alert alert-error"><span class="alert-icon">!</span><div>Error: ' + error.message + '</div></div>';
-                scanBtn.innerHTML = 'Scan Screenshots';
+                scanBtn.innerHTML = 'Preview Results';
                 scanBtn.disabled = false;
                 sendBtn.disabled = false;
             });

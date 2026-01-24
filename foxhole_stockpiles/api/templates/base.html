@@ -149,6 +149,29 @@
             flex-wrap: wrap;
         }
 
+        .btn-group-vertical {
+            display: flex;
+            gap: 16px;
+        }
+
+        .btn-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 600px) {
+            .btn-group-vertical {
+                flex-direction: column;
+            }
+        }
+
         .btn-sm {
             padding: 4px 10px;
             font-size: 12px;
