@@ -316,9 +316,11 @@ class ServerControlPanel(QWidget):
         """Stop the FastAPI server."""
         logger.info("Stopping server...")
 
-        # Stop server thread
+        # Stop server thread and wait for it to finish (allows lifespan cleanup)
         if self.server_thread:
             self.server_thread.stop()
+            # Wait for server to finish shutdown (including sending notifications)
+            self.server_thread.join(timeout=5.0)
             self.server_thread = None
 
         # Clear all dependency caches so next start picks up fresh settings
