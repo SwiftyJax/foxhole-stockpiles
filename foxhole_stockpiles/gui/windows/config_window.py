@@ -19,10 +19,7 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles.core.settings import reload_settings
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
-from foxhole_stockpiles.core.settings.sections import (
-    NotificationsSettings,
-    StockpileTypesSettings,
-)
+from foxhole_stockpiles.core.settings.sections import NotificationsSettings
 from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.utils.config_manager import ConfigManager
 from foxhole_stockpiles.gui.widgets.config_tabs.api_server_tab import APIServerTab
@@ -33,6 +30,7 @@ from foxhole_stockpiles.gui.widgets.config_tabs.logging_tab import LoggingTab
 from foxhole_stockpiles.gui.widgets.config_tabs.ocr_tab import OCRTab
 from foxhole_stockpiles.gui.widgets.config_tabs.output_tab import OutputTab
 from foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab import ScannerTab
+from foxhole_stockpiles.gui.widgets.config_tabs.stockpile_types_tab import StockpileTypesTab
 from foxhole_stockpiles.gui.widgets.config_tabs.template_tab import TemplateTab
 
 logger = logging.getLogger(__name__)
@@ -89,6 +87,7 @@ class ConfigWindow(QMainWindow):
         self.database_builder_tab = DatabaseBuilderTab()
         self.logging_tab = LoggingTab()
         self.gui_tab = GUITab()
+        self.stockpile_types_tab = StockpileTypesTab()
 
         # Track current config level
         self._current_config_level: ConfigLevel = ConfigLevel.BASIC
@@ -137,6 +136,7 @@ class ConfigWindow(QMainWindow):
 
         # Advanced and Developer tabs
         if level.is_at_least(ConfigLevel.ADVANCED):
+            self.tab_widget.addTab(self.stockpile_types_tab, "Stockpile Types")
             self.tab_widget.addTab(self.external_tools_tab, "External Tools")
             self.tab_widget.addTab(self.database_builder_tab, "Database Builder")
 
@@ -189,6 +189,7 @@ class ConfigWindow(QMainWindow):
         self.database_builder_tab.set_values(self.settings.database_builder)
         self.logging_tab.set_values(self.settings.logging)
         self.gui_tab.set_values(self.settings.gui)
+        self.stockpile_types_tab.set_values(self.settings.stockpile_types)
 
     def collect_settings(self) -> AppSettings:
         """Collect settings from all tabs.
@@ -210,9 +211,7 @@ class ConfigWindow(QMainWindow):
             notifications=(
                 self.settings.notifications if self.settings else NotificationsSettings()
             ),
-            stockpile_types=(
-                self.settings.stockpile_types if self.settings else StockpileTypesSettings()
-            ),
+            stockpile_types=self.stockpile_types_tab.get_values(),
         )
 
     def save_settings(self) -> None:

@@ -144,21 +144,21 @@ def test_config_window_config_level_tabs(qtbot: Any, mock_config_manager: MagicM
     qtbot.addWidget(window)
     assert window.tab_widget.count() == 5
 
-    # Test ADVANCED level (7 tabs: + External Tools, Database Builder)
+    # Test ADVANCED level (8 tabs: + Stockpile Types, External Tools, Database Builder)
     settings.gui = GUISettings(config_level=ConfigLevel.ADVANCED)
     mock_config_manager.load_config.return_value = settings
 
     window2 = ConfigWindow()
     qtbot.addWidget(window2)
-    assert window2.tab_widget.count() == 7
+    assert window2.tab_widget.count() == 8
 
-    # Test DEVELOPER level (9 tabs: + OCR, Templates)
+    # Test DEVELOPER level (10 tabs: + OCR, Templates)
     settings.gui = GUISettings(config_level=ConfigLevel.DEVELOPER)
     mock_config_manager.load_config.return_value = settings
 
     window3 = ConfigWindow()
     qtbot.addWidget(window3)
-    assert window3.tab_widget.count() == 9
+    assert window3.tab_widget.count() == 10
     assert window3.tab_widget.tabText(0) == "API Server"
 
 

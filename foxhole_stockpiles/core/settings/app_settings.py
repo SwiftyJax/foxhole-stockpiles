@@ -30,7 +30,7 @@ class AppSettings(BaseSettings):
     """Application Settings."""
 
     config_version: int = Field(
-        default=3,
+        default=4,
         description="Configuration format version for migration purposes",
     )
     api_server: APIServerSettings = Field(
@@ -97,6 +97,11 @@ class AppSettings(BaseSettings):
         if version == 2:
             data = cls._migrate_v2_to_v3(data)
             data["config_version"] = 3
+            version = 3
+
+        if version == 3:
+            data = cls._migrate_v3_to_v4(data)
+            data["config_version"] = 4
 
         return data
 
@@ -187,6 +192,50 @@ class AppSettings(BaseSettings):
             # Move converter_tool -> umodel
             if "converter_tool" in db_builder:
                 data["external_tools"]["umodel"] = db_builder.pop("converter_tool")
+
+        return data
+
+    @staticmethod
+    def _migrate_v3_to_v4(data: dict[str, Any]) -> dict[str, Any]:
+        """Migrate from v3 to v4 (stockpile_types now only stores additional aliases).
+
+        V3 had: stockpile_types with all translations as defaults (including undefined)
+        V4 has: stockpile_types with only user-added aliases (no undefined field)
+
+        The valid translations are now in the constants module, so we filter
+        out any default translations from the config, keeping only user-added aliases.
+
+        Args:
+            data: V3 configuration data
+
+        Returns:
+            V4 configuration data
+        """
+        if "stockpile_types" not in data or not isinstance(data["stockpile_types"], dict):
+            return data
+
+        # Lazy import to avoid circular dependencies at module load time
+        from foxhole_stockpiles.constants import STOCKPILE_TYPE_TEXTS
+
+        stockpile_types = data["stockpile_types"]
+
+        # Remove the undefined field (no longer valid)
+        stockpile_types.pop("undefined", None)
+
+        # Build mapping from settings field names to default texts
+        # The field names use snake_case, enum values use Title Case
+        field_to_defaults: dict[str, set[str]] = {
+            stockpile_type.name.lower(): set(texts)
+            for stockpile_type, texts in STOCKPILE_TYPE_TEXTS.items()
+            if stockpile_type.name != "UNDEFINED"  # Skip UNDEFINED
+        }
+
+        # Filter out default translations, keeping only user-added aliases
+        for field_name, defaults in field_to_defaults.items():
+            if field_name in stockpile_types and isinstance(stockpile_types[field_name], list):
+                stockpile_types[field_name] = [
+                    alias for alias in stockpile_types[field_name] if alias not in defaults
+                ]
 
         return data
 

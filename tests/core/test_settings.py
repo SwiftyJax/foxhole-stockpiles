@@ -269,36 +269,38 @@ class TestStockpileTypesSettings:
     """Test cases for StockpileTypesSettings."""
 
     def test_stockpile_types_defaults(self) -> None:
-        """Test default stockpile types settings."""
+        """Test default stockpile types settings has empty lists."""
         settings = StockpileTypesSettings()
 
-        # Test some default values
-        assert "Encampment" in settings.encampment
-        assert "Campement" in settings.encampment
-        assert "Keep" in settings.keep
-        assert "Place Forte" in settings.keep
-        assert "Safe House" in settings.safe_house
-        assert "Seaport" in settings.seaport
-        assert "Relic Base" in settings.relic_base
-        assert "Undefined" in settings.undefined
+        # All fields should default to empty lists
+        assert settings.encampment == []
+        assert settings.keep == []
+        assert settings.safe_house == []
+        assert settings.relic_base == []
+        assert settings.bunker_base == []
+        assert settings.border_base == []
+        assert settings.town_base == []
+        assert settings.bms_longhook == []
+        assert settings.storage_depot == []
+        assert settings.seaport == []
 
-    def test_stockpile_types_custom_values(self) -> None:
-        """Test stockpile types with custom values."""
+    def test_stockpile_types_with_aliases(self) -> None:
+        """Test stockpile types with additional aliases."""
         settings = StockpileTypesSettings(
-            encampment=["Custom Encampment"],
-            keep=["Custom Keep"],
-            safe_house=["Custom Safe House"],
-            seaport=["Custom Seaport"],
-            relic_base=["Custom Relic Base"],
-            undefined=["Custom Undefined"],
+            seaport=["seapon", "Seapont"],
+            storage_depot=["Storage Depo"],
         )
 
-        assert settings.encampment == ["Custom Encampment"]
-        assert settings.keep == ["Custom Keep"]
-        assert settings.safe_house == ["Custom Safe House"]
-        assert settings.seaport == ["Custom Seaport"]
-        assert settings.relic_base == ["Custom Relic Base"]
-        assert settings.undefined == ["Custom Undefined"]
+        assert settings.seaport == ["seapon", "Seapont"]
+        assert settings.storage_depot == ["Storage Depo"]
+
+    def test_stockpile_types_extra_fields_forbidden(self) -> None:
+        """Test that extra fields are forbidden."""
+        import pytest
+        from pydantic import ValidationError
+
+        with pytest.raises(ValidationError):
+            StockpileTypesSettings(unknown_field="value")  # type: ignore[call-arg]
 
 
 class TestConfigMigration:
@@ -322,8 +324,8 @@ class TestConfigMigration:
         # Should auto-migrate to v2
         settings = AppSettings(**v1_config)  # type: ignore[arg-type]
 
-        # Verify migration occurred
-        assert settings.config_version == 3
+        # Verify migration occurred (v1 -> v2 -> v3 -> v4)
+        assert settings.config_version == 4
         assert settings.output.destination == OutputDestination.WEBHOOK
         assert settings.output.file.path == "/tmp/output.json"
         assert settings.output.webhook.url == "https://example.com/webhook"
@@ -368,15 +370,15 @@ class TestConfigMigration:
             ):
                 settings = AppSettings(**v2_config)  # type: ignore[arg-type]
 
-        # Should remain v2
-        assert settings.config_version == 3
+        # Should migrate to v4 (v2 -> v3 -> v4)
+        assert settings.config_version == 4
         assert settings.output.destination == OutputDestination.FILE
         assert settings.output.file.path == "/custom/output.json"
 
-    def test_default_config_is_v2(self) -> None:
-        """Test that default config is version 2."""
+    def test_default_config_is_v4(self) -> None:
+        """Test that default config is version 4."""
         settings = AppSettings()
-        assert settings.config_version == 3
+        assert settings.config_version == 4
 
     def test_migrate_v1_to_v2_with_scanner_fields_cleanup(self) -> None:
         """Test migration removes deprecated scanner fields."""
@@ -394,11 +396,11 @@ class TestConfigMigration:
             },
         }
 
-        # Should auto-migrate to v2 and remove deprecated fields
+        # Should auto-migrate to v4 and remove deprecated fields
         settings = AppSettings(**v1_config)  # type: ignore[arg-type]
 
-        # Verify migration occurred
-        assert settings.config_version == 3
+        # Verify migration occurred (v1 -> v2 -> v3 -> v4)
+        assert settings.config_version == 4
         # Verify deprecated fields are not in scanner settings
         assert not hasattr(settings.scanner, "confidence_threshold")
         assert not hasattr(settings.scanner, "confidence_by_resolution")
@@ -411,6 +413,63 @@ class TestConfigMigration:
         # In practice, this should never happen since validators check before calling
         result = AppSettings._apply_migrations(None)  # type: ignore[arg-type]
         assert result is None
+
+    def test_migrate_v3_to_v4_removes_undefined(self) -> None:
+        """Test migration from v3 removes the undefined field from stockpile_types."""
+        v3_config = {
+            "config_version": 3,
+            "stockpile_types": {
+                "seaport": ["custom_alias"],
+                "undefined": ["some_value"],  # Should be removed
+            },
+        }
+
+        settings = AppSettings(**v3_config)  # type: ignore[arg-type]
+
+        assert settings.config_version == 4
+        assert settings.stockpile_types.seaport == ["custom_alias"]
+        # undefined field should not exist on the model
+        assert not hasattr(settings.stockpile_types, "undefined")
+
+    def test_migrate_v3_to_v4_filters_default_translations(self) -> None:
+        """Test migration from v3 filters out default translations, keeping only custom aliases."""
+        v3_config = {
+            "config_version": 3,
+            "stockpile_types": {
+                # Mix of defaults (should be filtered) and custom aliases (should remain)
+                "seaport": ["Seaport", "Port", "seapon", "5eaport"],  # First two are defaults
+                "storage_depot": [
+                    "Storage Depot",
+                    "Dépôt",
+                    "Storage Depo",
+                ],  # First two are defaults
+                "encampment": ["Encampment"],  # Only default, should be empty after migration
+            },
+        }
+
+        settings = AppSettings(**v3_config)  # type: ignore[arg-type]
+
+        assert settings.config_version == 4
+        # Only custom aliases should remain
+        assert settings.stockpile_types.seaport == ["seapon", "5eaport"]
+        assert settings.stockpile_types.storage_depot == ["Storage Depo"]
+        assert settings.stockpile_types.encampment == []
+
+    def test_migrate_v3_to_v4_keeps_only_custom_aliases(self) -> None:
+        """Test migration preserves only user-added custom aliases."""
+        v3_config = {
+            "config_version": 3,
+            "stockpile_types": {
+                "bunker_base": ["Bunker Base", "MyCustomBase", "Base Bunker"],
+                "town_base": ["custom_town"],
+            },
+        }
+
+        settings = AppSettings(**v3_config)  # type: ignore[arg-type]
+
+        assert settings.config_version == 4
+        assert settings.stockpile_types.bunker_base == ["MyCustomBase"]
+        assert settings.stockpile_types.town_base == ["custom_town"]
 
 
 class TestAppSettings:
@@ -469,14 +528,14 @@ class TestAppSettings:
         settings = AppSettings(
             logging=LoggingSettings(log_level="DEBUG", rotate_logs=True),
             ocr=OCRSettings(height=1080, box_width=100),
-            stockpile_types=StockpileTypesSettings(encampment=["Custom Encampment"]),
+            stockpile_types=StockpileTypesSettings(seaport=["seapon"]),
         )
 
         assert settings.logging.log_level == "DEBUG"
         assert settings.logging.rotate_logs is True
         assert settings.ocr.height == 1080
         assert settings.ocr.box_width == 100
-        assert settings.stockpile_types.encampment == ["Custom Encampment"]
+        assert settings.stockpile_types.seaport == ["seapon"]
 
     def test_app_settings_from_environment_variables(self) -> None:
         """Test loading app settings from environment variables."""

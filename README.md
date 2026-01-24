@@ -117,8 +117,12 @@ Launches the PyQt6 graphical user interface for managing configurations and runn
 The GUI uses a tiered configuration system to avoid overwhelming users with advanced options:
 
 - **Basic** (default): Essential settings only - API Server, Scanner, Output, Logging, and GUI tabs. Suitable for most users.
-- **Advanced**: Adds External Tools and Database Builder tabs, plus additional fields like CORS settings, debug mode, log file configuration, and custom loggers.
+- **Advanced**: Adds Stockpile Types, External Tools, and Database Builder tabs, plus additional fields like CORS settings, debug mode, log file configuration, and custom loggers.
 - **Developer**: Full access including OCR and Templates tabs for fine-tuning recognition parameters. Only use this if you understand the impact of these settings.
+
+**Stockpile Types Tab (Advanced):**
+
+The Stockpile Types tab allows you to add custom aliases for stockpile type names to handle OCR errors. For example, if OCR sometimes detects "Seaport" as "seapon", you can add "seapon" as an alias. The default translations for all supported languages are already built-in.
 
 Change the configuration level in the GUI tab within the Configuration window.
 

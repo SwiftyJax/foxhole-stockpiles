@@ -74,3 +74,51 @@ python tools/crate_overlay_calibrator.py --size 35
 5. **Verify**: Check that the preview matches the target colors (Light: R:182, G:179, B:170 / Dark: R:75, G:73, B:69)
 
 The tool displays the transformation formula as: `crate_color = original × multiplier + offset`
+
+## Stockpile Translations Sync
+
+**File:** `sync_stockpile_translations.py`
+
+A tool to extract and verify stockpile type translations from game files. It parses blueprint JSON files to find DisplayName GUIDs, then looks up translations in the game's .locres localization files for all supported languages (en, de, fr, pt, ru, zh).
+
+Use this tool after extracting new game files to verify that the hardcoded translations in `foxhole_stockpiles/constants/stockpile_texts.py` match the official game data.
+
+The tool can also auto-discover new stockpile types by scanning for specific patterns in game files (like `ESimScreen::StorageFacility` for storage depots or `GenericItemStockpileComponent` for bases).
+
+### Requirements
+
+- Extracted game files in `war/War/Content/` directory
+- Project dependencies installed
+
+### Usage
+
+```bash
+# Compare current constants with game files
+python tools/sync_stockpile_translations.py
+
+# Show GUIDs for each stockpile type
+python tools/sync_stockpile_translations.py --show-guids
+
+# Auto-update constants file with official translations
+python tools/sync_stockpile_translations.py --update
+
+# Auto-discover new stockpile types (useful after game updates)
+python tools/sync_stockpile_translations.py --discover
+
+# Use custom game files location
+python tools/sync_stockpile_translations.py --war-dir /path/to/War/Content
+```
+
+### Output
+
+The tool will:
+1. Extract translations from game blueprint and localization files
+2. Compare with current `STOCKPILE_TYPE_TEXTS` constants
+3. Report any missing or extra translations
+4. Optionally update the constants file with `--update`
+
+With `--discover`, the tool will:
+1. Scan all blueprint JSON files for stockpile indicators
+2. Identify structures with storage facility screens or base stockpiles
+3. Report any new stockpile types not in the known list
+4. Show details including file name, GUID, and detection indicators

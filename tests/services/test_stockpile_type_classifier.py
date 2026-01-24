@@ -1,12 +1,13 @@
 """Tests for services.stockpile_type_classifier module.
 
 This module contains comprehensive tests for the StockpileTypeClassifier class,
-which classifies stockpile types from extracted OCR text using translation
-mappings and fuzzy matching for OCR errors.
+which classifies stockpile types from extracted OCR text using hardcoded
+translations and user-configured additional aliases.
 """
 
 from unittest.mock import MagicMock, patch
 
+from foxhole_stockpiles.constants import STOCKPILE_TYPE_TEXTS
 from foxhole_stockpiles.core.settings import AppSettings
 from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
 from foxhole_stockpiles.enums.stockpile_type import StockpileType
@@ -14,11 +15,7 @@ from foxhole_stockpiles.services.stockpile_type_classifier import StockpileTypeC
 
 
 class TestStockpileTypeClassifierInitialization:
-    """Test suite for StockpileTypeClassifier initialization.
-
-    This class contains tests for proper initialization of the StockpileTypeClassifier
-    including settings loading and translation cache setup.
-    """
+    """Test suite for StockpileTypeClassifier initialization."""
 
     def test_init_default(self) -> None:
         """Test initializing StockpileTypeClassifier with default settings."""
@@ -26,16 +23,14 @@ class TestStockpileTypeClassifierInitialization:
             classifier = StockpileTypeClassifier()
 
             assert classifier._type_translations is not None
+            # Should have all hardcoded types
+            assert StockpileType.SEAPORT in classifier._type_translations
+            assert StockpileType.STORAGE_DEPOT in classifier._type_translations
 
-    def test_init_loads_settings(self) -> None:
-        """Test that initialization loads settings and caches translations."""
+    def test_init_includes_hardcoded_texts(self) -> None:
+        """Test that initialization includes all hardcoded texts."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "encampment": ["Encampment", "Campement"],
-            "keep": ["Keep", "Place Forte"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -43,34 +38,49 @@ class TestStockpileTypeClassifierInitialization:
         ):
             classifier = StockpileTypeClassifier()
 
-            assert classifier._type_translations == {
-                "encampment": ["Encampment", "Campement"],
-                "keep": ["Keep", "Place Forte"],
-            }
+            # Verify hardcoded texts are included
+            assert "Seaport" in classifier._type_translations[StockpileType.SEAPORT]
+            assert "Port" in classifier._type_translations[StockpileType.SEAPORT]
+            assert "Storage Depot" in classifier._type_translations[StockpileType.STORAGE_DEPOT]
+
+    def test_init_merges_additional_aliases(self) -> None:
+        """Test that user-configured additional aliases are merged."""
+        mock_settings = MagicMock(spec=AppSettings)
+        mock_settings.stockpile_types = StockpileTypesSettings(
+            seaport=["seapon", "Seapont"],
+            storage_depot=["Storage Depo"],
+        )
+
+        with patch(
+            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            return_value=mock_settings,
+        ):
+            classifier = StockpileTypeClassifier()
+
+            # Verify additional aliases are merged
+            assert "seapon" in classifier._type_translations[StockpileType.SEAPORT]
+            assert "Seapont" in classifier._type_translations[StockpileType.SEAPORT]
+            assert "Storage Depo" in classifier._type_translations[StockpileType.STORAGE_DEPOT]
+            # Original hardcoded texts should still be there
+            assert "Seaport" in classifier._type_translations[StockpileType.SEAPORT]
 
 
 class TestClassifyFromText:
-    """Test suite for StockpileTypeClassifier.classify_from_text method.
-
-    This class contains tests for stockpile type classification from text.
-    """
+    """Test suite for StockpileTypeClassifier.classify_from_text method."""
 
     def test_classify_empty_text(self) -> None:
         """Test classifying empty text returns UNDEFINED."""
-        classifier = StockpileTypeClassifier()
+        with patch("foxhole_stockpiles.services.stockpile_type_classifier.get_settings"):
+            classifier = StockpileTypeClassifier()
 
-        result = classifier.classify_from_text("")
+            result = classifier.classify_from_text("")
 
-        assert result == StockpileType.UNDEFINED
+            assert result == StockpileType.UNDEFINED
 
-    def test_classify_exact_match(self) -> None:
-        """Test classifying with exact translation match."""
+    def test_classify_exact_match_english(self) -> None:
+        """Test classifying with exact English match."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "encampment": ["Encampment", "Campement"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -78,18 +88,14 @@ class TestClassifyFromText:
         ):
             classifier = StockpileTypeClassifier()
 
-            result = classifier.classify_from_text("Encampment")
+            assert classifier.classify_from_text("Seaport") == StockpileType.SEAPORT
+            assert classifier.classify_from_text("Storage Depot") == StockpileType.STORAGE_DEPOT
+            assert classifier.classify_from_text("Encampment") == StockpileType.ENCAMPMENT
 
-            assert result == StockpileType.ENCAMPMENT
-
-    def test_classify_alternative_translation(self) -> None:
-        """Test classifying with alternative translation."""
+    def test_classify_translation_match(self) -> None:
+        """Test classifying with translation match."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "keep": ["Keep", "Place Forte"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -97,18 +103,30 @@ class TestClassifyFromText:
         ):
             classifier = StockpileTypeClassifier()
 
-            result = classifier.classify_from_text("Place Forte")
+            # French
+            assert classifier.classify_from_text("Dépôt") == StockpileType.STORAGE_DEPOT
+            # German
+            assert classifier.classify_from_text("Seehafen") == StockpileType.SEAPORT
 
-            assert result == StockpileType.KEEP
+    def test_classify_with_additional_alias(self) -> None:
+        """Test classifying with user-configured additional alias."""
+        mock_settings = MagicMock(spec=AppSettings)
+        mock_settings.stockpile_types = StockpileTypesSettings(seaport=["seapon"])
+
+        with patch(
+            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            return_value=mock_settings,
+        ):
+            classifier = StockpileTypeClassifier()
+
+            result = classifier.classify_from_text("seapon")
+
+            assert result == StockpileType.SEAPORT
 
     def test_classify_with_whitespace(self) -> None:
         """Test that whitespace is stripped before matching."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "safe_house": ["Safe House"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -116,18 +134,14 @@ class TestClassifyFromText:
         ):
             classifier = StockpileTypeClassifier()
 
-            result = classifier.classify_from_text("  Safe House  ")
+            result = classifier.classify_from_text("  Seaport  ")
 
-            assert result == StockpileType.SAFE_HOUSE
+            assert result == StockpileType.SEAPORT
 
     def test_classify_no_match(self) -> None:
         """Test classifying unrecognized text returns UNDEFINED."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "encampment": ["Encampment"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -139,48 +153,14 @@ class TestClassifyFromText:
 
             assert result == StockpileType.UNDEFINED
 
-    def test_classify_uses_fuzzy_match(self) -> None:
-        """Test that fuzzy matching is attempted when exact match fails."""
-        classifier = StockpileTypeClassifier()
-
-        with (
-            patch.object(classifier, "_find_matching_type", return_value=None),
-            patch.object(
-                classifier,
-                "_fuzzy_match_type",
-                return_value="Storage Depot",
-            ) as mock_fuzzy,
-        ):
-            result = classifier.classify_from_text("Storage Dep0t")  # '0' instead of 'o'
-
-            mock_fuzzy.assert_called_once_with("Storage Dep0t")
-            assert result == StockpileType.STORAGE_DEPOT
-
-    def test_classify_invalid_type_value(self) -> None:
-        """Test handling of invalid type value from translation."""
-        classifier = StockpileTypeClassifier()
-
-        with patch.object(classifier, "_find_matching_type", return_value="InvalidType"):
-            result = classifier.classify_from_text("Some Text")
-
-            assert result == StockpileType.UNDEFINED
-
 
 class TestFindMatchingType:
-    """Test suite for StockpileTypeClassifier._find_matching_type method.
-
-    This class contains tests for exact type matching.
-    """
+    """Test suite for StockpileTypeClassifier._find_matching_type method."""
 
     def test_find_matching_type_found(self) -> None:
         """Test finding exact matching type."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "storage_depot": ["Storage Depot", "Depot"],
-            "seaport": ["Seaport", "Port"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -188,18 +168,14 @@ class TestFindMatchingType:
         ):
             classifier = StockpileTypeClassifier()
 
-            result = classifier._find_matching_type("Depot")
+            result = classifier._find_matching_type("Seaport")
 
-            assert result == "Storage Depot"
+            assert result == StockpileType.SEAPORT
 
     def test_find_matching_type_not_found(self) -> None:
         """Test finding non-existent type returns None."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "encampment": ["Encampment"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -211,14 +187,10 @@ class TestFindMatchingType:
 
             assert result is None
 
-    def test_find_matching_type_returns_canonical(self) -> None:
-        """Test that matching returns the canonical (first) translation."""
+    def test_find_matching_type_returns_stockpile_type(self) -> None:
+        """Test that matching returns a StockpileType enum value."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "seaport": ["Seaport", "Port Maritime", "Hafen"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -226,26 +198,20 @@ class TestFindMatchingType:
         ):
             classifier = StockpileTypeClassifier()
 
-            # Match with alternative translation should return canonical
-            result = classifier._find_matching_type("Hafen")
+            # Match with alternative translation
+            result = classifier._find_matching_type("Port")  # Alternative for Seaport
 
-            assert result == "Seaport"
+            assert result == StockpileType.SEAPORT
+            assert isinstance(result, StockpileType)
 
 
 class TestFuzzyMatchType:
-    """Test suite for StockpileTypeClassifier._fuzzy_match_type method.
+    """Test suite for StockpileTypeClassifier._fuzzy_match_type method."""
 
-    This class contains tests for fuzzy matching with OCR error corrections.
-    """
-
-    def test_fuzzy_match_lowercase_l_to_uppercase_i(self) -> None:
-        """Test fuzzy matching corrects lowercase 'l' to uppercase 'I'."""
+    def test_fuzzy_match_I_to_l(self) -> None:
+        """Test fuzzy matching corrects uppercase 'I' to lowercase 'l'."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "relic_base": ["Relic Base"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -253,53 +219,15 @@ class TestFuzzyMatchType:
         ):
             classifier = StockpileTypeClassifier()
 
-            # OCR might read 'I' as 'l'
-            result = classifier._fuzzy_match_type("Rellc Base")
+            # OCR might read 'l' as 'I' in "Relic Base"
+            result = classifier._fuzzy_match_type("ReIic Base")
 
-            # Should fuzzy match by trying l->I substitution
-            assert result is not None or result is None  # Depends on actual translations
-
-    def test_fuzzy_match_zero_to_o(self) -> None:
-        """Test fuzzy matching corrects '0' to 'O'."""
-        mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "storage_depot": ["Storage Depot"],
-        }
-        mock_settings.stockpile_types = mock_types
-
-        with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
-            return_value=mock_settings,
-        ):
-            classifier = StockpileTypeClassifier()
-
-            # OCR might read 'O' as '0'
-            result = classifier._fuzzy_match_type("St0rage Dep0t")
-
-            # Should try 0->O substitution
-            assert result is not None or result is None
+            assert result == StockpileType.RELIC_BASE
 
     def test_fuzzy_match_tries_multiple_variations(self) -> None:
         """Test that fuzzy matching tries multiple character variations."""
-        classifier = StockpileTypeClassifier()
-
-        with patch.object(classifier, "_find_matching_type") as mock_find:
-            mock_find.return_value = None
-
-            classifier._fuzzy_match_type("Test")
-
-            # Should try at least the original + several variations
-            assert mock_find.call_count >= 2
-
-    def test_fuzzy_match_returns_first_match(self) -> None:
-        """Test that fuzzy matching returns first successful match."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "bunker_base": ["Bunker Base"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -307,20 +235,18 @@ class TestFuzzyMatchType:
         ):
             classifier = StockpileTypeClassifier()
 
-            # OCR might read 'I' as 'l' in "BunIer"
-            result = classifier._fuzzy_match_type("Bunler Base")
+            with patch.object(classifier, "_find_matching_type") as mock_find:
+                mock_find.return_value = None
 
-            # Should match after trying l->I
-            assert result is not None or result is None
+                classifier._fuzzy_match_type("Test")
+
+                # Should try at least the original + several variations
+                assert mock_find.call_count >= 2
 
     def test_fuzzy_match_not_found(self) -> None:
         """Test fuzzy matching returns None when no match found."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "encampment": ["Encampment"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -333,20 +259,31 @@ class TestFuzzyMatchType:
             assert result is None
 
 
+class TestHardcodedTexts:
+    """Test suite for verifying hardcoded stockpile type texts."""
+
+    def test_all_stockpile_types_have_texts(self) -> None:
+        """Test that all StockpileType enum values have hardcoded texts."""
+        for stockpile_type in StockpileType:
+            assert stockpile_type in STOCKPILE_TYPE_TEXTS, (
+                f"Missing hardcoded texts for {stockpile_type}"
+            )
+
+    def test_all_types_have_english_text(self) -> None:
+        """Test that all types have at least one text (English)."""
+        for stockpile_type, texts in STOCKPILE_TYPE_TEXTS.items():
+            assert len(texts) >= 1, f"{stockpile_type} has no texts"
+            # First text should be the English canonical name
+            assert texts[0] == stockpile_type.value
+
+
 class TestRealWorldScenarios:
-    """Test suite for real-world stockpile type classification scenarios.
+    """Test suite for real-world stockpile type classification scenarios."""
 
-    This class contains integration-style tests using realistic OCR output.
-    """
-
-    def test_classify_common_ocr_errors(self) -> None:
-        """Test classification handles common OCR errors."""
+    def test_classify_all_stockpile_types(self) -> None:
+        """Test classification works for all stockpile types."""
         mock_settings = MagicMock(spec=AppSettings)
-        mock_types = MagicMock(spec=StockpileTypesSettings)
-        mock_types.model_dump.return_value = {
-            "town_base": ["Town Base"],
-        }
-        mock_settings.stockpile_types = mock_types
+        mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
             "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
@@ -354,15 +291,32 @@ class TestRealWorldScenarios:
         ):
             classifier = StockpileTypeClassifier()
 
-            # Test various OCR errors
-            test_cases = [
-                "Town Base",  # Correct
-                "T0wn Base",  # 0 instead of o
-                "Town 8ase",  # 8 instead of B
-            ]
+            for stockpile_type in StockpileType:
+                # Use the canonical name
+                result = classifier.classify_from_text(stockpile_type.value)
+                assert result == stockpile_type
 
-            for text in test_cases:
-                result = classifier.classify_from_text(text)
-                # At least the correct one should work
-                if text == "Town Base":
-                    assert result == StockpileType.TOWN_BASE
+    def test_classify_with_ocr_error_and_alias(self) -> None:
+        """Test classification with user-configured OCR error alias."""
+        mock_settings = MagicMock(spec=AppSettings)
+        mock_settings.stockpile_types = StockpileTypesSettings(
+            seaport=["seapon", "Seapont", "5eaport"],
+            storage_depot=["Storage Depo", "Slorage Depot"],
+        )
+
+        with patch(
+            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            return_value=mock_settings,
+        ):
+            classifier = StockpileTypeClassifier()
+
+            # Test OCR error aliases
+            assert classifier.classify_from_text("seapon") == StockpileType.SEAPORT
+            assert classifier.classify_from_text("Seapont") == StockpileType.SEAPORT
+            assert classifier.classify_from_text("5eaport") == StockpileType.SEAPORT
+            assert classifier.classify_from_text("Storage Depo") == StockpileType.STORAGE_DEPOT
+            assert classifier.classify_from_text("Slorage Depot") == StockpileType.STORAGE_DEPOT
+
+            # Original texts should still work
+            assert classifier.classify_from_text("Seaport") == StockpileType.SEAPORT
+            assert classifier.classify_from_text("Storage Depot") == StockpileType.STORAGE_DEPOT
