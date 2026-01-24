@@ -86,6 +86,9 @@ STOCKPILE_TYPE_TEXTS: dict[StockpileType, list[str]] = {
         "Морской порт",
         "海港",
     ],
+    StockpileType.AIRCRAFT_DEPOT: [
+        "Aircraft Depot",
+    ],
     StockpileType.UNDEFINED: [
         "Undefined",
     ],

@@ -80,6 +80,14 @@ STOCKPILE_BLUEPRINTS = {
         "patterns": ["BPTownBase1.json", "BPTownBase2.json", "BPTownBase3.json"],
         "english": "Town Base",
     },
+    StockpileType.AIRCRAFT_DEPOT: {
+        "patterns": ["BPAircraftDepot.json"],
+        "english": "Aircraft Depot",
+    },
+    StockpileType.BMS_LONGHOOK: {
+        "patterns": ["BPLargeShipBaseShip.json"],
+        "english": "BMS - Longhook",
+    },
 }
 
 # Patterns that indicate player-accessible stockpile structures
@@ -119,9 +127,7 @@ EXCLUDE_PATTERNS = [
 ]
 
 # Known English names of stockpile types (for comparison)
-KNOWN_STOCKPILE_NAMES = {config["english"] for config in STOCKPILE_BLUEPRINTS.values()} | {
-    "BMS - Longhook"
-}
+KNOWN_STOCKPILE_NAMES = {config["english"] for config in STOCKPILE_BLUEPRINTS.values()}
 
 
 def find_display_name_guid(json_path: Path) -> tuple[str | None, str | None]:
@@ -212,11 +218,15 @@ def discover_stockpile_structures(war_dir: Path) -> list[dict[str, Any]]:
     return list(discovered.values())
 
 
-def print_discovered_structures(structures: list[dict[str, Any]]) -> None:
+def print_discovered_structures(
+    structures: list[dict[str, Any]],
+    lookup: LocalizationLookup | None = None,
+) -> None:
     """Print discovered stockpile structures.
 
     Args:
         structures: List of discovered structures.
+        lookup: Optional localization lookup for fetching translations.
     """
     known = []
     new = []
@@ -239,6 +249,19 @@ def print_discovered_structures(structures: list[dict[str, Any]]) -> None:
             print(f"    GUID: {struct['guid']}")
             print(f"    Type: {struct['type']}")
             print(f"    Indicators: {struct['indicators']}")
+            # Print translations if lookup is available
+            if lookup and struct["guid"]:
+                translations = {}
+                for lang in SUPPORTED_LANGUAGES:
+                    trans = lookup.get(struct["guid"], language=lang)
+                    if trans:
+                        translations[lang] = trans
+                if translations:
+                    print("    Translations:")
+                    for lang, trans in translations.items():
+                        print(f"      {lang}: {trans}")
+                else:
+                    print("    Translations: (none available)")
             print()
     else:
         print("\nNo new stockpile types detected.")
@@ -287,7 +310,11 @@ def extract_official_translations(
                 if guid and english_text == config["english"]:
                     guids_found[stockpile_type].append(guid)
 
-                    # Get translations for all languages
+                    # Always include the English name from the blueprint
+                    if english_text and english_text not in results[stockpile_type]["en"]:
+                        results[stockpile_type]["en"].append(english_text)
+
+                    # Get translations for all languages from localization files
                     for lang in SUPPORTED_LANGUAGES:
                         trans = lookup.get(guid, language=lang)
                         if trans and trans not in results[stockpile_type][lang]:
@@ -298,16 +325,16 @@ def extract_official_translations(
 
 def compare_translations(
     official: dict[StockpileType, dict[str, list[str]]],
-) -> dict[StockpileType, dict[str, set[str]]]:
+) -> dict[StockpileType, dict[str, set[str] | bool]]:
     """Compare official translations with current constants.
 
     Args:
         official: Official translations from game files.
 
     Returns:
-        Dict with 'missing' and 'extra' sets for each stockpile type.
+        Dict with 'missing', 'extra', and 'no_game_translations' for each stockpile type.
     """
-    differences = {}
+    differences: dict[StockpileType, dict[str, set[str] | bool]] = {}
 
     for stockpile_type, lang_translations in official.items():
         our_texts = set(STOCKPILE_TYPE_TEXTS.get(stockpile_type, []))
@@ -315,13 +342,17 @@ def compare_translations(
         for translations in lang_translations.values():
             official_texts.update(translations)
 
-        missing = official_texts - our_texts
-        extra = our_texts - official_texts
+        # Check if game has no translations at all for this type
+        no_game_translations = len(official_texts) == 0 and len(our_texts) > 0
 
-        if missing or extra:
+        missing = official_texts - our_texts
+        extra = our_texts - official_texts if not no_game_translations else set()
+
+        if missing or extra or no_game_translations:
             differences[stockpile_type] = {
                 "missing": missing,
                 "extra": extra,
+                "no_game_translations": no_game_translations,
             }
 
     return differences
@@ -352,7 +383,7 @@ def print_translations(
                 print(f"  {lang}: {translations}")
 
 
-def print_differences(differences: dict[StockpileType, dict[str, set[str]]]) -> None:
+def print_differences(differences: dict[StockpileType, dict[str, set[str] | bool]]) -> None:
     """Print differences between official and current translations.
 
     Args:
@@ -368,7 +399,9 @@ def print_differences(differences: dict[StockpileType, dict[str, set[str]]]) -> 
 
     for stockpile_type, diff in differences.items():
         print(f"\n{stockpile_type.name}:")
-        if diff["missing"]:
+        if diff.get("no_game_translations"):
+            print("  No translations in game files yet (manually added)")
+        elif diff["missing"]:
             print(f"  MISSING (in game, not in constants): {diff['missing']}")
         if diff["extra"]:
             print(f"  EXTRA (in constants, not in game): {diff['extra']}")
@@ -406,13 +439,6 @@ def generate_updated_constants(
             # Handle UNDEFINED separately
             lines.append(f"    StockpileType.{stockpile_type.name}: [")
             lines.append('        "Undefined",')
-            lines.append("    ],")
-            continue
-
-        if stockpile_type == StockpileType.BMS_LONGHOOK:
-            # BMS_LONGHOOK is not in the blueprints we search
-            lines.append(f"    StockpileType.{stockpile_type.name}: [")
-            lines.append('        "BMS - Longhook",')
             lines.append("    ],")
             continue
 
@@ -482,7 +508,12 @@ def main() -> None:
     if args.discover:
         print("\nScanning for stockpile structures...")
         discovered = discover_stockpile_structures(args.war_dir)
-        print_discovered_structures(discovered)
+        # Create localization lookup for translations
+        localization_dir = args.war_dir / "Localization"
+        lookup = None
+        if localization_dir.exists():
+            lookup = LocalizationLookup(localization_dir)
+        print_discovered_structures(discovered, lookup)
         return
 
     print("\nExtracting translations...")

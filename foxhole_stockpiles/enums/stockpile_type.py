@@ -20,5 +20,6 @@ class StockpileType(StrEnum):
     # Structures (order from the game)
     STORAGE_DEPOT = "Storage Depot"
     SEAPORT = "Seaport"
+    AIRCRAFT_DEPOT = "Aircraft Depot"
 
     UNDEFINED = "Undefined"

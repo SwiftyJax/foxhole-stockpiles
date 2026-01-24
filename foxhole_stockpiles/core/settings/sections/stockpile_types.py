@@ -56,6 +56,10 @@ class StockpileTypesSettings(BaseModel):
         description="Additional aliases for Seaport",
         default_factory=list,
     )
+    aircraft_depot: list[str] = Field(
+        description="Additional aliases for Aircraft Depot",
+        default_factory=list,
+    )
 
     model_config = ConfigDict(
         extra="forbid",

@@ -41,6 +41,7 @@ class StockpileTypeClassifier:
             "bms_longhook": StockpileType.BMS_LONGHOOK,
             "storage_depot": StockpileType.STORAGE_DEPOT,
             "seaport": StockpileType.SEAPORT,
+            "aircraft_depot": StockpileType.AIRCRAFT_DEPOT,
             # Note: UNDEFINED has no user-configurable aliases
         }
 
