@@ -3,6 +3,8 @@
 This module contains the valid texts for each stockpile type, including
 translations for all supported languages. These are the canonical texts
 that appear in the game UI.
+
+Generated/verified by: tools/sync_stockpile_translations.py
 """
 
 from foxhole_stockpiles.enums.stockpile_type import StockpileType
@@ -10,78 +12,85 @@ from foxhole_stockpiles.enums.stockpile_type import StockpileType
 STOCKPILE_TYPE_TEXTS: dict[StockpileType, list[str]] = {
     StockpileType.ENCAMPMENT: [
         "Encampment",
-        "Campement",
         "Feldlager",
+        "Campement",
         "Acampamento",
         "Лагерь",
         "营地",
     ],
     StockpileType.KEEP: [
         "Keep",
-        "Place Forte",
         "Wehrturm",
+        "Place Forte",
         "Torreão",
         "Крепость",
         "要塞",
     ],
     StockpileType.SAFE_HOUSE: [
         "Safe House",
-        "Planque",
         "Unterschlupf",
+        "Planque",
         "Casa Fortificada",
         "Убежище",
         "安全屋",
     ],
     StockpileType.RELIC_BASE: [
         "Relic Base",
-        "Base Relique",
         "Reliktbasis",
+        "Base Relique",
         "Base Relíquia",
         "Реликтовая База",
         "遗迹基地",
     ],
     StockpileType.BUNKER_BASE: [
         "Bunker Base",
-        "Base Bunker",
         "Bunkerbasis",
+        "Base Bunker",
         "Centro do Bunker",
-        "Centro do bunker",
         "Base de Bunker",
+        "Centro do bunker",
         "Бункерная база",
         "Бункерная База",
         "地堡基地",
     ],
     StockpileType.BORDER_BASE: [
         "Border Base",
-        "Base Frontalière",
         "Grenzbasis",
+        "Base Frontalière",
         "Base Fronteiriça",
         "Пограничная База",
         "边境基地",
     ],
     StockpileType.TOWN_BASE: [
         "Town Base",
-        "Quartier Général",
         "Stadtkernbasis",
+        "Quartier Général",
         "Base da Cidade",
         "Ратуша",
         "城镇基地",
+    ],
+    StockpileType.UNDERGROUND_FORTRESS: [
+        "Underground Fortress",
+        "Untergrundfestung",
+        "Forteresse Souterraine",
+        "Bunker Subterrâneo",
+        "地下要塞",
     ],
     StockpileType.BMS_LONGHOOK: [
         "BMS - Longhook",
     ],
     StockpileType.STORAGE_DEPOT: [
         "Storage Depot",
-        "Dépôt",
         "Lagerdepot",
+        "Dépôt",
         "Depósito",
         "Складское помещение",
         "仓库",
     ],
     StockpileType.SEAPORT: [
         "Seaport",
-        "Port",
         "Seehafen",
+        "Port",
         "Porto",
         "Морской порт",
         "海港",

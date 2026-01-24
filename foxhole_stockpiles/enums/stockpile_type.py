@@ -15,6 +15,7 @@ class StockpileType(StrEnum):
     BUNKER_BASE = "Bunker Base"
     BORDER_BASE = "Border Base"
     TOWN_BASE = "Town Base"
+    UNDERGROUND_FORTRESS = "Underground Fortress"
     BMS_LONGHOOK = "BMS - Longhook"
 
     # Structures (order from the game)

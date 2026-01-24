@@ -84,6 +84,10 @@ STOCKPILE_BLUEPRINTS = {
         "patterns": ["BPAircraftDepot.json"],
         "english": "Aircraft Depot",
     },
+    StockpileType.UNDERGROUND_FORTRESS: {
+        "patterns": ["BPFortGarrisonStation.json"],
+        "english": "Underground Fortress",
+    },
     StockpileType.BMS_LONGHOOK: {
         "patterns": ["BPLargeShipBaseShip.json"],
         "english": "BMS - Longhook",
@@ -95,6 +99,7 @@ STOCKPILE_INDICATORS = {
     "storage_facility": "ESimScreen::StorageFacility",
     "base_stockpile": "spawn and stockpile",
     "item_stockpile": "GenericItemStockpileComponent",
+    "generic_stockpile": "GenericStockpileComponent",
     "static_base": "ESpawnPointCategory::StaticBase",
 }
 
@@ -186,9 +191,12 @@ def discover_stockpile_structures(war_dir: Path) -> list[dict[str, Any]]:
             # Must have at least one strong indicator
             # Storage facilities or bases with stockpiles
             is_storage = "storage_facility" in indicators_found
-            is_base = (
-                "base_stockpile" in indicators_found and "item_stockpile" in indicators_found
-            ) or ("static_base" in indicators_found and "item_stockpile" in indicators_found)
+            has_stockpile = (
+                "item_stockpile" in indicators_found or "generic_stockpile" in indicators_found
+            )
+            is_base = ("base_stockpile" in indicators_found and has_stockpile) or (
+                "static_base" in indicators_found and has_stockpile
+            )
 
             if not (is_storage or is_base):
                 continue
