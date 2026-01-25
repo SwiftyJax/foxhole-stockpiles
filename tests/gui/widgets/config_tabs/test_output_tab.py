@@ -396,6 +396,122 @@ class TestOutputTabButtons:
             assert len(output_tab._handlers) == 1
             assert output_tab.handlers_list.count() == 1
 
+    def test_on_move_up_clicked(
+        self,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+        sample_webhook_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test moving a handler up in the list.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+            sample_webhook_handler: Sample webhook handler
+        """
+        output_tab._handlers = [sample_file_handler, sample_webhook_handler]
+        output_tab._update_list()
+        output_tab.handlers_list.setCurrentRow(1)  # Select webhook (second)
+
+        output_tab._on_move_up_clicked()
+
+        # Webhook should now be first
+        assert output_tab._handlers[0].name == "API Webhook"
+        assert output_tab._handlers[1].name == "File Backup"
+        assert output_tab.handlers_list.currentRow() == 0
+
+    def test_on_move_up_clicked_at_top(
+        self,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test move up does nothing when at top of list.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        output_tab._handlers = [sample_file_handler]
+        output_tab._update_list()
+        output_tab.handlers_list.setCurrentRow(0)
+
+        output_tab._on_move_up_clicked()
+
+        # Nothing should change
+        assert len(output_tab._handlers) == 1
+        assert output_tab._handlers[0].name == "File Backup"
+
+    def test_on_move_down_clicked(
+        self,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+        sample_webhook_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test moving a handler down in the list.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+            sample_webhook_handler: Sample webhook handler
+        """
+        output_tab._handlers = [sample_file_handler, sample_webhook_handler]
+        output_tab._update_list()
+        output_tab.handlers_list.setCurrentRow(0)  # Select file (first)
+
+        output_tab._on_move_down_clicked()
+
+        # File should now be second
+        assert output_tab._handlers[0].name == "API Webhook"
+        assert output_tab._handlers[1].name == "File Backup"
+        assert output_tab.handlers_list.currentRow() == 1
+
+    def test_on_move_down_clicked_at_bottom(
+        self,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test move down does nothing when at bottom of list.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+        """
+        output_tab._handlers = [sample_file_handler]
+        output_tab._update_list()
+        output_tab.handlers_list.setCurrentRow(0)
+
+        output_tab._on_move_down_clicked()
+
+        # Nothing should change
+        assert len(output_tab._handlers) == 1
+        assert output_tab._handlers[0].name == "File Backup"
+
+    def test_move_buttons_state(
+        self,
+        output_tab: OutputTab,
+        sample_file_handler: OutputHandlerConfig,
+        sample_webhook_handler: OutputHandlerConfig,
+    ) -> None:
+        """Test move buttons are enabled/disabled correctly.
+
+        Args:
+            output_tab: OutputTab instance
+            sample_file_handler: Sample file handler
+            sample_webhook_handler: Sample webhook handler
+        """
+        output_tab._handlers = [sample_file_handler, sample_webhook_handler]
+        output_tab._update_list()
+
+        # Select first item - up disabled, down enabled
+        output_tab.handlers_list.setCurrentRow(0)
+        assert output_tab.move_up_button.isEnabled() is False
+        assert output_tab.move_down_button.isEnabled() is True
+
+        # Select last item - up enabled, down disabled
+        output_tab.handlers_list.setCurrentRow(1)
+        assert output_tab.move_up_button.isEnabled() is True
+        assert output_tab.move_down_button.isEnabled() is False
+
 
 class TestOutputHandlerDialog:
     """Tests for OutputHandlerDialog."""

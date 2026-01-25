@@ -373,7 +373,7 @@ class OutputTab(QWidget):
         self.handlers_list.itemSelectionChanged.connect(self._update_buttons_state)
         handlers_layout.addWidget(self.handlers_list)
 
-        # Buttons
+        # Buttons row 1: Add, Edit, Remove
         buttons_layout = QHBoxLayout()
 
         self.add_button = QPushButton("Add")
@@ -392,7 +392,37 @@ class OutputTab(QWidget):
         buttons_layout.addWidget(self.remove_button)
 
         buttons_layout.addStretch()
+
+        # Reorder buttons
+        self.move_up_button = QPushButton("▲ Up")
+        self.move_up_button.setToolTip("Move selected handler up in priority")
+        self.move_up_button.clicked.connect(self._on_move_up_clicked)
+        buttons_layout.addWidget(self.move_up_button)
+
+        self.move_down_button = QPushButton("▼ Down")
+        self.move_down_button.setToolTip("Move selected handler down in priority")
+        self.move_down_button.clicked.connect(self._on_move_down_clicked)
+        buttons_layout.addWidget(self.move_down_button)
+
         handlers_layout.addLayout(buttons_layout)
+
+        # Order info label
+        order_info = QLabel(
+            "ℹ️ Handler order matters: The first handler that returns a response "
+            "(return or webhook) will have its data passed back to the client."
+        )
+        order_info.setWordWrap(True)
+        order_info.setStyleSheet(
+            "QLabel { "
+            "color: #2196F3; "
+            "font-size: 11px; "
+            "padding: 5px; "
+            "background-color: palette(alternate-base); "
+            "border: 1px solid #2196F3; "
+            "border-radius: 3px; "
+            "}"
+        )
+        handlers_layout.addWidget(order_info)
 
         layout.addWidget(handlers_group)
         layout.addStretch()
@@ -402,9 +432,12 @@ class OutputTab(QWidget):
 
     def _update_buttons_state(self) -> None:
         """Update button enabled states based on selection."""
-        has_selection = self.handlers_list.currentRow() >= 0
+        row = self.handlers_list.currentRow()
+        has_selection = row >= 0
         self.edit_button.setEnabled(has_selection)
         self.remove_button.setEnabled(has_selection)
+        self.move_up_button.setEnabled(has_selection and row > 0)
+        self.move_down_button.setEnabled(has_selection and row < len(self._handlers) - 1)
 
     def _update_list(self) -> None:
         """Update the handlers list widget."""
@@ -472,6 +505,34 @@ class OutputTab(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             del self._handlers[row]
             self._update_list()
+
+    def _on_move_up_clicked(self) -> None:
+        """Handle move up button click."""
+        row = self.handlers_list.currentRow()
+        if row <= 0:
+            return
+
+        # Swap with previous item
+        self._handlers[row], self._handlers[row - 1] = (
+            self._handlers[row - 1],
+            self._handlers[row],
+        )
+        self._update_list()
+        self.handlers_list.setCurrentRow(row - 1)
+
+    def _on_move_down_clicked(self) -> None:
+        """Handle move down button click."""
+        row = self.handlers_list.currentRow()
+        if row < 0 or row >= len(self._handlers) - 1:
+            return
+
+        # Swap with next item
+        self._handlers[row], self._handlers[row + 1] = (
+            self._handlers[row + 1],
+            self._handlers[row],
+        )
+        self._update_list()
+        self.handlers_list.setCurrentRow(row + 1)
 
     def set_values(self, settings: OutputSettings) -> None:
         """Set widget values from settings.

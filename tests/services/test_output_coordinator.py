@@ -170,7 +170,7 @@ class TestOutputCoordinator:
 
     @pytest.mark.asyncio
     async def test_handle_output_webhook_with_token(self, sample_stockpile: Stockpile) -> None:
-        """Test WEBHOOK handler with token.
+        """Test WEBHOOK handler with token passes through response.
 
         Args:
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
@@ -198,8 +198,8 @@ class TestOutputCoordinator:
             result = await coordinator.handle_output(sample_stockpile, token="override-token")
 
             mock_handle.assert_called_once_with(sample_stockpile, token="override-token")
-            # No return handler, webhook handler result is not returned as "result"
-            assert result is None
+            # Webhook response is now passed through to caller
+            assert result == {"status": "success"}
 
     @pytest.mark.asyncio
     async def test_handle_output_handler_error_continues(self, sample_stockpile: Stockpile) -> None:
@@ -263,3 +263,83 @@ class TestOutputCoordinator:
         # First return handler result is used
         assert isinstance(result, dict)
         assert result["name"] == "Test Stockpile"
+
+    @pytest.mark.asyncio
+    async def test_webhook_first_returns_webhook_response(
+        self, sample_stockpile: Stockpile
+    ) -> None:
+        """Test that webhook response is returned when webhook is first.
+
+        When webhook handler is configured before return handler, the webhook's
+        response should be passed through to the client.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        output_settings = OutputSettings(
+            handlers=[
+                OutputHandlerConfig(
+                    name="Webhook First",
+                    format=JsonFormatSettings(),
+                    handler=WebhookHandlerSettings(
+                        url="https://example.com/webhook",
+                    ),
+                ),
+                OutputHandlerConfig(
+                    name="Return Handler",
+                    format=JsonFormatSettings(),
+                    handler=ReturnHandlerSettings(),
+                ),
+            ]
+        )
+        coordinator = OutputCoordinator(output_settings=output_settings)
+
+        with patch(
+            "foxhole_stockpiles.handlers.webhook.WebhookOutputHandler.handle"
+        ) as mock_webhook:
+            mock_webhook.return_value = {"webhook": "response", "processed": True}
+
+            result = await coordinator.handle_output(sample_stockpile)
+
+            # Webhook response is used because it's first
+            assert result == {"webhook": "response", "processed": True}
+
+    @pytest.mark.asyncio
+    async def test_return_first_ignores_webhook_response(self, sample_stockpile: Stockpile) -> None:
+        """Test that return handler response is used when it's first.
+
+        When return handler is configured before webhook handler, the return
+        handler's response should be passed through (webhook response ignored).
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        output_settings = OutputSettings(
+            handlers=[
+                OutputHandlerConfig(
+                    name="Return Handler",
+                    format=JsonFormatSettings(),
+                    handler=ReturnHandlerSettings(),
+                ),
+                OutputHandlerConfig(
+                    name="Webhook Second",
+                    format=JsonFormatSettings(),
+                    handler=WebhookHandlerSettings(
+                        url="https://example.com/webhook",
+                    ),
+                ),
+            ]
+        )
+        coordinator = OutputCoordinator(output_settings=output_settings)
+
+        with patch(
+            "foxhole_stockpiles.handlers.webhook.WebhookOutputHandler.handle"
+        ) as mock_webhook:
+            mock_webhook.return_value = {"webhook": "response"}
+
+            result = await coordinator.handle_output(sample_stockpile)
+
+            # Return handler response is used because it's first
+            assert isinstance(result, dict)
+            assert result["name"] == "Test Stockpile"
+            assert "webhook" not in result

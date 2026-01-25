@@ -11,7 +11,6 @@ from foxhole_stockpiles.core.settings.sections.output import (
     ReturnHandlerSettings,
     WebhookHandlerSettings,
 )
-from foxhole_stockpiles.enums.output_handler_type import OutputHandlerType
 from foxhole_stockpiles.handlers.base_handler import BaseOutputDestinationHandler
 from foxhole_stockpiles.handlers.console import ConsoleOutputHandler
 from foxhole_stockpiles.handlers.file import FileOutputHandler
@@ -68,16 +67,18 @@ class OutputCoordinator:
     ) -> dict[str, Any] | None:
         """Handle output to all configured handlers.
 
-        Processes all configured handlers. If a 'return' handler is configured,
-        its result will be returned (the first 'return' handler takes precedence).
+        Processes all configured handlers in order. The first handler that returns
+        a non-None result will have its response passed back to the client.
+        Handlers are processed in configuration order, so place the handler whose
+        response should be returned first in the list.
 
         Args:
             stockpile (Stockpile): The stockpile data to output
             **kwargs: Additional handler-specific parameters (e.g., token for webhooks)
 
         Returns:
-            dict[str, Any] | None: Response data from 'return' handler if configured,
-                None otherwise
+            dict[str, Any] | None: Response data from the first handler that returns
+                data, or None if no handler returns data
         """
         result: dict[str, Any] | None = None
         handlers = self.output_settings.handlers
@@ -99,9 +100,13 @@ class OutputCoordinator:
             try:
                 handler_result = await handler.handle(stockpile, **kwargs)
 
-                # Return handler's result becomes the API response
-                if handler_type == OutputHandlerType.RETURN and result is None:
+                # First handler that returns data becomes the API response
+                if handler_result is not None and result is None:
                     result = handler_result
+                    self.logger.debug(
+                        "Handler '%s' response will be returned to client",
+                        handler_config.name,
+                    )
 
             except Exception as e:
                 self.logger.error(
