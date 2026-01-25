@@ -944,6 +944,8 @@ def test_close_event_worker_running_user_declines(
 def test_start_import_invalid_mod_name(qtbot: Any, configured_window: IconImportWindow) -> None:
     """Test start import with invalid mod name.
 
+    Verifies that inputs are re-enabled after validation error so user can fix the mod name.
+
     Args:
         qtbot: PyQt test fixture
         configured_window: Configured window instance
@@ -959,6 +961,14 @@ def test_start_import_invalid_mod_name(qtbot: Any, configured_window: IconImport
         mock_critical.assert_called_once()
         assert "Invalid Mod Name" in str(mock_critical.call_args)
         assert configured_window.import_worker is None
+
+        # Verify inputs are re-enabled so user can fix the error
+        assert configured_window.mod_name_input.isEnabled() is True
+        assert configured_window.workers_spinbox.isEnabled() is True
+        assert configured_window.db_path_input.isEnabled() is True
+        assert configured_window.overwrite_checkbox.isEnabled() is True
+        assert configured_window.start_button.isEnabled() is True
+        assert configured_window.cancel_button.isEnabled() is False
 
 
 def test_clear_vanilla_pak(qtbot: Any, configured_window: IconImportWindow) -> None:

@@ -713,6 +713,15 @@ class IconImportWindow(QMainWindow):
         self.vanilla_browse_button.setEnabled(enabled)
         self.vanilla_clear_button.setEnabled(enabled)
 
+    def _re_enable_inputs(self) -> None:
+        """Re-enable input controls after import completes or fails."""
+        self.start_button.setEnabled(True)
+        self.cancel_button.setEnabled(False)
+        self.mod_name_input.setEnabled(True)
+        self.overwrite_checkbox.setEnabled(True)
+        self.db_path_input.setEnabled(True)
+        self.workers_spinbox.setEnabled(True)
+
     def _update_start_button_state(self) -> None:
         """Update the start button enabled state based on validation results.
 
@@ -841,6 +850,8 @@ class IconImportWindow(QMainWindow):
         except ValueError as e:
             QMessageBox.critical(self, "Invalid Mod Name", str(e))
             logger.error("Invalid mod name: %s", e)
+            # Re-enable inputs so user can fix the error
+            self._re_enable_inputs()
             return
 
         self.import_worker.finished.connect(self.on_import_finished)
@@ -889,12 +900,7 @@ class IconImportWindow(QMainWindow):
         self.append_log(status_log)
 
         # Re-enable inputs
-        self.start_button.setEnabled(True)
-        self.cancel_button.setEnabled(False)
-        self.mod_name_input.setEnabled(True)
-        self.overwrite_checkbox.setEnabled(True)
-        self.db_path_input.setEnabled(True)
-        self.workers_spinbox.setEnabled(True)
+        self._re_enable_inputs()
 
         # Emit signal when database was successfully updated
         if success and hasattr(self, "_current_import_db_path"):
