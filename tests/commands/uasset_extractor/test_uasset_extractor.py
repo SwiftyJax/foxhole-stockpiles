@@ -1524,7 +1524,8 @@ class TestWSLPathConversion:
             converter_tool=str(converter_tool),
         )
 
-        assert extractor._tools_are_windows is True
+        assert extractor._extractor_is_windows is True
+        assert extractor._converter_is_windows is True
 
     def test_detect_linux_tools(self, tmp_path: Path) -> None:
         """Test detection of Linux/native tools without .exe extension.
@@ -1551,7 +1552,8 @@ class TestWSLPathConversion:
             converter_tool=str(converter_tool),
         )
 
-        assert extractor._tools_are_windows is False
+        assert extractor._extractor_is_windows is False
+        assert extractor._converter_is_windows is False
 
     def test_detect_windows_tools_with_mnt_paths(self, tmp_path: Path) -> None:
         """Test detection of Windows tools in /mnt/ paths.
@@ -1569,7 +1571,8 @@ class TestWSLPathConversion:
                 converter_tool="/mnt/c/tools/umodel.exe",
             )
 
-            assert extractor._tools_are_windows is True
+            assert extractor._extractor_is_windows is True
+            assert extractor._converter_is_windows is True
 
     @patch("builtins.open", side_effect=FileNotFoundError)
     def test_get_wsl_temp_dir_not_in_wsl(self, mock_open: Mock) -> None:
@@ -1772,7 +1775,8 @@ class TestWSLPathConversion:
         )
 
         # Verify Linux tools are detected
-        assert extractor._tools_are_windows is False
+        assert extractor._extractor_is_windows is False
+        assert extractor._converter_is_windows is False
 
         # Mock subprocess to capture command
         with patch("asyncio.create_subprocess_exec") as mock_subprocess:
@@ -1867,8 +1871,8 @@ class TestWSLPathConversion:
         )
 
         # Verify Linux tools are detected (which affects path format in convert)
-        assert extractor._tools_are_windows is False
-        # This test covers line 360-361 where _tools_are_windows is False
+        assert extractor._extractor_is_windows is False
+        assert extractor._converter_is_windows is False
 
     async def test_try_convert_with_version_process_cleanup(self, tmp_path: Path) -> None:
         """Test _try_convert_with_version cleans up process on error.

@@ -128,7 +128,7 @@ class PakExtractor:
         self.output_dir.mkdir(parents=True, exist_ok=True)
 
         # Detect if tools are Windows executables (need path conversion in WSL)
-        self._tools_are_windows = self._detect_windows_tools()
+        self._extractor_is_windows, self._converter_is_windows = self._detect_windows_tools()
 
     @staticmethod
     async def validate_required_assets(
@@ -241,11 +241,11 @@ class PakExtractor:
 
         return result
 
-    def _detect_windows_tools(self) -> bool:
+    def _detect_windows_tools(self) -> tuple[bool, bool]:
         """Detect if the tools are Windows executables.
 
         Returns:
-            bool: True if tools are Windows executables (.exe), False otherwise
+            tuple[bool, bool]: (extractor_is_windows, converter_is_windows)
         """
         # Check if tools have .exe extension or are in Windows paths
         extractor_is_windows = str(self.extractor_tool).lower().endswith(".exe") or str(
@@ -255,14 +255,21 @@ class PakExtractor:
             self.converter_tool
         ).startswith("/mnt/")
 
-        is_windows = extractor_is_windows and converter_is_windows
-
-        if is_windows:
-            self._logger.info("Detected Windows tools - will convert paths for WSL compatibility")
+        if extractor_is_windows:
+            self._logger.info(
+                "Detected Windows extractor - will convert paths for WSL compatibility"
+            )
         else:
-            self._logger.info("Detected Linux/native tools - using paths as-is")
+            self._logger.info("Detected Linux/native extractor - using paths as-is")
 
-        return is_windows
+        if converter_is_windows:
+            self._logger.info(
+                "Detected Windows converter - will convert paths for WSL compatibility"
+            )
+        else:
+            self._logger.info("Detected Linux/native converter - using paths as-is")
+
+        return extractor_is_windows, converter_is_windows
 
     @staticmethod
     def _get_wsl_temp_dir() -> str | None:
@@ -376,8 +383,8 @@ class PakExtractor:
             pak_name = Path(pak_file).stem
             pak_extract_dir = Path(temp_dir) / pak_name
 
-            # Convert paths to Windows format if using Windows tools in WSL
-            if self._tools_are_windows:
+            # Convert paths to Windows format if using Windows extractor in WSL
+            if self._extractor_is_windows:
                 pak_file_str = self._convert_wsl_path_to_windows(pak_file)
                 output_dir_str = self._convert_wsl_path_to_windows(pak_extract_dir)
                 # Ensure output directory ends with backslash for Windows
@@ -489,8 +496,8 @@ class PakExtractor:
                 self._logger.error("Could not find extracted file: %s", file_path)
                 return False
 
-            # Convert paths to Windows format if using Windows tools in WSL
-            if self._tools_are_windows:
+            # Convert paths to Windows format if using Windows converter in WSL
+            if self._converter_is_windows:
                 pak_root_dir_str = self._convert_wsl_path_to_windows(pak_root_dir)
                 output_dir_str = pak_root_dir_str.rstrip("\\") + "\\War\\Content\\"
             else:
@@ -625,9 +632,9 @@ class PakExtractor:
             max_workers = multiprocessing.cpu_count()
             self._logger.info("Using %d workers based on CPU count", max_workers)
 
-        # Get Windows-accessible temp directory if using Windows tools in WSL
+        # Get Windows-accessible temp directory if using any Windows tools in WSL
         wsl_temp_base = None
-        if self._tools_are_windows:
+        if self._extractor_is_windows or self._converter_is_windows:
             wsl_temp_base = self._get_wsl_temp_dir()
             if wsl_temp_base:
                 self._logger.info(
