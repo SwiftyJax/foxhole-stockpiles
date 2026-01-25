@@ -408,12 +408,17 @@ class TemplateGenerator:
 
         # Create output directories for this item
         normal_output_dir = self.template_path / code_name
-        crated_output_dir = self.template_path / f"{code_name}_crated"
         normal_output_dir.mkdir(exist_ok=True)
-        crated_output_dir.mkdir(exist_ok=True)
+
+        # Only create crated directory for cratable items
+        crated_output_dir = None
+        if item.cratable:
+            crated_output_dir = self.template_path / f"{code_name}_crated"
+            crated_output_dir.mkdir(exist_ok=True)
 
         success_count = 0
-        total_expected = len(SupportedResolution) * 2  # 2 variants per resolution
+        # 2 variants per resolution if cratable, 1 otherwise
+        total_expected = len(SupportedResolution) * (2 if item.cratable else 1)
 
         # Generate templates for each resolution
         for resolution in SupportedResolution:
@@ -432,20 +437,21 @@ class TemplateGenerator:
                 success_count += 1
                 logger.debug("Saved: %s", normal_path)
 
-                # Create and save crated version
-                if self.crate_icon is None:
-                    raise RuntimeError("Crate icon not loaded")
-                crated_icon = self._add_subicon(
-                    main_icon=base_icon,
-                    subicon=self.crate_icon,
-                    target_size=icon_size,
-                    top_left=False,
-                )
-                crated_filename = f"{mod_name}_{code_name}_crated_{icon_size}.png"
-                crated_path = crated_output_dir / crated_filename
-                await asyncio.to_thread(cv2.imwrite, str(crated_path), crated_icon)
-                success_count += 1
-                logger.debug("Saved: %s", crated_path)
+                # Create and save crated version only for cratable items
+                if item.cratable and crated_output_dir is not None:
+                    if self.crate_icon is None:
+                        raise RuntimeError("Crate icon not loaded")
+                    crated_icon = self._add_subicon(
+                        main_icon=base_icon,
+                        subicon=self.crate_icon,
+                        target_size=icon_size,
+                        top_left=False,
+                    )
+                    crated_filename = f"{mod_name}_{code_name}_crated_{icon_size}.png"
+                    crated_path = crated_output_dir / crated_filename
+                    await asyncio.to_thread(cv2.imwrite, str(crated_path), crated_icon)
+                    success_count += 1
+                    logger.debug("Saved: %s", crated_path)
 
                 logger.debug(
                     "Generated templates for %s from %s at %dpx", code_name, mod_name, icon_size

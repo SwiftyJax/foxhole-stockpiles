@@ -21,6 +21,10 @@ class CatalogItem(BaseModel):
     )
     icon_path: str = Field(description="Path to the icon image file", default="")
     subicon_path: str = Field(description="Path to the subicon image file", default="")
+    cratable: bool = Field(
+        description="Whether this item can appear in crate form in stockpiles",
+        default=True,
+    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -52,9 +56,35 @@ class CatalogItem(BaseModel):
                 category=cls._determine_item_type(item),
                 icon_path=item.get("Icon", ""),
                 subicon_path=item.get("SubTypeIcon", ""),
+                cratable=cls._can_be_crated(item),
             )
         except (ValueError, KeyError, TypeError):
             return None
+
+    @staticmethod
+    def _can_be_crated(item: dict[str, Any]) -> bool:
+        """Determine if an item can appear in crate form in stockpiles.
+
+        Items with ItemProfileData use bIsCratable field.
+        Vehicles/Structures use MassProductionFactory in ProductionCategories.
+
+        Args:
+            item (dict[str, Any]): Item definition from catalog.
+
+        Returns:
+            bool: True if the item can be crated.
+        """
+        # Items: check bIsCratable in ItemProfileData
+        profile = item.get("ItemProfileData")
+        if profile:
+            return bool(profile.get("bIsCratable", False))
+
+        # Vehicles/Structures: check if MassProductionFactory exists
+        prod_cats = item.get("ProductionCategories", {})
+        if "MassProductionFactory" in prod_cats:
+            return True
+
+        return False
 
     @staticmethod
     def _determine_item_type(item: dict[str, Any]) -> ItemCategory:

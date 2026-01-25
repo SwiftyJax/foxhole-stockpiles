@@ -155,3 +155,97 @@ class TestDetermineItemType:
         }
         result = CatalogItem._determine_item_type(item_data)
         assert result == ItemCategory.Shippable
+
+
+class TestCanBeCrated:
+    """Test suite for _can_be_crated static method.
+
+    This class contains tests for the static method that determines
+    whether an item can appear in crate form in stockpiles.
+    """
+
+    def test_item_cratable_true(self) -> None:
+        """Test item with bIsCratable=True."""
+        item_data = {
+            "ItemProfileData": {"bIsCratable": True},
+        }
+        assert CatalogItem._can_be_crated(item_data) is True
+
+    def test_item_cratable_false(self) -> None:
+        """Test item with bIsCratable=False."""
+        item_data = {
+            "ItemProfileData": {"bIsCratable": False},
+        }
+        assert CatalogItem._can_be_crated(item_data) is False
+
+    def test_item_cratable_missing_defaults_false(self) -> None:
+        """Test item with ItemProfileData but missing bIsCratable."""
+        item_data = {
+            "ItemProfileData": {"OtherField": "value"},
+        }
+        assert CatalogItem._can_be_crated(item_data) is False
+
+    def test_vehicle_with_mpf(self) -> None:
+        """Test vehicle with MassProductionFactory is cratable."""
+        item_data = {
+            "VehicleProfileType": "Tank",
+            "ProductionCategories": {"MassProductionFactory": {"Cost": 100}},
+        }
+        assert CatalogItem._can_be_crated(item_data) is True
+
+    def test_vehicle_without_mpf(self) -> None:
+        """Test vehicle without MassProductionFactory is not cratable."""
+        item_data = {
+            "VehicleProfileType": "Tank",
+            "ProductionCategories": {"Factory": {"Cost": 100}},
+        }
+        assert CatalogItem._can_be_crated(item_data) is False
+
+    def test_empty_dict_not_cratable(self) -> None:
+        """Test empty dictionary is not cratable."""
+        item_data: dict[str, Any] = {}
+        assert CatalogItem._can_be_crated(item_data) is False
+
+    def test_from_catalog_sets_cratable_for_item(self) -> None:
+        """Test that from_catalog correctly sets cratable field for items."""
+        catalog_data = {
+            "CodeName": "Rifle",
+            "ItemCategory": "Weapon",
+            "ItemProfileData": {"bIsCratable": True},
+            "Icon": "icons/rifle.png",
+        }
+        item = CatalogItem.from_catalog(catalog_data)
+        assert item is not None
+        assert item.cratable is True
+
+        catalog_data_not_cratable = {
+            "CodeName": "RawMaterial",
+            "ItemCategory": "Resource",
+            "ItemProfileData": {"bIsCratable": False},
+            "Icon": "icons/material.png",
+        }
+        item2 = CatalogItem.from_catalog(catalog_data_not_cratable)
+        assert item2 is not None
+        assert item2.cratable is False
+
+    def test_from_catalog_sets_cratable_for_vehicle(self) -> None:
+        """Test that from_catalog correctly sets cratable field for vehicles."""
+        catalog_data = {
+            "CodeName": "Tank",
+            "VehicleProfileType": "MediumTank",
+            "ProductionCategories": {"MassProductionFactory": {}},
+            "Icon": "icons/tank.png",
+        }
+        item = CatalogItem.from_catalog(catalog_data)
+        assert item is not None
+        assert item.cratable is True
+
+        catalog_data_not_cratable = {
+            "CodeName": "FacilityTank",
+            "VehicleProfileType": "MediumTank",
+            "ProductionCategories": {"Factory": {}},
+            "Icon": "icons/tank.png",
+        }
+        item2 = CatalogItem.from_catalog(catalog_data_not_cratable)
+        assert item2 is not None
+        assert item2.cratable is False

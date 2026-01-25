@@ -981,6 +981,65 @@ class TestTemplateGeneratorMethods:
         assert (generator.template_path / "TestRifle").exists()
         assert (generator.template_path / "TestRifle_crated").exists()
 
+    @patch("cv2.imwrite")
+    async def test_generate_templates_skips_crated_for_non_cratable_items(
+        self,
+        mock_imwrite: Mock,
+        generator: TemplateGenerator,
+        tmp_path: Path,
+    ) -> None:
+        """Test that crated templates are not generated for non-cratable items.
+
+        Args:
+            mock_imwrite (Mock): Mocked cv2.imwrite function.
+            generator (TemplateGenerator): TemplateGenerator instance from fixture.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Create test icon file
+        icon_path = "War/Content/test_material"
+        full_path = generator.assets_path / "vanilla" / f"{icon_path}.png"
+        full_path.parent.mkdir(parents=True, exist_ok=True)
+        full_path.touch()
+
+        # Mock crate icon
+        generator.crate_icon = np.ones((64, 64, 4), dtype=np.uint8)
+
+        # Mock PIL Image loading
+        mock_img = MagicMock()
+        mock_rgba = MagicMock()
+        mock_rgba_array = np.ones((64, 64, 4), dtype=np.uint8) * 128
+        mock_img.convert = MagicMock(return_value=mock_rgba)
+
+        # Create context manager mock properly
+        mock_cm = MagicMock()
+        mock_cm.__enter__ = MagicMock(return_value=mock_img)
+        mock_cm.__exit__ = MagicMock(return_value=None)
+
+        mock_imwrite.return_value = True
+
+        # Create catalog item with cratable=False
+        catalog_item = CatalogItem(
+            code="RawMaterial",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            icon_path=icon_path,
+            subicon_path="",
+            cratable=False,
+        )
+
+        with patch("PIL.Image.open", return_value=mock_cm):
+            with patch("numpy.array", return_value=mock_rgba_array):
+                result = await generator._generate_templates_for_item_and_mod(
+                    item=catalog_item, mod_name="vanilla"
+                )
+
+        # Should succeed
+        assert result is True
+
+        # Verify only normal output directory was created (not crated)
+        assert (generator.template_path / "RawMaterial").exists()
+        assert not (generator.template_path / "RawMaterial_crated").exists()
+
 
 class TestMainFunction:
     """Test suite for the main CLI function.
