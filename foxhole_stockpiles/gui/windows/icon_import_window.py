@@ -144,6 +144,23 @@ class IconImportWindow(QMainWindow):
         mod_pak_layout = QVBoxLayout()
         mod_pak_group.setLayout(mod_pak_layout)
 
+        # Warning about single mod only
+        mod_warning = QLabel(
+            "⚠️ Select PAK files from ONE mod only. Do not mix PAK files from different mods "
+            "(e.g., vanilla + another mod) - this will produce incorrect results."
+        )
+        mod_warning.setWordWrap(True)
+        mod_warning.setStyleSheet(
+            "QLabel { "
+            "border: 2px solid #FF9800; "
+            "border-radius: 4px; "
+            "padding: 6px; "
+            "font-size: 11px; "
+            "background-color: palette(alternate-base); "
+            "}"
+        )
+        mod_pak_layout.addWidget(mod_warning)
+
         # Mod PAK file list
         self.mod_pak_list_widget = QListWidget()
         self.mod_pak_list_widget.setAcceptDrops(True)
