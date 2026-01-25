@@ -1,18 +1,16 @@
-#!/usr/bin/env python3
-"""Visual template database browser with filtering and zoom capabilities."""
+"""Database visualizer window for browsing template database."""
 
-import argparse
 import asyncio
-import sys
+import logging
 from pathlib import Path
 
 import cv2
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QImage, QPixmap
 from PyQt6.QtWidgets import (
-    QApplication,
     QCheckBox,
     QComboBox,
+    QDialog,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -20,7 +18,6 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
-    QMainWindow,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -36,6 +33,8 @@ from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.services.template_database import TemplateDatabase
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
+logger = logging.getLogger(__name__)
+
 
 class DatabaseLoader(QThread):
     """Thread for loading all databases in background."""
@@ -43,11 +42,11 @@ class DatabaseLoader(QThread):
     finished = pyqtSignal(object)  # all_databases_dict
     error = pyqtSignal(str)
 
-    def __init__(self, database_path: Path) -> None:
+    def __init__(self, database_path: str) -> None:
         """Initialize the database loader.
 
         Args:
-            database_path: Path to the database file to load.
+            database_path (str): Path to the database file to load.
         """
         super().__init__()
         self.database_path = database_path
@@ -61,7 +60,8 @@ class DatabaseLoader(QThread):
         """
         try:
             # Create TemplateManager and load all resolutions
-            manager = TemplateManager(database_path=self.database_path)
+            db_path = Path(self.database_path)
+            manager = TemplateManager(database_path=db_path)
 
             # Load all resolutions using TemplateManager (runs async in sync context)
             all_databases = asyncio.run(manager.load_all_resolutions())
@@ -69,19 +69,21 @@ class DatabaseLoader(QThread):
             self.finished.emit(all_databases)
 
         except Exception as e:
+            logger.exception("Failed to load databases")
             self.error.emit(str(e))
 
 
-class TemplateBrowser(QMainWindow):
-    """Main window for browsing template database."""
+class DatabaseVisualizerWindow(QDialog):
+    """Window for browsing and visualizing template database."""
 
-    def __init__(self, database_path: Path) -> None:
-        """Initialize the template browser.
+    def __init__(self, parent: QWidget | None = None, database_path: str | None = None) -> None:
+        """Initialize the database visualizer window.
 
         Args:
-            database_path: Path to the database file to load.
+            parent (QWidget | None): Parent widget.
+            database_path (str | None): Path to the database file to load.
         """
-        super().__init__()
+        super().__init__(parent)
         self.database_path = database_path
         self.all_databases: dict[SupportedResolution, TemplateDatabase] = {}
         self.current_resolution: SupportedResolution | None = None
@@ -91,36 +93,40 @@ class TemplateBrowser(QMainWindow):
         self.loader_thread: DatabaseLoader | None = None
 
         self.init_ui()
-        self.load_databases()
+
+        if database_path:
+            self.load_databases()
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Template Database Browser")
-        self.setGeometry(100, 100, 1400, 800)
-
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        self.setWindowTitle("Template Database Visualizer")
+        self.setMinimumSize(1200, 700)
+        self.resize(1400, 800)
 
         # Main layout
-        main_layout = QHBoxLayout(central_widget)
+        main_layout = QHBoxLayout(self)
 
         # Create splitter for resizable panels
         splitter = QSplitter(Qt.Orientation.Horizontal)
         main_layout.addWidget(splitter)
 
         # Left panel - filters and list
-        left_panel = self.create_left_panel()
+        left_panel = self._create_left_panel()
         splitter.addWidget(left_panel)
 
         # Right panel - image display
-        right_panel = self.create_right_panel()
+        right_panel = self._create_right_panel()
         splitter.addWidget(right_panel)
 
         # Set initial splitter proportions (30% left, 70% right)
         splitter.setSizes([400, 1000])
 
-    def create_left_panel(self) -> QWidget:
-        """Create the left panel with filters and template list."""
+    def _create_left_panel(self) -> QWidget:
+        """Create the left panel with filters and template list.
+
+        Returns:
+            QWidget: The left panel widget.
+        """
         panel = QWidget()
         layout = QVBoxLayout(panel)
 
@@ -132,14 +138,14 @@ class TemplateBrowser(QMainWindow):
         filters_layout.addWidget(QLabel("Resolution:"), 0, 0)
         self.resolution_filter = QComboBox()
         self.resolution_filter.addItem("Loading...", None)
-        self.resolution_filter.currentTextChanged.connect(self.on_resolution_changed)
+        self.resolution_filter.currentTextChanged.connect(self._on_resolution_changed)
         filters_layout.addWidget(self.resolution_filter, 0, 1)
 
         # Code filter
         filters_layout.addWidget(QLabel("Code:"), 1, 0)
         self.code_filter = QLineEdit()
         self.code_filter.setPlaceholderText("Enter item code...")
-        self.code_filter.textChanged.connect(self.apply_filters)
+        self.code_filter.textChanged.connect(self._apply_filters)
         filters_layout.addWidget(self.code_filter, 1, 1)
 
         # Faction filter
@@ -148,7 +154,7 @@ class TemplateBrowser(QMainWindow):
         self.faction_filter.addItem("All", None)
         for faction in ItemFaction:
             self.faction_filter.addItem(faction.value, faction)
-        self.faction_filter.currentTextChanged.connect(self.apply_filters)
+        self.faction_filter.currentTextChanged.connect(self._apply_filters)
         filters_layout.addWidget(self.faction_filter, 2, 1)
 
         # Category filter
@@ -157,14 +163,14 @@ class TemplateBrowser(QMainWindow):
         self.category_filter.addItem("All", None)
         for category in ItemCategory:
             self.category_filter.addItem(category.value, category)
-        self.category_filter.currentTextChanged.connect(self.apply_filters)
+        self.category_filter.currentTextChanged.connect(self._apply_filters)
         filters_layout.addWidget(self.category_filter, 3, 1)
 
         # Mod filter
         filters_layout.addWidget(QLabel("Mod:"), 4, 0)
         self.mod_filter = QComboBox()
         self.mod_filter.addItem("All", "")
-        self.mod_filter.currentTextChanged.connect(self.apply_filters)
+        self.mod_filter.currentTextChanged.connect(self._apply_filters)
         filters_layout.addWidget(self.mod_filter, 4, 1)
 
         # Crated filter
@@ -174,9 +180,9 @@ class TemplateBrowser(QMainWindow):
         self.crated_normal = QCheckBox("Normal")
         self.crated_crated = QCheckBox("Crated")
         self.crated_all.setChecked(True)
-        self.crated_all.toggled.connect(self.on_crated_all_toggled)
-        self.crated_normal.toggled.connect(self.apply_filters)
-        self.crated_crated.toggled.connect(self.apply_filters)
+        self.crated_all.toggled.connect(self._on_crated_all_toggled)
+        self.crated_normal.toggled.connect(self._apply_filters)
+        self.crated_crated.toggled.connect(self._apply_filters)
         crated_layout.addWidget(self.crated_all)
         crated_layout.addWidget(self.crated_normal)
         crated_layout.addWidget(self.crated_crated)
@@ -184,7 +190,7 @@ class TemplateBrowser(QMainWindow):
 
         # Clear filters button
         clear_button = QPushButton("Clear Filters")
-        clear_button.clicked.connect(self.clear_filters)
+        clear_button.clicked.connect(self._clear_filters)
         filters_layout.addWidget(clear_button, 6, 0, 1, 2)
 
         layout.addWidget(filters_group)
@@ -195,18 +201,22 @@ class TemplateBrowser(QMainWindow):
         layout.addWidget(self.progress_bar)
 
         # Results count
-        self.results_label = QLabel("Loading...")
+        self.results_label = QLabel("Select a database to load")
         layout.addWidget(self.results_label)
 
         # Template list
         self.template_list = QListWidget()
-        self.template_list.itemClicked.connect(self.on_template_selected)
+        self.template_list.itemClicked.connect(self._on_template_selected)
         layout.addWidget(self.template_list)
 
         return panel
 
-    def create_right_panel(self) -> QWidget:
-        """Create the right panel for image display."""
+    def _create_right_panel(self) -> QWidget:
+        """Create the right panel for image display.
+
+        Returns:
+            QWidget: The right panel widget.
+        """
         panel = QWidget()
         layout = QVBoxLayout(panel)
 
@@ -215,7 +225,8 @@ class TemplateBrowser(QMainWindow):
         self.info_label.setFont(QFont("Arial", 10))
         self.info_label.setWordWrap(True)
         self.info_label.setStyleSheet(
-            "QLabel { background-color: #f0f0f0; padding: 10px; border: 1px solid #ccc; }"
+            "QLabel { background-color: palette(alternate-base); padding: 10px; "
+            "border: 1px solid palette(mid); }"
         )
         layout.addWidget(self.info_label)
 
@@ -231,7 +242,7 @@ class TemplateBrowser(QMainWindow):
         self.current_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.current_image.setMinimumHeight(200)
         self.current_image.setStyleSheet(
-            "QLabel { border: 1px solid #ccc; background-color: white; }"
+            "QLabel { border: 1px solid palette(mid); background-color: palette(base); }"
         )
         current_scroll.setWidget(self.current_image)
         current_scroll.setWidgetResizable(True)
@@ -246,7 +257,7 @@ class TemplateBrowser(QMainWindow):
         self.highest_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.highest_image.setMinimumHeight(200)
         self.highest_image.setStyleSheet(
-            "QLabel { border: 1px solid #ccc; background-color: white; }"
+            "QLabel { border: 1px solid palette(mid); background-color: palette(base); }"
         )
         highest_scroll.setWidget(self.highest_image)
         highest_scroll.setWidgetResizable(True)
@@ -257,14 +268,18 @@ class TemplateBrowser(QMainWindow):
 
         return panel
 
-    def on_crated_all_toggled(self, checked: bool) -> None:
-        """Handle 'All' crated checkbox toggle."""
+    def _on_crated_all_toggled(self, checked: bool) -> None:
+        """Handle 'All' crated checkbox toggle.
+
+        Args:
+            checked (bool): Whether the checkbox is checked.
+        """
         if checked:
             self.crated_normal.setChecked(False)
             self.crated_crated.setChecked(False)
-        self.apply_filters()
+        self._apply_filters()
 
-    def clear_filters(self) -> None:
+    def _clear_filters(self) -> None:
         """Clear all filters."""
         self.code_filter.clear()
         self.faction_filter.setCurrentIndex(0)
@@ -274,7 +289,7 @@ class TemplateBrowser(QMainWindow):
         self.crated_normal.setChecked(False)
         self.crated_crated.setChecked(False)
 
-    def on_resolution_changed(self) -> None:
+    def _on_resolution_changed(self) -> None:
         """Handle resolution change."""
         resolution = self.resolution_filter.currentData()
         if resolution and resolution in self.all_databases:
@@ -283,7 +298,7 @@ class TemplateBrowser(QMainWindow):
             self.all_templates = list(enumerate(self.database.templates))
 
             # Update window title
-            self.setWindowTitle(f"Template Database Browser - {resolution.value}p")
+            self.setWindowTitle(f"Template Database Visualizer - {resolution.value}p")
 
             # Populate mod filter with available mods for this resolution
             mods = sorted(set(t.mod for _, t in self.all_templates))
@@ -300,24 +315,32 @@ class TemplateBrowser(QMainWindow):
                     self.mod_filter.setCurrentIndex(index)
 
             # Apply filters with new data
-            self.apply_filters()
+            self._apply_filters()
 
     def load_databases(self) -> None:
         """Load all template databases in background thread."""
+        if not self.database_path:
+            self.results_label.setText("No database path configured")
+            return
+
         self.results_label.setText("Loading all databases...")
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, 0)  # Indeterminate progress
 
         # Create and start loader thread
         self.loader_thread = DatabaseLoader(self.database_path)
-        self.loader_thread.finished.connect(self.on_databases_loaded)
-        self.loader_thread.error.connect(self.on_database_error)
+        self.loader_thread.finished.connect(self._on_databases_loaded)
+        self.loader_thread.error.connect(self._on_database_error)
         self.loader_thread.start()
 
-    def on_databases_loaded(
+    def _on_databases_loaded(
         self, all_databases: dict[SupportedResolution, TemplateDatabase]
     ) -> None:
-        """Handle successful database loading."""
+        """Handle successful database loading.
+
+        Args:
+            all_databases (dict): Dictionary of resolution to database mappings.
+        """
         self.all_databases = all_databases
 
         # Populate resolution filter
@@ -330,17 +353,22 @@ class TemplateBrowser(QMainWindow):
         # Select first resolution by default
         if available_resolutions:
             self.resolution_filter.setCurrentIndex(0)
-            # This will trigger on_resolution_changed
+            # This will trigger _on_resolution_changed
 
         # Hide progress
         self.progress_bar.setVisible(False)
 
-    def on_database_error(self, error_msg: str) -> None:
-        """Handle database loading error."""
+    def _on_database_error(self, error_msg: str) -> None:
+        """Handle database loading error.
+
+        Args:
+            error_msg (str): Error message.
+        """
         self.progress_bar.setVisible(False)
         self.results_label.setText(f"Error loading database: {error_msg}")
+        logger.error("Failed to load database: %s", error_msg)
 
-    def apply_filters(self) -> None:
+    def _apply_filters(self) -> None:
         """Apply current filters and update the template list."""
         if not self.database:
             return
@@ -385,9 +413,9 @@ class TemplateBrowser(QMainWindow):
             filtered.append((idx, template))
 
         self.filtered_templates = filtered
-        self.update_template_list()
+        self._update_template_list()
 
-    def update_template_list(self) -> None:
+    def _update_template_list(self) -> None:
         """Update the template list widget."""
         self.template_list.clear()
 
@@ -404,8 +432,12 @@ class TemplateBrowser(QMainWindow):
         filtered = len(self.filtered_templates)
         self.results_label.setText(f"Showing {filtered} of {total} templates")
 
-    def on_template_selected(self, item: QListWidgetItem) -> None:
-        """Handle template selection."""
+    def _on_template_selected(self, item: QListWidgetItem) -> None:
+        """Handle template selection.
+
+        Args:
+            item (QListWidgetItem): The selected list item.
+        """
         idx, template = item.data(Qt.ItemDataRole.UserRole)
 
         # Find highest resolution available
@@ -450,12 +482,17 @@ class TemplateBrowser(QMainWindow):
         self.info_label.setText(info_text)
 
         # Display comparison images
-        self.display_comparison_images(template, highest_template)
+        self._display_comparison_images(template, highest_template)
 
-    def display_comparison_images(
+    def _display_comparison_images(
         self, current_template: IconTemplate | None, highest_template: IconTemplate | None
     ) -> None:
-        """Display current and highest resolution templates at matching sizes."""
+        """Display current and highest resolution templates at matching sizes.
+
+        Args:
+            current_template (IconTemplate | None): The currently selected template.
+            highest_template (IconTemplate | None): The highest resolution template.
+        """
         if not current_template:
             return
 
@@ -545,29 +582,15 @@ class TemplateBrowser(QMainWindow):
             f"Current Resolution ({current_template.resolution.value}p - {current_scale:.1f}x)"
         )
 
+    def closeEvent(self, event: object) -> None:
+        """Handle window close event.
 
-def main() -> None:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(description="Visual template database browser")
-    parser.add_argument("--database", type=Path, required=True, help="Path to database file")
+        Args:
+            event (object): Close event.
+        """
+        # Wait for loader thread to finish if running
+        if self.loader_thread and self.loader_thread.isRunning():
+            self.loader_thread.wait()
 
-    args = parser.parse_args()
-
-    # Check if database exists
-    if not args.database.exists():
-        print(f"Database file not found: {args.database}")
-        sys.exit(1)
-
-    # Create Qt application
-    app = QApplication(sys.argv)
-
-    # Create and show main window
-    browser = TemplateBrowser(args.database)
-    browser.show()
-
-    # Run event loop
-    sys.exit(app.exec())
-
-
-if __name__ == "__main__":
-    main()
+        if hasattr(event, "accept"):
+            event.accept()

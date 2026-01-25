@@ -18,6 +18,7 @@ from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPan
 from foxhole_stockpiles.gui.windows.catalog_builder_window import CatalogBuilderWindow
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
 from foxhole_stockpiles.gui.windows.database_info_window import DatabaseInfoWindow
+from foxhole_stockpiles.gui.windows.database_visualizer_window import DatabaseVisualizerWindow
 from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
 
 logger = logging.getLogger(__name__)
@@ -96,6 +97,11 @@ class MainWindow(QMainWindow):
 
         info_database_action = database_menu.addAction("&Information...")  # type: ignore[union-attr]
         info_database_action.triggered.connect(self.show_database_info)  # type: ignore[union-attr]
+
+        # Visualizer - hidden at Basic config level
+        visualizer_action = database_menu.addAction("&Visualizer...")  # type: ignore[union-attr]
+        visualizer_action.triggered.connect(self.show_database_visualizer)  # type: ignore[union-attr]
+        self._advanced_menu_actions.append(visualizer_action)  # type: ignore[arg-type]
 
         # Help menu
         help_menu = menu_bar.addMenu("&Help")  # type: ignore[union-attr]
@@ -297,6 +303,37 @@ class MainWindow(QMainWindow):
 
         info_window.move(center_x, center_y)
         info_window.exec()
+
+    def show_database_visualizer(self) -> None:
+        """Show database visualizer window."""
+        # Try to get configured database path
+        database_path = None
+        try:
+            settings = AppSettings()
+            if settings.scanner.database_path:
+                database_path = str(settings.scanner.database_path)
+        except Exception:
+            pass  # No config or error loading
+
+        if not database_path:
+            QMessageBox.warning(
+                self,
+                "No Database",
+                "No database is configured. Please configure a database path in settings first.",
+            )
+            return
+
+        visualizer_window = DatabaseVisualizerWindow(self, database_path=database_path)
+
+        # Center the visualizer window on the main window
+        main_geometry = self.geometry()
+        visualizer_geometry = visualizer_window.geometry()
+
+        center_x = main_geometry.x() + (main_geometry.width() - visualizer_geometry.width()) // 2
+        center_y = main_geometry.y() + (main_geometry.height() - visualizer_geometry.height()) // 2
+
+        visualizer_window.move(center_x, center_y)
+        visualizer_window.exec()
 
     def show_about(self) -> None:
         """Show about dialog."""
