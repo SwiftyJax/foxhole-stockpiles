@@ -39,9 +39,7 @@
       "show": "Anzeigen",
       "hide": "Ausblenden",
       "quit": "Beenden",
-      "configuration": "Konfiguration...",
-      "minimized_title": "FS - Foxhole Stockpiles",
-      "minimized_message": "Anwendung in Systemleiste minimiert. Rechtsklick auf das Symbol für Optionen."
+      "configuration": "Konfiguration..."
     },
     "dialogs": {
       "no_database_title": "Keine Datenbank",

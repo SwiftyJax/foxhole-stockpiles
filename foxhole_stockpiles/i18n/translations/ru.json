@@ -39,9 +39,7 @@
       "show": "Показать",
       "hide": "Скрыть",
       "quit": "Выход",
-      "configuration": "Конфигурация...",
-      "minimized_title": "FS - Foxhole Stockpiles",
-      "minimized_message": "Приложение свёрнуто в системный трей. Щёлкните правой кнопкой мыши по значку для доступа к опциям."
+      "configuration": "Конфигурация..."
     },
     "dialogs": {
       "no_database_title": "Нет базы данных",

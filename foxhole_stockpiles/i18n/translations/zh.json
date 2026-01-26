@@ -39,9 +39,7 @@
       "show": "显示",
       "hide": "隐藏",
       "quit": "退出",
-      "configuration": "配置...",
-      "minimized_title": "FS - Foxhole Stockpiles",
-      "minimized_message": "应用程序已最小化到系统托盘。右键点击托盘图标查看选项。"
+      "configuration": "配置..."
     },
     "dialogs": {
       "no_database_title": "无数据库",

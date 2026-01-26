@@ -2,8 +2,8 @@
 
 import logging
 
-from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtGui import QAction, QCloseEvent, QColor, QIcon, QPainter, QPixmap
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QAction, QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
 from PyQt6.QtWidgets import (
     QApplication,
     QMainWindow,
@@ -137,6 +137,24 @@ class MainWindow(QMainWindow):
         except Exception as e:
             logger.warning(f"Failed to apply config level to menus: {e}")
 
+    def _create_fs_icon(self) -> QIcon:
+        """Create a simple FS icon for the system tray.
+
+        Returns:
+            QIcon: Icon with "FS" text on blue background.
+        """
+        pixmap = QPixmap(64, 64)
+        pixmap.fill(QColor(0, 120, 215))
+
+        painter = QPainter(pixmap)
+        painter.setPen(QColor(255, 255, 255))
+        font = QFont("Arial", 24, QFont.Weight.Bold)
+        painter.setFont(font)
+        painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "FS")
+        painter.end()
+
+        return QIcon(pixmap)
+
     def create_tray_icon(self) -> None:
         """Create system tray icon with menu."""
         # Check if system tray is available
@@ -147,27 +165,7 @@ class MainWindow(QMainWindow):
 
         # Create tray icon
         self.tray_icon = QSystemTrayIcon(self)
-
-        # Create a visible icon for Windows - use a standard pixmap that works cross-platform
-        # Try multiple fallbacks to ensure we get a visible icon
-        style = self.style()
-        if style is not None:
-            icon = style.standardIcon(style.StandardPixmap.SP_ComputerIcon)
-        else:
-            icon = QIcon()
-
-        # On Windows, if the icon is still null, create a simple colored pixmap
-        if icon.isNull():
-            pixmap = QPixmap(QSize(64, 64))
-            pixmap.fill(QColor(0, 120, 215))  # Blue color
-            painter = QPainter(pixmap)
-            painter.setPen(QColor(255, 255, 255))
-            painter.drawText(pixmap.rect(), Qt.AlignmentFlag.AlignCenter, "FS")
-            painter.end()
-            icon = QIcon(pixmap)
-
-        self.tray_icon.setIcon(icon)
-        logger.info("Created tray icon")
+        self.tray_icon.setIcon(self._create_fs_icon())
 
         # Create tray menu
         tray_menu = QMenu()
@@ -203,19 +201,7 @@ class MainWindow(QMainWindow):
         # Set tooltip
         self.tray_icon.setToolTip(f"FS (Foxhole Stockpiles) - v{__version__}")
 
-        # Show tray icon and verify it's visible
         self.tray_icon.show()
-
-        # Force processing of events to ensure tray icon is created
-        QApplication.processEvents()
-
-        # Log tray icon visibility status
-        logger.info(f"Tray icon visible: {self.tray_icon.isVisible()}")
-        if not self.tray_icon.isVisible():
-            logger.warning(
-                "Tray icon created but not visible. "
-                "It might be in the Windows overflow area (click ^ in system tray)"
-            )
 
     def tray_icon_activated(self, reason: QSystemTrayIcon.ActivationReason) -> None:
         """Handle tray icon activation.
@@ -398,20 +384,6 @@ class MainWindow(QMainWindow):
             logger.info("Minimizing to system tray")
             event.ignore()
             self.hide()
-
-            # Show notification on first minimize
-            if not hasattr(self, "_shown_tray_message"):
-                self.tray_icon.showMessage(
-                    t("main_window.tray.minimized_title"),
-                    t("main_window.tray.minimized_message"),
-                    QSystemTrayIcon.MessageIcon.Information,
-                    4000,
-                )
-                self._shown_tray_message = True
-                logger.info(
-                    "Note: On Windows, the tray icon might be in the overflow area. "
-                    "Click the ^ arrow in the system tray to see hidden icons."
-                )
         else:
             # Can't minimize to tray or it's disabled - actually quit
             if self.minimize_to_tray and not can_minimize_to_tray:
