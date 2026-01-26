@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QMenuBar
 
 from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.windows.main_window import MainWindow
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -60,7 +61,7 @@ def test_window_file_menu_exists(window: MainWindow) -> None:
 
     file_menu_found = False
     for action in actions:
-        if action.text() == "&File":
+        if action.text() == t("main_window.menu.file"):
             file_menu_found = True
             break
 
@@ -79,7 +80,7 @@ def test_window_help_menu_exists(window: MainWindow) -> None:
 
     help_menu_found = False
     for action in actions:
-        if action.text() == "&Help":
+        if action.text() == t("main_window.menu.help"):
             help_menu_found = True
             break
 
@@ -116,8 +117,8 @@ def test_window_show_about(qtbot: Any, window: MainWindow) -> None:
         mock_about.assert_called_once()
         call_args = mock_about.call_args
         assert call_args[0][0] == window
-        assert call_args[0][1] == "About FS"
-        assert "Foxhole Stockpiles" in call_args[0][2]
+        assert call_args[0][1] == t("about.title")
+        assert t("about.app_name") in call_args[0][2]
 
 
 def test_window_show_icon_import(qtbot: Any, window: MainWindow) -> None:

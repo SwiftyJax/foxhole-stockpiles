@@ -10,6 +10,22 @@ from PyQt6.QtWidgets import (
 )
 
 from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
+
+# Define fields with their display names (for now, these are hardcoded since they're
+# game-specific terms that may not need translation)
+STOCKPILE_TYPE_FIELDS = [
+    ("encampment", "Encampment"),
+    ("keep", "Keep"),
+    ("safe_house", "Safe House"),
+    ("relic_base", "Relic Base"),
+    ("bunker_base", "Bunker Base"),
+    ("border_base", "Border Base"),
+    ("town_base", "Town Base"),
+    ("bms_longhook", "BMS - Longhook"),
+    ("storage_depot", "Storage Depot"),
+    ("seaport", "Seaport"),
+]
 
 
 class StockpileTypesTab(QWidget):
@@ -27,6 +43,7 @@ class StockpileTypesTab(QWidget):
         """
         super().__init__(parent)
         self._inputs: dict[str, QLineEdit] = {}
+        self._labels: dict[str, QLabel] = {}
         self.init_ui()
 
     def init_ui(self) -> None:
@@ -34,47 +51,48 @@ class StockpileTypesTab(QWidget):
         layout = QVBoxLayout(self)
 
         # Description
-        description = QLabel(
-            "Add custom aliases for stockpile type names to handle OCR errors.\n"
-            "Enter comma-separated values (e.g., 'seapon, Seapont, 5eaport').\n"
-            "The default translations are already built-in and don't need to be added here."
-        )
-        description.setWordWrap(True)
-        description.setStyleSheet("QLabel { color: gray; margin-bottom: 10px; }")
-        layout.addWidget(description)
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        self.description_label.setStyleSheet("QLabel { color: gray; margin-bottom: 10px; }")
+        layout.addWidget(self.description_label)
 
         # Stockpile Types Group
-        types_group = QGroupBox("Additional Aliases")
+        self.types_group = QGroupBox()
         types_layout = QFormLayout()
-        types_group.setLayout(types_layout)
+        self.types_group.setLayout(types_layout)
 
-        # Define fields with their display names and tooltips
-        fields = [
-            ("encampment", "Encampment", "Aliases for Encampment stockpile type"),
-            ("keep", "Keep", "Aliases for Keep stockpile type"),
-            ("safe_house", "Safe House", "Aliases for Safe House stockpile type"),
-            ("relic_base", "Relic Base", "Aliases for Relic Base stockpile type"),
-            ("bunker_base", "Bunker Base", "Aliases for Bunker Base stockpile type"),
-            ("border_base", "Border Base", "Aliases for Border Base stockpile type"),
-            ("town_base", "Town Base", "Aliases for Town Base stockpile type"),
-            ("bms_longhook", "BMS - Longhook", "Aliases for BMS - Longhook stockpile type"),
-            ("storage_depot", "Storage Depot", "Aliases for Storage Depot stockpile type"),
-            ("seaport", "Seaport", "Aliases for Seaport stockpile type"),
-        ]
-
-        for field_name, display_name, tooltip in fields:
+        for field_name, display_name in STOCKPILE_TYPE_FIELDS:
             label = QLabel(f"{display_name}:")
-            label.setToolTip(tooltip)
 
             line_edit = QLineEdit()
-            line_edit.setPlaceholderText("Enter comma-separated aliases...")
-            line_edit.setToolTip(tooltip)
 
+            self._labels[field_name] = label
             self._inputs[field_name] = line_edit
             types_layout.addRow(label, line_edit)
 
-        layout.addWidget(types_group)
+        layout.addWidget(self.types_group)
         layout.addStretch()
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.description_label.setText(t("stockpile_types_tab.description"))
+        self.types_group.setTitle(t("stockpile_types_tab.aliases_group"))
+
+        placeholder = t("stockpile_types_tab.alias_placeholder")
+        for _field_name, line_edit in self._inputs.items():
+            line_edit.setPlaceholderText(placeholder)
 
     def set_values(self, settings: StockpileTypesSettings) -> None:
         """Set widget values from settings.

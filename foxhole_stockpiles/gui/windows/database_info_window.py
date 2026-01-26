@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
 logger = logging.getLogger(__name__)
@@ -45,39 +46,35 @@ class DatabaseInfoWindow(QDialog):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Database Information")
         self.setGeometry(100, 100, 800, 600)
 
         layout = QVBoxLayout(self)
 
         # Database selection section
-        selection_group = QGroupBox("Database File")
+        self.selection_group = QGroupBox()
         selection_layout = QHBoxLayout()
-        selection_group.setLayout(selection_layout)
+        self.selection_group.setLayout(selection_layout)
 
         self.db_path_input = QLineEdit()
-        self.db_path_input.setPlaceholderText("Select a database file...")
         self.db_path_input.setReadOnly(True)
         selection_layout.addWidget(self.db_path_input)
 
-        browse_button = QPushButton("Browse...")
-        browse_button.clicked.connect(self.browse_database)
-        selection_layout.addWidget(browse_button)
+        self.browse_button = QPushButton()
+        self.browse_button.clicked.connect(self.browse_database)
+        selection_layout.addWidget(self.browse_button)
 
-        layout.addWidget(selection_group)
+        layout.addWidget(self.selection_group)
 
         # Statistics table section
-        stats_group = QGroupBox("Database Statistics")
+        self.stats_group = QGroupBox()
         stats_layout = QVBoxLayout()
-        stats_group.setLayout(stats_layout)
+        self.stats_group.setLayout(stats_layout)
 
         # Info text explaining the numbers
-        info_text = QLabel(
-            "Numbers represent total templates (crated + not crated) per mod and resolution"
-        )
-        info_text.setStyleSheet("QLabel { color: gray; font-size: 11px; font-style: italic; }")
-        info_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        stats_layout.addWidget(info_text)
+        self.info_text = QLabel()
+        self.info_text.setStyleSheet("QLabel { color: gray; font-size: 11px; font-style: italic; }")
+        self.info_text.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        stats_layout.addWidget(self.info_text)
 
         self.stats_table = QTableWidget()
         self.stats_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
@@ -88,18 +85,41 @@ class DatabaseInfoWindow(QDialog):
 
         stats_layout.addWidget(self.stats_table)
 
-        layout.addWidget(stats_group)
+        layout.addWidget(self.stats_group)
+
+        # Apply translations
+        self.retranslate()
 
         # Show initial message
-        self._show_message("No database loaded", "Click 'Browse...' to select a database file")
+        self._show_message(
+            t("database_info_window.no_database"), t("database_info_window.click_browse")
+        )
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.setWindowTitle(t("database_info_window.title"))
+        self.selection_group.setTitle(t("database_info_window.database_file"))
+        self.db_path_input.setPlaceholderText(t("database_info_window.select_placeholder"))
+        self.browse_button.setText(t("common.browse"))
+        self.stats_group.setTitle(t("database_info_window.statistics_group"))
+        self.info_text.setText(t("database_info_window.statistics_info"))
 
     def browse_database(self) -> None:
         """Open file dialog to select a database file."""
         filepath, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Database File",
+            t("database_info_window.select_database"),
             "",
-            "HDF5 Database (*.h5);;All Files (*)",
+            t("database_info_window.database_filter"),
         )
         if filepath:
             self.db_path_input.setText(filepath)
@@ -110,12 +130,17 @@ class DatabaseInfoWindow(QDialog):
         """Load and display statistics for the selected database."""
         db_path = self.db_path_input.text()
         if not db_path:
-            self._show_message("No file selected", "Please select a database file first")
+            self._show_message(
+                t("database_info_window.no_file_selected"), t("database_info_window.select_first")
+            )
             return
 
         db_path_obj = Path(db_path)
         if not db_path_obj.exists():
-            self._show_message("File not found", f"Database file does not exist: {db_path}")
+            self._show_message(
+                t("database_info_window.file_not_found"),
+                t("database_info_window.file_not_exist").replace("{path}", db_path),
+            )
             return
 
         try:
@@ -127,7 +152,9 @@ class DatabaseInfoWindow(QDialog):
             self.stats_table.setColumnCount(num_cols)
 
             # Set headers
-            headers = ["Mod"] + [f"{res}p" for res in stats.resolutions]
+            headers = [t("database_info_window.mod_column")] + [
+                f"{res}p" for res in stats.resolutions
+            ]
             self.stats_table.setHorizontalHeaderLabels(headers)
 
             # Add rows for each mod
@@ -157,7 +184,7 @@ class DatabaseInfoWindow(QDialog):
 
         except Exception as e:
             logger.error(f"Failed to load database statistics: {e}")
-            self._show_message("Error loading database", str(e)[:200])
+            self._show_message(t("database_info_window.error_loading"), str(e)[:200])
 
     def _show_message(self, title: str, message: str) -> None:
         """Show a message in the statistics table.
@@ -169,7 +196,7 @@ class DatabaseInfoWindow(QDialog):
         self.stats_table.clear()
         self.stats_table.setColumnCount(1)
         self.stats_table.setRowCount(2)
-        self.stats_table.setHorizontalHeaderLabels(["Status"])
+        self.stats_table.setHorizontalHeaderLabels([t("database_info_window.status_column")])
 
         title_item = QTableWidgetItem(title)
         title_item.setFlags(title_item.flags() & ~Qt.ItemFlag.ItemIsEditable)

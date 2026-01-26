@@ -24,6 +24,7 @@ from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 from foxhole_stockpiles.gui.utils.scan_worker import ScanWorker
 from foxhole_stockpiles.gui.utils.scanner_client import ScannerClient
 from foxhole_stockpiles.gui.utils.server_thread import ServerThread
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,19 @@ class ServerControlPanel(QWidget):
         self.scanner_client = ScannerClient()
 
         self.init_ui()
+
+        # Connect to language changes with cleanup on destruction
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event.
+
+        Args:
+            _language: The new language code (unused).
+        """
+        self.retranslate()
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
@@ -131,13 +145,16 @@ class ServerControlPanel(QWidget):
 
         # Log controls
         log_controls = QHBoxLayout()
-        clear_logs_button = QPushButton("Clear Logs")
-        clear_logs_button.clicked.connect(self.clear_logs)
+        self.clear_logs_button = QPushButton("")
+        self.clear_logs_button.clicked.connect(self.clear_logs)
         log_controls.addStretch()
-        log_controls.addWidget(clear_logs_button)
+        log_controls.addWidget(self.clear_logs_button)
         logs_layout.addLayout(log_controls)
 
         layout.addWidget(self.logs_group)
+
+        # Apply initial translations
+        self.retranslate()
 
         # Initial validation
         self._update_validation_state()
@@ -204,15 +221,13 @@ class ServerControlPanel(QWidget):
 
             if not db_path:
                 error_message = (
-                    "<b>⚙️ Configuration Incomplete</b><br><br>"
-                    "Please configure the database path in<br>"
-                    "<b>File → Configuration</b>"
+                    f"<b>⚙️ {t('server_panel.errors.config_incomplete_title')}</b><br><br>"
+                    f"{t('server_panel.errors.config_incomplete_message')}"
                 )
             elif not Path(db_path).exists():
                 error_message = (
-                    "<b>⚠️ Database File Not Found</b><br><br>"
-                    "Configure database path in <b>File → Configuration</b><br>"
-                    "or build one in <b>Database → Build</b>"
+                    f"<b>⚠️ {t('server_panel.errors.database_not_found_title')}</b><br><br>"
+                    f"{t('server_panel.errors.database_not_found_message')}"
                 )
             else:
                 # Try to load DB statistics
@@ -240,17 +255,16 @@ class ServerControlPanel(QWidget):
                 except Exception as e:
                     logger.error(f"Failed to load database statistics: {e}")
                     error_message = (
-                        "<b>⚠️ Database Error</b><br><br>"
-                        f"Failed to load database<br>"
+                        f"<b>⚠️ {t('server_panel.errors.database_error_title')}</b><br><br>"
+                        f"{t('server_panel.errors.database_error_message')}<br>"
                         f"<small>{str(e)[:100]}</small>"
                     )
 
         except Exception:
             # No config file exists
             error_message = (
-                "<b>⚙️ No Configuration Found</b><br><br>"
-                "Please set up your configuration in<br>"
-                "<b>File → Configuration</b>"
+                f"<b>⚙️ {t('server_panel.errors.no_config_title')}</b><br><br>"
+                f"{t('server_panel.errors.no_config_message')}"
             )
 
         # Update UI based on validation state
@@ -273,9 +287,9 @@ class ServerControlPanel(QWidget):
         """Open file dialog to select and scan a screenshot (called from menu)."""
         filepath, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Screenshot to Scan",
+            t("server_panel.select_screenshot"),
             "",
-            "Images (*.png *.jpg *.jpeg);;All Files (*)",
+            t("server_panel.image_filter"),
         )
         if filepath:
             self.process_screenshot(filepath)
@@ -307,8 +321,8 @@ class ServerControlPanel(QWidget):
         self.server_thread.start()
 
         self.server_running = True
-        self.start_stop_button.setText("Stop Server")
-        self.status_label.setText("Status: Running")
+        self.start_stop_button.setText(t("server_panel.stop_server"))
+        self.status_label.setText(t("server_panel.status_running"))
         self.status_label.setStyleSheet("QLabel { font-weight: bold; color: green; }")
         self.server_started.emit()
 
@@ -330,8 +344,8 @@ class ServerControlPanel(QWidget):
         # even when the server is stopped
 
         self.server_running = False
-        self.start_stop_button.setText("Start Server")
-        self.status_label.setText("Status: Stopped")
+        self.start_stop_button.setText(t("server_panel.start_server"))
+        self.status_label.setText(t("server_panel.status_stopped"))
         self.status_label.setStyleSheet("QLabel { font-weight: bold; color: red; }")
         self.server_stopped.emit()
 
@@ -343,7 +357,7 @@ class ServerControlPanel(QWidget):
         """
         # Check if server is running
         if not self.server_running:
-            logger.error("Cannot scan: Server is not running!")
+            logger.error(t("server_panel.errors.cannot_scan"))
             return
 
         # Scan the screenshot in background thread
@@ -395,3 +409,26 @@ class ServerControlPanel(QWidget):
     def clear_logs(self) -> None:
         """Clear the log display."""
         self.log_display.setRowCount(0)
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        # Button text depends on server state
+        if self.server_running:
+            self.start_stop_button.setText(t("server_panel.stop_server"))
+            self.status_label.setText(t("server_panel.status_running"))
+        else:
+            self.start_stop_button.setText(t("server_panel.start_server"))
+            self.status_label.setText(t("server_panel.status_stopped"))
+
+        # Log table headers
+        self.log_display.setHorizontalHeaderLabels(
+            [
+                t("server_panel.log_columns.time"),
+                t("server_panel.log_columns.level"),
+                t("server_panel.log_columns.module"),
+                t("server_panel.log_columns.message"),
+            ]
+        )
+
+        # Clear logs button
+        self.clear_logs_button.setText(t("common.clear_logs"))

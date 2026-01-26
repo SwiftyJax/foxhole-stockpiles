@@ -31,6 +31,7 @@ from foxhole_stockpiles.core.settings.sections.output import (
 from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.enums.output_handler_type import OutputHandlerType
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 
 class OutputHandlerDialog(QDialog):
@@ -55,125 +56,70 @@ class OutputHandlerDialog(QDialog):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Edit Handler" if self.handler_config else "Add Handler")
         self.setMinimumWidth(500)
 
         layout = QVBoxLayout(self)
 
         # Basic settings
-        basic_group = QGroupBox("Basic Settings")
+        self.basic_group = QGroupBox()
         basic_layout = QFormLayout()
-        basic_group.setLayout(basic_layout)
+        self.basic_group.setLayout(basic_layout)
 
+        self.name_label = QLabel()
         self.name_input = QLineEdit()
-        self.name_input.setPlaceholderText("e.g., File Backup")
-        self.name_input.setToolTip("A friendly name to identify this output handler")
-        basic_layout.addRow("Name:", self.name_input)
+        basic_layout.addRow(self.name_label, self.name_input)
 
-        handler_type_label = QLabel("Handler Type:")
-        handler_type_label.setToolTip(
-            "Where to send scan results:\n\n"
-            "• return - Return data to caller (API mode)\n"
-            "• file - Save to a file\n"
-            "• webhook - POST to a webhook URL\n"
-            "• console - Print to console output"
-        )
+        self.handler_type_label = QLabel()
         self.handler_type_input = QComboBox()
         self.handler_type_input.addItems(["return", "file", "webhook", "console"])
         self.handler_type_input.currentTextChanged.connect(self._on_handler_type_changed)
-        basic_layout.addRow(handler_type_label, self.handler_type_input)
+        basic_layout.addRow(self.handler_type_label, self.handler_type_input)
 
-        self.format_label = QLabel("Output Format:")
-        self.format_label.setToolTip(
-            "Format for the output data:\n\n"
-            "• json - Full JSON with all stockpile data\n"
-            "• csv - Comma-separated values (one row per item)\n"
-            "• tsv - Tab-separated values (one row per item)"
-        )
+        self.format_label = QLabel()
         self.format_input = QComboBox()
         self.format_input.addItems(["json", "csv", "tsv"])
         basic_layout.addRow(self.format_label, self.format_input)
 
-        layout.addWidget(basic_group)
+        layout.addWidget(self.basic_group)
 
         # File Settings Group
-        self.file_group = QGroupBox("File Output Settings")
+        self.file_group = QGroupBox()
         file_layout = QFormLayout()
         self.file_group.setLayout(file_layout)
 
-        file_path_label = QLabel("File Path:")
-        file_path_label.setToolTip(
-            "Path where scan results will be saved.\n\n"
-            "Supported placeholders:\n"
-            "  {timestamp} - Full timestamp (YYYY-MM-DD_HH-MM-SS)\n"
-            "  {year}, {month}, {day} - Date components\n"
-            "  {hour}, {minute}, {second} - Time components\n"
-            "  {stockpile_type} - Type (Seaport, Storage Depot, etc.)\n"
-            "  {stockpile_name} - Name of the stockpile\n"
-            "  {resolution} - Screen resolution (e.g., 1920x1080)\n\n"
-            "Example: {timestamp}_{stockpile_type}_{stockpile_name}_{resolution}.json"
-        )
+        self.file_path_label = QLabel()
         file_path_layout = QHBoxLayout()
         self.file_path_input = QLineEdit()
-        self.file_path_input.setPlaceholderText(
-            "{timestamp}_{stockpile_type}_{stockpile_name}_{resolution}.json"
-        )
-        file_browse = QPushButton("Browse...")
-        file_browse.clicked.connect(self._browse_file)
+        self.file_browse_btn = QPushButton()
+        self.file_browse_btn.clicked.connect(self._browse_file)
         file_path_layout.addWidget(self.file_path_input)
-        file_path_layout.addWidget(file_browse)
-        file_layout.addRow(file_path_label, file_path_layout)
+        file_path_layout.addWidget(self.file_browse_btn)
+        file_layout.addRow(self.file_path_label, file_path_layout)
 
         layout.addWidget(self.file_group)
 
         # Webhook Settings Group
-        self.webhook_group = QGroupBox("Webhook Output Settings")
+        self.webhook_group = QGroupBox()
         webhook_layout = QFormLayout()
         self.webhook_group.setLayout(webhook_layout)
 
-        webhook_url_label = QLabel("Webhook URL:")
-        webhook_url_label.setToolTip(
-            "URL to POST scan results to.\n\n"
-            "Results will be sent as JSON in the request body.\n"
-            "The webhook should accept POST requests with application/json content type."
-        )
+        self.webhook_url_label = QLabel()
         self.webhook_url_input = QLineEdit()
-        self.webhook_url_input.setPlaceholderText("https://example.com/webhook")
-        webhook_layout.addRow(webhook_url_label, self.webhook_url_input)
+        webhook_layout.addRow(self.webhook_url_label, self.webhook_url_input)
 
-        auth_type_label = QLabel("Auth Type:")
-        auth_type_label.setToolTip(
-            "Authentication type for webhook requests:\n\n"
-            "• null - No authentication\n"
-            "• basic - HTTP Basic Auth (username:password)\n"
-            "• bearer - Bearer token in Authorization header\n"
-            "• forward - Forward client's Authorization header to webhook"
-        )
+        self.auth_type_label = QLabel()
         self.webhook_auth_type_input = QComboBox()
         self.webhook_auth_type_input.addItems(["null", "basic", "bearer", "forward"])
         self.webhook_auth_type_input.currentTextChanged.connect(self._on_webhook_auth_changed)
-        webhook_layout.addRow(auth_type_label, self.webhook_auth_type_input)
+        webhook_layout.addRow(self.auth_type_label, self.webhook_auth_type_input)
 
-        self.auth_token_label = QLabel("Auth Token:")
-        self.auth_token_label.setToolTip(
-            "Authentication credentials for webhook.\n\n"
-            "• For basic auth: use format 'username:password'\n"
-            "• For bearer auth: just the token value\n\n"
-            "Required when auth type is 'basic' or 'bearer'."
-        )
+        self.auth_token_label = QLabel()
         self.webhook_token_input = QLineEdit()
-        self.webhook_token_input.setPlaceholderText("Token or credentials")
         self.webhook_token_input.setEchoMode(QLineEdit.EchoMode.Password)
         webhook_layout.addRow(self.auth_token_label, self.webhook_token_input)
 
-        self.client_auth_label = QLabel("Client Auth Header:")
-        self.client_auth_label.setToolTip(
-            "Name of the Authorization header to forward from API client to webhook.\n\n"
-            "Useful when the webhook needs to know who initiated the scan.\n\n"
-            "Required when auth type is 'forward'."
-        )
+        self.client_auth_label = QLabel()
         self.webhook_client_auth_input = QLineEdit()
-        self.webhook_client_auth_input.setPlaceholderText("e.g., Authorization")
         webhook_layout.addRow(self.client_auth_label, self.webhook_client_auth_input)
 
         layout.addWidget(self.webhook_group)
@@ -186,9 +132,68 @@ class OutputHandlerDialog(QDialog):
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
 
+        # Apply translations
+        self.retranslate()
+
         # Initially show/hide based on handler type and auth type
         self._on_handler_type_changed()
         self._on_webhook_auth_changed()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        # Window title
+        if self.handler_config:
+            self.setWindowTitle(t("output_tab.handler_dialog.title_edit"))
+        else:
+            self.setWindowTitle(t("output_tab.handler_dialog.title_add"))
+
+        # Basic settings
+        self.basic_group.setTitle(t("output_tab.handler_dialog.basic_settings"))
+        self.name_label.setText(t("common.name") + ":")
+        self.name_input.setPlaceholderText(t("output_tab.handler_dialog.name_placeholder"))
+        self.name_input.setToolTip(t("output_tab.handler_dialog.name_tooltip"))
+        self.handler_type_label.setText(t("output_tab.handler_dialog.handler_type"))
+        self.handler_type_label.setToolTip(t("output_tab.handler_dialog.handler_type_tooltip"))
+        self.format_label.setText(t("output_tab.handler_dialog.output_format"))
+        self.format_label.setToolTip(t("output_tab.handler_dialog.output_format_tooltip"))
+
+        # File settings
+        self.file_group.setTitle(t("output_tab.handler_dialog.file_settings"))
+        self.file_path_label.setText(t("output_tab.handler_dialog.file_path"))
+        self.file_path_label.setToolTip(t("output_tab.handler_dialog.file_path_tooltip"))
+        self.file_path_input.setPlaceholderText(
+            t("output_tab.handler_dialog.file_path_placeholder")
+        )
+        self.file_browse_btn.setText(t("common.browse"))
+
+        # Webhook settings
+        self.webhook_group.setTitle(t("output_tab.handler_dialog.webhook_settings"))
+        self.webhook_url_label.setText(t("output_tab.handler_dialog.webhook_url"))
+        self.webhook_url_label.setToolTip(t("output_tab.handler_dialog.webhook_url_tooltip"))
+        self.webhook_url_input.setPlaceholderText(
+            t("output_tab.handler_dialog.webhook_url_placeholder")
+        )
+        self.auth_type_label.setText(t("output_tab.handler_dialog.auth_type"))
+        self.auth_type_label.setToolTip(t("output_tab.handler_dialog.auth_type_tooltip"))
+        self.auth_token_label.setText(t("output_tab.handler_dialog.auth_token"))
+        self.auth_token_label.setToolTip(t("output_tab.handler_dialog.auth_token_tooltip"))
+        self.webhook_token_input.setPlaceholderText(
+            t("output_tab.handler_dialog.auth_token_placeholder")
+        )
+        self.client_auth_label.setText(t("output_tab.handler_dialog.client_auth_header"))
+        self.client_auth_label.setToolTip(t("output_tab.handler_dialog.client_auth_tooltip"))
+        self.webhook_client_auth_input.setPlaceholderText(
+            t("output_tab.handler_dialog.client_auth_placeholder")
+        )
 
     def _on_handler_type_changed(self) -> None:
         """Handle handler type change to show/hide relevant sections."""
@@ -221,7 +226,7 @@ class OutputHandlerDialog(QDialog):
         """Open file dialog for output file path."""
         filepath, _ = QFileDialog.getSaveFileName(
             self,
-            "Select Output File",
+            t("output_tab.handler_dialog.file_path"),
             "",
             "JSON Files (*.json);;All Files (*)",
         )
@@ -263,14 +268,22 @@ class OutputHandlerDialog(QDialog):
         if handler_type == "file":
             path = self.file_path_input.text().strip()
             if not path:
-                QMessageBox.warning(self, "Validation Error", "File path is required.")
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.file_path_required"),
+                )
                 self.file_path_input.setFocus()
                 return
 
         elif handler_type == "webhook":
             url = self.webhook_url_input.text().strip()
             if not url:
-                QMessageBox.warning(self, "Validation Error", "Webhook URL is required.")
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.webhook_url_required"),
+                )
                 self.webhook_url_input.setFocus()
                 return
 
@@ -353,18 +366,15 @@ class OutputTab(QWidget):
         layout = QVBoxLayout(self)
 
         # Description
-        description = QLabel(
-            "Configure output handlers for scan results.\n"
-            "You can add multiple handlers to send results to different destinations."
-        )
-        description.setWordWrap(True)
-        description.setStyleSheet("QLabel { color: gray; margin-bottom: 10px; }")
-        layout.addWidget(description)
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        self.description_label.setStyleSheet("QLabel { color: gray; margin-bottom: 10px; }")
+        layout.addWidget(self.description_label)
 
         # Handlers group
-        handlers_group = QGroupBox("Output Handlers")
+        self.handlers_group = QGroupBox()
         handlers_layout = QVBoxLayout()
-        handlers_group.setLayout(handlers_layout)
+        self.handlers_group.setLayout(handlers_layout)
 
         # List widget
         self.handlers_list = QListWidget()
@@ -376,43 +386,35 @@ class OutputTab(QWidget):
         # Buttons row 1: Add, Edit, Remove
         buttons_layout = QHBoxLayout()
 
-        self.add_button = QPushButton("Add")
-        self.add_button.setToolTip("Add a new output handler")
+        self.add_button = QPushButton()
         self.add_button.clicked.connect(self._on_add_clicked)
         buttons_layout.addWidget(self.add_button)
 
-        self.edit_button = QPushButton("Edit")
-        self.edit_button.setToolTip("Edit the selected handler")
+        self.edit_button = QPushButton()
         self.edit_button.clicked.connect(self._on_edit_clicked)
         buttons_layout.addWidget(self.edit_button)
 
-        self.remove_button = QPushButton("Remove")
-        self.remove_button.setToolTip("Remove the selected handler")
+        self.remove_button = QPushButton()
         self.remove_button.clicked.connect(self._on_remove_clicked)
         buttons_layout.addWidget(self.remove_button)
 
         buttons_layout.addStretch()
 
         # Reorder buttons
-        self.move_up_button = QPushButton("▲ Up")
-        self.move_up_button.setToolTip("Move selected handler up in priority")
+        self.move_up_button = QPushButton()
         self.move_up_button.clicked.connect(self._on_move_up_clicked)
         buttons_layout.addWidget(self.move_up_button)
 
-        self.move_down_button = QPushButton("▼ Down")
-        self.move_down_button.setToolTip("Move selected handler down in priority")
+        self.move_down_button = QPushButton()
         self.move_down_button.clicked.connect(self._on_move_down_clicked)
         buttons_layout.addWidget(self.move_down_button)
 
         handlers_layout.addLayout(buttons_layout)
 
         # Order info label
-        order_info = QLabel(
-            "ℹ️ Handler order matters: The first handler that returns a response "
-            "(return or webhook) will have its data passed back to the client."
-        )
-        order_info.setWordWrap(True)
-        order_info.setStyleSheet(
+        self.order_info_label = QLabel()
+        self.order_info_label.setWordWrap(True)
+        self.order_info_label.setStyleSheet(
             "QLabel { "
             "color: #2196F3; "
             "font-size: 11px; "
@@ -422,13 +424,42 @@ class OutputTab(QWidget):
             "border-radius: 3px; "
             "}"
         )
-        handlers_layout.addWidget(order_info)
+        handlers_layout.addWidget(self.order_info_label)
 
-        layout.addWidget(handlers_group)
+        layout.addWidget(self.handlers_group)
         layout.addStretch()
+
+        # Apply translations
+        self.retranslate()
 
         # Initial state
         self._update_buttons_state()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.description_label.setText(t("output_tab.description"))
+        self.handlers_group.setTitle(t("output_tab.handlers_group"))
+
+        self.add_button.setText(t("common.add"))
+        self.add_button.setToolTip(t("output_tab.handler_dialog.name_tooltip"))
+        self.edit_button.setText(t("common.edit"))
+        self.remove_button.setText(t("common.remove"))
+
+        self.move_up_button.setText(t("output_tab.move_up"))
+        self.move_up_button.setToolTip(t("output_tab.move_up_tooltip"))
+        self.move_down_button.setText(t("output_tab.move_down"))
+        self.move_down_button.setToolTip(t("output_tab.move_down_tooltip"))
+
+        self.order_info_label.setText("ℹ️ " + t("output_tab.order_info"))
 
     def _update_buttons_state(self) -> None:
         """Update button enabled states based on selection."""
@@ -495,10 +526,11 @@ class OutputTab(QWidget):
             return
 
         handler_config = self._handlers[row]
+        message = t("output_tab.remove_handler_message").replace("{name}", handler_config.name)
         reply = QMessageBox.question(
             self,
-            "Remove Handler",
-            f"Are you sure you want to remove '{handler_config.name}'?",
+            t("output_tab.remove_handler_title"),
+            message,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )

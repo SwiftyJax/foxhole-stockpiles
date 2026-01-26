@@ -126,6 +126,59 @@ The Stockpile Types tab allows you to add custom aliases for stockpile type name
 
 Change the configuration level in the GUI tab within the Configuration window.
 
+**Localization:**
+
+The GUI supports multiple languages. Change the interface language in the GUI tab within the Configuration window.
+
+> **Note:** Translations were generated with AI assistance and may contain inaccuracies. If you notice any translation errors or would like to help improve translations for your language, contributions are greatly appreciated!
+
+Supported languages:
+- English (en)
+- German (de)
+- Spanish (es)
+- French (fr)
+- Portuguese (pt)
+- Russian (ru)
+- Chinese (zh)
+
+**Contributing Translations:**
+
+Translation files are located in `foxhole_stockpiles/i18n/translations/`. Each language has a JSON file (e.g., `en.json`, `es.json`) containing all translatable strings.
+
+To add or improve translations:
+1. Copy `en.json` as a template for a new language
+2. Translate all string values (keep the keys unchanged)
+3. Update `language_name` and `language_code` at the top of the file
+4. Submit a pull request
+
+**Custom Translations (Standalone Executable):**
+
+When using the standalone executable (`fs.exe` or `fs-gui.exe`), you can add or override translations without modifying the application:
+
+1. Create an `i18n/translations/` folder next to the executable
+2. Place your custom `.json` translation files there
+3. The application will merge your translations with the bundled ones
+
+```
+dist/
+├── fs.exe
+└── i18n/
+    └── translations/
+        └── en.json      # Override specific keys in English
+```
+
+User translations are **merged** with bundled ones - you only need to include the keys you want to override. For example, to fix a single translation:
+
+```json
+{
+  "common": {
+    "cancel": "My Custom Cancel Text"
+  }
+}
+```
+
+This will override just that key while keeping all other translations from the bundled file.
+
 ## Requirements
 
 - Python 3.12 or higher

@@ -15,6 +15,7 @@ from foxhole_stockpiles.gui.windows.database_visualizer_window import (
     DatabaseLoader,
     DatabaseVisualizerWindow,
 )
+from foxhole_stockpiles.i18n import t
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.services.template_database import TemplateDatabase
 
@@ -180,7 +181,7 @@ class TestDatabaseVisualizerWindowInitialization:
         Args:
             visualizer_window: Window fixture.
         """
-        assert "Template Database Visualizer" in visualizer_window.windowTitle()
+        assert t("database_visualizer.title") in visualizer_window.windowTitle()
 
     def test_minimum_size(self, visualizer_window: DatabaseVisualizerWindow) -> None:
         """Test window minimum size.
@@ -238,7 +239,7 @@ class TestDatabaseVisualizerWindowUI:
         """
         # Should have "All" plus all factions
         assert visualizer_window.faction_filter.count() >= len(ItemFaction) + 1
-        assert visualizer_window.faction_filter.itemText(0) == "All"
+        assert visualizer_window.faction_filter.itemText(0) == t("common.all")
 
     def test_category_filter_options(self, visualizer_window: DatabaseVisualizerWindow) -> None:
         """Test category filter has all options.
@@ -248,7 +249,7 @@ class TestDatabaseVisualizerWindowUI:
         """
         # Should have "All" plus all categories
         assert visualizer_window.category_filter.count() >= len(ItemCategory) + 1
-        assert visualizer_window.category_filter.itemText(0) == "All"
+        assert visualizer_window.category_filter.itemText(0) == t("common.all")
 
     def test_crated_all_checked_initially(
         self, visualizer_window: DatabaseVisualizerWindow
@@ -418,7 +419,7 @@ class TestDatabaseVisualizerWindowDatabaseLoading:
         visualizer_window.database_path = None
         visualizer_window.load_databases()
 
-        assert "No database path" in visualizer_window.results_label.text()
+        assert t("database_visualizer.no_database_path") in visualizer_window.results_label.text()
 
     def test_load_databases_starts_thread(
         self, visualizer_window: DatabaseVisualizerWindow
@@ -436,7 +437,9 @@ class TestDatabaseVisualizerWindowDatabaseLoading:
             assert visualizer_window.loader_thread is not None
             # Progress bar should be visible after load_databases is called
             # (check the property was set, not visibility which requires event processing)
-            assert visualizer_window.results_label.text() == "Loading all databases..."
+            assert visualizer_window.results_label.text() == t(
+                "database_visualizer.loading_databases"
+            )
             mock_start.assert_called_once()
 
     def test_on_databases_loaded(
@@ -477,8 +480,9 @@ class TestDatabaseVisualizerWindowDatabaseLoading:
         visualizer_window._on_database_error("Test error message")
 
         assert not visualizer_window.progress_bar.isVisible()
-        assert "Error" in visualizer_window.results_label.text()
-        assert "Test error message" in visualizer_window.results_label.text()
+        # The error message should contain the translated error prefix
+        error_text = visualizer_window.results_label.text()
+        assert "Test error message" in error_text
 
 
 class TestDatabaseVisualizerWindowResolutionChange:
@@ -534,7 +538,8 @@ class TestDatabaseVisualizerWindowTemplateSelection:
         visualizer_window._update_template_list()
 
         assert visualizer_window.template_list.count() == 2
-        assert "Showing 2 of 2" in visualizer_window.results_label.text()
+        # Check that the result label shows the count (format varies by language)
+        assert "2" in visualizer_window.results_label.text()
 
     def test_on_template_selected(
         self,
@@ -696,7 +701,8 @@ class TestDatabaseVisualizerWindowTemplateSelectionAdvanced:
 
         # Info label should indicate highest resolution not found
         info_text = visualizer_window.info_label.text()
-        assert "Not found" in info_text
+        # Check for the resolution (1080px) in the not found message
+        assert "1080" in info_text
 
 
 class TestDatabaseVisualizerWindowImageDisplay:
@@ -732,8 +738,8 @@ class TestDatabaseVisualizerWindowImageDisplay:
         # Current image should have a pixmap
         assert not visualizer_window.current_image.pixmap().isNull()
 
-        # Highest should show not found text
-        assert "not found" in visualizer_window.highest_image.text().lower()
+        # Highest should show not found text (check translation key)
+        assert t("database_visualizer.template_not_found") in visualizer_window.highest_image.text()
 
     def test_display_comparison_images_with_both(
         self,

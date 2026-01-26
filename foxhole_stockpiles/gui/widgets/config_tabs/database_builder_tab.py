@@ -21,6 +21,7 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseBuilderSettings
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 
 class DatabaseBuilderTab(QWidget):
@@ -36,6 +37,7 @@ class DatabaseBuilderTab(QWidget):
             parent (QWidget | None): Parent widget. Defaults to None.
         """
         super().__init__(parent)
+        self._cpu_count = os.cpu_count() or 1
         self.init_ui()
 
     def init_ui(self) -> None:
@@ -43,74 +45,58 @@ class DatabaseBuilderTab(QWidget):
         layout = QVBoxLayout(self)
 
         # Files and Settings Group
-        settings_group = QGroupBox("Database Builder Settings")
+        self.settings_group = QGroupBox()
         settings_layout = QFormLayout()
-        settings_group.setLayout(settings_layout)
+        self.settings_group.setLayout(settings_layout)
 
         # Catalog file
-        catalog_label = QLabel("Catalog File (catalog.json):")
-        catalog_label.setToolTip(
-            "Path to catalog.json file that defines all game items.\n\n"
-            "Required for the 'Build Database' feature.\n"
-            "This file maps item codes to their icon paths.\n\n"
-            "Download from: https://github.com/xurxogr/foxhole-stockpiles/tree/main/data"
-        )
+        self.catalog_label = QLabel()
         catalog_layout = QHBoxLayout()
         self.catalog_file_input = QLineEdit()
-        self.catalog_file_input.setPlaceholderText("Path to catalog.json")
         self.catalog_file_input.textChanged.connect(self._update_download_buttons)
         catalog_layout.addWidget(self.catalog_file_input)
-        self.catalog_download_btn = QPushButton("Download")
+        self.catalog_download_btn = QPushButton()
         self.catalog_download_btn.setMaximumWidth(80)
         self.catalog_download_btn.clicked.connect(
             lambda: self._open_url("https://github.com/xurxogr/foxhole-stockpiles/tree/main/data")
         )
         catalog_layout.addWidget(self.catalog_download_btn)
-        catalog_browse_btn = QPushButton("Browse...")
-        catalog_browse_btn.clicked.connect(self.browse_catalog_file)
-        catalog_layout.addWidget(catalog_browse_btn)
-        settings_layout.addRow(catalog_label, catalog_layout)
+        self.catalog_browse_btn = QPushButton()
+        self.catalog_browse_btn.clicked.connect(self.browse_catalog_file)
+        catalog_layout.addWidget(self.catalog_browse_btn)
+        settings_layout.addRow(self.catalog_label, catalog_layout)
 
         # Workers
-        cpu_count = os.cpu_count() or 1
-        workers_label = QLabel("Workers:")
-        workers_label.setToolTip(
-            "Number of parallel processes for database building.\n\n"
-            "Set to 0 to auto-detect (uses CPU count).\n"
-            "Set to 1 to disable multiprocessing."
-        )
+        self.workers_label = QLabel()
         workers_layout = QHBoxLayout()
         self.workers_spinbox = QSpinBox()
         self.workers_spinbox.setMinimum(0)
-        self.workers_spinbox.setMaximum(cpu_count)
+        self.workers_spinbox.setMaximum(self._cpu_count)
         self.workers_spinbox.setValue(0)
         self.workers_spinbox.setFixedWidth(80)
         workers_layout.addWidget(self.workers_spinbox)
-        workers_hint = QLabel(f"(0 = auto-detect, max {cpu_count} cores)")
-        workers_hint.setStyleSheet("color: gray; font-size: 11px;")
-        workers_layout.addWidget(workers_hint)
+        self.workers_hint = QLabel()
+        self.workers_hint.setStyleSheet("color: gray; font-size: 11px;")
+        workers_layout.addWidget(self.workers_hint)
         workers_layout.addStretch()
-        settings_layout.addRow(workers_label, workers_layout)
+        settings_layout.addRow(self.workers_label, workers_layout)
 
-        layout.addWidget(settings_group)
+        layout.addWidget(self.settings_group)
 
         # Resolutions Group
-        resolutions_group = QGroupBox("Target Resolutions")
+        self.resolutions_group = QGroupBox()
         resolutions_layout = QVBoxLayout()
-        resolutions_group.setLayout(resolutions_layout)
+        self.resolutions_group.setLayout(resolutions_layout)
 
-        resolutions_info = QLabel(
-            "Select which resolutions to generate when importing icons. "
-            "Check 'All Resolutions' to generate all supported resolutions."
-        )
-        resolutions_info.setWordWrap(True)
-        resolutions_layout.addWidget(resolutions_info)
+        self.resolutions_info = QLabel()
+        self.resolutions_info.setWordWrap(True)
+        resolutions_layout.addWidget(self.resolutions_info)
 
         self.resolution_list = QListWidget()
         self.resolution_list.setMaximumHeight(200)
 
-        # Add "All" option first
-        all_item = self.resolution_list.addItem("All Resolutions")
+        # Add "All" option first (will be translated in retranslate)
+        all_item = self.resolution_list.addItem("")
         if all_item is None:
             all_item = self.resolution_list.item(0)
         if all_item:
@@ -131,24 +117,60 @@ class DatabaseBuilderTab(QWidget):
         self.resolution_list.itemChanged.connect(self._handle_resolution_selection)
         resolutions_layout.addWidget(self.resolution_list)
 
-        layout.addWidget(resolutions_group)
+        layout.addWidget(self.resolutions_group)
 
         # Status info
-        status_label = QLabel(
-            "<b>Note:</b> The catalog file and external tools (repak, umodel) must be "
-            "configured for the 'Build Database' feature to work."
-        )
-        status_label.setWordWrap(True)
-        status_label.setStyleSheet(
+        self.status_label = QLabel()
+        self.status_label.setWordWrap(True)
+        self.status_label.setStyleSheet(
             "QLabel { background-color: palette(alternate-base); padding: 8px; "
             "border: 2px solid #FF9800; margin-top: 10px; }"
         )
-        layout.addWidget(status_label)
+        layout.addWidget(self.status_label)
 
         layout.addStretch()
 
+        # Apply translations
+        self.retranslate()
+
         # Initial update of download button visibility
         self._update_download_buttons()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.settings_group.setTitle(t("database_builder_tab.settings_group"))
+
+        self.catalog_label.setText(t("database_builder_tab.catalog_file"))
+        self.catalog_label.setToolTip(t("database_builder_tab.catalog_tooltip"))
+        self.catalog_file_input.setPlaceholderText(t("database_builder_tab.catalog_placeholder"))
+        self.catalog_download_btn.setText(t("external_tools_tab.download"))
+        self.catalog_browse_btn.setText(t("common.browse"))
+
+        self.workers_label.setText(t("database_builder_tab.workers"))
+        self.workers_label.setToolTip(t("database_builder_tab.workers_tooltip"))
+        workers_hint_text = t("database_builder_tab.workers_hint").replace(
+            "{cores}", str(self._cpu_count)
+        )
+        self.workers_hint.setText(workers_hint_text)
+
+        self.resolutions_group.setTitle(t("database_builder_tab.resolutions_group"))
+        self.resolutions_info.setText(t("database_builder_tab.resolutions_info"))
+
+        # Update "All Resolutions" item
+        all_item = self.resolution_list.item(0)
+        if all_item:
+            all_item.setText(t("database_builder_tab.all_resolutions"))
+
+        self.status_label.setText(t("database_builder_tab.status_note"))
 
     def _update_download_buttons(self) -> None:
         """Update visibility of download buttons based on whether fields are empty."""
@@ -166,7 +188,7 @@ class DatabaseBuilderTab(QWidget):
         """Open file dialog to select catalog file (catalog.json)."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Catalog File (catalog.json)",
+            t("database_builder_tab.select_catalog"),
             "",
             "JSON Files (*.json);;All Files (*)",
         )

@@ -25,14 +25,15 @@ from foxhole_stockpiles.core.settings.sections.notifications import (
     NotificationsSettings,
 )
 from foxhole_stockpiles.enums.notifier_type import NotifierType
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
-# Available events for notification
+# Available events for notification (id, translation_key_suffix)
 AVAILABLE_EVENTS = [
-    ("stockpile.scanned", "Stockpile Scanned", "When a stockpile scan completes successfully"),
-    ("stockpile.scan_failed", "Scan Failed", "When a stockpile scan fails"),
-    ("stockpile.scan_started", "Scan Started", "When a stockpile scan begins"),
-    ("server.started", "Server Started", "When the API server starts"),
-    ("server.stopped", "Server Stopped", "When the API server stops"),
+    ("stockpile.scanned", "stockpile_scanned", "stockpile_scanned_desc"),
+    ("stockpile.scan_failed", "scan_failed", "scan_failed_desc"),
+    ("stockpile.scan_started", "scan_started", "scan_started_desc"),
+    ("server.started", "server_started", "server_started_desc"),
+    ("server.stopped", "server_stopped", "server_stopped_desc"),
 ]
 
 
@@ -58,42 +59,38 @@ class NotifierDialog(QDialog):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Edit Notifier" if self.notifier else "Add Notifier")
         self.setMinimumWidth(650)
 
         layout = QVBoxLayout(self)
 
         # Basic settings
-        basic_group = QGroupBox("Basic Settings")
+        self.basic_group = QGroupBox()
         basic_layout = QFormLayout()
-        basic_group.setLayout(basic_layout)
+        self.basic_group.setLayout(basic_layout)
 
+        self.name_label = QLabel()
         self.name_input = QLineEdit()
-        self.name_input.setPlaceholderText("e.g., Main Discord")
-        self.name_input.setToolTip("A friendly name to identify this notifier")
-        basic_layout.addRow("Name:", self.name_input)
+        basic_layout.addRow(self.name_label, self.name_input)
 
+        self.webhook_label = QLabel()
         self.webhook_input = QLineEdit()
-        self.webhook_input.setPlaceholderText("https://discord.com/api/webhooks/...")
-        self.webhook_input.setToolTip("Discord webhook URL for sending notifications")
-        basic_layout.addRow("Webhook URL:", self.webhook_input)
+        basic_layout.addRow(self.webhook_label, self.webhook_input)
 
+        self.username_label = QLabel()
         self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Foxhole Stockpiles")
-        self.username_input.setToolTip("Custom username shown for webhook messages")
-        basic_layout.addRow("Username:", self.username_input)
+        basic_layout.addRow(self.username_label, self.username_input)
 
-        layout.addWidget(basic_group)
+        layout.addWidget(self.basic_group)
 
         # Events
-        events_group = QGroupBox("Events to Notify")
-        events_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.events_group = QGroupBox()
+        self.events_group.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
         events_outer_layout = QVBoxLayout()
-        events_group.setLayout(events_outer_layout)
+        self.events_group.setLayout(events_outer_layout)
 
-        events_desc = QLabel("Select which events should trigger notifications:")
-        events_desc.setStyleSheet("QLabel { color: gray; margin-bottom: 5px; }")
-        events_outer_layout.addWidget(events_desc)
+        self.events_desc = QLabel()
+        self.events_desc.setStyleSheet("QLabel { color: gray; margin-bottom: 5px; }")
+        events_outer_layout.addWidget(self.events_desc)
 
         # Grid layout for checkboxes (2 columns)
         events_grid = QGridLayout()
@@ -101,9 +98,8 @@ class NotifierDialog(QDialog):
         events_grid.setColumnStretch(1, 1)
 
         self.event_checkboxes: dict[str, QCheckBox] = {}
-        for i, (event_id, event_name, event_desc) in enumerate(AVAILABLE_EVENTS):
-            checkbox = QCheckBox(event_name)
-            checkbox.setToolTip(event_desc)
+        for i, (event_id, _name_key, _desc_key) in enumerate(AVAILABLE_EVENTS):
+            checkbox = QCheckBox()
             self.event_checkboxes[event_id] = checkbox
             row = i // 2
             col = i % 2
@@ -111,31 +107,29 @@ class NotifierDialog(QDialog):
 
         events_outer_layout.addLayout(events_grid)
 
-        layout.addWidget(events_group)
+        layout.addWidget(self.events_group)
 
         # Message templates
-        templates_group = QGroupBox("Custom Message Templates (Optional)")
-        templates_layout = QFormLayout()
-        templates_group.setLayout(templates_layout)
+        self.templates_group = QGroupBox()
+        self.templates_layout = QFormLayout()
+        self.templates_group.setLayout(self.templates_layout)
 
-        templates_desc = QLabel(
-            "Override default message templates. Leave blank to use defaults.\n"
-            "Placeholders: STOCKPILE_NAME, STOCKPILE_TYPE, SHARD, TIME, ITEM_COUNT,\n"
-            "MATCHED_ITEMS, UNMATCHED_ITEMS, AVG_CONFIDENCE, DURATION, RESOLUTION, ERROR"
-        )
-        templates_desc.setStyleSheet("QLabel { color: gray; margin-bottom: 5px; }")
-        templates_desc.setWordWrap(True)
-        templates_layout.addRow(templates_desc)
+        self.templates_desc = QLabel()
+        self.templates_desc.setStyleSheet("QLabel { color: gray; margin-bottom: 5px; }")
+        self.templates_desc.setWordWrap(True)
+        self.templates_layout.addRow(self.templates_desc)
 
         self.template_inputs: dict[str, QLineEdit] = {}
-        for event_id, event_name, _ in AVAILABLE_EVENTS:
+        self.template_labels: dict[str, QLabel] = {}
+        for event_id, _name_key, _ in AVAILABLE_EVENTS:
+            label = QLabel()
             line_edit = QLineEdit()
             line_edit.setPlaceholderText(DEFAULT_TEMPLATES.get(event_id, ""))
-            line_edit.setToolTip(f"Custom template for {event_name} event")
             self.template_inputs[event_id] = line_edit
-            templates_layout.addRow(f"{event_name}:", line_edit)
+            self.template_labels[event_id] = label
+            self.templates_layout.addRow(label, line_edit)
 
-        layout.addWidget(templates_group)
+        layout.addWidget(self.templates_group)
 
         # Button box
         button_box = QDialogButtonBox(
@@ -144,6 +138,67 @@ class NotifierDialog(QDialog):
         button_box.accepted.connect(self.validate_and_accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        # Window title
+        if self.notifier:
+            self.setWindowTitle(t("notifications_tab.notifier_dialog.title_edit"))
+        else:
+            self.setWindowTitle(t("notifications_tab.notifier_dialog.title_add"))
+
+        # Basic settings
+        self.basic_group.setTitle(t("notifications_tab.notifier_dialog.basic_settings"))
+        self.name_label.setText(t("common.name") + ":")
+        self.name_input.setPlaceholderText(t("notifications_tab.notifier_dialog.name_placeholder"))
+        self.name_input.setToolTip(t("notifications_tab.notifier_dialog.name_tooltip"))
+        self.webhook_label.setText(t("notifications_tab.notifier_dialog.webhook_url"))
+        self.webhook_input.setPlaceholderText(
+            t("notifications_tab.notifier_dialog.webhook_placeholder")
+        )
+        self.webhook_input.setToolTip(t("notifications_tab.notifier_dialog.webhook_tooltip"))
+        self.username_label.setText(t("notifications_tab.notifier_dialog.username") + ":")
+        self.username_input.setPlaceholderText(
+            t("notifications_tab.notifier_dialog.username_placeholder")
+        )
+        self.username_input.setToolTip(t("notifications_tab.notifier_dialog.username_tooltip"))
+
+        # Events
+        self.events_group.setTitle(t("notifications_tab.notifier_dialog.events_group"))
+        self.events_desc.setText(t("notifications_tab.notifier_dialog.events_description"))
+
+        # Update event checkboxes
+        for event_id, name_key, desc_key in AVAILABLE_EVENTS:
+            if event_id in self.event_checkboxes:
+                self.event_checkboxes[event_id].setText(t(f"notifications_tab.events.{name_key}"))
+                self.event_checkboxes[event_id].setToolTip(
+                    t(f"notifications_tab.events.{desc_key}")
+                )
+
+        # Templates
+        self.templates_group.setTitle(t("notifications_tab.notifier_dialog.templates_group"))
+        self.templates_desc.setText(t("notifications_tab.notifier_dialog.templates_description"))
+
+        # Update template labels
+        for event_id, name_key, _ in AVAILABLE_EVENTS:
+            if event_id in self.template_labels:
+                event_name = t(f"notifications_tab.events.{name_key}")
+                self.template_labels[event_id].setText(f"{event_name}:")
+                self.template_inputs[event_id].setToolTip(
+                    t("notifications_tab.notifier_dialog.templates_description")
+                )
 
     def load_notifier(self, notifier: DiscordNotifierSettings) -> None:
         """Load notifier settings into the dialog.
@@ -166,15 +221,19 @@ class NotifierDialog(QDialog):
         """Validate input and accept dialog if valid."""
         webhook = self.webhook_input.text().strip()
         if not webhook:
-            QMessageBox.warning(self, "Validation Error", "Webhook URL is required.")
+            QMessageBox.warning(
+                self,
+                t("common.validation_error"),
+                t("notifications_tab.notifier_dialog.webhook_required"),
+            )
             self.webhook_input.setFocus()
             return
 
         if not webhook.startswith("https://discord.com/api/webhooks/"):
             QMessageBox.warning(
                 self,
-                "Validation Error",
-                "Webhook URL must start with 'https://discord.com/api/webhooks/'",
+                t("common.validation_error"),
+                t("notifications_tab.notifier_dialog.webhook_invalid"),
             )
             self.webhook_input.setFocus()
             return
@@ -185,7 +244,9 @@ class NotifierDialog(QDialog):
         ]
         if not selected_events:
             QMessageBox.warning(
-                self, "Validation Error", "Please select at least one event to notify."
+                self,
+                t("common.validation_error"),
+                t("notifications_tab.notifier_dialog.event_required"),
             )
             return
 
@@ -238,24 +299,20 @@ class NotificationsTab(QWidget):
         layout = QVBoxLayout(self)
 
         # Description
-        description = QLabel(
-            "Configure Discord webhooks to receive notifications about stockpile scans\n"
-            "and server events. You can add multiple notifiers with different settings."
-        )
-        description.setWordWrap(True)
-        description.setStyleSheet("QLabel { color: gray; margin-bottom: 10px; }")
-        layout.addWidget(description)
+        self.description_label = QLabel()
+        self.description_label.setWordWrap(True)
+        self.description_label.setStyleSheet("QLabel { color: gray; margin-bottom: 10px; }")
+        layout.addWidget(self.description_label)
 
         # Enable checkbox
-        self.enabled_checkbox = QCheckBox("Enable Notifications")
-        self.enabled_checkbox.setToolTip("Master switch to enable or disable all notifications")
+        self.enabled_checkbox = QCheckBox()
         self.enabled_checkbox.stateChanged.connect(self._on_enabled_changed)
         layout.addWidget(self.enabled_checkbox)
 
         # Notifiers group
-        notifiers_group = QGroupBox("Discord Notifiers")
+        self.notifiers_group = QGroupBox()
         notifiers_layout = QVBoxLayout()
-        notifiers_group.setLayout(notifiers_layout)
+        self.notifiers_group.setLayout(notifiers_layout)
 
         # List widget
         self.notifiers_list = QListWidget()
@@ -266,31 +323,50 @@ class NotificationsTab(QWidget):
         # Buttons
         buttons_layout = QHBoxLayout()
 
-        self.add_button = QPushButton("Add")
-        self.add_button.setToolTip("Add a new Discord notifier")
+        self.add_button = QPushButton()
         self.add_button.clicked.connect(self._on_add_clicked)
         buttons_layout.addWidget(self.add_button)
 
-        self.edit_button = QPushButton("Edit")
-        self.edit_button.setToolTip("Edit the selected notifier")
+        self.edit_button = QPushButton()
         self.edit_button.clicked.connect(self._on_edit_clicked)
         buttons_layout.addWidget(self.edit_button)
 
-        self.remove_button = QPushButton("Remove")
-        self.remove_button.setToolTip("Remove the selected notifier")
+        self.remove_button = QPushButton()
         self.remove_button.clicked.connect(self._on_remove_clicked)
         buttons_layout.addWidget(self.remove_button)
 
         buttons_layout.addStretch()
         notifiers_layout.addLayout(buttons_layout)
 
-        self.notifiers_group = notifiers_group
-        layout.addWidget(notifiers_group)
+        layout.addWidget(self.notifiers_group)
 
         layout.addStretch()
 
+        # Apply translations
+        self.retranslate()
+
         # Initial state
         self._update_buttons_state()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.description_label.setText(t("notifications_tab.description"))
+        self.enabled_checkbox.setText(t("notifications_tab.enable_notifications"))
+        self.enabled_checkbox.setToolTip(t("notifications_tab.enable_tooltip"))
+        self.notifiers_group.setTitle(t("notifications_tab.notifiers_group"))
+
+        self.add_button.setText(t("common.add"))
+        self.edit_button.setText(t("common.edit"))
+        self.remove_button.setText(t("common.remove"))
 
     def _on_enabled_changed(self) -> None:
         """Handle enabled checkbox state change."""
@@ -345,10 +421,11 @@ class NotificationsTab(QWidget):
             return
 
         notifier = self._notifiers[row]
+        message = t("notifications_tab.remove_notifier_message").replace("{name}", notifier.name)
         reply = QMessageBox.question(
             self,
-            "Remove Notifier",
-            f"Are you sure you want to remove '{notifier.name}'?",
+            t("notifications_tab.remove_notifier_title"),
+            message,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )

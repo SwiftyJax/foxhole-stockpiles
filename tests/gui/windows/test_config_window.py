@@ -25,6 +25,7 @@ from foxhole_stockpiles.core.settings.sections import (
 from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture(autouse=True)
@@ -91,7 +92,7 @@ def test_config_window_initialization(config_window: ConfigWindow) -> None:
     Args:
         config_window: ConfigWindow instance
     """
-    assert config_window.windowTitle() == "Configuration"
+    assert config_window.windowTitle() == t("config_window.title")
     assert config_window.config_manager is not None
     assert config_window.settings is not None
     assert config_window.tab_widget is not None
@@ -123,7 +124,7 @@ def test_config_window_basic_level_by_default(config_window: ConfigWindow) -> No
     # Default config level is BASIC which shows 5 tabs
     assert config_window._current_config_level == ConfigLevel.BASIC
     assert config_window.tab_widget.count() == 5
-    assert config_window.tab_widget.tabText(0) == "API Server"
+    assert config_window.tab_widget.tabText(0) == t("config_window.tabs.api_server")
 
 
 def test_config_window_config_level_tabs(qtbot: Any, mock_config_manager: MagicMock) -> None:
@@ -159,7 +160,7 @@ def test_config_window_config_level_tabs(qtbot: Any, mock_config_manager: MagicM
     window3 = ConfigWindow()
     qtbot.addWidget(window3)
     assert window3.tab_widget.count() == 11
-    assert window3.tab_widget.tabText(0) == "API Server"
+    assert window3.tab_widget.tabText(0) == t("config_window.tabs.api_server")
 
 
 def test_config_window_load_settings_populates_tabs(
@@ -206,7 +207,7 @@ def test_config_window_load_settings_error_handling(
         # Should show error dialog
         mock_msg.assert_called_once()
         args = mock_msg.call_args[0]
-        assert "Error Loading Configuration" in args[1]
+        assert t("config_window.dialogs.error_loading_title") in args[1]
         assert "Load failed" in args[2]
 
 

@@ -29,6 +29,7 @@ from PyQt6.QtWidgets import (
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.services.template_database import TemplateDatabase
 from foxhole_stockpiles.services.template_manager import TemplateManager
@@ -99,7 +100,6 @@ class DatabaseVisualizerWindow(QDialog):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Template Database Visualizer")
         self.setMinimumSize(1200, 700)
         self.resize(1400, 800)
 
@@ -121,6 +121,40 @@ class DatabaseVisualizerWindow(QDialog):
         # Set initial splitter proportions (30% left, 70% right)
         splitter.setSizes([400, 1000])
 
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.setWindowTitle(t("database_visualizer.title"))
+        self.filters_group.setTitle(t("database_visualizer.filters_group"))
+        self.resolution_label.setText(t("database_visualizer.resolution"))
+        self.code_label.setText(t("database_visualizer.code"))
+        self.code_filter.setPlaceholderText(t("database_visualizer.code_placeholder"))
+        self.faction_label.setText(t("database_visualizer.faction"))
+        self.category_label.setText(t("database_visualizer.category"))
+        self.mod_label.setText(t("database_visualizer.mod"))
+        self.crated_label.setText(t("database_visualizer.crated"))
+        self.crated_all.setText(t("database_visualizer.crated_all"))
+        self.crated_normal.setText(t("database_visualizer.crated_normal"))
+        self.crated_crated.setText(t("database_visualizer.crated_crated"))
+        self.clear_button.setText(t("database_visualizer.clear_filters"))
+        self.info_label.setText(t("database_visualizer.select_template"))
+        self.image_group.setTitle(t("database_visualizer.template_comparison"))
+        self.current_group.setTitle(t("database_visualizer.current_resolution"))
+        self.highest_group.setTitle(t("database_visualizer.highest_resolution"))
+        self.current_image.setText(t("database_visualizer.no_image_selected"))
+        self.highest_image.setText(t("database_visualizer.no_image_selected"))
+
     def _create_left_panel(self) -> QWidget:
         """Create the left panel with filters and template list.
 
@@ -131,54 +165,59 @@ class DatabaseVisualizerWindow(QDialog):
         layout = QVBoxLayout(panel)
 
         # Filters section
-        filters_group = QGroupBox("Filters")
-        filters_layout = QGridLayout(filters_group)
+        self.filters_group = QGroupBox()
+        filters_layout = QGridLayout(self.filters_group)
 
         # Resolution filter
-        filters_layout.addWidget(QLabel("Resolution:"), 0, 0)
+        self.resolution_label = QLabel()
+        filters_layout.addWidget(self.resolution_label, 0, 0)
         self.resolution_filter = QComboBox()
         self.resolution_filter.addItem("Loading...", None)
         self.resolution_filter.currentTextChanged.connect(self._on_resolution_changed)
         filters_layout.addWidget(self.resolution_filter, 0, 1)
 
         # Code filter
-        filters_layout.addWidget(QLabel("Code:"), 1, 0)
+        self.code_label = QLabel()
+        filters_layout.addWidget(self.code_label, 1, 0)
         self.code_filter = QLineEdit()
-        self.code_filter.setPlaceholderText("Enter item code...")
         self.code_filter.textChanged.connect(self._apply_filters)
         filters_layout.addWidget(self.code_filter, 1, 1)
 
         # Faction filter
-        filters_layout.addWidget(QLabel("Faction:"), 2, 0)
+        self.faction_label = QLabel()
+        filters_layout.addWidget(self.faction_label, 2, 0)
         self.faction_filter = QComboBox()
-        self.faction_filter.addItem("All", None)
+        self.faction_filter.addItem(t("common.all"), None)
         for faction in ItemFaction:
             self.faction_filter.addItem(faction.value, faction)
         self.faction_filter.currentTextChanged.connect(self._apply_filters)
         filters_layout.addWidget(self.faction_filter, 2, 1)
 
         # Category filter
-        filters_layout.addWidget(QLabel("Category:"), 3, 0)
+        self.category_label = QLabel()
+        filters_layout.addWidget(self.category_label, 3, 0)
         self.category_filter = QComboBox()
-        self.category_filter.addItem("All", None)
+        self.category_filter.addItem(t("common.all"), None)
         for category in ItemCategory:
             self.category_filter.addItem(category.value, category)
         self.category_filter.currentTextChanged.connect(self._apply_filters)
         filters_layout.addWidget(self.category_filter, 3, 1)
 
         # Mod filter
-        filters_layout.addWidget(QLabel("Mod:"), 4, 0)
+        self.mod_label = QLabel()
+        filters_layout.addWidget(self.mod_label, 4, 0)
         self.mod_filter = QComboBox()
-        self.mod_filter.addItem("All", "")
+        self.mod_filter.addItem(t("common.all"), "")
         self.mod_filter.currentTextChanged.connect(self._apply_filters)
         filters_layout.addWidget(self.mod_filter, 4, 1)
 
         # Crated filter
-        filters_layout.addWidget(QLabel("Crated:"), 5, 0)
+        self.crated_label = QLabel()
+        filters_layout.addWidget(self.crated_label, 5, 0)
         crated_layout = QHBoxLayout()
-        self.crated_all = QCheckBox("All")
-        self.crated_normal = QCheckBox("Normal")
-        self.crated_crated = QCheckBox("Crated")
+        self.crated_all = QCheckBox()
+        self.crated_normal = QCheckBox()
+        self.crated_crated = QCheckBox()
         self.crated_all.setChecked(True)
         self.crated_all.toggled.connect(self._on_crated_all_toggled)
         self.crated_normal.toggled.connect(self._apply_filters)
@@ -189,11 +228,11 @@ class DatabaseVisualizerWindow(QDialog):
         filters_layout.addLayout(crated_layout, 5, 1)
 
         # Clear filters button
-        clear_button = QPushButton("Clear Filters")
-        clear_button.clicked.connect(self._clear_filters)
-        filters_layout.addWidget(clear_button, 6, 0, 1, 2)
+        self.clear_button = QPushButton()
+        self.clear_button.clicked.connect(self._clear_filters)
+        filters_layout.addWidget(self.clear_button, 6, 0, 1, 2)
 
-        layout.addWidget(filters_group)
+        layout.addWidget(self.filters_group)
 
         # Loading progress
         self.progress_bar = QProgressBar()
@@ -201,7 +240,7 @@ class DatabaseVisualizerWindow(QDialog):
         layout.addWidget(self.progress_bar)
 
         # Results count
-        self.results_label = QLabel("Select a database to load")
+        self.results_label = QLabel()
         layout.addWidget(self.results_label)
 
         # Template list
@@ -221,7 +260,7 @@ class DatabaseVisualizerWindow(QDialog):
         layout = QVBoxLayout(panel)
 
         # Template info
-        self.info_label = QLabel("Select a template to view details")
+        self.info_label = QLabel()
         self.info_label.setFont(QFont("Arial", 10))
         self.info_label.setWordWrap(True)
         self.info_label.setStyleSheet(
@@ -231,14 +270,14 @@ class DatabaseVisualizerWindow(QDialog):
         layout.addWidget(self.info_label)
 
         # Image comparison area
-        image_group = QGroupBox("Template Comparison (Size Matched)")
-        image_layout = QHBoxLayout(image_group)
+        self.image_group = QGroupBox()
+        image_layout = QHBoxLayout(self.image_group)
 
         # Current resolution image
-        self.current_group = QGroupBox("Current Resolution")
+        self.current_group = QGroupBox()
         current_layout = QVBoxLayout(self.current_group)
         current_scroll = QScrollArea()
-        self.current_image = QLabel("No image selected")
+        self.current_image = QLabel()
         self.current_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.current_image.setMinimumHeight(200)
         self.current_image.setStyleSheet(
@@ -250,10 +289,10 @@ class DatabaseVisualizerWindow(QDialog):
         image_layout.addWidget(self.current_group)
 
         # Highest resolution image
-        self.highest_group = QGroupBox("Highest Resolution")
+        self.highest_group = QGroupBox()
         highest_layout = QVBoxLayout(self.highest_group)
         highest_scroll = QScrollArea()
-        self.highest_image = QLabel("No image selected")
+        self.highest_image = QLabel()
         self.highest_image.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.highest_image.setMinimumHeight(200)
         self.highest_image.setStyleSheet(
@@ -264,7 +303,7 @@ class DatabaseVisualizerWindow(QDialog):
         highest_layout.addWidget(highest_scroll)
         image_layout.addWidget(self.highest_group)
 
-        layout.addWidget(image_group)
+        layout.addWidget(self.image_group)
 
         return panel
 
@@ -298,13 +337,17 @@ class DatabaseVisualizerWindow(QDialog):
             self.all_templates = list(enumerate(self.database.templates))
 
             # Update window title
-            self.setWindowTitle(f"Template Database Visualizer - {resolution.value}p")
+            self.setWindowTitle(
+                t("database_visualizer.title_with_resolution").replace(
+                    "{resolution}", resolution.value
+                )
+            )
 
             # Populate mod filter with available mods for this resolution
-            mods = sorted(set(t.mod for _, t in self.all_templates))
+            mods = sorted(set(tmpl.mod for _, tmpl in self.all_templates))
             current_mod = self.mod_filter.currentData()
             self.mod_filter.clear()
-            self.mod_filter.addItem("All", "")
+            self.mod_filter.addItem(t("common.all"), "")
             for mod in mods:
                 self.mod_filter.addItem(mod, mod)
 
@@ -320,10 +363,10 @@ class DatabaseVisualizerWindow(QDialog):
     def load_databases(self) -> None:
         """Load all template databases in background thread."""
         if not self.database_path:
-            self.results_label.setText("No database path configured")
+            self.results_label.setText(t("database_visualizer.no_database_path"))
             return
 
-        self.results_label.setText("Loading all databases...")
+        self.results_label.setText(t("database_visualizer.loading_databases"))
         self.progress_bar.setVisible(True)
         self.progress_bar.setRange(0, 0)  # Indeterminate progress
 
@@ -365,7 +408,9 @@ class DatabaseVisualizerWindow(QDialog):
             error_msg (str): Error message.
         """
         self.progress_bar.setVisible(False)
-        self.results_label.setText(f"Error loading database: {error_msg}")
+        self.results_label.setText(
+            t("database_visualizer.error_loading").replace("{error}", error_msg)
+        )
         logger.error("Failed to load database: %s", error_msg)
 
     def _apply_filters(self) -> None:
@@ -430,7 +475,11 @@ class DatabaseVisualizerWindow(QDialog):
         # Update results count
         total = len(self.all_templates)
         filtered = len(self.filtered_templates)
-        self.results_label.setText(f"Showing {filtered} of {total} templates")
+        self.results_label.setText(
+            t("database_visualizer.showing_results")
+            .replace("{filtered}", str(filtered))
+            .replace("{total}", str(total))
+        )
 
     def _on_template_selected(self, item: QListWidgetItem) -> None:
         """Handle template selection.
@@ -462,21 +511,24 @@ class DatabaseVisualizerWindow(QDialog):
         highest_info = ""
         if highest_template:
             highest_info = (
-                f"<br><b>Highest Res Available:</b> {highest_template.resolution.value}px "
-                f"(shape: {highest_template.image.shape})"
+                f"<br><b>{t('database_visualizer.info.highest_res_available')}</b> "
+                f"{highest_template.resolution.value}px (shape: {highest_template.image.shape})"
             )
         else:
-            highest_info = f"<br><b>Highest Res:</b> Not found in {highest_resolution.value}px"
+            not_found_msg = t("database_visualizer.info.highest_res_not_found")
+            not_found_msg = not_found_msg.replace("{resolution}", highest_resolution.value)
+            highest_info = f"<br><b>{not_found_msg}</b>"
 
+        current_res = f"{template.resolution.value}px"
         info_text = (
-            f"<b>Code:</b> {template.code}<br>"
-            f"<b>Faction:</b> {template.faction.value}<br>"
-            f"<b>Category:</b> {template.category.value}<br>"
-            f"<b>Mod:</b> {template.mod}<br>"
-            f"<b>Crated:</b> {template.crated}<br>"
-            f"<b>Current Resolution:</b> {template.resolution.value}px<br>"
-            f"<b>Current Shape:</b> {template.image.shape}<br>"
-            f"<b>Database Index:</b> {idx}"
+            f"<b>{t('database_visualizer.info.code')}</b> {template.code}<br>"
+            f"<b>{t('database_visualizer.info.faction')}</b> {template.faction.value}<br>"
+            f"<b>{t('database_visualizer.info.category')}</b> {template.category.value}<br>"
+            f"<b>{t('database_visualizer.info.mod')}</b> {template.mod}<br>"
+            f"<b>{t('database_visualizer.info.crated')}</b> {template.crated}<br>"
+            f"<b>{t('database_visualizer.info.current_resolution')}</b> {current_res}<br>"
+            f"<b>{t('database_visualizer.info.current_shape')}</b> {template.image.shape}<br>"
+            f"<b>{t('database_visualizer.info.database_index')}</b> {idx}"
             f"{highest_info}"
         )
         self.info_label.setText(info_text)
@@ -557,7 +609,9 @@ class DatabaseVisualizerWindow(QDialog):
 
             # Update group box title with highest resolution
             self.highest_group.setTitle(
-                f"Highest Resolution ({highest_template.resolution.value}p - 4x)"
+                t("database_visualizer.highest_resolution_found").replace(
+                    "{resolution}", highest_template.resolution.value
+                )
             )
         else:
             # Fallback: use 8x for current if no highest template
@@ -571,15 +625,17 @@ class DatabaseVisualizerWindow(QDialog):
             )
 
             # No highest resolution template found
-            self.highest_image.setText("Template not found\nin highest resolution")
-            self.highest_group.setTitle("Highest Resolution (Not Found)")
+            self.highest_image.setText(t("database_visualizer.template_not_found"))
+            self.highest_group.setTitle(t("database_visualizer.highest_resolution_not_found"))
 
         self.current_image.setPixmap(current_scaled)
         self.current_image.resize(current_scaled.size())
 
         # Update group box title with current resolution and scale
         self.current_group.setTitle(
-            f"Current Resolution ({current_template.resolution.value}p - {current_scale:.1f}x)"
+            t("database_visualizer.current_resolution_scale")
+            .replace("{resolution}", current_template.resolution.value)
+            .replace("{scale}", f"{current_scale:.1f}")
         )
 
     def closeEvent(self, event: object) -> None:

@@ -15,6 +15,7 @@ from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseB
 from foxhole_stockpiles.core.settings.sections.external_tools import ExternalToolsSettings
 from foxhole_stockpiles.gui.utils.icon_import_worker import IconImportWorker
 from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
+from foxhole_stockpiles.i18n import t
 
 
 # Prevent any GUI dialogs from appearing during test cleanup
@@ -132,7 +133,7 @@ def test_icon_import_window_initialization_configured(configured_window: IconImp
     Args:
         configured_window: Configured window instance
     """
-    assert configured_window.windowTitle() == "Build Database"
+    assert configured_window.windowTitle() == t("database_builder.title")
     assert configured_window.is_configured is True
     assert configured_window.import_worker is None
     assert configured_window.mod_pak_files == []
@@ -148,7 +149,7 @@ def test_icon_import_window_initialization_unconfigured(
     Args:
         unconfigured_window: Unconfigured window instance
     """
-    assert unconfigured_window.windowTitle() == "Build Database"
+    assert unconfigured_window.windowTitle() == t("database_builder.title")
     assert unconfigured_window.is_configured is False
 
 
@@ -553,7 +554,7 @@ def test_validate_inputs_no_mod_pak_files(configured_window: IconImportWindow) -
     is_valid, error_msg = configured_window.validate_inputs()
 
     assert is_valid is False
-    assert "at least one mod PAK file" in error_msg
+    assert error_msg == t("database_builder.validation.add_pak_file")
 
 
 def test_validate_inputs_no_mod_name(configured_window: IconImportWindow) -> None:
@@ -567,7 +568,7 @@ def test_validate_inputs_no_mod_name(configured_window: IconImportWindow) -> Non
     is_valid, error_msg = configured_window.validate_inputs()
 
     assert is_valid is False
-    assert "mod name" in error_msg
+    assert error_msg == t("database_builder.validation.enter_mod_name")
 
 
 def test_validate_inputs_valid(configured_window: IconImportWindow) -> None:
@@ -602,7 +603,7 @@ def test_start_import_validation_fails(qtbot: Any, configured_window: IconImport
 
         mock_warning.assert_called_once()
         args = mock_warning.call_args[0]
-        assert args[1] == "Validation Error"
+        assert args[1] == t("common.validation_error")
 
 
 def test_start_import_success(
@@ -721,7 +722,9 @@ def test_on_import_finished_success(qtbot: Any, configured_window: IconImportWin
     # Should add success log message
     assert configured_window.log_display.rowCount() == 1
     message_item = configured_window.log_display.item(0, 3)
-    assert message_item is not None and "completed successfully" in message_item.text().lower()
+    assert (
+        message_item is not None and t("database_builder.import_completed") in message_item.text()
+    )
 
 
 def test_on_import_finished_failure(qtbot: Any, configured_window: IconImportWindow) -> None:
@@ -959,7 +962,7 @@ def test_start_import_invalid_mod_name(qtbot: Any, configured_window: IconImport
         configured_window.start_import()
 
         mock_critical.assert_called_once()
-        assert "Invalid Mod Name" in str(mock_critical.call_args)
+        assert t("database_builder.invalid_mod_name_title") in str(mock_critical.call_args)
         assert configured_window.import_worker is None
 
         # Verify inputs are re-enabled so user can fix the error
@@ -1154,7 +1157,7 @@ def test_validate_inputs_no_db_path(configured_window: IconImportWindow) -> None
     is_valid, error_msg = configured_window.validate_inputs()
 
     assert is_valid is False
-    assert "database file" in error_msg.lower()
+    assert error_msg == t("database_builder.validation.select_database")
 
 
 # ===== Platform-Specific Path Tests =====
@@ -1562,7 +1565,10 @@ def test_on_validation_complete_valid(configured_window: IconImportWindow) -> No
     assert configured_window._validation_result == result
     # Use isHidden() since window isn't shown
     assert configured_window.vanilla_group.isHidden() is True
-    assert "All required assets found" in configured_window.validation_status_label.text()
+    assert (
+        t("database_builder.validation.all_assets_found")
+        in configured_window.validation_status_label.text()
+    )
 
 
 def test_on_validation_complete_missing_crate(configured_window: IconImportWindow) -> None:
@@ -1587,7 +1593,10 @@ def test_on_validation_complete_missing_crate(configured_window: IconImportWindo
     assert configured_window._is_validating is False
     # Use isHidden() since window isn't shown
     assert configured_window.vanilla_group.isHidden() is False
-    assert "Missing required assets" in configured_window.validation_status_label.text()
+    assert (
+        t("database_builder.validation.missing_assets")
+        in configured_window.validation_status_label.text()
+    )
     assert "crate icon" in configured_window.vanilla_info.text()
 
 
@@ -1683,7 +1692,7 @@ def test_validate_inputs_while_validating(configured_window: IconImportWindow) -
     is_valid, error_msg = configured_window.validate_inputs()
 
     assert is_valid is False
-    assert "wait for mod PAK file validation" in error_msg
+    assert error_msg == t("database_builder.validation.wait_validation")
 
 
 def test_validate_inputs_vanilla_required_but_missing(
@@ -1707,7 +1716,7 @@ def test_validate_inputs_vanilla_required_but_missing(
     is_valid, error_msg = configured_window.validate_inputs()
 
     assert is_valid is False
-    assert "vanilla" in error_msg.lower()
+    assert error_msg == t("database_builder.validation.mod_missing_assets")
 
 
 def test_validate_inputs_vanilla_required_and_provided(
@@ -1766,7 +1775,7 @@ def test_validate_inputs_vanilla_provided_but_invalid(
     is_valid, error_msg = configured_window.validate_inputs()
 
     assert is_valid is False
-    assert "does not contain the required assets" in error_msg
+    assert error_msg == t("database_builder.validation.vanilla_invalid")
 
 
 def test_validate_inputs_vanilla_provided_not_validated(
@@ -1794,7 +1803,7 @@ def test_validate_inputs_vanilla_provided_not_validated(
     is_valid, error_msg = configured_window.validate_inputs()
 
     assert is_valid is False
-    assert "wait for vanilla PAK file validation" in error_msg
+    assert error_msg == t("database_builder.validation.wait_vanilla_validation")
 
 
 def test_validate_inputs_while_validating_vanilla(
@@ -1812,7 +1821,7 @@ def test_validate_inputs_while_validating_vanilla(
     is_valid, error_msg = configured_window.validate_inputs()
 
     assert is_valid is False
-    assert "wait for vanilla PAK file validation" in error_msg
+    assert error_msg == t("database_builder.validation.wait_vanilla_validation")
 
 
 def test_trigger_vanilla_validation_no_file(configured_window: IconImportWindow) -> None:
@@ -1889,7 +1898,10 @@ def test_on_vanilla_validation_complete_valid(configured_window: IconImportWindo
 
     assert configured_window._is_validating_vanilla is False
     assert configured_window._vanilla_validation_result == result
-    assert "All required assets found" in configured_window.validation_status_label.text()
+    assert (
+        t("database_builder.validation.all_assets_found")
+        in configured_window.validation_status_label.text()
+    )
     # Warning message should be hidden when valid
     assert configured_window.vanilla_info.isHidden() is True
 
@@ -1918,7 +1930,10 @@ def test_on_vanilla_validation_complete_invalid(
 
     assert configured_window._is_validating_vanilla is False
     assert configured_window._vanilla_validation_result == result
-    assert "Invalid" in configured_window.validation_status_label.text()
+    assert (
+        t("database_builder.validation.invalid_vanilla")
+        in configured_window.validation_status_label.text()
+    )
     # Warning message should be visible when invalid
     assert configured_window.vanilla_info.isHidden() is False
     mock_warning.assert_called_once()
@@ -2335,6 +2350,9 @@ def test_clear_vanilla_pak_restores_warning_state(
     assert configured_window._vanilla_validation_result is None
     # Use isHidden() since window isn't shown
     assert configured_window.vanilla_info.isHidden() is False
-    assert "Missing required assets" in configured_window.validation_status_label.text()
+    assert (
+        t("database_builder.validation.missing_assets")
+        in configured_window.validation_status_label.text()
+    )
     # Start button should be disabled since mod validation failed and no vanilla
     assert configured_window.start_button.isEnabled() is False

@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
 )
 
 from foxhole_stockpiles.core.settings.sections.templates import TemplateSettings
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 
 class TemplateTab(QWidget):
@@ -36,115 +37,117 @@ class TemplateTab(QWidget):
         warning_layout = QHBoxLayout(warning_header)
         warning_layout.setContentsMargins(0, 0, 0, 0)
 
-        info_label = QLabel(
-            "⚠️ <b>Advanced Settings:</b> Template settings configure crate overlay "
-            "color transformation. "
-            "These values are used when generating crated versions of item icons. "
-            "<b style='color: #d32f2f;'>Incorrect values will break template generation.</b>"
-        )
-        info_label.setWordWrap(True)
-        info_label.setStyleSheet(
+        self.info_label = QLabel()
+        self.info_label.setWordWrap(True)
+        self.info_label.setStyleSheet(
             "QLabel { background-color: palette(alternate-base); padding: 10px; "
             "border: 2px solid #FF9800; }"
         )
-        warning_layout.addWidget(info_label, 1)
+        warning_layout.addWidget(self.info_label, 1)
 
-        reset_all_btn = QPushButton("Reset All to Defaults")
-        reset_all_btn.clicked.connect(self.reset_all_to_defaults)
-        reset_all_btn.setStyleSheet("QPushButton { padding: 8px; }")
-        warning_layout.addWidget(reset_all_btn)
+        self.reset_all_btn = QPushButton()
+        self.reset_all_btn.clicked.connect(self.reset_all_to_defaults)
+        self.reset_all_btn.setStyleSheet("QPushButton { padding: 8px; }")
+        warning_layout.addWidget(self.reset_all_btn)
 
         layout.addWidget(warning_header)
 
         # RGB Multipliers Group
-        multipliers_group = QGroupBox("RGB Multipliers (0-255)")
+        self.multipliers_group = QGroupBox()
         multipliers_layout = QFormLayout()
-        multipliers_group.setLayout(multipliers_layout)
+        self.multipliers_group.setLayout(multipliers_layout)
 
-        red_mult_label = QLabel("Red Multiplier:")
-        red_mult_label.setToolTip(
-            "Red channel multiplier for crate overlay color transformation.\n\n"
-            "Value 0-255, will be divided by 255 during processing.\n"
-            "Controls how much of the red channel is retained in crated item icons."
-        )
+        self.red_mult_label = QLabel()
         self.red_mult_input = QSpinBox()
         self.red_mult_input.setRange(0, 255)
         self.red_mult_input.setValue(154)
-        multipliers_layout.addRow(red_mult_label, self.red_mult_input)
+        multipliers_layout.addRow(self.red_mult_label, self.red_mult_input)
 
-        green_mult_label = QLabel("Green Multiplier:")
-        green_mult_label.setToolTip(
-            "Green channel multiplier for crate overlay color transformation.\n\n"
-            "Value 0-255, will be divided by 255 during processing.\n"
-            "Controls how much of the green channel is retained in crated item icons."
-        )
+        self.green_mult_label = QLabel()
         self.green_mult_input = QSpinBox()
         self.green_mult_input.setRange(0, 255)
         self.green_mult_input.setValue(152)
-        multipliers_layout.addRow(green_mult_label, self.green_mult_input)
+        multipliers_layout.addRow(self.green_mult_label, self.green_mult_input)
 
-        blue_mult_label = QLabel("Blue Multiplier:")
-        blue_mult_label.setToolTip(
-            "Blue channel multiplier for crate overlay color transformation.\n\n"
-            "Value 0-255, will be divided by 255 during processing.\n"
-            "Controls how much of the blue channel is retained in crated item icons."
-        )
+        self.blue_mult_label = QLabel()
         self.blue_mult_input = QSpinBox()
         self.blue_mult_input.setRange(0, 255)
         self.blue_mult_input.setValue(145)
-        multipliers_layout.addRow(blue_mult_label, self.blue_mult_input)
+        multipliers_layout.addRow(self.blue_mult_label, self.blue_mult_input)
 
-        layout.addWidget(multipliers_group)
+        layout.addWidget(self.multipliers_group)
 
         # RGB Offsets Group
-        offsets_group = QGroupBox("RGB Offsets (0-255)")
+        self.offsets_group = QGroupBox()
         offsets_layout = QFormLayout()
-        offsets_group.setLayout(offsets_layout)
+        self.offsets_group.setLayout(offsets_layout)
 
-        red_offset_label = QLabel("Red Offset:")
-        red_offset_label.setToolTip(
-            "Red channel offset added after multiplication.\n\n"
-            "Value 0-255. Adjusts the base red level of crated item icons.\n"
-            "Used to match the brownish crate overlay color."
-        )
+        self.red_offset_label = QLabel()
         self.red_offset_input = QSpinBox()
         self.red_offset_input.setRange(0, 255)
         self.red_offset_input.setValue(89)
-        offsets_layout.addRow(red_offset_label, self.red_offset_input)
+        offsets_layout.addRow(self.red_offset_label, self.red_offset_input)
 
-        green_offset_label = QLabel("Green Offset:")
-        green_offset_label.setToolTip(
-            "Green channel offset added after multiplication.\n\n"
-            "Value 0-255. Adjusts the base green level of crated item icons.\n"
-            "Used to match the brownish crate overlay color."
-        )
+        self.green_offset_label = QLabel()
         self.green_offset_input = QSpinBox()
         self.green_offset_input.setRange(0, 255)
         self.green_offset_input.setValue(87)
-        offsets_layout.addRow(green_offset_label, self.green_offset_input)
+        offsets_layout.addRow(self.green_offset_label, self.green_offset_input)
 
-        blue_offset_label = QLabel("Blue Offset:")
-        blue_offset_label.setToolTip(
-            "Blue channel offset added after multiplication.\n\n"
-            "Value 0-255. Adjusts the base blue level of crated item icons.\n"
-            "Used to match the brownish crate overlay color."
-        )
+        self.blue_offset_label = QLabel()
         self.blue_offset_input = QSpinBox()
         self.blue_offset_input.setRange(0, 255)
         self.blue_offset_input.setValue(82)
-        offsets_layout.addRow(blue_offset_label, self.blue_offset_input)
+        offsets_layout.addRow(self.blue_offset_label, self.blue_offset_input)
 
-        layout.addWidget(offsets_group)
+        layout.addWidget(self.offsets_group)
 
         layout.addStretch()
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.info_label.setText(t("template_tab.warning_header"))
+        self.reset_all_btn.setText(t("template_tab.reset_all"))
+
+        self.multipliers_group.setTitle(t("template_tab.multipliers_group"))
+        self.offsets_group.setTitle(t("template_tab.offsets_group"))
+
+        self.red_mult_label.setText(t("template_tab.red_mult"))
+        self.red_mult_label.setToolTip(t("template_tab.red_mult_tooltip"))
+
+        self.green_mult_label.setText(t("template_tab.green_mult"))
+        self.green_mult_label.setToolTip(t("template_tab.green_mult_tooltip"))
+
+        self.blue_mult_label.setText(t("template_tab.blue_mult"))
+        self.blue_mult_label.setToolTip(t("template_tab.blue_mult_tooltip"))
+
+        self.red_offset_label.setText(t("template_tab.red_offset"))
+        self.red_offset_label.setToolTip(t("template_tab.red_offset_tooltip"))
+
+        self.green_offset_label.setText(t("template_tab.green_offset"))
+        self.green_offset_label.setToolTip(t("template_tab.green_offset_tooltip"))
+
+        self.blue_offset_label.setText(t("template_tab.blue_offset"))
+        self.blue_offset_label.setToolTip(t("template_tab.blue_offset_tooltip"))
 
     def reset_all_to_defaults(self) -> None:
         """Reset all template settings to default values from the model."""
         reply = QMessageBox.question(
             self,
-            "Reset Template Settings",
-            "Reset all template settings to default values?\n\n"
-            "This will restore the factory defaults for crate color transformation.",
+            t("template_tab.reset_title"),
+            t("template_tab.reset_message"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )

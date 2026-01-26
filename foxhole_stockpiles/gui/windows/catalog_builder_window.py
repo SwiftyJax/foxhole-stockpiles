@@ -32,6 +32,7 @@ from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 from foxhole_stockpiles.gui.windows.catalog_builder_settings_dialog import (
     CatalogBuilderSettingsDialog,
 )
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +68,8 @@ class CatalogBuilderWindow(QMainWindow):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Build Catalog")
         self.setGeometry(100, 100, 800, 600)
+        self._cpu_count = os.cpu_count() or 1
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -76,77 +77,72 @@ class CatalogBuilderWindow(QMainWindow):
         layout = QVBoxLayout(central_widget)
 
         # PAK File Section
-        pak_group = QGroupBox("PAK File")
+        self.pak_group = QGroupBox()
         pak_layout = QVBoxLayout()
-        pak_group.setLayout(pak_layout)
+        self.pak_group.setLayout(pak_layout)
 
         # Info text
-        pak_info = QLabel(
-            "Select the Foxhole PAK file (War-WindowsNoEditor.pak) to build the catalog from."
-        )
-        pak_info.setWordWrap(True)
-        pak_layout.addWidget(pak_info)
+        self.pak_info = QLabel()
+        self.pak_info.setWordWrap(True)
+        pak_layout.addWidget(self.pak_info)
 
         # PAK file path display
         pak_path_layout = QHBoxLayout()
         self.pak_display = QLineEdit()
         self.pak_display.setReadOnly(True)
-        self.pak_display.setPlaceholderText("No PAK file selected")
         pak_path_layout.addWidget(self.pak_display)
 
-        self.pak_browse_button = QPushButton("Browse...")
+        self.pak_browse_button = QPushButton()
         self.pak_browse_button.clicked.connect(self.select_pak_file)
         pak_path_layout.addWidget(self.pak_browse_button)
 
         pak_layout.addLayout(pak_path_layout)
-        layout.addWidget(pak_group)
+        layout.addWidget(self.pak_group)
 
         # Output Section
-        output_group = QGroupBox("Output")
+        self.output_group = QGroupBox()
         output_layout = QVBoxLayout()
-        output_group.setLayout(output_layout)
+        self.output_group.setLayout(output_layout)
 
         # Output path
         output_path_layout = QHBoxLayout()
-        output_path_layout.addWidget(QLabel("Catalog File:"))
+        self.catalog_file_label = QLabel()
+        output_path_layout.addWidget(self.catalog_file_label)
         self.output_path_input = QLineEdit()
         self.output_path_input.setText("catalog.json")
-        self.output_path_input.setPlaceholderText("Path for output catalog.json")
         output_path_layout.addWidget(self.output_path_input)
 
-        output_browse_button = QPushButton("Browse...")
-        output_browse_button.clicked.connect(self.select_output_path)
-        output_path_layout.addWidget(output_browse_button)
+        self.output_browse_button = QPushButton()
+        self.output_browse_button.clicked.connect(self.select_output_path)
+        output_path_layout.addWidget(self.output_browse_button)
 
         output_layout.addLayout(output_path_layout)
 
         # Workers
-        cpu_count = os.cpu_count() or 1
         workers_layout = QHBoxLayout()
-        workers_layout.addWidget(QLabel("Workers:"))
+        self.workers_label = QLabel()
+        workers_layout.addWidget(self.workers_label)
         self.workers_spinbox = QSpinBox()
         self.workers_spinbox.setMinimum(1)
-        self.workers_spinbox.setMaximum(cpu_count)
-        self.workers_spinbox.setValue(cpu_count)
-        self.workers_spinbox.setToolTip("Number of parallel processes for uasset conversion.")
+        self.workers_spinbox.setMaximum(self._cpu_count)
+        self.workers_spinbox.setValue(self._cpu_count)
         self.workers_spinbox.setFixedWidth(80)
         workers_layout.addWidget(self.workers_spinbox)
-        workers_hint = QLabel(f"({cpu_count} cores detected)")
-        workers_hint.setStyleSheet("color: gray; font-size: 11px;")
-        workers_layout.addWidget(workers_hint)
+        self.workers_hint = QLabel()
+        self.workers_hint.setStyleSheet("color: gray; font-size: 11px;")
+        workers_layout.addWidget(self.workers_hint)
         workers_layout.addStretch()
 
         output_layout.addLayout(workers_layout)
-        layout.addWidget(output_group)
+        layout.addWidget(self.output_group)
 
         # Logs Section
-        logs_group = QGroupBox("Process Logs")
+        self.logs_group = QGroupBox()
         logs_layout = QVBoxLayout()
-        logs_group.setLayout(logs_layout)
+        self.logs_group.setLayout(logs_layout)
 
         self.log_display = QTableWidget()
         self.log_display.setColumnCount(4)
-        self.log_display.setHorizontalHeaderLabels(["Time", "Level", "Module", "Message"])
         self.log_display.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.log_display.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.log_display.setWordWrap(True)
@@ -174,31 +170,73 @@ class CatalogBuilderWindow(QMainWindow):
         self.log_display.keyPressEvent = self._log_key_press_event  # type: ignore[assignment,method-assign]
 
         logs_layout.addWidget(self.log_display)
-        layout.addWidget(logs_group, stretch=1)
+        layout.addWidget(self.logs_group, stretch=1)
 
         # Action Buttons
         action_buttons_layout = QHBoxLayout()
 
-        self.start_button = QPushButton("Build Catalog")
+        self.start_button = QPushButton()
         self.start_button.clicked.connect(self.start_build)
         action_buttons_layout.addWidget(self.start_button)
 
-        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button = QPushButton()
         self.cancel_button.clicked.connect(self.cancel_build)
         self.cancel_button.setEnabled(False)
         action_buttons_layout.addWidget(self.cancel_button)
 
         action_buttons_layout.addStretch()
 
-        clear_logs_button = QPushButton("Clear Logs")
-        clear_logs_button.clicked.connect(self.clear_logs)
-        action_buttons_layout.addWidget(clear_logs_button)
+        self.clear_logs_button = QPushButton()
+        self.clear_logs_button.clicked.connect(self.clear_logs)
+        action_buttons_layout.addWidget(self.clear_logs_button)
 
-        close_button = QPushButton("Close")
-        close_button.clicked.connect(self.close)
-        action_buttons_layout.addWidget(close_button)
+        self.close_button = QPushButton()
+        self.close_button.clicked.connect(self.close)
+        action_buttons_layout.addWidget(self.close_button)
 
         layout.addLayout(action_buttons_layout)
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.setWindowTitle(t("catalog_builder.title"))
+        self.pak_group.setTitle(t("catalog_builder.pak_group"))
+        self.pak_info.setText(t("catalog_builder.pak_info"))
+        self.pak_display.setPlaceholderText(t("catalog_builder.no_pak_selected"))
+        self.pak_browse_button.setText(t("common.browse"))
+        self.output_group.setTitle(t("catalog_builder.output_group"))
+        self.catalog_file_label.setText(t("catalog_builder.catalog_file"))
+        self.output_path_input.setPlaceholderText(t("catalog_builder.catalog_placeholder"))
+        self.output_browse_button.setText(t("common.browse"))
+        self.workers_label.setText(t("catalog_builder.workers"))
+        self.workers_spinbox.setToolTip(t("catalog_builder.workers_tooltip"))
+        self.workers_hint.setText(
+            t("catalog_builder.cores_detected").replace("{cores}", str(self._cpu_count))
+        )
+        self.logs_group.setTitle(t("catalog_builder.process_logs"))
+        self.log_display.setHorizontalHeaderLabels(
+            [
+                t("server_panel.log_columns.time"),
+                t("server_panel.log_columns.level"),
+                t("server_panel.log_columns.module"),
+                t("server_panel.log_columns.message"),
+            ]
+        )
+        self.start_button.setText(t("catalog_builder.build_catalog"))
+        self.cancel_button.setText(t("common.cancel"))
+        self.clear_logs_button.setText(t("common.clear_logs"))
+        self.close_button.setText(t("common.close"))
 
     def _check_configuration(self) -> bool:
         """Check if catalog builder is properly configured.
@@ -225,12 +263,12 @@ class CatalogBuilderWindow(QMainWindow):
         warning_layout.addStretch()
 
         warning_label = QLabel(
-            "<h2>Configuration Required</h2>"
-            "<p><b>The Catalog Builder is not properly configured.</b></p>"
-            "<p>To use the Catalog Builder feature, you need to configure:</p>"
+            f"<h2>{t('catalog_builder.config_required_title')}</h2>"
+            f"<p><b>{t('catalog_builder.config_required_message')}</b></p>"
+            f"<p>{t('catalog_builder.config_required_intro')}</p>"
             "<ul>"
-            "<li><b>Extractor Tool</b> (repak) - for extracting PAK files</li>"
-            "<li><b>JSON Converter</b> (UAssetGUI) - for converting UAsset files to JSON</li>"
+            f"<li><b>{t('catalog_builder.config_required_extractor')}</b></li>"
+            f"<li><b>{t('catalog_builder.config_required_converter')}</b></li>"
             "</ul>"
         )
         warning_label.setWordWrap(True)
@@ -251,12 +289,12 @@ class CatalogBuilderWindow(QMainWindow):
         button_layout = QHBoxLayout()
         button_layout.addStretch()
 
-        configure_button = QPushButton("Configure...")
+        configure_button = QPushButton(t("common.configure"))
         configure_button.setFixedWidth(120)
         configure_button.clicked.connect(self._open_settings_dialog)
         button_layout.addWidget(configure_button)
 
-        close_button = QPushButton("Close")
+        close_button = QPushButton(t("common.close"))
         close_button.setFixedWidth(100)
         close_button.clicked.connect(self.close)
         button_layout.addWidget(close_button)
@@ -313,9 +351,9 @@ class CatalogBuilderWindow(QMainWindow):
         """Open file dialog to select PAK file."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select PAK File",
+            t("catalog_builder.select_pak"),
             self._get_default_pak_directory(),
-            "PAK Files (*.pak);;All Files (*)",
+            t("catalog_builder.pak_filter"),
         )
         if file_path:
             self.pak_file = file_path
@@ -328,9 +366,9 @@ class CatalogBuilderWindow(QMainWindow):
 
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Select Output Catalog File",
+            t("catalog_builder.select_output"),
             start_dir,
-            "JSON Files (*.json);;All Files (*)",
+            t("catalog_builder.json_filter"),
         )
         if file_path:
             if not file_path.endswith(".json"):
@@ -344,14 +382,14 @@ class CatalogBuilderWindow(QMainWindow):
             tuple[bool, str]: (is_valid, error_message)
         """
         if not self.pak_file:
-            return False, "Please select a PAK file"
+            return False, t("catalog_builder.validation.select_pak")
 
         if not Path(self.pak_file).exists():
-            return False, "The selected PAK file does not exist"
+            return False, t("catalog_builder.validation.pak_not_exist")
 
         output_path = self.output_path_input.text().strip()
         if not output_path:
-            return False, "Please specify an output path for the catalog"
+            return False, t("catalog_builder.validation.specify_output")
 
         return True, ""
 
@@ -359,7 +397,7 @@ class CatalogBuilderWindow(QMainWindow):
         """Start the catalog build process."""
         is_valid, error_msg = self.validate_inputs()
         if not is_valid:
-            QMessageBox.warning(self, "Validation Error", error_msg)
+            QMessageBox.warning(self, t("common.validation_error"), error_msg)
             return
 
         # Disable inputs
@@ -417,7 +455,7 @@ class CatalogBuilderWindow(QMainWindow):
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "level": "INFO",
                 "module": "catalog_builder",
-                "message": "Catalog build completed successfully!",
+                "message": t("catalog_builder.build_completed"),
                 "color": "#00FF00",
             }
         else:
@@ -425,7 +463,7 @@ class CatalogBuilderWindow(QMainWindow):
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "level": "WARNING",
                 "module": "catalog_builder",
-                "message": "Build was cancelled",
+                "message": t("catalog_builder.build_cancelled"),
                 "color": "#FFA500",
             }
         self.append_log(status_log)
@@ -449,7 +487,7 @@ class CatalogBuilderWindow(QMainWindow):
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "level": "ERROR",
             "module": "catalog_builder",
-            "message": f"Build error: {error_msg}",
+            "message": t("catalog_builder.build_error").replace("{error}", error_msg),
             "color": "#FF0000",
         }
         self.append_log(error_log)
@@ -561,8 +599,8 @@ class CatalogBuilderWindow(QMainWindow):
         if self.build_worker and self.build_worker.isRunning():
             reply = QMessageBox.question(
                 self,
-                "Build In Progress",
-                "A build is currently running. Are you sure you want to close?",
+                t("catalog_builder.build_in_progress_title"),
+                t("catalog_builder.build_in_progress_message"),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
 

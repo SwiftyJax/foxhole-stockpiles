@@ -20,6 +20,7 @@ from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
 from foxhole_stockpiles.gui.windows.database_info_window import DatabaseInfoWindow
 from foxhole_stockpiles.gui.windows.database_visualizer_window import DatabaseVisualizerWindow
 from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,18 @@ class MainWindow(QMainWindow):
         self.create_tray_icon()
         # Apply config level to menu visibility
         self._apply_config_level_to_menus()
+        # Connect to language changes with cleanup on destruction
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event.
+
+        Args:
+            _language: The new language code (unused).
+        """
+        self.retranslate()
 
     def _load_minimize_to_tray_setting(self) -> bool:
         """Load minimize_to_tray setting from config.
@@ -69,44 +82,47 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
 
         # File menu
-        file_menu = menu_bar.addMenu("&File")  # type: ignore[union-attr]
+        self.file_menu = menu_bar.addMenu("")  # type: ignore[union-attr]
 
-        config_action = file_menu.addAction("&Configuration...")  # type: ignore[union-attr]
-        config_action.triggered.connect(self.show_configuration)  # type: ignore[union-attr]
+        self.config_action = self.file_menu.addAction("")  # type: ignore[union-attr]
+        self.config_action.triggered.connect(self.show_configuration)  # type: ignore[union-attr]
 
-        scan_action = file_menu.addAction("&Scan Screenshot...")  # type: ignore[union-attr]
-        scan_action.triggered.connect(self.scan_screenshot)  # type: ignore[union-attr]
+        self.scan_action = self.file_menu.addAction("")  # type: ignore[union-attr]
+        self.scan_action.triggered.connect(self.scan_screenshot)  # type: ignore[union-attr]
 
         # Build Catalog - hidden at Basic config level
-        build_catalog_action = file_menu.addAction("Build &Catalog...")  # type: ignore[union-attr]
-        build_catalog_action.triggered.connect(self.show_catalog_builder)  # type: ignore[union-attr]
-        self._advanced_menu_actions.append(build_catalog_action)  # type: ignore[arg-type]
+        self.build_catalog_action = self.file_menu.addAction("")  # type: ignore[union-attr]
+        self.build_catalog_action.triggered.connect(self.show_catalog_builder)  # type: ignore[union-attr]
+        self._advanced_menu_actions.append(self.build_catalog_action)  # type: ignore[arg-type]
 
-        file_menu.addSeparator()  # type: ignore[union-attr]
+        self.file_menu.addSeparator()  # type: ignore[union-attr]
 
-        exit_action = file_menu.addAction("E&xit")  # type: ignore[union-attr]
-        exit_action.triggered.connect(self.quit_application)  # type: ignore[union-attr]
+        self.exit_action = self.file_menu.addAction("")  # type: ignore[union-attr]
+        self.exit_action.triggered.connect(self.quit_application)  # type: ignore[union-attr]
 
         # Database menu
-        database_menu = menu_bar.addMenu("&Database")  # type: ignore[union-attr]
+        self.database_menu = menu_bar.addMenu("")  # type: ignore[union-attr]
 
         # Build Database - hidden at Basic config level
-        build_database_action = database_menu.addAction("&Build...")  # type: ignore[union-attr]
-        build_database_action.triggered.connect(self.show_icon_import)  # type: ignore[union-attr]
-        self._advanced_menu_actions.append(build_database_action)  # type: ignore[arg-type]
+        self.build_database_action = self.database_menu.addAction("")  # type: ignore[union-attr]
+        self.build_database_action.triggered.connect(self.show_icon_import)  # type: ignore[union-attr]
+        self._advanced_menu_actions.append(self.build_database_action)  # type: ignore[arg-type]
 
-        info_database_action = database_menu.addAction("&Information...")  # type: ignore[union-attr]
-        info_database_action.triggered.connect(self.show_database_info)  # type: ignore[union-attr]
+        self.info_database_action = self.database_menu.addAction("")  # type: ignore[union-attr]
+        self.info_database_action.triggered.connect(self.show_database_info)  # type: ignore[union-attr]
 
         # Visualizer - hidden at Basic config level
-        visualizer_action = database_menu.addAction("&Visualizer...")  # type: ignore[union-attr]
-        visualizer_action.triggered.connect(self.show_database_visualizer)  # type: ignore[union-attr]
-        self._advanced_menu_actions.append(visualizer_action)  # type: ignore[arg-type]
+        self.visualizer_action = self.database_menu.addAction("")  # type: ignore[union-attr]
+        self.visualizer_action.triggered.connect(self.show_database_visualizer)  # type: ignore[union-attr]
+        self._advanced_menu_actions.append(self.visualizer_action)  # type: ignore[arg-type]
 
         # Help menu
-        help_menu = menu_bar.addMenu("&Help")  # type: ignore[union-attr]
-        about_action = help_menu.addAction("&About")  # type: ignore[union-attr]
-        about_action.triggered.connect(self.show_about)  # type: ignore[union-attr]
+        self.help_menu = menu_bar.addMenu("")  # type: ignore[union-attr]
+        self.about_action = self.help_menu.addAction("")  # type: ignore[union-attr]
+        self.about_action.triggered.connect(self.show_about)  # type: ignore[union-attr]
+
+        # Apply initial translations
+        self.retranslate()
 
     def _apply_config_level_to_menus(self) -> None:
         """Apply config level settings to menu visibility."""
@@ -157,27 +173,30 @@ class MainWindow(QMainWindow):
         # Create tray menu
         tray_menu = QMenu()
 
-        show_action = QAction("Show", self)
-        show_action.triggered.connect(self.show_from_tray)
-        tray_menu.addAction(show_action)
+        self.tray_show_action = QAction("", self)
+        self.tray_show_action.triggered.connect(self.show_from_tray)
+        tray_menu.addAction(self.tray_show_action)
 
-        hide_action = QAction("Hide", self)
-        hide_action.triggered.connect(self.hide)
-        tray_menu.addAction(hide_action)
-
-        tray_menu.addSeparator()
-
-        config_action = QAction("Configuration...", self)
-        config_action.triggered.connect(self.show_configuration)
-        tray_menu.addAction(config_action)
+        self.tray_hide_action = QAction("", self)
+        self.tray_hide_action.triggered.connect(self.hide)
+        tray_menu.addAction(self.tray_hide_action)
 
         tray_menu.addSeparator()
 
-        quit_action = QAction("Quit", self)
-        quit_action.triggered.connect(self.quit_application)
-        tray_menu.addAction(quit_action)
+        self.tray_config_action = QAction("", self)
+        self.tray_config_action.triggered.connect(self.show_configuration)
+        tray_menu.addAction(self.tray_config_action)
+
+        tray_menu.addSeparator()
+
+        self.tray_quit_action = QAction("", self)
+        self.tray_quit_action.triggered.connect(self.quit_application)
+        tray_menu.addAction(self.tray_quit_action)
 
         self.tray_icon.setContextMenu(tray_menu)
+
+        # Apply translations to tray menu
+        self._retranslate_tray()
 
         # Double-click to show window
         self.tray_icon.activated.connect(self.tray_icon_activated)
@@ -318,8 +337,8 @@ class MainWindow(QMainWindow):
         if not database_path:
             QMessageBox.warning(
                 self,
-                "No Database",
-                "No database is configured. Please configure a database path in settings first.",
+                t("main_window.dialogs.no_database_title"),
+                t("main_window.dialogs.no_database_message"),
             )
             return
 
@@ -339,23 +358,23 @@ class MainWindow(QMainWindow):
         """Show about dialog."""
         QMessageBox.about(
             self,
-            "About FS",
-            f"<h2>FS (Foxhole Stockpiles)</h2>"
-            f"<p>Version {__version__}</p>"
-            f"<p>A tool for scanning and analyzing Foxhole game stockpiles.</p>"
-            f"<p><b>Features:</b></p>"
+            t("about.title"),
+            f"<h2>{t('about.app_name')}</h2>"
+            f"<p>{t('about.version').replace('{version}', __version__)}</p>"
+            f"<p>{t('about.description')}</p>"
+            f"<p><b>{t('about.features_title')}</b></p>"
             f"<ul>"
-            f"<li>Stockpile screenshot scanning</li>"
-            f"<li>Template database management</li>"
-            f"<li>FastAPI server for remote scanning</li>"
+            f"<li>{t('about.feature_scanning')}</li>"
+            f"<li>{t('about.feature_database')}</li>"
+            f"<li>{t('about.feature_server')}</li>"
             f"</ul>"
-            f"<p><b>Links:</b></p>"
-            f"<p><a href='https://github.com/xurxogr/foxhole-stockpiles'>GitHub Repository</a></p>"
+            f"<p><b>{t('about.links_title')}</b></p>"
+            f"<p><a href='https://github.com/xurxogr/foxhole-stockpiles'>{t('about.github_link')}</a></p>"
             f"<p><a href='https://github.com/xurxogr/foxhole-stockpiles-client'>"
-            f"FS Client (Complementary Tool)</a></p>"
+            f"{t('about.client_link')}</a></p>"
             f"<hr>"
-            f"<p>Copyright © 2024 Xurxogr</p>"
-            f"<p>Licensed under the MIT License</p>",
+            f"<p>{t('about.copyright')}</p>"
+            f"<p>{t('about.license')}</p>",
         )
 
     def closeEvent(self, event: QCloseEvent | None) -> None:
@@ -386,8 +405,8 @@ class MainWindow(QMainWindow):
             # Show notification on first minimize
             if not hasattr(self, "_shown_tray_message"):
                 self.tray_icon.showMessage(
-                    "FS - Foxhole Stockpiles",
-                    "Application minimized to system tray. Right-click the tray icon for options.",
+                    t("main_window.tray.minimized_title"),
+                    t("main_window.tray.minimized_message"),
                     QSystemTrayIcon.MessageIcon.Information,
                     4000,
                 )
@@ -432,3 +451,38 @@ class MainWindow(QMainWindow):
         from PyQt6.QtWidgets import QApplication
 
         QApplication.quit()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        # Window title
+        self.setWindowTitle(t("main_window.title", version=__version__))
+
+        # File menu
+        self.file_menu.setTitle(t("main_window.menu.file"))  # type: ignore[union-attr]
+        self.config_action.setText(t("main_window.menu.configuration"))  # type: ignore[union-attr]
+        self.scan_action.setText(t("main_window.menu.scan_screenshot"))  # type: ignore[union-attr]
+        self.build_catalog_action.setText(t("main_window.menu.build_catalog"))  # type: ignore[union-attr]
+        self.exit_action.setText(t("main_window.menu.exit"))  # type: ignore[union-attr]
+
+        # Database menu
+        self.database_menu.setTitle(t("main_window.menu.database"))  # type: ignore[union-attr]
+        self.build_database_action.setText(t("main_window.menu.build"))  # type: ignore[union-attr]
+        self.info_database_action.setText(t("main_window.menu.information"))  # type: ignore[union-attr]
+        self.visualizer_action.setText(t("main_window.menu.visualizer"))  # type: ignore[union-attr]
+
+        # Help menu
+        self.help_menu.setTitle(t("main_window.menu.help"))  # type: ignore[union-attr]
+        self.about_action.setText(t("main_window.menu.about"))  # type: ignore[union-attr]
+
+        # Tray menu (if available)
+        self._retranslate_tray()
+
+    def _retranslate_tray(self) -> None:
+        """Update tray menu translations."""
+        if hasattr(self, "tray_show_action"):
+            self.tray_show_action.setText(t("main_window.tray.show"))
+            self.tray_hide_action.setText(t("main_window.tray.hide"))
+            self.tray_config_action.setText(t("main_window.tray.configuration"))
+            self.tray_quit_action.setText(t("main_window.tray.quit"))
+        if hasattr(self, "tray_icon"):
+            self.tray_icon.setToolTip(t("main_window.title", version=__version__))

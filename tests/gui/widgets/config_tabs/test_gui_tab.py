@@ -7,6 +7,7 @@ import pytest
 from foxhole_stockpiles.core.settings.sections.gui import GUISettings
 from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.widgets.config_tabs.gui_tab import GUITab
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -79,7 +80,7 @@ def test_gui_tab_warning_label_shown_for_advanced(gui_tab: GUITab) -> None:
     gui_tab.config_level_input.setCurrentIndex(1)  # Advanced
     # Use isHidden() instead of isVisible() since parent widget is not shown
     assert not gui_tab.warning_label.isHidden()
-    assert "Advanced mode" in gui_tab.warning_label.text()
+    assert gui_tab.warning_label.text() == t("gui_tab.warning_advanced")
 
 
 def test_gui_tab_warning_label_shown_for_developer(gui_tab: GUITab) -> None:
@@ -91,7 +92,7 @@ def test_gui_tab_warning_label_shown_for_developer(gui_tab: GUITab) -> None:
     gui_tab.config_level_input.setCurrentIndex(2)  # Developer
     # Use isHidden() instead of isVisible() since parent widget is not shown
     assert not gui_tab.warning_label.isHidden()
-    assert "Developer mode" in gui_tab.warning_label.text()
+    assert gui_tab.warning_label.text() == t("gui_tab.warning_developer")
 
 
 def test_gui_tab_set_values(gui_tab: GUITab) -> None:
@@ -221,3 +222,59 @@ def test_gui_tab_warning_style_changes(gui_tab: GUITab) -> None:
     gui_tab.config_level_input.setCurrentIndex(2)  # Developer
     style = gui_tab.warning_label.styleSheet()
     assert "#f8d7da" in style or "#721c24" in style  # Red danger colors
+
+
+def test_gui_tab_language_input_exists(gui_tab: GUITab) -> None:
+    """Test language input exists.
+
+    Args:
+        gui_tab: GUITab instance
+    """
+    assert gui_tab.language_input is not None
+    assert gui_tab.language_input.count() >= 1  # At least English
+
+
+def test_gui_tab_language_set_values(gui_tab: GUITab) -> None:
+    """Test setting language from settings.
+
+    Args:
+        gui_tab: GUITab instance
+    """
+    settings = GUISettings(
+        config_level=ConfigLevel.BASIC,
+        minimize_to_tray=False,
+        language="en",
+    )
+
+    gui_tab.set_values(settings)
+
+    assert gui_tab.language_input.currentData() == "en"
+
+
+def test_gui_tab_language_get_values(gui_tab: GUITab) -> None:
+    """Test getting language from widgets.
+
+    Args:
+        gui_tab: GUITab instance
+    """
+    # Find English in the combo box and select it
+    for i in range(gui_tab.language_input.count()):
+        if gui_tab.language_input.itemData(i) == "en":
+            gui_tab.language_input.setCurrentIndex(i)
+            break
+
+    settings = gui_tab.get_values()
+
+    assert settings.language == "en"
+
+
+def test_gui_tab_has_retranslate_method(gui_tab: GUITab) -> None:
+    """Test that GUITab has retranslate method.
+
+    Args:
+        gui_tab: GUITab instance
+    """
+    assert hasattr(gui_tab, "retranslate")
+    assert callable(gui_tab.retranslate)
+    # Should not raise when called
+    gui_tab.retranslate()

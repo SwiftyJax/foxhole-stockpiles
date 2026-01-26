@@ -6,6 +6,7 @@ import pytest
 
 from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
 from foxhole_stockpiles.gui.widgets.config_tabs.stockpile_types_tab import StockpileTypesTab
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -191,5 +192,6 @@ def test_stockpile_types_tab_placeholder_text(stockpile_types_tab: StockpileType
     Args:
         stockpile_types_tab: StockpileTypesTab instance
     """
+    expected_placeholder = t("stockpile_types_tab.alias_placeholder")
     for line_edit in stockpile_types_tab._inputs.values():
-        assert "comma-separated" in line_edit.placeholderText().lower()
+        assert line_edit.placeholderText() == expected_placeholder

@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
 from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings, APIServerSettings
 from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.config_level import ConfigLevel
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 
 class APIServerTab(QWidget):
@@ -41,53 +42,32 @@ class APIServerTab(QWidget):
         layout = QVBoxLayout(self)
 
         # Server Settings Group
-        server_group = QGroupBox("Server Settings")
+        self.server_group = QGroupBox()
         server_layout = QFormLayout()
-        server_group.setLayout(server_layout)
+        self.server_group.setLayout(server_layout)
 
         # Host
-        host_label = QLabel("Host:")
-        host_label.setToolTip(
-            "IP address the API server will listen on.\n"
-            "Use 127.0.0.1 for local-only access, or 0.0.0.0 to allow external connections."
-        )
+        self.host_label = QLabel()
         self.host_input = QLineEdit()
         self.host_input.setPlaceholderText("127.0.0.1")
-        server_layout.addRow(host_label, self.host_input)
+        server_layout.addRow(self.host_label, self.host_input)
 
         # Port
-        port_label = QLabel("Port:")
-        port_label.setToolTip(
-            "Port number the API server will listen on.\n"
-            "Default: 8000. Must be between 1-65535.\n"
-            "Make sure this port is not already in use by another application."
-        )
+        self.port_label = QLabel()
         self.port_input = QSpinBox()
         self.port_input.setRange(1, 65535)
         self.port_input.setValue(8000)
-        server_layout.addRow(port_label, self.port_input)
+        server_layout.addRow(self.port_label, self.port_input)
 
         # Workers
-        workers_label = QLabel("Workers:")
-        workers_label.setToolTip(
-            "Number of worker processes for the API server.\n"
-            "More workers can handle more concurrent requests but use more memory.\n"
-            "Recommended: 1 for single-user, 2-4 for multi-user scenarios."
-        )
+        self.workers_label = QLabel()
         self.workers_input = QSpinBox()
         self.workers_input.setRange(1, 32)
         self.workers_input.setValue(1)
-        server_layout.addRow(workers_label, self.workers_input)
+        server_layout.addRow(self.workers_label, self.workers_input)
 
         # CORS Allow Origins - ADVANCED
-        self._cors_label = QLabel("CORS Allow Origins:")
-        self._cors_label.setToolTip(
-            "Cross-Origin Resource Sharing (CORS) allowed origins in JSON format.\n\n"
-            'Use ["*"] to allow all origins (less secure but convenient).\n'
-            'Use ["http://localhost:3000", "http://example.com"] to restrict to '
-            "specific origins.\n\n"
-            "Only needed if accessing the API from a web browser."
-        )
+        self._cors_label = QLabel()
         self.cors_input = QPlainTextEdit()
         self.cors_input.setPlaceholderText('["*"] or ["http://localhost:3000"]')
         self.cors_input.setMaximumHeight(80)
@@ -95,72 +75,44 @@ class APIServerTab(QWidget):
         self._advanced_widgets.extend([self._cors_label, self.cors_input])
 
         # Enable Memory Monitoring
-        memory_label = QLabel("Memory Monitoring:")
-        memory_label.setToolTip(
-            "Enable memory usage monitoring for scan operations.\n\n"
-            "When enabled, memory usage statistics will be logged for each scan.\n"
-            "Useful for diagnosing memory issues, but adds slight overhead."
-        )
-        self.memory_monitoring_input = QCheckBox("Track memory usage")
-        server_layout.addRow(memory_label, self.memory_monitoring_input)
+        self.memory_label = QLabel()
+        self.memory_monitoring_input = QCheckBox()
+        server_layout.addRow(self.memory_label, self.memory_monitoring_input)
 
         # Auto Trim Memory
-        trim_label = QLabel("Auto Trim Memory:")
-        trim_label.setToolTip(
-            "Automatically release unused memory after each scan completes.\n\n"
-            "Helps prevent memory accumulation during long-running sessions.\n"
-            "Recommended: Enabled (may cause brief pauses after scans on some systems)."
-        )
-        self.auto_trim_input = QCheckBox("Automatically trim memory after scans")
+        self.trim_label = QLabel()
+        self.auto_trim_input = QCheckBox()
         self.auto_trim_input.setChecked(True)
-        server_layout.addRow(trim_label, self.auto_trim_input)
+        server_layout.addRow(self.trim_label, self.auto_trim_input)
 
         # Web Icon Mod
-        web_icon_mod_label = QLabel("Web Icon Mod:")
-        web_icon_mod_label.setToolTip(
-            "Mod to use for item icons in the web interface.\n\n"
-            "When the web interface displays scan results, icons will be loaded\n"
-            "from this mod. If an icon is not found in the specified mod,\n"
-            "it will fall back to 'vanilla'.\n\n"
-            "Available mods depend on what you've imported into the database."
-        )
+        self.web_icon_mod_label = QLabel()
         self.web_icon_mod_input = QLineEdit()
         self.web_icon_mod_input.setPlaceholderText("vanilla")
-        server_layout.addRow(web_icon_mod_label, self.web_icon_mod_input)
+        server_layout.addRow(self.web_icon_mod_label, self.web_icon_mod_input)
 
-        layout.addWidget(server_group)
+        layout.addWidget(self.server_group)
 
         # Authentication Group
-        auth_group = QGroupBox("Authentication")
+        self.auth_group = QGroupBox()
         auth_layout = QVBoxLayout()
-        auth_group.setLayout(auth_layout)
+        self.auth_group.setLayout(auth_layout)
 
         # Auth Type Selection with Radio Buttons
         auth_type_layout = QHBoxLayout()
 
         self.auth_type_button_group = QButtonGroup(self)
 
-        self.no_auth_radio = QRadioButton("No Authentication")
+        self.no_auth_radio = QRadioButton()
         self.no_auth_radio.setChecked(True)
-        self.no_auth_radio.setToolTip(
-            "API server will accept requests from anyone without authentication."
-        )
         self.auth_type_button_group.addButton(self.no_auth_radio, 0)
         auth_type_layout.addWidget(self.no_auth_radio)
 
-        self.basic_auth_radio = QRadioButton("Basic Auth")
-        self.basic_auth_radio.setToolTip(
-            "Require username and password for API access.\n"
-            "Credentials are sent with each request in the Authorization header."
-        )
+        self.basic_auth_radio = QRadioButton()
         self.auth_type_button_group.addButton(self.basic_auth_radio, 1)
         auth_type_layout.addWidget(self.basic_auth_radio)
 
-        self.bearer_auth_radio = QRadioButton("Bearer Token")
-        self.bearer_auth_radio.setToolTip(
-            "Require a bearer token for API access.\n"
-            "Token is sent in the Authorization header with each request."
-        )
+        self.bearer_auth_radio = QRadioButton()
         self.auth_type_button_group.addButton(self.bearer_auth_radio, 2)
         auth_type_layout.addWidget(self.bearer_auth_radio)
 
@@ -174,18 +126,16 @@ class APIServerTab(QWidget):
         basic_layout = QFormLayout(self.basic_auth_widget)
         basic_layout.setContentsMargins(0, 0, 0, 0)
 
-        username_label = QLabel("Username:")
-        username_label.setToolTip("Username required for API authentication.")
+        self.username_label = QLabel()
         self.basic_username_input = QLineEdit()
         self.basic_username_input.setPlaceholderText("Username")
-        basic_layout.addRow(username_label, self.basic_username_input)
+        basic_layout.addRow(self.username_label, self.basic_username_input)
 
-        password_label = QLabel("Password:")
-        password_label.setToolTip("Password required for API authentication.")
+        self.password_label = QLabel()
         self.basic_password_input = QLineEdit()
         self.basic_password_input.setPlaceholderText("Password")
         self.basic_password_input.setEchoMode(QLineEdit.EchoMode.Password)
-        basic_layout.addRow(password_label, self.basic_password_input)
+        basic_layout.addRow(self.password_label, self.basic_password_input)
 
         auth_layout.addWidget(self.basic_auth_widget)
 
@@ -194,23 +144,77 @@ class APIServerTab(QWidget):
         bearer_layout = QFormLayout(self.bearer_auth_widget)
         bearer_layout.setContentsMargins(0, 0, 0, 0)
 
-        token_label = QLabel("Token:")
-        token_label.setToolTip(
-            "Secret token required for API authentication.\n"
-            "This token should be kept secure and sent in the Authorization header."
-        )
+        self.token_label = QLabel()
         self.bearer_token_input = QLineEdit()
         self.bearer_token_input.setPlaceholderText("Enter bearer token")
         self.bearer_token_input.setEchoMode(QLineEdit.EchoMode.Password)
-        bearer_layout.addRow(token_label, self.bearer_token_input)
+        bearer_layout.addRow(self.token_label, self.bearer_token_input)
 
         auth_layout.addWidget(self.bearer_auth_widget)
 
-        layout.addWidget(auth_group)
+        layout.addWidget(self.auth_group)
         layout.addStretch()
 
         # Initially show/hide based on default selection
         self._update_auth_visibility()
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        # Server Settings Group
+        self.server_group.setTitle(t("api_server_tab.server_settings"))
+
+        self.host_label.setText(t("api_server_tab.host"))
+        self.host_label.setToolTip(t("api_server_tab.host_tooltip"))
+
+        self.port_label.setText(t("api_server_tab.port"))
+        self.port_label.setToolTip(t("api_server_tab.port_tooltip"))
+
+        self.workers_label.setText(t("api_server_tab.workers"))
+        self.workers_label.setToolTip(t("api_server_tab.workers_tooltip"))
+
+        self._cors_label.setText(t("api_server_tab.cors_origins"))
+        self._cors_label.setToolTip(t("api_server_tab.cors_tooltip"))
+
+        self.memory_label.setText(t("api_server_tab.memory_monitoring"))
+        self.memory_label.setToolTip(t("api_server_tab.memory_tooltip"))
+        self.memory_monitoring_input.setText(t("api_server_tab.memory_monitoring_checkbox"))
+
+        self.trim_label.setText(t("api_server_tab.auto_trim"))
+        self.trim_label.setToolTip(t("api_server_tab.auto_trim_tooltip"))
+        self.auto_trim_input.setText(t("api_server_tab.auto_trim_checkbox"))
+
+        self.web_icon_mod_label.setText(t("api_server_tab.web_icon_mod"))
+        self.web_icon_mod_label.setToolTip(t("api_server_tab.web_icon_mod_tooltip"))
+
+        # Authentication Group
+        self.auth_group.setTitle(t("api_server_tab.authentication"))
+
+        self.no_auth_radio.setText(t("api_server_tab.no_auth"))
+        self.no_auth_radio.setToolTip(t("api_server_tab.no_auth_tooltip"))
+
+        self.basic_auth_radio.setText(t("api_server_tab.basic_auth"))
+        self.basic_auth_radio.setToolTip(t("api_server_tab.basic_auth_tooltip"))
+
+        self.bearer_auth_radio.setText(t("api_server_tab.bearer_auth"))
+        self.bearer_auth_radio.setToolTip(t("api_server_tab.bearer_auth_tooltip"))
+
+        self.username_label.setText(t("api_server_tab.username"))
+        self.password_label.setText(t("api_server_tab.password"))
+
+        self.token_label.setText(t("api_server_tab.token"))
+        self.token_label.setToolTip(t("api_server_tab.token_tooltip"))
 
     def _update_auth_visibility(self) -> None:
         """Update visibility of auth fields based on selected radio button."""

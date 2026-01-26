@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 from foxhole_stockpiles.enums.config_level import ConfigLevel
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 LOG_LEVELS = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 
@@ -44,7 +45,7 @@ class CustomLoggerRowWidget(QWidget):
 
         # Logger name input
         self.name_input = QLineEdit(logger_name)
-        self.name_input.setPlaceholderText("e.g., uvicorn.access")
+        self.name_input.setPlaceholderText(t("logging_tab.logger_placeholder"))
         layout.addWidget(self.name_input, 1)  # stretch factor 1
 
         # Level dropdown
@@ -55,7 +56,7 @@ class CustomLoggerRowWidget(QWidget):
         layout.addWidget(self.level_combo)
 
         # Remove button
-        self.remove_btn = QPushButton("Remove")
+        self.remove_btn = QPushButton(t("common.remove"))
         self.remove_btn.setFixedWidth(80)
         self.remove_btn.clicked.connect(self._on_remove)
         layout.addWidget(self.remove_btn)
@@ -102,28 +103,14 @@ class LoggingTab(QWidget):
         form_layout.setContentsMargins(0, 0, 0, 0)
 
         # Root Log Level
-        root_level_label = QLabel("Root Log Level:")
-        root_level_label.setToolTip(
-            "Global default log level for all loggers.\n\n"
-            "Messages below this level are filtered out unless\n"
-            "a custom logger overrides it."
-        )
+        self.root_level_label = QLabel()
         self.root_level_combo = QComboBox()
         self.root_level_combo.addItems(LOG_LEVELS)
         self.root_level_combo.setCurrentText("INFO")
-        form_layout.addRow(root_level_label, self.root_level_combo)
+        form_layout.addRow(self.root_level_label, self.root_level_combo)
 
         # Log Format - ADVANCED
-        self._log_format_label = QLabel("Log Format:")
-        self._log_format_label.setToolTip(
-            "Python logging format string.\n\n"
-            "Common placeholders:\n"
-            "• %(asctime)s - Timestamp\n"
-            "• %(name)s - Logger name\n"
-            "• %(levelname)s - Log level (DEBUG, INFO, etc.)\n"
-            "• %(message)s - Log message\n\n"
-            "See Python logging documentation for more options."
-        )
+        self._log_format_label = QLabel()
         self.log_format_input = QLineEdit()
         self.log_format_input.setPlaceholderText(
             "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -132,50 +119,28 @@ class LoggingTab(QWidget):
         self._advanced_widgets.extend([self._log_format_label, self.log_format_input])
 
         # Date Format - ADVANCED
-        self._date_format_label = QLabel("Date Format:")
-        self._date_format_label.setToolTip(
-            "Date/time format for log timestamps.\n\n"
-            "Uses Python strftime format codes:\n"
-            "• %Y - 4-digit year\n"
-            "• %m - 2-digit month\n"
-            "• %d - 2-digit day\n"
-            "• %H - 24-hour hour\n"
-            "• %M - 2-digit minute\n"
-            "• %S - 2-digit second\n\n"
-            "Example: %Y-%m-%d %H:%M:%S produces 2025-01-15 14:30:45"
-        )
+        self._date_format_label = QLabel()
         self.date_format_input = QLineEdit()
         self.date_format_input.setPlaceholderText("%Y-%m-%d %H:%M:%S")
         form_layout.addRow(self._date_format_label, self.date_format_input)
         self._advanced_widgets.extend([self._date_format_label, self.date_format_input])
 
         # Rotate Logs - ADVANCED
-        self._rotate_logs_label = QLabel("Rotate Logs:")
-        self._rotate_logs_label.setToolTip(
-            "Automatically rotate log files when they get too large.\n\n"
-            "When enabled, old logs are archived and new log files are created.\n"
-            "Prevents log files from consuming too much disk space."
-        )
-        self.rotate_logs_input = QCheckBox("Enable log rotation")
+        self._rotate_logs_label = QLabel()
+        self.rotate_logs_input = QCheckBox()
         form_layout.addRow(self._rotate_logs_label, self.rotate_logs_input)
         self._advanced_widgets.extend([self._rotate_logs_label, self.rotate_logs_input])
 
         # Log File - ADVANCED
-        self._log_file_label = QLabel("Log File:")
-        self._log_file_label.setToolTip(
-            "Optional path to save log messages to a file.\n\n"
-            "If not specified, logs are only written to console.\n"
-            "Useful for debugging and keeping a record of operations."
-        )
+        self._log_file_label = QLabel()
         self._log_file_widget = QWidget()
         log_file_layout = QHBoxLayout(self._log_file_widget)
         log_file_layout.setContentsMargins(0, 0, 0, 0)
         self.log_file_input = QLineEdit()
-        self.log_file_input.setPlaceholderText("Optional: path to log file")
-        log_browse = QPushButton("Browse...")
-        log_browse.clicked.connect(self._browse_log_file)
+        self.log_browse = QPushButton()
+        self.log_browse.clicked.connect(self._browse_log_file)
         log_file_layout.addWidget(self.log_file_input)
-        log_file_layout.addWidget(log_browse)
+        log_file_layout.addWidget(self.log_browse)
         form_layout.addRow(self._log_file_label, self._log_file_widget)
         self._advanced_widgets.extend([self._log_file_label, self._log_file_widget])
 
@@ -185,19 +150,12 @@ class LoggingTab(QWidget):
         self._custom_loggers_header = QWidget()
         header_layout = QHBoxLayout(self._custom_loggers_header)
         header_layout.setContentsMargins(0, 0, 0, 0)
-        custom_loggers_label = QLabel("Custom Log Levels:")
-        custom_loggers_label.setToolTip(
-            "Override log levels for specific loggers.\n\n"
-            "Common loggers:\n"
-            "• uvicorn - Web server logs\n"
-            "• uvicorn.access - HTTP request logs\n"
-            "• foxhole_stockpiles - Application logs"
-        )
-        add_btn = QPushButton("Add")
-        add_btn.clicked.connect(self._on_add_logger)
-        header_layout.addWidget(custom_loggers_label)
+        self.custom_loggers_label = QLabel()
+        self.add_btn = QPushButton()
+        self.add_btn.clicked.connect(self._on_add_logger)
+        header_layout.addWidget(self.custom_loggers_label)
         header_layout.addStretch()
-        header_layout.addWidget(add_btn)
+        header_layout.addWidget(self.add_btn)
         layout.addWidget(self._custom_loggers_header)
         self._advanced_widgets.append(self._custom_loggers_header)
 
@@ -214,6 +172,42 @@ class LoggingTab(QWidget):
         self._loggers_scroll.setWidget(self.loggers_container)
         layout.addWidget(self._loggers_scroll, 1)  # stretch factor 1 to fill space
         self._advanced_widgets.append(self._loggers_scroll)
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.root_level_label.setText(t("logging_tab.root_level"))
+        self.root_level_label.setToolTip(t("logging_tab.root_level_tooltip"))
+
+        self._log_format_label.setText(t("logging_tab.log_format"))
+        self._log_format_label.setToolTip(t("logging_tab.log_format_tooltip"))
+
+        self._date_format_label.setText(t("logging_tab.date_format"))
+        self._date_format_label.setToolTip(t("logging_tab.date_format_tooltip"))
+
+        self._rotate_logs_label.setText(t("logging_tab.rotate_logs"))
+        self._rotate_logs_label.setToolTip(t("logging_tab.rotate_logs_tooltip"))
+        self.rotate_logs_input.setText(t("logging_tab.rotate_logs_checkbox"))
+
+        self._log_file_label.setText(t("logging_tab.log_file"))
+        self._log_file_label.setToolTip(t("logging_tab.log_file_tooltip"))
+        self.log_file_input.setPlaceholderText(t("logging_tab.log_file_placeholder"))
+        self.log_browse.setText(t("common.browse"))
+
+        self.custom_loggers_label.setText(t("logging_tab.custom_loggers"))
+        self.custom_loggers_label.setToolTip(t("logging_tab.custom_loggers_tooltip"))
+        self.add_btn.setText(t("common.add"))
 
     def set_config_level(self, level: ConfigLevel) -> None:
         """Show or hide fields based on the configuration level.
@@ -249,7 +243,7 @@ class LoggingTab(QWidget):
         """Open file dialog for log file path."""
         filepath, _ = QFileDialog.getSaveFileName(
             self,
-            "Select Log File",
+            t("logging_tab.select_log_file"),
             "",
             "Log Files (*.log);;All Files (*)",
         )

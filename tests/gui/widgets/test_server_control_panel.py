@@ -7,6 +7,7 @@ import pytest
 from PyQt6.QtWidgets import QTableWidget
 
 from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -62,8 +63,8 @@ def test_panel_start_server(qtbot: Any, panel: ServerControlPanel) -> None:
         panel.start_server()
 
         assert panel.server_running is True
-        assert panel.start_stop_button.text() == "Stop Server"
-        assert "Running" in panel.status_label.text()
+        assert panel.start_stop_button.text() == t("server_panel.stop_server")
+        assert panel.status_label.text() == t("server_panel.status_running")
         mock_thread.start.assert_called_once()
 
 
@@ -82,8 +83,8 @@ def test_panel_stop_server(qtbot: Any, panel: ServerControlPanel) -> None:
     panel.stop_server()
 
     assert panel.server_running is False
-    assert panel.start_stop_button.text() == "Start Server"
-    assert "Stopped" in panel.status_label.text()
+    assert panel.start_stop_button.text() == t("server_panel.start_server")
+    assert panel.status_label.text() == t("server_panel.status_stopped")
     mock_thread.stop.assert_called_once()
 
 
@@ -242,7 +243,7 @@ def test_panel_validation_no_config(qtbot: Any, panel: ServerControlPanel) -> No
         assert panel.error_panel.isVisible()
         assert not panel.logs_group.isVisible()
         assert not panel.start_stop_button.isEnabled()
-        assert "No Configuration Found" in panel.error_panel.text()
+        assert t("server_panel.errors.no_config_title") in panel.error_panel.text()
 
 
 def test_panel_validation_no_db_path(qtbot: Any, panel: ServerControlPanel) -> None:
@@ -267,7 +268,7 @@ def test_panel_validation_no_db_path(qtbot: Any, panel: ServerControlPanel) -> N
         assert panel.error_panel.isVisible()
         assert not panel.logs_group.isVisible()
         assert not panel.start_stop_button.isEnabled()
-        assert "Configuration Incomplete" in panel.error_panel.text()
+        assert t("server_panel.errors.config_incomplete_title") in panel.error_panel.text()
 
 
 def test_panel_validation_db_not_found(qtbot: Any, panel: ServerControlPanel) -> None:
@@ -292,7 +293,7 @@ def test_panel_validation_db_not_found(qtbot: Any, panel: ServerControlPanel) ->
         assert panel.error_panel.isVisible()
         assert not panel.logs_group.isVisible()
         assert not panel.start_stop_button.isEnabled()
-        assert "Database File Not Found" in panel.error_panel.text()
+        assert t("server_panel.errors.database_not_found_title") in panel.error_panel.text()
 
 
 def test_panel_validation_valid_db(qtbot: Any, panel: ServerControlPanel) -> None:

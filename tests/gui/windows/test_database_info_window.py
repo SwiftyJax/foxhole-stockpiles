@@ -7,6 +7,7 @@ from unittest.mock import patch
 import pytest
 
 from foxhole_stockpiles.gui.windows.database_info_window import DatabaseInfoWindow
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -40,7 +41,7 @@ def test_window_initialization(info_window: DatabaseInfoWindow) -> None:
     Args:
         info_window (DatabaseInfoWindow): Window instance
     """
-    assert info_window.windowTitle() == "Database Information"
+    assert info_window.windowTitle() == t("database_info_window.title")
     assert info_window.db_path_input.text() == ""
     assert info_window.stats_table.rowCount() == 2  # Message rows
 
@@ -112,7 +113,7 @@ def test_load_statistics_no_path(info_window: DatabaseInfoWindow) -> None:
     assert info_window.stats_table.rowCount() == 2
     item = info_window.stats_table.item(0, 0)
     assert item is not None
-    assert "No file selected" in item.text()
+    assert t("database_info_window.no_file_selected") in item.text()
 
 
 def test_load_statistics_nonexistent_file(info_window: DatabaseInfoWindow) -> None:
@@ -128,7 +129,7 @@ def test_load_statistics_nonexistent_file(info_window: DatabaseInfoWindow) -> No
     assert info_window.stats_table.rowCount() == 2
     item = info_window.stats_table.item(0, 0)
     assert item is not None
-    assert "File not found" in item.text()
+    assert t("database_info_window.file_not_found") in item.text()
 
 
 def test_load_statistics_displays_mods_and_resolutions(
@@ -191,4 +192,4 @@ def test_load_statistics_error_handling(info_window: DatabaseInfoWindow, tmp_pat
     assert info_window.stats_table.rowCount() == 2
     item = info_window.stats_table.item(0, 0)
     assert item is not None
-    assert "Error" in item.text()
+    assert t("database_info_window.error_loading") in item.text()

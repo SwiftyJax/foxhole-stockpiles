@@ -21,6 +21,10 @@ class GUISettings(BaseModel):
         description="Minimize to system tray instead of quitting when closing the window",
         default=False,
     )
+    language: str = Field(
+        description="Language code for the GUI (e.g., 'en', 'es', 'de')",
+        default="en",
+    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -28,6 +32,7 @@ class GUISettings(BaseModel):
             "example": {
                 "config_level": ConfigLevel.BASIC,
                 "minimize_to_tray": False,
+                "language": "en",
             }
         },
     )

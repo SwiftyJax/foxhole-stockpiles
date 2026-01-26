@@ -14,6 +14,7 @@ from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.gui.utils.config_manager import ConfigManager
 from foxhole_stockpiles.gui.widgets.config_tabs.database_builder_tab import DatabaseBuilderTab
 from foxhole_stockpiles.gui.widgets.config_tabs.external_tools_tab import ExternalToolsTab
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 logger = logging.getLogger(__name__)
 
@@ -39,22 +40,19 @@ class DatabaseBuilderSettingsDialog(QDialog):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Database Builder Settings")
         self.setMinimumWidth(600)
         self.setMinimumHeight(700)
 
         layout = QVBoxLayout(self)
 
         # Add info header
-        info_label = QLabel(
-            "Configure the tools and settings required for building the template database."
-        )
-        info_label.setWordWrap(True)
-        info_label.setStyleSheet(
+        self.info_label = QLabel()
+        self.info_label.setWordWrap(True)
+        self.info_label.setStyleSheet(
             "QLabel { background-color: palette(alternate-base); padding: 10px; "
             "border: 2px solid #2196F3; }"
         )
-        layout.addWidget(info_label)
+        layout.addWidget(self.info_label)
 
         # Add external tools tab (repak + umodel, not uassetgui)
         self.external_tools_tab = ExternalToolsTab(
@@ -82,6 +80,23 @@ class DatabaseBuilderSettingsDialog(QDialog):
         button_box.accepted.connect(self._save_and_accept)
         button_box.rejected.connect(self.reject)
         layout.addWidget(button_box)
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.setWindowTitle(t("database_builder_settings.title"))
+        self.info_label.setText(t("database_builder_settings.info"))
 
     def _load_current_settings(self) -> None:
         """Load current settings into the tabs."""

@@ -19,6 +19,7 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.enums.config_level import ConfigLevel
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 
 class ScannerTab(QWidget):
@@ -49,96 +50,58 @@ class ScannerTab(QWidget):
         main_layout.addWidget(scroll)
 
         # Database Path (required) - BASIC
-        db_label = QLabel("Database Path:")
-        db_label.setToolTip(
-            "Path to the template database file containing item icons for recognition.\n\n"
-            "This is a required HDF5 (.h5) file that must be generated before scanning.\n"
-            "Use the 'update-db' command to create or update this file."
-        )
+        self.db_label = QLabel()
         db_layout_widget = QWidget()
         db_layout = QHBoxLayout(db_layout_widget)
         db_layout.setContentsMargins(0, 0, 0, 0)
         self.database_path_input = QLineEdit()
-        self.database_path_input.setPlaceholderText("Path to template database (.h5 file)")
-        db_browse = QPushButton("Browse...")
-        db_browse.clicked.connect(self.browse_database)
+        self.db_browse = QPushButton()
+        self.db_browse.clicked.connect(self.browse_database)
         db_layout.addWidget(self.database_path_input)
-        db_layout.addWidget(db_browse)
-        self._form_layout.addRow(db_label, db_layout_widget)
+        db_layout.addWidget(self.db_browse)
+        self._form_layout.addRow(self.db_label, db_layout_widget)
 
         # Template Cache Size - BASIC
-        cache_label = QLabel("Template Cache Size:")
-        cache_label.setToolTip(
-            "Number of template resolutions to keep in memory for faster matching.\n\n"
-            "Maximum: 16 (total number of supported resolutions).\n"
-            "Setting higher than 16 has no effect.\n"
-            "Recommended: 0, 1, or 2 for low-memory servers."
-        )
+        self.cache_label = QLabel()
         self.cache_size_input = QSpinBox()
         self.cache_size_input.setRange(0, 16)
         self.cache_size_input.setValue(16)
-        self._form_layout.addRow(cache_label, self.cache_size_input)
+        self._form_layout.addRow(self.cache_label, self.cache_size_input)
 
         # Early Exit Threshold - BASIC
-        early_exit_label = QLabel("Early Exit Threshold:")
-        early_exit_label.setToolTip(
-            "Confidence threshold to stop searching early when a good match is found.\n\n"
-            "Value between 0.0-1.0. Set to 0.0 to disable (always check all templates).\n"
-            "Recommended: 0.99x (0.990-0.999) for speed, or 0.0 for accuracy.\n"
-            "Intermediate values can cause false detections for some items."
-        )
+        self.early_exit_label = QLabel()
         self.early_exit_input = QDoubleSpinBox()
         self.early_exit_input.setRange(0.0, 1.0)
         self.early_exit_input.setSingleStep(0.01)
         self.early_exit_input.setDecimals(3)
         self.early_exit_input.setValue(0.0)
-        self._form_layout.addRow(early_exit_label, self.early_exit_input)
+        self._form_layout.addRow(self.early_exit_label, self.early_exit_input)
 
         # Confidence Gap - BASIC
-        confidence_gap_label = QLabel("Confidence Gap:")
-        confidence_gap_label.setToolTip(
-            "Controls when alternative matches are included in JSON output as candidates.\n\n"
-            "All items with confidence within this gap from the best match are included.\n"
-            "Set to 0.0 to disable candidates (only include best match).\n\n"
-            "Recommended: 0.1 (typically results in few items with alternatives per stockpile).\n"
-            "At 0.2, about half the items will have candidates."
-        )
+        self.confidence_gap_label = QLabel()
         self.confidence_gap_input = QDoubleSpinBox()
         self.confidence_gap_input.setRange(0.0, 1.0)
         self.confidence_gap_input.setSingleStep(0.01)
         self.confidence_gap_input.setDecimals(3)
         self.confidence_gap_input.setValue(0.0)
-        self._form_layout.addRow(confidence_gap_label, self.confidence_gap_input)
+        self._form_layout.addRow(self.confidence_gap_label, self.confidence_gap_input)
 
         # Screenshots Folder - BASIC
-        screenshots_label = QLabel("Screenshots Folder:")
-        screenshots_label.setToolTip(
-            "Optional folder to automatically save processed screenshots.\n\n"
-            "When set, scanned images are saved to daily subfolders (YYYY-MM-DD)\n"
-            "with format: Date_Time_StorageType_Name_Resolution.png\n\n"
-            "Leave empty to disable screenshot archiving."
-        )
+        self.screenshots_label = QLabel()
         screenshots_layout_widget = QWidget()
         screenshots_layout = QHBoxLayout(screenshots_layout_widget)
         screenshots_layout.setContentsMargins(0, 0, 0, 0)
         self.screenshots_folder_input = QLineEdit()
-        self.screenshots_folder_input.setPlaceholderText("Optional: folder to save screenshots")
-        screenshots_browse = QPushButton("Browse...")
-        screenshots_browse.clicked.connect(self.browse_screenshots)
+        self.screenshots_browse = QPushButton()
+        self.screenshots_browse.clicked.connect(self.browse_screenshots)
         screenshots_layout.addWidget(self.screenshots_folder_input)
-        screenshots_layout.addWidget(screenshots_browse)
-        self._form_layout.addRow(screenshots_label, screenshots_layout_widget)
+        screenshots_layout.addWidget(self.screenshots_browse)
+        self._form_layout.addRow(self.screenshots_label, screenshots_layout_widget)
 
         # === ADVANCED LEVEL OPTIONS ===
 
         # Max NCC Candidates - ADVANCED
-        self._ncc_label = QLabel("Max NCC Candidates:")
-        self._ncc_label.setToolTip(
-            "Maximum number of template candidates to evaluate with NCC "
-            "(Normalized Cross-Correlation).\n\n"
-            "After perceptual hash pre-filtering, this limits detailed matching.\n"
-            "Higher values are more accurate but slower. Recommended: 25."
-        )
+        self._ncc_label = QLabel()
         self.max_ncc_input = QSpinBox()
         self.max_ncc_input.setRange(1, 100)
         self.max_ncc_input.setValue(25)
@@ -146,13 +109,7 @@ class ScannerTab(QWidget):
         self._advanced_widgets.extend([self._ncc_label, self.max_ncc_input])
 
         # pHash Threshold - ADVANCED
-        self._phash_label = QLabel("pHash Threshold:")
-        self._phash_label.setToolTip(
-            "Perceptual hash distance threshold for template pre-filtering.\n\n"
-            "Lower values (0-10) are stricter, higher values (10-20) are more lenient.\n"
-            "Too low may miss valid items, too high slows down matching.\n"
-            "Recommended: 12 for balanced speed and accuracy."
-        )
+        self._phash_label = QLabel()
         self.phash_threshold_input = QSpinBox()
         self.phash_threshold_input.setRange(0, 64)
         self.phash_threshold_input.setValue(12)
@@ -160,77 +117,120 @@ class ScannerTab(QWidget):
         self._advanced_widgets.extend([self._phash_label, self.phash_threshold_input])
 
         # Debug Mode - ADVANCED
-        self._debug_label = QLabel("Debug Mode:")
-        self._debug_label.setToolTip(
-            "Save debug images showing the detection process.\n\n"
-            "Saves to current directory:\n"
-            "- stockpile_detection_result.png - Original image with detection boxes\n"
-            "- stockpile_quantities_result.png - Composite quantities image\n"
-            "- stockpile_name_region.png - Extracted name region\n"
-            "- stockpile_type_region.png - Extracted type region\n"
-            "- stockpile_shard.png - Extracted shard region\n\n"
-            "Useful for troubleshooting detection issues."
-        )
-        self.debug_mode_input = QCheckBox("Save debug images during scanning")
+        self._debug_label = QLabel()
+        self.debug_mode_input = QCheckBox()
         self._form_layout.addRow(self._debug_label, self.debug_mode_input)
         self._advanced_widgets.extend([self._debug_label, self.debug_mode_input])
 
         # Extract Icons - ADVANCED
-        self._extract_label = QLabel("Extract Icons:")
-        self._extract_label.setToolTip(
-            "Save each detected item icon as a separate image file.\n\n"
-            "Icons are saved to './icons/' folder with format: 'XXX_CODE.png'\n"
-            "where XXX is the icon index (000, 001, etc.) and CODE is the detected item.\n\n"
-            "Development setting - useful for creating new templates or debugging detection."
-        )
-        self.extract_icons_input = QCheckBox("Save detected icon images")
+        self._extract_label = QLabel()
+        self.extract_icons_input = QCheckBox()
         self._form_layout.addRow(self._extract_label, self.extract_icons_input)
         self._advanced_widgets.extend([self._extract_label, self.extract_icons_input])
 
         # === DEVELOPER LEVEL OPTIONS ===
 
         # Custom Model - DEVELOPER
-        self._custom_model_label = QLabel("Custom OCR Model:")
+        self._custom_model_label = QLabel()
         self._custom_model_label.setStyleSheet("QLabel { color: #d32f2f; font-weight: bold; }")
-        self._custom_model_label.setToolTip(
-            "CRITICAL: Custom Tesseract OCR model for number recognition.\n\n"
-            "Default: 'renner_numbers' (optimized for Foxhole stockpile numbers).\n"
-            "Changing this may cause number recognition to fail completely."
-        )
         self._custom_model_widget = QWidget()
         custom_model_layout = QHBoxLayout(self._custom_model_widget)
         custom_model_layout.setContentsMargins(0, 0, 0, 0)
         self.custom_model_input = QLineEdit()
         self.custom_model_input.setPlaceholderText("renner_numbers")
-        custom_model_reset = QPushButton("Reset")
-        custom_model_reset.clicked.connect(self.reset_custom_model)
+        self.custom_model_reset = QPushButton(t("common.reset"))
+        self.custom_model_reset.clicked.connect(self.reset_custom_model)
         custom_model_layout.addWidget(self.custom_model_input)
-        custom_model_layout.addWidget(custom_model_reset)
+        custom_model_layout.addWidget(self.custom_model_reset)
         self._form_layout.addRow(self._custom_model_label, self._custom_model_widget)
         self._developer_widgets.extend([self._custom_model_label, self._custom_model_widget])
 
         # Tessdata Path - DEVELOPER
-        self._tessdata_label = QLabel("Tessdata Path:")
+        self._tessdata_label = QLabel()
         self._tessdata_label.setStyleSheet("QLabel { color: #d32f2f; font-weight: bold; }")
-        self._tessdata_label.setToolTip(
-            "CRITICAL: Path to Tesseract OCR data files directory.\n\n"
-            "Default: './tessdata' (bundled with the application).\n"
-            "Incorrect path will cause OCR text recognition to fail."
-        )
         self._tessdata_widget = QWidget()
         tessdata_layout = QHBoxLayout(self._tessdata_widget)
         tessdata_layout.setContentsMargins(0, 0, 0, 0)
         self.tessdata_path_input = QLineEdit()
         self.tessdata_path_input.setPlaceholderText("./tessdata")
-        tessdata_browse = QPushButton("Browse...")
-        tessdata_browse.clicked.connect(self.browse_tessdata)
-        tessdata_reset = QPushButton("Reset")
-        tessdata_reset.clicked.connect(self.reset_tessdata_path)
+        self.tessdata_browse = QPushButton()
+        self.tessdata_browse.clicked.connect(self.browse_tessdata)
+        self.tessdata_reset = QPushButton(t("common.reset"))
+        self.tessdata_reset.clicked.connect(self.reset_tessdata_path)
         tessdata_layout.addWidget(self.tessdata_path_input)
-        tessdata_layout.addWidget(tessdata_browse)
-        tessdata_layout.addWidget(tessdata_reset)
+        tessdata_layout.addWidget(self.tessdata_browse)
+        tessdata_layout.addWidget(self.tessdata_reset)
         self._form_layout.addRow(self._tessdata_label, self._tessdata_widget)
         self._developer_widgets.extend([self._tessdata_label, self._tessdata_widget])
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        # Database Path
+        self.db_label.setText(t("scanner_tab.database_path"))
+        self.db_label.setToolTip(t("scanner_tab.database_path_tooltip"))
+        self.database_path_input.setPlaceholderText(t("scanner_tab.database_path_placeholder"))
+        self.db_browse.setText(t("common.browse"))
+
+        # Template Cache Size
+        self.cache_label.setText(t("scanner_tab.cache_size"))
+        self.cache_label.setToolTip(t("scanner_tab.cache_size_tooltip"))
+
+        # Early Exit Threshold
+        self.early_exit_label.setText(t("scanner_tab.early_exit"))
+        self.early_exit_label.setToolTip(t("scanner_tab.early_exit_tooltip"))
+
+        # Confidence Gap
+        self.confidence_gap_label.setText(t("scanner_tab.confidence_gap"))
+        self.confidence_gap_label.setToolTip(t("scanner_tab.confidence_gap_tooltip"))
+
+        # Screenshots Folder
+        self.screenshots_label.setText(t("scanner_tab.screenshots_folder"))
+        self.screenshots_label.setToolTip(t("scanner_tab.screenshots_folder_tooltip"))
+        self.screenshots_folder_input.setPlaceholderText(
+            t("scanner_tab.screenshots_folder_placeholder")
+        )
+        self.screenshots_browse.setText(t("common.browse"))
+
+        # Advanced: Max NCC Candidates
+        self._ncc_label.setText(t("scanner_tab.max_ncc"))
+        self._ncc_label.setToolTip(t("scanner_tab.max_ncc_tooltip"))
+
+        # Advanced: pHash Threshold
+        self._phash_label.setText(t("scanner_tab.phash_threshold"))
+        self._phash_label.setToolTip(t("scanner_tab.phash_tooltip"))
+
+        # Advanced: Debug Mode
+        self._debug_label.setText(t("scanner_tab.debug_mode"))
+        self._debug_label.setToolTip(t("scanner_tab.debug_mode_tooltip"))
+        self.debug_mode_input.setText(t("scanner_tab.debug_mode_checkbox"))
+
+        # Advanced: Extract Icons
+        self._extract_label.setText(t("scanner_tab.extract_icons"))
+        self._extract_label.setToolTip(t("scanner_tab.extract_icons_tooltip"))
+        self.extract_icons_input.setText(t("scanner_tab.extract_icons_checkbox"))
+
+        # Developer: Custom Model
+        self._custom_model_label.setText(t("scanner_tab.custom_model"))
+        self._custom_model_label.setToolTip(t("scanner_tab.custom_model_tooltip"))
+        self.custom_model_reset.setText(t("common.reset"))
+
+        # Developer: Tessdata Path
+        self._tessdata_label.setText(t("scanner_tab.tessdata_path"))
+        self._tessdata_label.setToolTip(t("scanner_tab.tessdata_tooltip"))
+        self.tessdata_browse.setText(t("common.browse"))
+        self.tessdata_reset.setText(t("common.reset"))
 
     def set_config_level(self, level: ConfigLevel) -> None:
         """Show or hide fields based on the configuration level.
@@ -250,7 +250,7 @@ class ScannerTab(QWidget):
         """Open file dialog for database path."""
         filepath, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Template Database",
+            t("scanner_tab.select_database"),
             "",
             "HDF5 Files (*.h5);;All Files (*)",
         )
@@ -261,7 +261,7 @@ class ScannerTab(QWidget):
         """Open folder dialog for tessdata path."""
         folder = QFileDialog.getExistingDirectory(
             self,
-            "Select Tessdata Directory",
+            t("scanner_tab.select_tessdata"),
             "",
         )
         if folder:
@@ -271,7 +271,7 @@ class ScannerTab(QWidget):
         """Open folder dialog for screenshots folder."""
         folder = QFileDialog.getExistingDirectory(
             self,
-            "Select Screenshots Directory",
+            t("scanner_tab.select_screenshots"),
             "",
         )
         if folder:

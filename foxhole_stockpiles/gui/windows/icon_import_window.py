@@ -35,6 +35,7 @@ from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 from foxhole_stockpiles.gui.windows.database_builder_settings_dialog import (
     DatabaseBuilderSettingsDialog,
 )
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
 
 logger = logging.getLogger(__name__)
@@ -86,8 +87,8 @@ class IconImportWindow(QMainWindow):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Build Database")
         self.setGeometry(100, 100, 900, 700)
+        self._cpu_count = os.cpu_count() or 1
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -95,15 +96,12 @@ class IconImportWindow(QMainWindow):
         layout = QVBoxLayout(central_widget)
 
         # Vanilla PAK Section (initially hidden, shown when mod PAK lacks required assets)
-        self.vanilla_group = QGroupBox("Vanilla PAK File (Required)")
+        self.vanilla_group = QGroupBox()
         vanilla_layout = QVBoxLayout()
         self.vanilla_group.setLayout(vanilla_layout)
 
         # Warning text about vanilla PAK
-        self.vanilla_info = QLabel(
-            "⚠️ The selected mod PAK files are missing required assets (crate icon, subicons). "
-            "Please select the vanilla game PAK file (War-WindowsNoEditor.pak)."
-        )
+        self.vanilla_info = QLabel()
         self.vanilla_info.setWordWrap(True)
         self.vanilla_info.setStyleSheet(
             "QLabel { "
@@ -120,15 +118,14 @@ class IconImportWindow(QMainWindow):
         vanilla_path_layout = QHBoxLayout()
         self.vanilla_pak_display = QLineEdit()
         self.vanilla_pak_display.setReadOnly(True)
-        self.vanilla_pak_display.setPlaceholderText("No vanilla PAK selected")
         vanilla_path_layout.addWidget(self.vanilla_pak_display)
 
         # Vanilla PAK buttons
-        self.vanilla_browse_button = QPushButton("Browse...")
+        self.vanilla_browse_button = QPushButton()
         self.vanilla_browse_button.clicked.connect(self.select_vanilla_pak)
         vanilla_path_layout.addWidget(self.vanilla_browse_button)
 
-        self.vanilla_clear_button = QPushButton("Clear")
+        self.vanilla_clear_button = QPushButton()
         self.vanilla_clear_button.clicked.connect(self.clear_vanilla_pak)
         vanilla_path_layout.addWidget(self.vanilla_clear_button)
 
@@ -140,17 +137,14 @@ class IconImportWindow(QMainWindow):
         self.vanilla_group.setVisible(False)
 
         # Mod PAK Files Section
-        mod_pak_group = QGroupBox("Mod PAK Files")
+        self.mod_pak_group = QGroupBox()
         mod_pak_layout = QVBoxLayout()
-        mod_pak_group.setLayout(mod_pak_layout)
+        self.mod_pak_group.setLayout(mod_pak_layout)
 
         # Warning about single mod only
-        mod_warning = QLabel(
-            "⚠️ Select PAK files from ONE mod only. Do not mix PAK files from different mods "
-            "(e.g., vanilla + another mod) - this will produce incorrect results."
-        )
-        mod_warning.setWordWrap(True)
-        mod_warning.setStyleSheet(
+        self.mod_warning = QLabel()
+        self.mod_warning.setWordWrap(True)
+        self.mod_warning.setStyleSheet(
             "QLabel { "
             "border: 2px solid #FF9800; "
             "border-radius: 4px; "
@@ -159,7 +153,7 @@ class IconImportWindow(QMainWindow):
             "background-color: palette(alternate-base); "
             "}"
         )
-        mod_pak_layout.addWidget(mod_warning)
+        mod_pak_layout.addWidget(self.mod_warning)
 
         # Mod PAK file list
         self.mod_pak_list_widget = QListWidget()
@@ -173,89 +167,80 @@ class IconImportWindow(QMainWindow):
 
         # Mod PAK file buttons
         mod_pak_buttons_layout = QHBoxLayout()
-        self.add_mod_pak_button = QPushButton("Add PAK Files...")
+        self.add_mod_pak_button = QPushButton()
         self.add_mod_pak_button.clicked.connect(self.add_mod_pak_files)
         mod_pak_buttons_layout.addWidget(self.add_mod_pak_button)
 
-        self.remove_mod_pak_button = QPushButton("Remove Selected")
+        self.remove_mod_pak_button = QPushButton()
         self.remove_mod_pak_button.clicked.connect(self.remove_selected_mod_paks)
         mod_pak_buttons_layout.addWidget(self.remove_mod_pak_button)
 
-        self.clear_mod_pak_button = QPushButton("Clear All")
+        self.clear_mod_pak_button = QPushButton()
         self.clear_mod_pak_button.clicked.connect(self.clear_all_mod_paks)
         mod_pak_buttons_layout.addWidget(self.clear_mod_pak_button)
 
         mod_pak_layout.addLayout(mod_pak_buttons_layout)
 
-        layout.addWidget(mod_pak_group)
+        layout.addWidget(self.mod_pak_group)
 
         # Configuration Section
-        config_group = QGroupBox("Configuration")
+        self.config_group = QGroupBox()
         config_layout = QVBoxLayout()
-        config_group.setLayout(config_layout)
+        self.config_group.setLayout(config_layout)
 
         # Mod name
         mod_name_layout = QHBoxLayout()
-        mod_name_layout.addWidget(QLabel("Mod Name:"))
+        self.mod_name_label = QLabel()
+        mod_name_layout.addWidget(self.mod_name_label)
         self.mod_name_input = QLineEdit()
-        self.mod_name_input.setPlaceholderText("e.g., vanilla, mymod")
         mod_name_layout.addWidget(self.mod_name_input)
         config_layout.addLayout(mod_name_layout)
 
         # Overwrite option
-        self.overwrite_checkbox = QCheckBox("Overwrite existing data")
-        self.overwrite_checkbox.setToolTip(
-            "If checked, existing templates with the same item-resolution will be overwritten"
-        )
+        self.overwrite_checkbox = QCheckBox()
         config_layout.addWidget(self.overwrite_checkbox)
 
         # Database path row
         db_path_layout = QHBoxLayout()
-        db_path_layout.addWidget(QLabel("Destination Database:"))
+        self.db_path_label = QLabel()
+        db_path_layout.addWidget(self.db_path_label)
         self.db_path_input = QLineEdit()
         db_path = self.settings.scanner.database_path
         self.db_path_input.setText(str(db_path) if db_path else "")
-        self.db_path_input.setPlaceholderText("Select database file (.h5)")
-        self.db_path_input.setToolTip("Database file where templates will be saved")
         db_path_layout.addWidget(self.db_path_input)
 
-        db_browse_button = QPushButton("Browse...")
-        db_browse_button.clicked.connect(self.select_database_path)
-        db_path_layout.addWidget(db_browse_button)
+        self.db_browse_button = QPushButton()
+        self.db_browse_button.clicked.connect(self.select_database_path)
+        db_path_layout.addWidget(self.db_browse_button)
         config_layout.addLayout(db_path_layout)
 
         # Workers row
-        cpu_count = os.cpu_count() or 1
         configured_workers = self.settings.database_builder.workers
-        default_workers = configured_workers if configured_workers is not None else cpu_count
+        default_workers = configured_workers if configured_workers is not None else self._cpu_count
         workers_layout = QHBoxLayout()
-        workers_layout.addWidget(QLabel("Workers:"))
+        self.workers_label = QLabel()
+        workers_layout.addWidget(self.workers_label)
         self.workers_spinbox = QSpinBox()
         self.workers_spinbox.setMinimum(1)
-        self.workers_spinbox.setMaximum(cpu_count)
-        self.workers_spinbox.setValue(min(default_workers, cpu_count))
-        self.workers_spinbox.setToolTip(
-            "Number of parallel processes for database building.\n"
-            "Set to 1 to disable multiprocessing."
-        )
+        self.workers_spinbox.setMaximum(self._cpu_count)
+        self.workers_spinbox.setValue(min(default_workers, self._cpu_count))
         self.workers_spinbox.setFixedWidth(80)
         workers_layout.addWidget(self.workers_spinbox)
-        workers_hint = QLabel(f"({cpu_count} cores detected)")
-        workers_hint.setStyleSheet("color: gray; font-size: 11px;")
-        workers_layout.addWidget(workers_hint)
+        self.workers_hint = QLabel()
+        self.workers_hint.setStyleSheet("color: gray; font-size: 11px;")
+        workers_layout.addWidget(self.workers_hint)
         workers_layout.addStretch()
         config_layout.addLayout(workers_layout)
 
-        layout.addWidget(config_group)
+        layout.addWidget(self.config_group)
 
         # Logs Section
-        logs_group = QGroupBox("Process Logs")
+        self.logs_group = QGroupBox()
         logs_layout = QVBoxLayout()
-        logs_group.setLayout(logs_layout)
+        self.logs_group.setLayout(logs_layout)
 
         self.log_display = QTableWidget()
         self.log_display.setColumnCount(4)
-        self.log_display.setHorizontalHeaderLabels(["Time", "Level", "Module", "Message"])
         self.log_display.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self.log_display.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self.log_display.setWordWrap(True)  # Enable word wrap for multi-line content
@@ -286,15 +271,15 @@ class IconImportWindow(QMainWindow):
 
         logs_layout.addWidget(self.log_display)
 
-        layout.addWidget(logs_group, stretch=1)  # Expand to use maximum available space
+        layout.addWidget(self.logs_group, stretch=1)  # Expand to use maximum available space
 
         # Action Buttons (at bottom)
         action_buttons_layout = QHBoxLayout()
-        self.start_button = QPushButton("Start Import")
+        self.start_button = QPushButton()
         self.start_button.clicked.connect(self.start_import)
         action_buttons_layout.addWidget(self.start_button)
 
-        self.cancel_button = QPushButton("Cancel")
+        self.cancel_button = QPushButton()
         self.cancel_button.clicked.connect(self.cancel_import)
         self.cancel_button.setEnabled(False)
         action_buttons_layout.addWidget(self.cancel_button)
@@ -306,15 +291,68 @@ class IconImportWindow(QMainWindow):
 
         action_buttons_layout.addStretch()
 
-        clear_logs_button = QPushButton("Clear Logs")
-        clear_logs_button.clicked.connect(self.clear_logs)
-        action_buttons_layout.addWidget(clear_logs_button)
+        self.clear_logs_button = QPushButton()
+        self.clear_logs_button.clicked.connect(self.clear_logs)
+        action_buttons_layout.addWidget(self.clear_logs_button)
 
-        close_button = QPushButton("Close")
-        close_button.clicked.connect(self.close)
-        action_buttons_layout.addWidget(close_button)
+        self.close_button = QPushButton()
+        self.close_button.clicked.connect(self.close)
+        action_buttons_layout.addWidget(self.close_button)
 
         layout.addLayout(action_buttons_layout)
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.setWindowTitle(t("database_builder.title"))
+        self.vanilla_group.setTitle(t("database_builder.vanilla_group"))
+        self.vanilla_info.setText(t("database_builder.vanilla_warning"))
+        self.vanilla_pak_display.setPlaceholderText(t("database_builder.no_vanilla_selected"))
+        self.vanilla_browse_button.setText(t("common.browse"))
+        self.vanilla_clear_button.setText(t("common.clear"))
+        self.mod_pak_group.setTitle(t("database_builder.mod_pak_group"))
+        self.mod_warning.setText(t("database_builder.mod_pak_warning"))
+        self.add_mod_pak_button.setText(t("database_builder.add_pak_files"))
+        self.remove_mod_pak_button.setText(t("database_builder.remove_selected"))
+        self.clear_mod_pak_button.setText(t("common.clear_all"))
+        self.config_group.setTitle(t("database_builder.configuration_group"))
+        self.mod_name_label.setText(t("database_builder.mod_name"))
+        self.mod_name_input.setPlaceholderText(t("database_builder.mod_name_placeholder"))
+        self.overwrite_checkbox.setText(t("database_builder.overwrite"))
+        self.overwrite_checkbox.setToolTip(t("database_builder.overwrite_tooltip"))
+        self.db_path_label.setText(t("database_builder.destination_database"))
+        self.db_path_input.setPlaceholderText(t("database_builder.destination_placeholder"))
+        self.db_path_input.setToolTip(t("database_builder.destination_tooltip"))
+        self.db_browse_button.setText(t("common.browse"))
+        self.workers_label.setText(t("database_builder.workers"))
+        self.workers_spinbox.setToolTip(t("database_builder.workers_tooltip"))
+        self.workers_hint.setText(
+            t("database_builder.cores_detected").replace("{cores}", str(self._cpu_count))
+        )
+        self.logs_group.setTitle(t("database_builder.process_logs"))
+        self.log_display.setHorizontalHeaderLabels(
+            [
+                t("server_panel.log_columns.time"),
+                t("server_panel.log_columns.level"),
+                t("server_panel.log_columns.module"),
+                t("server_panel.log_columns.message"),
+            ]
+        )
+        self.start_button.setText(t("database_builder.start_import"))
+        self.cancel_button.setText(t("common.cancel"))
+        self.clear_logs_button.setText(t("common.clear_logs"))
+        self.close_button.setText(t("common.close"))
 
     def _check_configuration(self) -> bool:
         """Check if database builder is properly configured.
@@ -349,13 +387,13 @@ class IconImportWindow(QMainWindow):
 
         # Warning message
         warning_label = QLabel(
-            "<h2>⚠️ Configuration Required</h2>"
-            "<p><b>The Database Builder is not properly configured.</b></p>"
-            "<p>To use the Database Builder feature, you need to configure:</p>"
+            f"<h2>{t('database_builder.config_required_title')}</h2>"
+            f"<p><b>{t('database_builder.config_required_message')}</b></p>"
+            f"<p>{t('database_builder.config_required_intro')}</p>"
             "<ul>"
-            "<li><b>Extractor Tool</b> (repak.exe) - for extracting PAK files</li>"
-            "<li><b>Converter Tool</b> (umodel.exe) - for converting UAsset files</li>"
-            "<li><b>Catalog File</b> (catalog.json) - defines all game items</li>"
+            f"<li><b>{t('database_builder.config_required_extractor')}</b></li>"
+            f"<li><b>{t('database_builder.config_required_converter')}</b></li>"
+            f"<li><b>{t('database_builder.config_required_catalog')}</b></li>"
             "</ul>"
         )
         warning_label.setWordWrap(True)
@@ -378,12 +416,12 @@ class IconImportWindow(QMainWindow):
         button_layout = QHBoxLayout()
         button_layout.addStretch()
 
-        configure_button = QPushButton("Configure...")
+        configure_button = QPushButton(t("common.configure"))
         configure_button.setFixedWidth(120)
         configure_button.clicked.connect(self._open_settings_dialog)
         button_layout.addWidget(configure_button)
 
-        close_button = QPushButton("Close")
+        close_button = QPushButton(t("common.close"))
         close_button.setFixedWidth(100)
         close_button.clicked.connect(self.close)
         button_layout.addWidget(close_button)
@@ -447,9 +485,9 @@ class IconImportWindow(QMainWindow):
         """Open file dialog to select vanilla PAK file."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Vanilla PAK File",
+            t("database_builder.select_vanilla_pak"),
             self._get_default_pak_directory(),
-            "PAK Files (*.pak);;All Files (*)",
+            t("database_builder.pak_filter"),
         )
         if file_path:
             self.vanilla_pak_file = file_path
@@ -466,7 +504,7 @@ class IconImportWindow(QMainWindow):
         # If mod PAK validation showed missing assets, restore the warning state
         if self._validation_result and not self._validation_result.is_valid:
             self.vanilla_info.setVisible(True)
-            self.validation_status_label.setText("Missing required assets")
+            self.validation_status_label.setText(t("database_builder.validation.missing_assets"))
             self.validation_status_label.setStyleSheet("color: #FF9800; font-size: 11px;")
             self._update_start_button_state()
 
@@ -478,9 +516,9 @@ class IconImportWindow(QMainWindow):
 
         file_path, _ = QFileDialog.getSaveFileName(
             self,
-            "Select Database File",
+            t("database_builder.select_database"),
             start_dir,
-            "HDF5 Database (*.h5);;All Files (*)",
+            t("database_info_window.database_filter"),
         )
         if file_path:
             # Ensure .h5 extension
@@ -492,9 +530,9 @@ class IconImportWindow(QMainWindow):
         """Open file dialog to add mod PAK files."""
         files, _ = QFileDialog.getOpenFileNames(
             self,
-            "Select Mod PAK Files",
+            t("database_builder.select_mod_pak"),
             self._get_default_pak_directory(),
-            "PAK Files (*.pak);;All Files (*)",
+            t("database_builder.pak_filter"),
         )
         if files:
             added = False
@@ -593,7 +631,7 @@ class IconImportWindow(QMainWindow):
         # Disable PAK controls while validating
         self._set_pak_controls_enabled(False)
         self._is_validating = True
-        self.validation_status_label.setText("Validating PAK files...")
+        self.validation_status_label.setText(t("database_builder.validation.validating_pak"))
         self.validation_status_label.setStyleSheet("color: #2196F3; font-size: 11px;")
         self._update_start_button_state()
 
@@ -618,13 +656,13 @@ class IconImportWindow(QMainWindow):
 
         if result.is_valid:
             # PAK files have all required assets - hide vanilla section
-            self.validation_status_label.setText("All required assets found")
+            self.validation_status_label.setText(t("database_builder.validation.all_assets_found"))
             self.validation_status_label.setStyleSheet("color: #4CAF50; font-size: 11px;")
             self.vanilla_group.setVisible(False)
             self.clear_vanilla_pak()
         else:
             # PAK files are missing required assets - show vanilla section
-            self.validation_status_label.setText("⚠ Missing required assets")
+            self.validation_status_label.setText(t("database_builder.validation.missing_assets"))
             self.validation_status_label.setStyleSheet("color: #FF9800; font-size: 11px;")
             self.vanilla_group.setVisible(True)
 
@@ -636,8 +674,7 @@ class IconImportWindow(QMainWindow):
                 missing.append("subicons")
             missing_text = " and ".join(missing)
             self.vanilla_info.setText(
-                f"⚠️ The selected mod PAK files are missing required assets ({missing_text}). "
-                "Please select the vanilla game PAK file (War-WindowsNoEditor.pak)."
+                t("database_builder.vanilla_warning_missing").replace("{missing}", missing_text)
             )
 
         self._update_start_button_state()
@@ -665,7 +702,7 @@ class IconImportWindow(QMainWindow):
         # Disable vanilla PAK controls while validating
         self._set_vanilla_controls_enabled(False)
         self._is_validating_vanilla = True
-        self.validation_status_label.setText("Validating vanilla PAK...")
+        self.validation_status_label.setText(t("database_builder.validation.validating_vanilla"))
         self.validation_status_label.setStyleSheet("color: #2196F3; font-size: 11px;")
         self._update_start_button_state()
 
@@ -693,12 +730,12 @@ class IconImportWindow(QMainWindow):
         if result.is_valid:
             # Vanilla PAK has all required assets - hide warning and show success
             self.vanilla_info.setVisible(False)
-            self.validation_status_label.setText("All required assets found")
+            self.validation_status_label.setText(t("database_builder.validation.all_assets_found"))
             self.validation_status_label.setStyleSheet("color: #4CAF50; font-size: 11px;")
         else:
             # Vanilla PAK is missing required assets - this is the wrong file!
             self.vanilla_info.setVisible(True)
-            self.validation_status_label.setText("Invalid vanilla PAK")
+            self.validation_status_label.setText(t("database_builder.validation.invalid_vanilla"))
             self.validation_status_label.setStyleSheet("color: #F44336; font-size: 11px;")
 
             # Show specific error message
@@ -711,12 +748,8 @@ class IconImportWindow(QMainWindow):
 
             QMessageBox.warning(
                 self,
-                "Invalid Vanilla PAK",
-                f"The selected PAK file does not contain the required assets ({missing_text}).\n\n"
-                "Please select the correct vanilla game PAK file:\n"
-                "War-WindowsNoEditor.pak\n\n"
-                "This file is typically located in:\n"
-                "Steam/steamapps/common/Foxhole/War/Content/Paks/",
+                t("database_builder.invalid_vanilla_title"),
+                t("database_builder.invalid_vanilla_message").replace("{missing}", missing_text),
             )
 
         self._update_start_button_state()
@@ -780,39 +813,33 @@ class IconImportWindow(QMainWindow):
             tuple[bool, str]: (is_valid, error_message)
         """
         if not self.mod_pak_files:
-            return False, "Please add at least one mod PAK file"
+            return False, t("database_builder.validation.add_pak_file")
 
         # Check if validation is still running
         if self._is_validating:
-            return False, "Please wait for mod PAK file validation to complete"
+            return False, t("database_builder.validation.wait_validation")
 
         if self._is_validating_vanilla:
-            return False, "Please wait for vanilla PAK file validation to complete"
+            return False, t("database_builder.validation.wait_vanilla_validation")
 
         # Check if vanilla PAK is required but not selected or invalid
         if self._validation_result and not self._validation_result.is_valid:
             if not self.vanilla_pak_file:
-                return False, (
-                    "The mod PAK files are missing required assets. "
-                    "Please select the vanilla game PAK file."
-                )
+                return False, t("database_builder.validation.mod_missing_assets")
             # Check if vanilla PAK was validated and is valid
             if self._vanilla_validation_result and not self._vanilla_validation_result.is_valid:
-                return False, (
-                    "The selected vanilla PAK file does not contain the required assets. "
-                    "Please select the correct vanilla game PAK file (War-WindowsNoEditor.pak)."
-                )
+                return False, t("database_builder.validation.vanilla_invalid")
             # If vanilla PAK selected but not validated yet, wait
             if not self._vanilla_validation_result:
-                return False, "Please wait for vanilla PAK file validation to complete"
+                return False, t("database_builder.validation.wait_vanilla_validation")
 
         mod_name = self.mod_name_input.text().strip()
         if not mod_name:
-            return False, "Please enter a mod name"
+            return False, t("database_builder.validation.enter_mod_name")
 
         db_path = self.db_path_input.text().strip()
         if not db_path:
-            return False, "Please select a destination database file"
+            return False, t("database_builder.validation.select_database")
 
         return True, ""
 
@@ -821,7 +848,7 @@ class IconImportWindow(QMainWindow):
         # Validate inputs
         is_valid, error_msg = self.validate_inputs()
         if not is_valid:
-            QMessageBox.warning(self, "Validation Error", error_msg)
+            QMessageBox.warning(self, t("common.validation_error"), error_msg)
             return
 
         mod_name = self.mod_name_input.text().strip()
@@ -865,7 +892,7 @@ class IconImportWindow(QMainWindow):
                 database_workers=self.workers_spinbox.value(),
             )
         except ValueError as e:
-            QMessageBox.critical(self, "Invalid Mod Name", str(e))
+            QMessageBox.critical(self, t("database_builder.invalid_mod_name_title"), str(e))
             logger.error("Invalid mod name: %s", e)
             # Re-enable inputs so user can fix the error
             self._re_enable_inputs()
@@ -903,7 +930,7 @@ class IconImportWindow(QMainWindow):
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "level": "INFO",
                 "module": "icon_import",
-                "message": "✓ Import completed successfully!",
+                "message": t("database_builder.import_completed"),
                 "color": "#00FF00",  # Green
             }
         else:
@@ -911,7 +938,7 @@ class IconImportWindow(QMainWindow):
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 "level": "WARNING",
                 "module": "icon_import",
-                "message": "⚠ Import was cancelled",
+                "message": t("database_builder.import_cancelled"),
                 "color": "#FFA500",  # Orange
             }
         self.append_log(status_log)
@@ -936,7 +963,7 @@ class IconImportWindow(QMainWindow):
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "level": "ERROR",
             "module": "icon_import",
-            "message": f"✗ Import error: {error_msg}",
+            "message": t("database_builder.import_error").replace("{error}", error_msg),
             "color": "#FF0000",  # Red
         }
         self.append_log(error_log)
@@ -1042,8 +1069,8 @@ class IconImportWindow(QMainWindow):
         if self.import_worker and self.import_worker.isRunning():
             reply = QMessageBox.question(
                 self,
-                "Import In Progress",
-                "An import is currently running. Are you sure you want to close?",
+                t("database_builder.import_in_progress_title"),
+                t("database_builder.import_in_progress_message"),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             )
 

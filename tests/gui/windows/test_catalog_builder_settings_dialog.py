@@ -11,6 +11,7 @@ from foxhole_stockpiles.core.settings.sections.external_tools import ExternalToo
 from foxhole_stockpiles.gui.windows.catalog_builder_settings_dialog import (
     CatalogBuilderSettingsDialog,
 )
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -35,7 +36,7 @@ def test_dialog_initialization(dialog: CatalogBuilderSettingsDialog) -> None:
     Args:
         dialog: CatalogBuilderSettingsDialog instance
     """
-    assert "Catalog Builder Settings" in dialog.windowTitle()
+    assert t("catalog_builder_settings.title") in dialog.windowTitle()
     assert dialog.external_tools_tab is not None
     assert dialog.config_manager is not None
     assert dialog.status_label is not None

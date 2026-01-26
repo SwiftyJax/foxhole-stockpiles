@@ -10,6 +10,7 @@ from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseB
 from foxhole_stockpiles.gui.windows.database_builder_settings_dialog import (
     DatabaseBuilderSettingsDialog,
 )
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -34,7 +35,7 @@ def test_dialog_initialization(dialog: DatabaseBuilderSettingsDialog) -> None:
     Args:
         dialog (DatabaseBuilderSettingsDialog): Dialog instance
     """
-    assert "Database Builder Settings" in dialog.windowTitle()
+    assert t("database_builder_settings.title") in dialog.windowTitle()
     assert dialog.db_builder_tab is not None
     assert dialog.config_manager is not None
     assert dialog.status_label is not None

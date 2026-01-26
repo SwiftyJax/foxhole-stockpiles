@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
 )
 
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 
 class OCRTab(QWidget):
@@ -33,7 +34,7 @@ class OCRTab(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll_content = QWidget()
-        layout = QFormLayout(scroll_content)
+        self._form_layout = QFormLayout(scroll_content)
         scroll.setWidget(scroll_content)
 
         main_layout = QVBoxLayout(self)
@@ -44,172 +45,156 @@ class OCRTab(QWidget):
         warning_layout = QHBoxLayout(warning_header)
         warning_layout.setContentsMargins(0, 0, 0, 0)
 
-        info_label = QLabel(
-            "⚠️ <b>Advanced Settings:</b> OCR settings define the layout dimensions "
-            "for stockpile detection. "
-            "These are scaled from 2160p base resolution. "
-            "<b style='color: #d32f2f;'>Incorrect values will cause detection to fail "
-            "completely.</b>"
-        )
-        info_label.setWordWrap(True)
-        info_label.setStyleSheet(
+        self.info_label = QLabel()
+        self.info_label.setWordWrap(True)
+        self.info_label.setStyleSheet(
             "QLabel { background-color: palette(alternate-base); padding: 10px; "
             "border: 2px solid #FF9800; }"
         )
-        warning_layout.addWidget(info_label, 1)
+        warning_layout.addWidget(self.info_label, 1)
 
-        reset_all_btn = QPushButton("Reset All to Defaults")
-        reset_all_btn.clicked.connect(self.reset_all_to_defaults)
-        reset_all_btn.setStyleSheet("QPushButton { padding: 8px; }")
-        warning_layout.addWidget(reset_all_btn)
+        self.reset_all_btn = QPushButton()
+        self.reset_all_btn.clicked.connect(self.reset_all_to_defaults)
+        self.reset_all_btn.setStyleSheet("QPushButton { padding: 8px; }")
+        warning_layout.addWidget(self.reset_all_btn)
 
-        layout.addRow(warning_header)
+        self._form_layout.addRow(warning_header)
 
         # Height (base resolution)
-        height_label = QLabel("Base Height:")
-        height_label.setToolTip(
-            "Base screen resolution height for layout calculations.\n\n"
-            "All layout dimensions are scaled from this base (2160p).\n"
-            "Default: 2160 (for 4K screenshots)."
-        )
+        self.height_label = QLabel()
         self.height_input = QSpinBox()
         self.height_input.setRange(1080, 4320)
         self.height_input.setValue(2160)
-        layout.addRow(height_label, self.height_input)
+        self._form_layout.addRow(self.height_label, self.height_input)
 
         # Box dimensions
-        box_width_label = QLabel("Box Width:")
-        box_width_label.setToolTip(
-            "Width of each quantity box in the stockpile grid.\n\n"
-            "Measured in pixels at base resolution.\n"
-            "Incorrect values will cause detection to fail."
-        )
+        self.box_width_label = QLabel()
         self.box_width_input = QSpinBox()
         self.box_width_input.setRange(10, 500)
-        layout.addRow(box_width_label, self.box_width_input)
+        self._form_layout.addRow(self.box_width_label, self.box_width_input)
 
-        box_height_label = QLabel("Box Height:")
-        box_height_label.setToolTip(
-            "Height of each quantity box in the stockpile grid.\n\n"
-            "Measured in pixels at base resolution.\n"
-            "Incorrect values will cause detection to fail."
-        )
+        self.box_height_label = QLabel()
         self.box_height_input = QSpinBox()
         self.box_height_input.setRange(10, 500)
-        layout.addRow(box_height_label, self.box_height_input)
+        self._form_layout.addRow(self.box_height_label, self.box_height_input)
 
         # Offsets
-        column_offset_label = QLabel("Column Offset:")
-        column_offset_label.setToolTip(
-            "Horizontal spacing between columns in the stockpile grid.\n\n"
-            "Measured in pixels at base resolution.\n"
-            "Affects how the scanner moves from one column to the next."
-        )
+        self.column_offset_label = QLabel()
         self.column_offset_input = QSpinBox()
         self.column_offset_input.setRange(0, 1000)
-        layout.addRow(column_offset_label, self.column_offset_input)
+        self._form_layout.addRow(self.column_offset_label, self.column_offset_input)
 
-        row_offset_label = QLabel("Row Offset:")
-        row_offset_label.setToolTip(
-            "Vertical spacing between rows in the stockpile grid.\n\n"
-            "Measured in pixels at base resolution.\n"
-            "Affects how the scanner moves from one row to the next."
-        )
+        self.row_offset_label = QLabel()
         self.row_offset_input = QSpinBox()
         self.row_offset_input.setRange(0, 1000)
-        layout.addRow(row_offset_label, self.row_offset_input)
+        self._form_layout.addRow(self.row_offset_label, self.row_offset_input)
 
-        group_offset_label = QLabel("Group Offset:")
-        group_offset_label.setToolTip(
-            "Vertical spacing between stockpile groups.\n\n"
-            "Measured in pixels at base resolution.\n"
-            "Used when multiple stockpile sections are stacked vertically."
-        )
+        self.group_offset_label = QLabel()
         self.group_offset_input = QSpinBox()
         self.group_offset_input.setRange(0, 1000)
-        layout.addRow(group_offset_label, self.group_offset_input)
+        self._form_layout.addRow(self.group_offset_label, self.group_offset_input)
 
         # Title region
-        title_margin_label = QLabel("Title Margin:")
-        title_margin_label.setToolTip(
-            "Margin around stockpile title text.\n\n"
-            "Used for detecting and extracting stockpile names.\n"
-            "Affects title region boundary detection."
-        )
+        self.title_margin_label = QLabel()
         self.title_margin_input = QSpinBox()
         self.title_margin_input.setRange(0, 500)
-        layout.addRow(title_margin_label, self.title_margin_input)
+        self._form_layout.addRow(self.title_margin_label, self.title_margin_input)
 
-        title_min_width_label = QLabel("Title Min Width:")
-        title_min_width_label.setToolTip(
-            "Minimum width for a valid title region.\n\n"
-            "Helps filter out false title detections.\n"
-            "Too low may include noise, too high may skip short titles."
-        )
+        self.title_min_width_label = QLabel()
         self.title_min_width_input = QSpinBox()
         self.title_min_width_input.setRange(0, 1000)
-        layout.addRow(title_min_width_label, self.title_min_width_input)
+        self._form_layout.addRow(self.title_min_width_label, self.title_min_width_input)
 
-        title_height_label = QLabel("Title Height:")
-        title_height_label.setToolTip(
-            "Expected height of stockpile title text.\n\n"
-            "Used for title region extraction.\n"
-            "Should match the game's title font size at base resolution."
-        )
+        self.title_height_label = QLabel()
         self.title_height_input = QSpinBox()
         self.title_height_input.setRange(0, 500)
-        layout.addRow(title_height_label, self.title_height_input)
+        self._form_layout.addRow(self.title_height_label, self.title_height_input)
 
         # Icon to quantity offset
-        icon_to_quantity_label = QLabel("Icon to Quantity Offset:")
-        icon_to_quantity_label.setToolTip(
-            "Horizontal offset from quantity box to item icon (icon is to the left).\n\n"
-            "Measured in pixels at base resolution.\n"
-            "Used to locate the item icon relative to its quantity box."
-        )
+        self.icon_to_quantity_label = QLabel()
         self.icon_to_quantity_offset_input = QSpinBox()
         self.icon_to_quantity_offset_input.setRange(0, 500)
-        layout.addRow(icon_to_quantity_label, self.icon_to_quantity_offset_input)
+        self._form_layout.addRow(self.icon_to_quantity_label, self.icon_to_quantity_offset_input)
 
         # Gamma thresholds
-        gray_lower_label = QLabel("Gray Lower Threshold:")
-        gray_lower_label.setToolTip(
-            "Lower grayscale threshold for quantity box detection (0-255).\n\n"
-            "Depends on user's screen gamma settings.\n"
-            "Typical range: 15-98. Adjust if quantity boxes aren't detected properly."
-        )
+        self.gray_lower_label = QLabel()
         self.gray_lower_input = QSpinBox()
         self.gray_lower_input.setRange(0, 255)
-        layout.addRow(gray_lower_label, self.gray_lower_input)
+        self._form_layout.addRow(self.gray_lower_label, self.gray_lower_input)
 
-        gray_upper_label = QLabel("Gray Upper Threshold:")
-        gray_upper_label.setToolTip(
-            "Upper grayscale threshold for quantity box detection (0-255).\n\n"
-            "Depends on user's screen gamma settings.\n"
-            "Typical range: 15-98. Adjust if quantity boxes aren't detected properly."
-        )
+        self.gray_upper_label = QLabel()
         self.gray_upper_input = QSpinBox()
         self.gray_upper_input.setRange(0, 255)
-        layout.addRow(gray_upper_label, self.gray_upper_input)
+        self._form_layout.addRow(self.gray_upper_label, self.gray_upper_input)
 
         # Pixel tolerance
-        pixel_diff_label = QLabel("Pixel Diff Tolerance:")
-        pixel_diff_label.setToolTip(
-            "Allowed pixel variation for any detection calculation.\n\n"
-            "Accounts for minor position shifts across different resolutions.\n"
-            "Example: Icon column alignment may vary by 1-2 pixels depending on resolution."
-        )
+        self.pixel_diff_label = QLabel()
         self.pixel_diff_tolerance_input = QSpinBox()
         self.pixel_diff_tolerance_input.setRange(0, 50)
-        layout.addRow(pixel_diff_label, self.pixel_diff_tolerance_input)
+        self._form_layout.addRow(self.pixel_diff_label, self.pixel_diff_tolerance_input)
+
+        # Apply translations
+        self.retranslate()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.info_label.setText(t("ocr_tab.warning_header"))
+        self.reset_all_btn.setText(t("ocr_tab.reset_all"))
+
+        self.height_label.setText(t("ocr_tab.base_height"))
+        self.height_label.setToolTip(t("ocr_tab.base_height_tooltip"))
+
+        self.box_width_label.setText(t("ocr_tab.box_width"))
+        self.box_width_label.setToolTip(t("ocr_tab.box_width_tooltip"))
+
+        self.box_height_label.setText(t("ocr_tab.box_height"))
+        self.box_height_label.setToolTip(t("ocr_tab.box_height_tooltip"))
+
+        self.column_offset_label.setText(t("ocr_tab.column_offset"))
+        self.column_offset_label.setToolTip(t("ocr_tab.column_offset_tooltip"))
+
+        self.row_offset_label.setText(t("ocr_tab.row_offset"))
+        self.row_offset_label.setToolTip(t("ocr_tab.row_offset_tooltip"))
+
+        self.group_offset_label.setText(t("ocr_tab.group_offset"))
+        self.group_offset_label.setToolTip(t("ocr_tab.group_offset_tooltip"))
+
+        self.title_margin_label.setText(t("ocr_tab.title_margin"))
+        self.title_margin_label.setToolTip(t("ocr_tab.title_margin_tooltip"))
+
+        self.title_min_width_label.setText(t("ocr_tab.title_min_width"))
+        self.title_min_width_label.setToolTip(t("ocr_tab.title_min_width_tooltip"))
+
+        self.title_height_label.setText(t("ocr_tab.title_height"))
+        self.title_height_label.setToolTip(t("ocr_tab.title_height_tooltip"))
+
+        self.icon_to_quantity_label.setText(t("ocr_tab.icon_to_quantity_offset"))
+        self.icon_to_quantity_label.setToolTip(t("ocr_tab.icon_to_quantity_tooltip"))
+
+        self.gray_lower_label.setText(t("ocr_tab.gray_lower"))
+        self.gray_lower_label.setToolTip(t("ocr_tab.gray_lower_tooltip"))
+
+        self.gray_upper_label.setText(t("ocr_tab.gray_upper"))
+        self.gray_upper_label.setToolTip(t("ocr_tab.gray_upper_tooltip"))
+
+        self.pixel_diff_label.setText(t("ocr_tab.pixel_diff_tolerance"))
+        self.pixel_diff_label.setToolTip(t("ocr_tab.pixel_diff_tooltip"))
 
     def reset_all_to_defaults(self) -> None:
         """Reset all OCR settings to default values from the model."""
         reply = QMessageBox.question(
             self,
-            "Reset OCR Settings",
-            "Reset all OCR settings to default values?\n\n"
-            "This will restore the factory defaults for layout detection.",
+            t("ocr_tab.reset_title"),
+            t("ocr_tab.reset_message"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )

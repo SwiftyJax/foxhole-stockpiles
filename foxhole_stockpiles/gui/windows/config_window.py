@@ -32,6 +32,13 @@ from foxhole_stockpiles.gui.widgets.config_tabs.output_tab import OutputTab
 from foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab import ScannerTab
 from foxhole_stockpiles.gui.widgets.config_tabs.stockpile_types_tab import StockpileTypesTab
 from foxhole_stockpiles.gui.widgets.config_tabs.template_tab import TemplateTab
+from foxhole_stockpiles.i18n import (
+    get_translator,
+    off_language_changed,
+    on_language_changed,
+    set_language,
+    t,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -57,7 +64,7 @@ class ConfigWindow(QMainWindow):
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
-        self.setWindowTitle("Configuration")
+        self.setWindowTitle(t("config_window.title"))
         self.setGeometry(100, 100, 950, 600)
 
         central_widget = QWidget()
@@ -67,9 +74,9 @@ class ConfigWindow(QMainWindow):
 
         # Add hint about hovering labels at top
         hint_layout = QHBoxLayout()
-        hint_label = QLabel("Tip: Hover over labels for help")
-        hint_label.setStyleSheet("QLabel { color: gray; font-size: 11px; }")
-        hint_layout.addWidget(hint_label)
+        self.hint_label = QLabel(t("config_window.tip_hover"))
+        self.hint_label.setStyleSheet("QLabel { color: gray; font-size: 11px; }")
+        hint_layout.addWidget(self.hint_label)
         hint_layout.addStretch()
         layout.addLayout(hint_layout)
 
@@ -90,8 +97,9 @@ class ConfigWindow(QMainWindow):
         self.stockpile_types_tab = StockpileTypesTab()
         self.notifications_tab = NotificationsTab()
 
-        # Track current config level
+        # Track current config level and language
         self._current_config_level: ConfigLevel = ConfigLevel.BASIC
+        self._current_language: str = get_translator().language
 
         # Initialize tabs (will be updated after settings load)
         self._build_tabs()
@@ -99,15 +107,19 @@ class ConfigWindow(QMainWindow):
         # Create button box
         button_box = QDialogButtonBox()
 
-        save_button = QPushButton("Save")
-        save_button.clicked.connect(self.save_settings)
-        button_box.addButton(save_button, QDialogButtonBox.ButtonRole.AcceptRole)
+        self.save_button = QPushButton(t("common.save"))
+        self.save_button.clicked.connect(self.save_settings)
+        button_box.addButton(self.save_button, QDialogButtonBox.ButtonRole.AcceptRole)
 
-        close_button = QPushButton("Close")
-        close_button.clicked.connect(self.close)
-        button_box.addButton(close_button, QDialogButtonBox.ButtonRole.RejectRole)
+        self.close_button = QPushButton(t("common.close"))
+        self.close_button.clicked.connect(self.close)
+        button_box.addButton(self.close_button, QDialogButtonBox.ButtonRole.RejectRole)
 
         layout.addWidget(button_box)
+
+        # Connect to language change signal and clean up on destruction
+        on_language_changed(self.retranslate)
+        self.destroyed.connect(lambda: off_language_changed(self.retranslate))
 
         # Add status bar
         self.status_bar = QStatusBar()
@@ -115,10 +127,8 @@ class ConfigWindow(QMainWindow):
 
     def _build_tabs(self) -> None:
         """Build tabs based on current config level."""
-        # Remember current tab if possible
-        current_tab_text = ""
-        if self.tab_widget.currentIndex() >= 0:
-            current_tab_text = self.tab_widget.tabText(self.tab_widget.currentIndex())
+        # Remember current tab index
+        current_tab_index = self.tab_widget.currentIndex()
 
         # Clear all tabs
         self.tab_widget.clear()
@@ -126,37 +136,38 @@ class ConfigWindow(QMainWindow):
         level = self._current_config_level
 
         # Always visible tabs (Basic level)
-        self.tab_widget.addTab(self.api_server_tab, "API Server")
-        self.tab_widget.addTab(self.scanner_tab, "Scanner")
-        self.tab_widget.addTab(self.output_tab, "Output")
+        self.tab_widget.addTab(self.api_server_tab, t("config_window.tabs.api_server"))
+        self.tab_widget.addTab(self.scanner_tab, t("config_window.tabs.scanner"))
+        self.tab_widget.addTab(self.output_tab, t("config_window.tabs.output"))
 
         # Developer-only tabs
         if level.is_at_least(ConfigLevel.DEVELOPER):
-            self.tab_widget.addTab(self.ocr_tab, "OCR")
-            self.tab_widget.addTab(self.template_tab, "Templates")
+            self.tab_widget.addTab(self.ocr_tab, t("config_window.tabs.ocr"))
+            self.tab_widget.addTab(self.template_tab, t("config_window.tabs.templates"))
 
         # Advanced and Developer tabs
         if level.is_at_least(ConfigLevel.ADVANCED):
-            self.tab_widget.addTab(self.stockpile_types_tab, "Stockpile Types")
-            self.tab_widget.addTab(self.notifications_tab, "Notifications")
-            self.tab_widget.addTab(self.external_tools_tab, "External Tools")
-            self.tab_widget.addTab(self.database_builder_tab, "Database Builder")
+            self.tab_widget.addTab(
+                self.stockpile_types_tab, t("config_window.tabs.stockpile_types")
+            )
+            self.tab_widget.addTab(self.notifications_tab, t("config_window.tabs.notifications"))
+            self.tab_widget.addTab(self.external_tools_tab, t("config_window.tabs.external_tools"))
+            self.tab_widget.addTab(
+                self.database_builder_tab, t("config_window.tabs.database_builder")
+            )
 
         # Always visible tabs (continued)
-        self.tab_widget.addTab(self.logging_tab, "Logging")
-        self.tab_widget.addTab(self.gui_tab, "GUI")
+        self.tab_widget.addTab(self.logging_tab, t("config_window.tabs.logging"))
+        self.tab_widget.addTab(self.gui_tab, t("config_window.tabs.gui"))
 
         # Update field visibility in tabs based on level
         self.scanner_tab.set_config_level(level)
         self.api_server_tab.set_config_level(level)
         self.logging_tab.set_config_level(level)
 
-        # Try to restore previous tab
-        if current_tab_text:
-            for i in range(self.tab_widget.count()):
-                if self.tab_widget.tabText(i) == current_tab_text:
-                    self.tab_widget.setCurrentIndex(i)
-                    break
+        # Try to restore previous tab index
+        if current_tab_index >= 0 and current_tab_index < self.tab_widget.count():
+            self.tab_widget.setCurrentIndex(current_tab_index)
 
     def load_settings(self) -> None:
         """Load settings from configuration file."""
@@ -167,8 +178,8 @@ class ConfigWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(
                 self,
-                "Error Loading Configuration",
-                f"Failed to load configuration:\n{e}",
+                t("config_window.dialogs.error_loading_title"),
+                t("config_window.dialogs.error_loading_message", error=str(e)),
             )
             logger.error("Failed to load settings: %s", e)
 
@@ -221,8 +232,9 @@ class ConfigWindow(QMainWindow):
             # Collect settings from tabs (already validated by Pydantic)
             new_settings = self.collect_settings()
 
-            # Check if config level changed
+            # Check if config level or language changed
             config_level_changed = new_settings.gui.config_level != self._current_config_level
+            language_changed = new_settings.gui.language != self._current_language
 
             # Save settings
             success, msg = self.config_manager.save_config(new_settings)
@@ -233,6 +245,11 @@ class ConfigWindow(QMainWindow):
                 # Note: dependency caches are cleared when server stops
                 reload_settings()
 
+                # Apply language change (this emits signal to retranslate all windows)
+                if language_changed:
+                    self._current_language = new_settings.gui.language
+                    set_language(new_settings.gui.language)
+
                 # Rebuild tabs if config level changed
                 if config_level_changed:
                     self._current_config_level = new_settings.gui.config_level
@@ -241,16 +258,16 @@ class ConfigWindow(QMainWindow):
                     self.populate_tabs()
                     level = new_settings.gui.config_level
                     self.status_bar.showMessage(
-                        f"Configuration saved. Tabs updated for {level} mode.", 5000
+                        t("config_window.dialogs.tabs_updated", level=level.value), 5000
                     )
                 else:
-                    self.status_bar.showMessage("Configuration saved successfully!", 3000)
+                    self.status_bar.showMessage(t("config_window.dialogs.saved_successfully"), 3000)
 
                 logger.info("Settings saved successfully")
             else:
                 QMessageBox.critical(
                     self,
-                    "Error Saving Configuration",
+                    t("config_window.dialogs.error_saving_title"),
                     msg,
                 )
                 logger.error("Failed to save settings: %s", msg)
@@ -258,8 +275,8 @@ class ConfigWindow(QMainWindow):
         except Exception as e:
             QMessageBox.critical(
                 self,
-                "Error",
-                f"An unexpected error occurred:\n{e}",
+                t("config_window.dialogs.error_title"),
+                t("config_window.dialogs.error_unexpected", error=str(e)),
             )
             logger.error("Unexpected error saving settings: %s", e, exc_info=True)
 
@@ -297,8 +314,8 @@ class ConfigWindow(QMainWindow):
         if self.has_changes():
             reply = QMessageBox.question(
                 self,
-                "Unsaved Changes",
-                "There are pending changes. Do you want to save them?",
+                t("config_window.dialogs.unsaved_changes_title"),
+                t("config_window.dialogs.unsaved_changes_message"),
                 QMessageBox.StandardButton.Save
                 | QMessageBox.StandardButton.Discard
                 | QMessageBox.StandardButton.Cancel,
@@ -321,3 +338,17 @@ class ConfigWindow(QMainWindow):
                 self.closed.emit()
             else:
                 event.ignore()
+
+    def retranslate(self, _language: str = "") -> None:
+        """Update all translatable strings when language changes.
+
+        Args:
+            _language: The new language code (unused, translations fetched via t())
+        """
+        self.setWindowTitle(t("config_window.title"))
+        self.hint_label.setText(t("config_window.tip_hover"))
+        self.save_button.setText(t("common.save"))
+        self.close_button.setText(t("common.close"))
+
+        # Rebuild tabs with translated names
+        self._build_tabs()

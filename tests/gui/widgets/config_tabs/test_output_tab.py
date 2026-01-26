@@ -19,6 +19,7 @@ from foxhole_stockpiles.gui.widgets.config_tabs.output_tab import (
     OutputHandlerDialog,
     OutputTab,
 )
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -525,7 +526,7 @@ class TestOutputHandlerDialog:
         dialog = OutputHandlerDialog()
         qtbot.addWidget(dialog)
 
-        assert dialog.windowTitle() == "Add Handler"
+        assert dialog.windowTitle() == t("output_tab.handler_dialog.title_add")
         assert dialog.name_input.text() == ""
         assert dialog.handler_type_input.currentText() == "return"
 
@@ -541,7 +542,7 @@ class TestOutputHandlerDialog:
         dialog = OutputHandlerDialog(handler_config=sample_file_handler)
         qtbot.addWidget(dialog)
 
-        assert dialog.windowTitle() == "Edit Handler"
+        assert dialog.windowTitle() == t("output_tab.handler_dialog.title_edit")
         assert dialog.name_input.text() == "File Backup"
         assert dialog.handler_type_input.currentText() == "file"
         assert dialog.file_path_input.text() == "/output/data.json"
@@ -558,7 +559,7 @@ class TestOutputHandlerDialog:
         dialog = OutputHandlerDialog(handler_config=sample_webhook_handler)
         qtbot.addWidget(dialog)
 
-        assert dialog.windowTitle() == "Edit Handler"
+        assert dialog.windowTitle() == t("output_tab.handler_dialog.title_edit")
         assert dialog.name_input.text() == "API Webhook"
         assert dialog.handler_type_input.currentText() == "webhook"
         assert dialog.webhook_url_input.text() == "https://example.com/webhook"

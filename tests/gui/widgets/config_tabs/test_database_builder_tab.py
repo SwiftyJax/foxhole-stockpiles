@@ -9,6 +9,7 @@ from PyQt6.QtCore import Qt
 
 from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseBuilderSettings
 from foxhole_stockpiles.gui.widgets.config_tabs.database_builder_tab import DatabaseBuilderTab
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -61,7 +62,7 @@ def test_database_builder_tab_all_resolutions_item_exists(
     """
     all_item = database_builder_tab.resolution_list.item(0)
     assert all_item is not None
-    assert all_item.text() == "All Resolutions"
+    assert all_item.text() == t("database_builder_tab.all_resolutions")
 
 
 def test_database_builder_tab_resolution_items_checkable(

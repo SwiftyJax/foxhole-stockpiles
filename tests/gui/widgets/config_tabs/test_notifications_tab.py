@@ -15,6 +15,7 @@ from foxhole_stockpiles.gui.widgets.config_tabs.notifications_tab import (
     NotificationsTab,
     NotifierDialog,
 )
+from foxhole_stockpiles.i18n import t
 
 
 @pytest.fixture
@@ -439,7 +440,7 @@ class TestNotifierDialog:
         dialog = NotifierDialog()
         qtbot.addWidget(dialog)
 
-        assert dialog.windowTitle() == "Add Notifier"
+        assert dialog.windowTitle() == t("notifications_tab.notifier_dialog.title_add")
         assert dialog.name_input.text() == ""
         assert dialog.webhook_input.text() == ""
 
@@ -455,7 +456,7 @@ class TestNotifierDialog:
         dialog = NotifierDialog(notifier=sample_notifier)
         qtbot.addWidget(dialog)
 
-        assert dialog.windowTitle() == "Edit Notifier"
+        assert dialog.windowTitle() == t("notifications_tab.notifier_dialog.title_edit")
         assert dialog.name_input.text() == "Test Discord"
         assert dialog.webhook_input.text() == "https://discord.com/api/webhooks/123/abc"
         assert dialog.username_input.text() == "Test Bot"

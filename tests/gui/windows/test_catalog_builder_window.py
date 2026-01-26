@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections.external_tools import ExternalToolsSettings
 from foxhole_stockpiles.gui.windows.catalog_builder_window import CatalogBuilderWindow
+from foxhole_stockpiles.i18n import t
 
 
 # Prevent any GUI dialogs from appearing during test cleanup
@@ -119,7 +120,7 @@ def unconfigured_window(
 
 def test_configured_window_initialization(configured_window: CatalogBuilderWindow) -> None:
     """Test configured window initialization."""
-    assert configured_window.windowTitle() == "Build Catalog"
+    assert configured_window.windowTitle() == t("catalog_builder.title")
     assert configured_window.is_configured is True
     assert configured_window.pak_file is None
     assert configured_window.build_worker is None
@@ -210,7 +211,7 @@ def test_validate_inputs_no_pak_file(configured_window: CatalogBuilderWindow) ->
     configured_window.output_path_input.setText("catalog.json")
     is_valid, error_msg = configured_window.validate_inputs()
     assert is_valid is False
-    assert "PAK file" in error_msg
+    assert error_msg == t("catalog_builder.validation.select_pak")
 
 
 def test_validate_inputs_success(configured_window: CatalogBuilderWindow, tmp_path: Path) -> None:

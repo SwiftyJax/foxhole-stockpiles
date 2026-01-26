@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
 )
 
 from foxhole_stockpiles.core.settings.sections.external_tools import ExternalToolsSettings
+from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 
 class ExternalToolsTab(QWidget):
@@ -32,7 +33,7 @@ class ExternalToolsTab(QWidget):
         "uassetgui": "https://github.com/atenfyr/UAssetGUI/releases",
     }
 
-    # Tool descriptions
+    # Tool descriptions (for programmatic access - tooltips use translations)
     TOOL_DESCRIPTIONS = {
         "repak": (
             "Path to repak executable for extracting PAK files.\n\n"
@@ -74,10 +75,16 @@ class ExternalToolsTab(QWidget):
         # Input widgets (created in init_ui)
         self.repak_input: QLineEdit | None = None
         self.repak_download_btn: QPushButton | None = None
+        self.repak_label: QLabel | None = None
+        self.repak_browse_btn: QPushButton | None = None
         self.umodel_input: QLineEdit | None = None
         self.umodel_download_btn: QPushButton | None = None
+        self.umodel_label: QLabel | None = None
+        self.umodel_browse_btn: QPushButton | None = None
         self.uassetgui_input: QLineEdit | None = None
         self.uassetgui_download_btn: QPushButton | None = None
+        self.uassetgui_label: QLabel | None = None
+        self.uassetgui_browse_btn: QPushButton | None = None
 
         self.init_ui()
 
@@ -86,73 +93,113 @@ class ExternalToolsTab(QWidget):
         layout = QVBoxLayout(self)
 
         # Tools Group
-        tools_group = QGroupBox("External Tools")
+        self.tools_group = QGroupBox()
         tools_layout = QFormLayout()
-        tools_group.setLayout(tools_layout)
+        self.tools_group.setLayout(tools_layout)
 
         # Repak tool
         if self.show_repak:
-            repak_label = QLabel("Extractor Tool (repak):")
-            repak_label.setToolTip(self.TOOL_DESCRIPTIONS["repak"])
+            self.repak_label = QLabel()
             repak_layout = QHBoxLayout()
             self.repak_input = QLineEdit()
-            self.repak_input.setPlaceholderText("Path to repak executable")
             self.repak_input.textChanged.connect(self._update_download_buttons)
             repak_layout.addWidget(self.repak_input)
-            self.repak_download_btn = QPushButton("Download")
+            self.repak_download_btn = QPushButton()
             self.repak_download_btn.setMaximumWidth(80)
             self.repak_download_btn.clicked.connect(lambda: self._open_url(self.TOOL_URLS["repak"]))
             repak_layout.addWidget(self.repak_download_btn)
-            repak_browse_btn = QPushButton("Browse...")
-            repak_browse_btn.clicked.connect(self._browse_repak)
-            repak_layout.addWidget(repak_browse_btn)
-            tools_layout.addRow(repak_label, repak_layout)
+            self.repak_browse_btn = QPushButton()
+            self.repak_browse_btn.clicked.connect(self._browse_repak)
+            repak_layout.addWidget(self.repak_browse_btn)
+            tools_layout.addRow(self.repak_label, repak_layout)
 
         # Umodel tool
         if self.show_umodel:
-            umodel_label = QLabel("Converter Tool (umodel):")
-            umodel_label.setToolTip(self.TOOL_DESCRIPTIONS["umodel"])
+            self.umodel_label = QLabel()
             umodel_layout = QHBoxLayout()
             self.umodel_input = QLineEdit()
-            self.umodel_input.setPlaceholderText("Path to umodel executable")
             self.umodel_input.textChanged.connect(self._update_download_buttons)
             umodel_layout.addWidget(self.umodel_input)
-            self.umodel_download_btn = QPushButton("Download")
+            self.umodel_download_btn = QPushButton()
             self.umodel_download_btn.setMaximumWidth(80)
             self.umodel_download_btn.clicked.connect(
                 lambda: self._open_url(self.TOOL_URLS["umodel"])
             )
             umodel_layout.addWidget(self.umodel_download_btn)
-            umodel_browse_btn = QPushButton("Browse...")
-            umodel_browse_btn.clicked.connect(self._browse_umodel)
-            umodel_layout.addWidget(umodel_browse_btn)
-            tools_layout.addRow(umodel_label, umodel_layout)
+            self.umodel_browse_btn = QPushButton()
+            self.umodel_browse_btn.clicked.connect(self._browse_umodel)
+            umodel_layout.addWidget(self.umodel_browse_btn)
+            tools_layout.addRow(self.umodel_label, umodel_layout)
 
         # UAssetGUI tool
         if self.show_uassetgui:
-            uassetgui_label = QLabel("JSON Converter (UAssetGUI):")
-            uassetgui_label.setToolTip(self.TOOL_DESCRIPTIONS["uassetgui"])
+            self.uassetgui_label = QLabel()
             uassetgui_layout = QHBoxLayout()
             self.uassetgui_input = QLineEdit()
-            self.uassetgui_input.setPlaceholderText("Path to UAssetGUI executable")
             self.uassetgui_input.textChanged.connect(self._update_download_buttons)
             uassetgui_layout.addWidget(self.uassetgui_input)
-            self.uassetgui_download_btn = QPushButton("Download")
+            self.uassetgui_download_btn = QPushButton()
             self.uassetgui_download_btn.setMaximumWidth(80)
             self.uassetgui_download_btn.clicked.connect(
                 lambda: self._open_url(self.TOOL_URLS["uassetgui"])
             )
             uassetgui_layout.addWidget(self.uassetgui_download_btn)
-            uassetgui_browse_btn = QPushButton("Browse...")
-            uassetgui_browse_btn.clicked.connect(self._browse_uassetgui)
-            uassetgui_layout.addWidget(uassetgui_browse_btn)
-            tools_layout.addRow(uassetgui_label, uassetgui_layout)
+            self.uassetgui_browse_btn = QPushButton()
+            self.uassetgui_browse_btn.clicked.connect(self._browse_uassetgui)
+            uassetgui_layout.addWidget(self.uassetgui_browse_btn)
+            tools_layout.addRow(self.uassetgui_label, uassetgui_layout)
 
-        layout.addWidget(tools_group)
+        layout.addWidget(self.tools_group)
         layout.addStretch()
+
+        # Apply translations
+        self.retranslate()
 
         # Initial update of download button visibility
         self._update_download_buttons()
+
+        # Connect to language change signal with cleanup
+        self._language_callback = self._on_language_changed
+        on_language_changed(self._language_callback)
+        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+
+    def _on_language_changed(self, _language: str) -> None:
+        """Handle language change event."""
+        self.retranslate()
+
+    def retranslate(self) -> None:
+        """Update all translatable strings."""
+        self.tools_group.setTitle(t("external_tools_tab.title"))
+
+        if self.repak_label:
+            self.repak_label.setText(t("external_tools_tab.repak_label"))
+            self.repak_label.setToolTip(t("external_tools_tab.repak_tooltip"))
+        if self.repak_input:
+            self.repak_input.setPlaceholderText(t("external_tools_tab.repak_placeholder"))
+        if self.repak_download_btn:
+            self.repak_download_btn.setText(t("external_tools_tab.download"))
+        if self.repak_browse_btn:
+            self.repak_browse_btn.setText(t("common.browse"))
+
+        if self.umodel_label:
+            self.umodel_label.setText(t("external_tools_tab.umodel_label"))
+            self.umodel_label.setToolTip(t("external_tools_tab.umodel_tooltip"))
+        if self.umodel_input:
+            self.umodel_input.setPlaceholderText(t("external_tools_tab.umodel_placeholder"))
+        if self.umodel_download_btn:
+            self.umodel_download_btn.setText(t("external_tools_tab.download"))
+        if self.umodel_browse_btn:
+            self.umodel_browse_btn.setText(t("common.browse"))
+
+        if self.uassetgui_label:
+            self.uassetgui_label.setText(t("external_tools_tab.uassetgui_label"))
+            self.uassetgui_label.setToolTip(t("external_tools_tab.uassetgui_tooltip"))
+        if self.uassetgui_input:
+            self.uassetgui_input.setPlaceholderText(t("external_tools_tab.uassetgui_placeholder"))
+        if self.uassetgui_download_btn:
+            self.uassetgui_download_btn.setText(t("external_tools_tab.download"))
+        if self.uassetgui_browse_btn:
+            self.uassetgui_browse_btn.setText(t("common.browse"))
 
     def _update_download_buttons(self) -> None:
         """Update visibility of download buttons based on whether fields are empty."""
@@ -175,7 +222,7 @@ class ExternalToolsTab(QWidget):
         """Open file dialog to select repak tool."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Extractor Tool (repak)",
+            t("external_tools_tab.select_repak"),
             "",
             "All Files (*)",
         )
@@ -186,7 +233,7 @@ class ExternalToolsTab(QWidget):
         """Open file dialog to select umodel tool."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select Converter Tool (umodel)",
+            t("external_tools_tab.select_umodel"),
             "",
             "All Files (*)",
         )
@@ -197,7 +244,7 @@ class ExternalToolsTab(QWidget):
         """Open file dialog to select UAssetGUI tool."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
-            "Select JSON Converter (UAssetGUI)",
+            t("external_tools_tab.select_uassetgui"),
             "",
             "All Files (*)",
         )
