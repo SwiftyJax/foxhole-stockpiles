@@ -2,9 +2,10 @@
 
 import logging
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QCloseEvent, QIcon
+from PyQt6.QtCore import QSize, Qt
+from PyQt6.QtGui import QAction, QCloseEvent, QColor, QIcon, QPainter, QPixmap
 from PyQt6.QtWidgets import (
+    QApplication,
     QMainWindow,
     QMenu,
     QMessageBox,
@@ -14,6 +15,7 @@ from PyQt6.QtWidgets import (
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.enums.config_level import ConfigLevel
+from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
 from foxhole_stockpiles.gui.windows.catalog_builder_window import CatalogBuilderWindow
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
@@ -156,9 +158,6 @@ class MainWindow(QMainWindow):
 
         # On Windows, if the icon is still null, create a simple colored pixmap
         if icon.isNull():
-            from PyQt6.QtCore import QSize
-            from PyQt6.QtGui import QColor, QPainter, QPixmap
-
             pixmap = QPixmap(QSize(64, 64))
             pixmap.fill(QColor(0, 120, 215))  # Blue color
             painter = QPainter(pixmap)
@@ -208,8 +207,6 @@ class MainWindow(QMainWindow):
         self.tray_icon.show()
 
         # Force processing of events to ensure tray icon is created
-        from PyQt6.QtWidgets import QApplication
-
         QApplication.processEvents()
 
         # Log tray icon visibility status
@@ -434,8 +431,6 @@ class MainWindow(QMainWindow):
             self.server_panel.stop_server()
 
         # Remove all QtLogHandler instances from all loggers before Qt cleanup
-        from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
-
         root_logger = logging.getLogger()
         handlers_to_remove = [h for h in root_logger.handlers[:] if isinstance(h, QtLogHandler)]
 
@@ -448,8 +443,6 @@ class MainWindow(QMainWindow):
             self.tray_icon.hide()
 
         # Close the application
-        from PyQt6.QtWidgets import QApplication
-
         QApplication.quit()
 
     def retranslate(self) -> None:

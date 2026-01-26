@@ -14,6 +14,7 @@ from pydantic_settings import BaseSettings
 from pydantic_settings.sources import PydanticBaseSettingsSource
 
 from foxhole_stockpiles.core.settings import AppSettings, get_settings, reload_settings
+from foxhole_stockpiles.core.settings.config_migrator import ConfigMigrator
 from foxhole_stockpiles.core.settings.sections.logging import LoggingSettings
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.core.settings.sections.output import (
@@ -337,25 +338,32 @@ class TestConfigMigration:
             }
         }
 
-        # Should auto-migrate to v5
-        settings = AppSettings(**v1_config)  # type: ignore[arg-type]
+        # Apply migrations
+        migrated = ConfigMigrator.apply_migrations(v1_config)
 
         # Verify migration occurred (v1 -> v2 -> v3 -> v4 -> v5)
+        assert migrated["config_version"] == 5
+        assert "output_format" not in migrated
+        assert "output" in migrated
+        assert len(migrated["output"]["handlers"]) == 1
+
+        handler_config = migrated["output"]["handlers"][0]
+        assert handler_config["handler"]["type"] == "webhook"
+        assert handler_config["handler"]["url"] == "https://example.com/webhook"
+        assert handler_config["handler"]["auth_type"] == "bearer"
+        assert handler_config["handler"]["token"] == "secret123"
+        assert handler_config["handler"]["client_auth_header"] == "X-API-TOKEN"
+
+        # Verify the migrated config can be loaded
+        settings = AppSettings(**migrated)
         assert settings.config_version == 5
         assert len(settings.output.handlers) == 1
-        handler_config = settings.output.handlers[0]
-        assert handler_config.handler.type == "webhook"
-        handler = handler_config.handler
+        handler = settings.output.handlers[0].handler
         assert isinstance(handler, WebhookHandlerSettings)
         assert handler.url == "https://example.com/webhook"
-        assert handler.auth_type == AuthType.BEARER
-        assert handler.token == "secret123"
-        assert handler.client_auth_header == "X-API-TOKEN"
 
     def test_v2_config_migrates_to_v5(self) -> None:
         """Test that v2 configs migrate to v5."""
-        import warnings
-
         # V2 config with nested structure
         v2_config = {
             "config_version": 2,
@@ -367,34 +375,21 @@ class TestConfigMigration:
             },
         }
 
-        # Mock the settings sources to avoid loading from ~/.fs_config
-
-        def mock_settings_customise_sources(
-            cls: type[BaseSettings],
-            settings_cls: type[BaseSettings],
-            init_settings: PydanticBaseSettingsSource,
-            env_settings: PydanticBaseSettingsSource,
-            dotenv_settings: PydanticBaseSettingsSource,
-            file_secret_settings: PydanticBaseSettingsSource,
-        ) -> tuple[PydanticBaseSettingsSource, ...]:
-            # Only use init_settings (passed kwargs), ignore config file
-            return (init_settings,)
-
-        # Suppress the expected warning about json_file not being used
-        # (we're intentionally not loading from file in this test)
-        with warnings.catch_warnings():
-            warnings.filterwarnings("ignore", message="Config key.*json_file.*will be ignored")
-            with patch.object(
-                AppSettings, "settings_customise_sources", mock_settings_customise_sources
-            ):
-                settings = AppSettings(**v2_config)  # type: ignore[arg-type]
+        # Apply migrations
+        migrated = ConfigMigrator.apply_migrations(v2_config)
 
         # Should migrate to v5 (v2 -> v3 -> v4 -> v5)
+        assert migrated["config_version"] == 5
+        assert len(migrated["output"]["handlers"]) == 1
+        handler_config = migrated["output"]["handlers"][0]
+        assert handler_config["handler"]["type"] == "file"
+        assert handler_config["handler"]["path"] == "/custom/output.json"
+
+        # Verify the migrated config can be loaded
+        settings = AppSettings(**migrated)
         assert settings.config_version == 5
         assert len(settings.output.handlers) == 1
-        handler_config = settings.output.handlers[0]
-        assert handler_config.handler.type == "file"
-        handler = handler_config.handler
+        handler = settings.output.handlers[0].handler
         assert isinstance(handler, FileHandlerSettings)
         assert handler.path == "/custom/output.json"
 
@@ -419,22 +414,27 @@ class TestConfigMigration:
             },
         }
 
-        # Should auto-migrate to v4 and remove deprecated fields
-        settings = AppSettings(**v1_config)  # type: ignore[arg-type]
+        # Apply migrations
+        migrated = ConfigMigrator.apply_migrations(v1_config)
 
-        # Verify migration occurred (v1 -> v2 -> v3 -> v4)
-        assert settings.config_version == 5
-        # Verify deprecated fields are not in scanner settings
-        assert not hasattr(settings.scanner, "confidence_threshold")
-        assert not hasattr(settings.scanner, "confidence_by_resolution")
+        # Verify migration occurred (v1 -> v2 -> v3 -> v4 -> v5)
+        assert migrated["config_version"] == 5
+        # Verify deprecated fields are removed
+        assert "confidence_threshold" not in migrated["scanner"]
+        assert "confidence_by_resolution" not in migrated["scanner"]
         # Verify valid fields remain
+        assert migrated["scanner"]["early_exit_threshold"] == 0.95
+
+        # Verify the migrated config can be loaded
+        settings = AppSettings(**migrated)
+        assert settings.config_version == 5
         assert settings.scanner.early_exit_threshold == 0.95
 
     def test_migrate_config_with_non_dict_data(self) -> None:
         """Test that migration guard clause returns non-dict data unchanged."""
         # The method has a guard clause for non-dict data (defensive programming)
         # In practice, this should never happen since validators check before calling
-        result = AppSettings._apply_migrations(None)  # type: ignore[arg-type]
+        result = ConfigMigrator.apply_migrations(None)  # type: ignore[arg-type]
         assert result is None
 
     def test_migrate_v3_to_v4_removes_undefined(self) -> None:

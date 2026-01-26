@@ -3,6 +3,7 @@
 import asyncio
 import ctypes
 import importlib
+import json
 import multiprocessing
 import os
 import sys
@@ -309,8 +310,6 @@ def main() -> None:
 
         # Handle return values appropriately
         if result is not None and isinstance(result, dict):
-            import json
-
             print(json.dumps(result, indent=2))
 
     except SystemExit as e:

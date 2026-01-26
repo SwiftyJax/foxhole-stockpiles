@@ -3,6 +3,7 @@
 import logging
 import os
 import platform
+from datetime import datetime
 from pathlib import Path
 
 from PyQt6.QtCore import Qt
@@ -448,8 +449,6 @@ class CatalogBuilderWindow(QMainWindow):
         root_logger = logging.getLogger()
         root_logger.removeHandler(self.log_handler)
 
-        from datetime import datetime
-
         if success:
             status_log = {
                 "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -481,8 +480,6 @@ class CatalogBuilderWindow(QMainWindow):
         Args:
             error_msg (str): Error message
         """
-        from datetime import datetime
-
         error_log = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "level": "ERROR",
@@ -498,8 +495,6 @@ class CatalogBuilderWindow(QMainWindow):
         Args:
             message (str): Progress message
         """
-        from datetime import datetime
-
         progress_log = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             "level": "INFO",

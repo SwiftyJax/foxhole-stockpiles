@@ -3,6 +3,8 @@
 import subprocess
 from pathlib import Path
 
+from foxhole_stockpiles import __version__
+
 
 def _read_git_info_from_file() -> dict[str, str] | None:
     """Read git info from .git_info file (created during Docker build).
@@ -130,8 +132,6 @@ def get_version_info() -> str:
         Formatted version string like: "0.2.0 (git: abc1234, 2025-12-24, dirty)"
         or "0.2.0" if git info is not available
     """
-    from foxhole_stockpiles import __version__
-
     git_info = get_git_info()
 
     if git_info["short_hash"] == "unknown":

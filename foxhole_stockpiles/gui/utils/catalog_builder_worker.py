@@ -1,6 +1,7 @@
 """Background worker for catalog builder process."""
 
 import asyncio
+import json
 import logging
 import traceback
 from pathlib import Path
@@ -75,8 +76,6 @@ class CatalogBuilderWorker(QThread):
 
     async def _build_catalog(self) -> None:
         """Build the catalog asynchronously."""
-        import json
-
         try:
             # Step 1: Extract from PAK
             self.progress.emit("Extracting blueprints from PAK file...")

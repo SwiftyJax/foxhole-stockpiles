@@ -22,17 +22,17 @@ def panel(qtbot: Any) -> ServerControlPanel:
     """
     from PyQt6.QtWidgets import QApplication
 
-    from foxhole_stockpiles.core.settings import app_settings
+    from foxhole_stockpiles.gui.widgets import server_control_panel
 
     with (
         patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"),
-        patch.object(app_settings, "AppSettings", side_effect=Exception("No config")),
+        patch.object(server_control_panel, "AppSettings", side_effect=Exception("No config")),
     ):
-        panel = ServerControlPanel()
-        qtbot.addWidget(panel)
-        panel.show()
+        panel_instance = ServerControlPanel()
+        qtbot.addWidget(panel_instance)
+        panel_instance.show()
         QApplication.processEvents()
-        return panel
+        return panel_instance
 
 
 def test_panel_initialization(panel: ServerControlPanel) -> None:
@@ -233,9 +233,9 @@ def test_panel_validation_no_config(qtbot: Any, panel: ServerControlPanel) -> No
     """
     from PyQt6.QtWidgets import QApplication
 
-    from foxhole_stockpiles.core.settings import app_settings
+    from foxhole_stockpiles.gui.widgets import server_control_panel
 
-    with patch.object(app_settings, "AppSettings", side_effect=Exception("No config")):
+    with patch.object(server_control_panel, "AppSettings", side_effect=Exception("No config")):
         panel._update_validation_state()
         QApplication.processEvents()
 
@@ -255,9 +255,9 @@ def test_panel_validation_no_db_path(qtbot: Any, panel: ServerControlPanel) -> N
     """
     from PyQt6.QtWidgets import QApplication
 
-    from foxhole_stockpiles.core.settings import app_settings
+    from foxhole_stockpiles.gui.widgets import server_control_panel
 
-    with patch.object(app_settings, "AppSettings") as mock_settings_class:
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
         mock_settings = mock_settings_class.return_value
         mock_settings.scanner.database_path = None
 
@@ -280,9 +280,9 @@ def test_panel_validation_db_not_found(qtbot: Any, panel: ServerControlPanel) ->
     """
     from PyQt6.QtWidgets import QApplication
 
-    from foxhole_stockpiles.core.settings import app_settings
+    from foxhole_stockpiles.gui.widgets import server_control_panel
 
-    with patch.object(app_settings, "AppSettings") as mock_settings_class:
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
         mock_settings = mock_settings_class.return_value
         mock_settings.scanner.database_path = "/nonexistent/db.h5"
 
@@ -307,11 +307,11 @@ def test_panel_validation_valid_db(qtbot: Any, panel: ServerControlPanel) -> Non
 
     from PyQt6.QtWidgets import QApplication
 
-    from foxhole_stockpiles.core.settings import app_settings
+    from foxhole_stockpiles.gui.widgets import server_control_panel
 
     test_db = Path(__file__).parent.parent.parent / "fixtures" / "test_db_v1.h5"
 
-    with patch.object(app_settings, "AppSettings") as mock_settings_class:
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
         mock_settings = mock_settings_class.return_value
         mock_settings.scanner.database_path = str(test_db)
 

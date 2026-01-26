@@ -20,11 +20,13 @@ from PyQt6.QtWidgets import (
 )
 
 from foxhole_stockpiles.api.dependencies import clear_dependency_caches
+from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 from foxhole_stockpiles.gui.utils.scan_worker import ScanWorker
 from foxhole_stockpiles.gui.utils.scanner_client import ScannerClient
 from foxhole_stockpiles.gui.utils.server_thread import ServerThread
 from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
+from foxhole_stockpiles.services.template_manager import TemplateManager
 
 logger = logging.getLogger(__name__)
 
@@ -173,8 +175,6 @@ class ServerControlPanel(QWidget):
         Args:
             updated_db_path: Path to the database file that was updated
         """
-        from foxhole_stockpiles.core.settings.app_settings import AppSettings
-
         # Check if the updated database is the one we're using
         try:
             settings = AppSettings()
@@ -205,11 +205,6 @@ class ServerControlPanel(QWidget):
 
     def _update_validation_state(self) -> None:
         """Update the validation state and show/hide appropriate panels."""
-        from pathlib import Path
-
-        from foxhole_stockpiles.core.settings.app_settings import AppSettings
-        from foxhole_stockpiles.services.template_manager import TemplateManager
-
         is_valid = False
         error_message = ""
         db_info = ""

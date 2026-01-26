@@ -1,6 +1,7 @@
 """Template database for resolution-specific template storage and filtering."""
 
 import logging
+import time
 from typing import Any, cast
 
 import h5py
@@ -157,8 +158,6 @@ class TemplateDatabase:
         Args:
             group (h5py.Group): HDF5 group to save data to (e.g., /1080/)
         """
-        import time
-
         start_time = time.perf_counter()
         n_templates = len(self.templates)
 

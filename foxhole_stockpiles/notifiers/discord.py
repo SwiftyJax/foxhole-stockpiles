@@ -5,6 +5,7 @@ from typing import Any
 
 from discord_webhook import AsyncDiscordWebhook, DiscordEmbed  # type: ignore[import-untyped]
 
+from foxhole_stockpiles.core.settings.sections.notifications import DEFAULT_TEMPLATES
 from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.notifiers.base import BaseNotifier
 
@@ -81,9 +82,6 @@ class DiscordNotifier(BaseNotifier):
         Returns:
             str: Formatted message
         """
-        # Import default templates
-        from foxhole_stockpiles.core.settings.sections.notifications import DEFAULT_TEMPLATES
-
         # Use custom template if provided, otherwise use default
         template = self.message_templates.get(event_type) or DEFAULT_TEMPLATES.get(
             event_type, f"Event: {event_type}"

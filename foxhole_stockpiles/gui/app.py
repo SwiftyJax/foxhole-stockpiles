@@ -7,6 +7,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 
 from foxhole_stockpiles import __version__
+from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.gui.windows.main_window import MainWindow
 from foxhole_stockpiles.i18n import get_translator
 
@@ -20,8 +21,6 @@ def _load_language_from_settings() -> str:
         str: Language code (defaults to 'en' if not found)
     """
     try:
-        from foxhole_stockpiles.core.settings.app_settings import AppSettings
-
         settings = AppSettings()
         return settings.gui.language
     except Exception as e:

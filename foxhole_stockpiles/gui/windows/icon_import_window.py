@@ -3,6 +3,7 @@
 import logging
 import os
 import platform
+from datetime import datetime
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -923,7 +924,6 @@ class IconImportWindow(QMainWindow):
         root_logger.removeHandler(self.log_handler)
 
         # Add final status message to logs
-        from datetime import datetime
 
         if success:
             status_log = {
@@ -957,7 +957,6 @@ class IconImportWindow(QMainWindow):
             error_msg (str): Error message
         """
         # Add error message to logs
-        from datetime import datetime
 
         error_log = {
             "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
