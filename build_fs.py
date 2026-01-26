@@ -105,6 +105,9 @@ def get_hidden_imports() -> list[str]:
         "foxhole_stockpiles.gui.utils.icon_import_worker",
         "foxhole_stockpiles.gui.utils.pak_validation_worker",
         "foxhole_stockpiles.gui.utils.advanced_setting_widget",
+        # Internationalization
+        "foxhole_stockpiles.i18n",
+        "foxhole_stockpiles.i18n.translator",
     ]
 
 
@@ -139,7 +142,7 @@ def build_executable(project_root: Path) -> bool:
         "--windowed",
     ]
 
-    # Add data files (templates for web interface, tessdata for OCR)
+    # Add data files (templates for web interface, tessdata for OCR, translations)
     # Use os.pathsep for cross-platform compatibility (';' on Windows, ':' on Unix)
     templates_src = project_root / "foxhole_stockpiles" / "api" / "templates"
     templates_dst = os.path.join("foxhole_stockpiles", "api", "templates")
@@ -148,6 +151,10 @@ def build_executable(project_root: Path) -> bool:
     tessdata_src = project_root / "tessdata"
     tessdata_dst = "tessdata"
     cmd.extend(["--add-data", f"{tessdata_src}{os.pathsep}{tessdata_dst}"])
+
+    translations_src = project_root / "foxhole_stockpiles" / "i18n" / "translations"
+    translations_dst = os.path.join("foxhole_stockpiles", "i18n", "translations")
+    cmd.extend(["--add-data", f"{translations_src}{os.pathsep}{translations_dst}"])
 
     # Add all hidden imports
     for import_name in hidden_imports:
