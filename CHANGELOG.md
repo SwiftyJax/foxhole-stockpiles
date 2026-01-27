@@ -7,6 +7,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-01-27
+
+### Added
+- **GUI Application**: Full-featured graphical interface with multiple panels
+  - Server panel for start/stop control with status monitoring
+  - Configuration dialog with tiered settings (Basic/Advanced/Developer)
+  - Database builder for importing PAK files with validation and progress tracking
+  - Catalog builder option under File menu
+  - Database information menu showing mods and templates per resolution
+  - Minimize to system tray on close
+- **Internationalization (i18n)**: Translation support for the GUI (does not cover logging or CLI)
+- **Web Frontend**: Minimalistic web interface to scan stockpiles and view results as a table
+  - Save results as JSON and TSV formats
+- **Catalog Builder Command**: `fs catalog` command to build catalog from PAK files
+- **Mod Import Command**: `fs mod` command to automate importing mod PAK files into a database
+- **Multiple Output Handlers**: Configure multiple output handlers, each with its own type
+  - CSV and TSV format output support
+  - Placeholders in file path for file output handlers
+  - First handler that returns data provides the response
+- **Stockpile Types**: Added Aircraft Depot and Underground Fortress to valid stockpile types
+- **Database Visualizer**: Moved from tools/ to GUI application
+
+### Changed
+- GUI and server libs are now part of the default library installation
+- Notifier usernames now display as "FS (xxx)" instead of just "xxx"
+- Database path is now configurable in the database builder
+- Workers option added to database builder (0 = autodetect)
+
+### Fixed
+- **Template Builder**: Don't create crate versions for items that can't be crated
+- **GUI**: Fixed crash when closing window immediately after opening (Qt signals cleanup)
+- **Path Fixes**: Fixed paths for tools when one is WSL and the other is Windows
+- **Notification Fixes**:
+  - Server stop notification now sent on GUI close by waiting for server thread
+  - Notifications sent in correct order
+  - Fixed duplicate notification handlers on server stop/start
+  - Fixed sending stop server notifications
+
+### Development
+- Force wheel version to be >=0.46.2 due to vulnerabilities
+- Updated libraries to latest versions
+- Improved test coverage
+- Mock Discord webhook in tests to prevent sending real messages
+- Removed GUI from CI testing (tested locally only)
+- Updated dependabot configuration
+
 ## [0.3.1] - 2025-12-24
 
 ### Fixed
@@ -142,7 +188,8 @@ Initial beta release.
 - Test coverage >80%
 - CI/CD with GitHub Actions
 
-[Unreleased]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.3.1...v0.4.0
 [0.3.1]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/xurxogr/foxhole-stockpiles/compare/v0.1.1...v0.2.0
