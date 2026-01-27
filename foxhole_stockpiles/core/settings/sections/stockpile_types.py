@@ -44,6 +44,10 @@ class StockpileTypesSettings(BaseModel):
         description="Additional aliases for Town Base",
         default_factory=list,
     )
+    underground_fortress: list[str] = Field(
+        description="Additional aliases for Underground Fortress",
+        default_factory=list,
+    )
     bms_longhook: list[str] = Field(
         description="Additional aliases for BMS - Longhook",
         default_factory=list,

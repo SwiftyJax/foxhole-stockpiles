@@ -30,8 +30,8 @@ def test_stockpile_types_tab_initialization(stockpile_types_tab: StockpileTypesT
     Args:
         stockpile_types_tab: StockpileTypesTab instance
     """
-    # Should have all 10 input fields (excluding undefined)
-    assert len(stockpile_types_tab._inputs) == 10
+    # Should have all 12 input fields (excluding undefined)
+    assert len(stockpile_types_tab._inputs) == 12
 
     # Check all expected fields exist
     expected_fields = [
@@ -42,9 +42,11 @@ def test_stockpile_types_tab_initialization(stockpile_types_tab: StockpileTypesT
         "bunker_base",
         "border_base",
         "town_base",
+        "underground_fortress",
         "bms_longhook",
         "storage_depot",
         "seaport",
+        "aircraft_depot",
     ]
     for field in expected_fields:
         assert field in stockpile_types_tab._inputs
