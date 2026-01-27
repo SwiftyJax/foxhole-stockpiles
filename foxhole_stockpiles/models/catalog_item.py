@@ -84,6 +84,11 @@ class CatalogItem(BaseModel):
         if "MassProductionFactory" in prod_cats:
             return True
 
+        # HARDCODED: Aircraft are cratable but game data doesn't have bIsCratable flag
+        # Identified by ArmourType::Tier1Aircraft (excludes aircraft parts and ammo)
+        if item.get("ArmourType") == "EArmourType::Tier1Aircraft":
+            return True
+
         return False
 
     @staticmethod
