@@ -478,7 +478,7 @@ class DataTableLookup:
         """Load and cache all production categories from factory blueprints.
 
         Returns:
-            dict[str, dict[str, str]]: Dict mapping CodeName to
+            dict[str, dict[str, str]]: Dict mapping CodeName (lowercase) to
                 {Factory: QueueType, MassProductionFactory: QueueType}.
         """
         if self._production_categories_cache is not None:
@@ -489,22 +489,26 @@ class DataTableLookup:
         # Parse Factory blueprint
         factory_cats = self._parse_factory_production_categories(self.FACTORY_BLUEPRINT)
         for code_name, queue_type in factory_cats.items():
-            if code_name not in result:
-                result[code_name] = {}
-            result[code_name]["Factory"] = queue_type
+            # Use lowercase key for case-insensitive lookup
+            key = code_name.lower()
+            if key not in result:
+                result[key] = {}
+            result[key]["Factory"] = queue_type
 
         # Parse MassProductionFactory blueprint
         mass_cats = self._parse_factory_production_categories(self.MASS_PRODUCTION_BLUEPRINT)
         for code_name, queue_type in mass_cats.items():
-            if code_name not in result:
-                result[code_name] = {}
-            result[code_name]["MassProductionFactory"] = queue_type
+            # Use lowercase key for case-insensitive lookup
+            key = code_name.lower()
+            if key not in result:
+                result[key] = {}
+            result[key]["MassProductionFactory"] = queue_type
 
         self._production_categories_cache = result
         return result
 
     def get_production_categories(self, code_name: str) -> dict[str, str] | None:
-        """Get production categories for an item by CodeName.
+        """Get production categories for an item by CodeName (case-insensitive).
 
         Args:
             code_name (str): Item's CodeName.
@@ -513,5 +517,7 @@ class DataTableLookup:
             dict[str, str] | None: Dict with Factory and/or MassProductionFactory keys
                 mapping to EFactoryQueueType values, or None if not producible.
         """
+        if not code_name:
+            return None
         categories = self._load_production_categories()
-        return categories.get(code_name)
+        return categories.get(code_name.lower())
