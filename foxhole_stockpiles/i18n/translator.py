@@ -254,8 +254,9 @@ def off_language_changed(callback: Callable[[str], None]) -> None:
     """
     try:
         _get_signals().language_changed.disconnect(callback)
-    except TypeError:
-        # Callback was not connected
+    except (TypeError, RuntimeError):
+        # TypeError: Callback was not connected
+        # RuntimeError: Qt signals object was already deleted during shutdown
         pass
 
 

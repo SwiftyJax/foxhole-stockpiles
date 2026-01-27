@@ -403,6 +403,20 @@ class TestOffLanguageChanged:
         # Should not raise even if callback was never connected
         off_language_changed(callback)
 
+    def test_disconnect_handles_deleted_qt_object(self) -> None:
+        """Test that RuntimeError is caught when Qt signals object is deleted."""
+        import foxhole_stockpiles.i18n.translator as translator_module
+
+        # Mock _get_signals to raise RuntimeError (simulates deleted Qt object)
+        with patch.object(
+            translator_module,
+            "_get_signals",
+            side_effect=RuntimeError("wrapped C/C++ object has been deleted"),
+        ):
+            callback = MagicMock()
+            # Should not raise even when Qt object is deleted
+            off_language_changed(callback)
+
 
 class TestGetAvailableLanguagesEdgeCases:
     """Tests for edge cases in get_available_languages."""
