@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "foxhole-stockpiles"
-version = "0.3.1"
+dynamic = ["version"]
 description = "REST API for processing Foxhole game screenshots to extract stockpile information"
 readme = "README.md"
 license = {text = "MIT"}
@@ -70,6 +70,9 @@ dev = [
 [project.urls]
 Homepage = "https://github.com/xurxogr/foxhole-stockpiles"
 Repository = "https://github.com/xurxogr/foxhole-stockpiles"
+
+[tool.setuptools.dynamic]
+version = {attr = "foxhole_stockpiles.__version__"}
 
 [tool.setuptools.packages.find]
 include = ["foxhole_stockpiles*"]
