@@ -100,17 +100,27 @@ The main window validates your configuration on startup and after changes:
 
 Access via **File > Configuration**. Opens as a centered modal dialog.
 
+#### Configuration Levels
+
+The configuration dialog uses a tiered system to avoid overwhelming users with advanced options. The configuration level can be changed in the **GUI** tab:
+
+- **Basic** (default): Essential settings only - API Server, Scanner, Output, Logging, and GUI tabs
+- **Advanced**: Adds Stockpile Types, Notifications, External Tools, and Database Builder tabs
+- **Developer**: Full access including OCR and Templates tabs for fine-tuning recognition parameters
+
 #### Configuration Tabs
 
-All configuration options are organized across detailed tabs:
+Tabs are organized by configuration level. Some tabs are always visible, others appear only at Advanced or Developer levels.
+
+**Always Visible:**
 
 1. **API Server**:
    - Host and port configuration
    - Workers count
-   - CORS origins
+   - CORS origins (Advanced+)
    - Memory monitoring options
    - Web icon mod
-   - **Authentication** (at the bottom of the tab):
+   - **Authentication**:
      - Auth type selection (none, bearer, basic)
      - Username/password for basic auth
      - Token for bearer auth
@@ -130,37 +140,57 @@ All configuration options are organized across detailed tabs:
    - Webhook settings (URL, auth type, token, custom headers)
    - Console settings
 
-4. **OCR**:
-   - Layout detection parameters
-   - Box dimensions (width, height)
-   - Offsets (column, row, group, icon-to-quantity)
-   - Title detection (margin, min width, height)
-   - Gray threshold values
-   - Pixel difference tolerance
-
-5. **Templates**:
-   - Template matching settings
-   - Crate detection RGB multipliers and offsets
-   - Cache configuration
-
-6. **External Tools**:
-   - Extractor tool (repak) path - for PAK extraction
-   - Converter tool (umodel) path - for UAsset to PNG conversion
-   - JSON Converter (UAssetGUI) path - for UAsset to JSON conversion
-
-7. **Database Builder**:
-   - Catalog file path
-   - Workers count (0 = auto-detect, 1-N for specific count)
-   - Target resolutions selection
-
-8. **Logging**:
+4. **Logging**:
    - Log levels (DEBUG, INFO, WARNING, ERROR, CRITICAL)
    - File output configuration
    - Log format customization
    - Date format
    - Log rotation settings
 
-**⚠️ Warning**: Some settings are critical parameters. Misconfiguring OCR or Templates settings can break stockpile scanning completely. Only modify if you understand the implications.
+5. **GUI**:
+   - Configuration Level selector (Basic/Advanced/Developer)
+   - Minimize to Tray on Close checkbox
+   - Language selection for interface localization
+
+**Advanced Level (and above):**
+
+6. **Stockpile Types**:
+   - Custom aliases for stockpile type names to handle OCR variations
+   - Useful when OCR misreads stockpile names (e.g., "Seaport" detected as "seapon")
+   - Built-in translations for all supported languages are already included
+
+7. **Notifications**:
+   - Discord webhook integration for event notifications
+   - Configure notifiers for events: stockpile.scanned, stockpile.scan_failed, stockpile.scan_started, server.started, server.stopped
+   - Custom message templates with placeholders
+   - Multiple notifier support
+
+8. **External Tools**:
+   - Extractor tool (repak) path - for PAK extraction
+   - Converter tool (umodel) path - for UAsset to PNG conversion
+   - JSON Converter (UAssetGUI) path - for UAsset to JSON conversion
+
+9. **Database Builder**:
+   - Catalog file path
+   - Workers count (0 = auto-detect, 1-N for specific count)
+   - Target resolutions selection
+
+**Developer Level Only:**
+
+10. **OCR**:
+    - Layout detection parameters
+    - Box dimensions (width, height)
+    - Offsets (column, row, group, icon-to-quantity)
+    - Title detection (margin, min width, height)
+    - Gray threshold values
+    - Pixel difference tolerance
+
+11. **Templates**:
+    - Template matching settings
+    - Crate detection RGB multipliers and offsets
+    - Cache configuration
+
+**⚠️ Warning**: OCR and Templates settings are critical parameters. Misconfiguring them can break stockpile scanning completely. Only modify if you understand the implications.
 
 #### Configuration Validation
 
@@ -172,7 +202,7 @@ All configuration changes are validated before saving:
 
 #### Configuration Storage
 
-Settings are saved to `~/.fs_config` in JSON format and persist between sessions. The configuration uses versioned format (current: v2) with automatic migration support.
+Settings are saved to `~/.fs_config` in JSON format and persist between sessions. The configuration uses versioned format (current: v5) with automatic migration support.
 
 ### Database Builder Window
 
@@ -231,19 +261,24 @@ Access via **Database > Build**. Provides a user-friendly interface for building
 
 ### Menu Bar
 
+Some menu items are only visible at Advanced or Developer configuration levels.
+
 **File Menu:**
 - **Configuration...**: Opens the configuration dialog
 - **Scan Screenshot...**: Opens file dialog to select and scan a screenshot
   - Requires server to be running
   - Supports PNG, JPG, and JPEG formats
-- **Build Catalog...**: Opens the catalog builder window for generating item catalogs from PAK files
+- **Build Catalog...** *(Advanced+)*: Opens the catalog builder window for generating item catalogs from PAK files
   - Rarely needed - most users download pre-built catalogs
   - Requires External Tools configuration (repak, UAssetGUI)
-- **Minimize to Tray on Close**: Toggle whether closing the window minimizes to system tray (unchecked by default)
 - **Exit**: Quits the application completely
 
 **Database Menu:**
-- **Build...**: Opens the database builder window for creating/updating template databases from PAK files
+- **Build...** *(Advanced+)*: Opens the database builder window for creating/updating template databases from PAK files
+- **Visualizer...** *(Advanced+)*: Opens the database visualizer for browsing template contents
+  - Filter templates by category, faction, and resolution
+  - Visual preview of template images
+  - Useful for debugging and exploring database contents
 - **Information...**: Opens database information window
   - Automatically loads the configured database if available
   - Browse and select any database file (.h5)
@@ -264,7 +299,8 @@ Access via **Database > Build**. Provides a user-friendly interface for building
 The application supports system tray for background operation (opt-in):
 
 **Enabling System Tray:**
-- Check "File > Minimize to Tray on Close" to enable
+- Open Configuration (File > Configuration) and go to the **GUI** tab
+- Check "Minimize to Tray on Close" to enable
 - Once enabled, clicking the window close button (X) minimizes to tray instead of quitting
 - The tray icon will always be visible when the application is running
 
@@ -281,7 +317,7 @@ The application supports system tray for background operation (opt-in):
 
 **Double-click**: Double-clicking the tray icon restores the main window
 
-**Note**: By default, the close button quits the application. Check "File > Minimize to Tray on Close" to enable minimize-to-tray behavior.
+**Note**: By default, the close button quits the application. Enable "Minimize to Tray on Close" in the GUI tab of Configuration to change this behavior.
 
 ## Workflow Examples
 
@@ -332,12 +368,14 @@ The application supports system tray for background operation (opt-in):
 ### Advanced Configuration
 
 1. Open Configuration (File > Configuration)
-2. Check "Show Advanced Settings"
-3. Navigate through tabs to configure specific features:
-   - Adjust OCR parameters for better text detection
-   - Configure template matching thresholds
-   - Set up webhook notifications
-   - Enable debug image output
+2. Go to the **GUI** tab and change Configuration Level to **Advanced** or **Developer**
+3. Navigate through the newly visible tabs to configure specific features:
+   - **Notifications**: Set up Discord webhook notifications
+   - **Stockpile Types**: Add custom aliases for OCR variations
+   - **External Tools**: Configure paths for repak, umodel, UAssetGUI
+   - **Database Builder**: Configure catalog path and workers
+   - **OCR** *(Developer only)*: Adjust layout detection parameters
+   - **Templates** *(Developer only)*: Configure template matching thresholds
 4. Save configuration
 5. Restart server if it's running for changes to take effect
 
@@ -368,7 +406,7 @@ The application supports system tray for background operation (opt-in):
 
 - Automatic loading from `~/.fs_config`
 - Validation before saving
-- Support for both basic and advanced modes
+- Three configuration levels (Basic, Advanced, Developer)
 - Automatic migration from older config versions
 - Environment variable precedence respected
 
@@ -449,7 +487,8 @@ The Start Server button will automatically enable once configuration is valid.
 - If tray icon is still missing, check the application logs for warnings
 
 **Want to disable minimize to tray:**
-- Uncheck "File > Minimize to Tray on Close" in the menu
+- Open Configuration (File > Configuration), go to the **GUI** tab
+- Uncheck "Minimize to Tray on Close"
 - Close button will then quit the application normally
 
 ## Related Documentation

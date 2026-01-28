@@ -296,4 +296,4 @@ The database contains all necessary data for production recognition without requ
 
 - [Main Project README](../../README.md) - Overall project documentation
 - [API Documentation](../../docs/) - REST API usage and endpoints
-- [Development Guide](../../docs/development.md) - Contributing and development setup
+- [Contributing Guide](../../CONTRIBUTING.md) - Contributing and development setup

@@ -187,8 +187,7 @@ This will override just that key while keeping all other translations from the b
 
 ### For Scanner Only
 
-- **Pre-built template database** - Download `foxhole_templates.pkl` from database releases (tags starting with `db-`)
-  - See [Releases](https://github.com/xurxogr/foxhole-stockpiles/releases) and look for database releases matching your Foxhole game version
+- **Pre-built template database** (`data/fs_vanilla.h5`) - Included in repository
 - **Item catalog** (`data/catalog.json`) - Included in repository
 
 ### For Custom Database Building (Optional)
@@ -309,24 +308,20 @@ pre-commit install
 
 ### Quick Start (Using Pre-built Database)
 
-Download a pre-built template database for vanilla Foxhole items:
+A pre-built template database for vanilla Foxhole items is included in the repository at `data/fs_vanilla.h5`.
 
-1. Go to [Releases](https://github.com/xurxogr/foxhole-stockpiles/releases)
-2. Find a database release (tagged as `db-*`) matching your Foxhole game version
-3. Download `foxhole_templates.pkl` from the release assets
-4. Place it in your working directory or a `data/` folder
-5. Run the scanner:
+Run the scanner:
 
 ```bash
 fs scanner \
-  --database foxhole_templates.pkl \
+  --database data/fs_vanilla.h5 \
   --image your_screenshot.png
 ```
 
 Optional filters:
 ```bash
 # Filter by faction
-fs scanner --database foxhole_templates.pkl --image screenshot.png --faction colonials
+fs scanner --database data/fs_vanilla.h5 --image screenshot.png --faction colonials
 ```
 
 The scanner will automatically:
@@ -360,13 +355,13 @@ fs generate-templates \
 fs database-builder \
   --catalog data/catalog.json \
   --templates processed_templates/ \
-  --database data/foxhole_templates.pkl
+  --database data/foxhole_templates.h5
 ```
 
 4. **Scan with your custom database:**
 ```bash
 fs scanner \
-  --database data/foxhole_templates.pkl \
+  --database data/foxhole_templates.h5 \
   --image your_screenshot.png
 ```
 
@@ -537,7 +532,7 @@ docker-compose up -d
 docker run -d \
   -p 8000:8000 \
   -v $(pwd)/data:/data:ro \
-  -e FS_SCANNER__DATABASE_PATH=/data/foxhole_templates.pkl \
+  -e FS_SCANNER__DATABASE_PATH=/data/fs_vanilla.h5 \
   -e FS_API_AUTH__AUTH_TYPE=bearer \
   -e FS_API_AUTH__AUTH_TOKEN=your-secret-token \
   foxhole-stockpiles
@@ -632,7 +627,7 @@ This creates a single `fs.exe` file in the `dist/` directory that contains all d
 
 ```bash
 # Use the executable with the same command syntax
-fs.exe scanner --database templates.pkl --image screenshot.png
+fs.exe scanner --database data/fs_vanilla.h5 --image screenshot.png
 fs.exe extract-assets --catalog catalog.json --pak game.pak --output assets/
 ```
 
