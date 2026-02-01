@@ -266,47 +266,50 @@ class StockpileDetector:
         # Find and filter contours - FIRST PASS to detect adaptive threshold
         _contours, _ = cv2.findContours(grey_mask_open, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Analyze grey values in detected contours to find optimal threshold
-        grey_values = []
+        # Analyze grey values from detected boxes to refine the threshold
+        background_greys = []
         for _contour in _contours:
             rect = cv2.boundingRect(_contour)
             x, y, w, h = rect
-            # Only sample from reasonably sized contours (potential quantity boxes)
             if self._filter_contour_by_size(rect) is not None:
-                # Sample grey values from the contour region
                 roi = cv2.cvtColor(self.img[y : y + h, x : x + w], cv2.COLOR_RGB2GRAY)
-                # Get the darkest value in this region (minimum grey value)
-                min_grey = (
-                    np.min(roi[grey_mask_open[y : y + h, x : x + w] > 0])
-                    if np.any(grey_mask_open[y : y + h, x : x + w] > 0)
-                    else 0
-                )
-                if min_grey > 0:
-                    grey_values.append(min_grey)
+                mask_pixels = roi[grey_mask_open[y : y + h, x : x + w] > 0]
+                if mask_pixels.size > 0:
+                    # Use median to get background grey (ignores text pixels)
+                    background_greys.append(int(np.median(mask_pixels)))
 
-        # If we found quantity boxes, check if we need adaptive threshold
-        if grey_values and len(grey_values) >= 2:
-            darkest_grey = int(np.min(np.array(grey_values)))
-            adaptive_threshold = max(darkest_grey // 2, self._settings.gray_lower)
+        # If we found at least 2 boxes, refine grey range based on measured values
+        if len(background_greys) >= 2:
+            measured_min = min(background_greys)
+            measured_max = max(background_greys)
+
+            # Adaptive range: measured values ± 5 margin (bounded by configured limits)
+            margin = 5
+            adaptive_lower = max(measured_min - margin, self._settings.gray_lower)
+            adaptive_upper = min(measured_max + margin, self._settings.gray_upper)
 
             self._logger.debug(
-                "Adaptive threshold analysis: darkest_grey=%d, adaptive_threshold=%d, "
-                "configured_threshold=%d",
-                darkest_grey,
-                adaptive_threshold,
+                "Adaptive grey: measured [%d-%d] -> range [%d-%d] (configured: [%d-%d])",
+                measured_min,
+                measured_max,
+                adaptive_lower,
+                adaptive_upper,
                 self._settings.gray_lower,
+                self._settings.gray_upper,
             )
 
-            # If adaptive threshold is higher, recreate mask
-            if adaptive_threshold > self._settings.gray_lower:
-                self._logger.debug(
-                    "Recreating mask with adaptive threshold: %d", adaptive_threshold
-                )
-                # Temporarily override gray_lower for this detection
+            # Recreate mask if adaptive range is tighter than configured
+            if (
+                adaptive_lower > self._settings.gray_lower
+                or adaptive_upper < self._settings.gray_upper
+            ):
                 original_gray_lower = self._settings.gray_lower
-                self._settings.gray_lower = adaptive_threshold
+                original_gray_upper = self._settings.gray_upper
+                self._settings.gray_lower = adaptive_lower
+                self._settings.gray_upper = adaptive_upper
                 grey_mask = self._create_grey_mask(self.img)
                 self._settings.gray_lower = original_gray_lower
+                self._settings.gray_upper = original_gray_upper
 
                 # Reapply morphological operations
                 grey_mask_close = cv2.morphologyEx(grey_mask, cv2.MORPH_CLOSE, close_kernel)
