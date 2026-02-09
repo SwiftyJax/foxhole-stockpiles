@@ -207,6 +207,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftBomber",
     "CodeName": "AircraftBomberC",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -462,7 +463,7 @@
         },
         "ManualAspectRatio": 6.0284,
         "Params": {
-          "LiftCurveSlope": 9.5,
+          "LiftCurveSlope": 9,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -503,7 +504,7 @@
         },
         "ManualAspectRatio": 6.0284,
         "Params": {
-          "LiftCurveSlope": 9.5,
+          "LiftCurveSlope": 9,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -544,7 +545,7 @@
         },
         "ManualAspectRatio": 6.0284,
         "Params": {
-          "LiftCurveSlope": 9.5,
+          "LiftCurveSlope": 9,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -585,7 +586,7 @@
         },
         "ManualAspectRatio": 6.0284,
         "Params": {
-          "LiftCurveSlope": 9.5,
+          "LiftCurveSlope": 9,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -626,7 +627,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 9.5,
+          "LiftCurveSlope": 9,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -667,7 +668,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 9.5,
+          "LiftCurveSlope": 9,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -708,7 +709,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 9.5,
+          "LiftCurveSlope": 9,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -749,7 +750,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 9.5,
+          "LiftCurveSlope": 9,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -790,7 +791,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 9.5,
+          "LiftCurveSlope": 9,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -1048,17 +1049,18 @@
       "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
       "X": 430,
       "Y": 0,
-      "Z": 345
+      "Z": 270
     },
     "BuildRotation": {
       "$type": "UAssetAPI.UnrealTypes.FRotator, UAssetAPI",
-      "Pitch": 6,
+      "Pitch": 4.75,
       "Roll": 0,
       "Yaw": 0
     },
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftBomber",
     "CodeName": "AircraftBomberW",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -1844,6 +1846,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftDiveBomber",
     "CodeName": "AircraftDiveC",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -2711,6 +2714,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftFighter",
     "CodeName": "AircraftFighterC",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -2836,7 +2840,7 @@
         "MassPercentage": 0.7,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 120,
+          "X": 110,
           "Y": 0,
           "Z": 0
         }
@@ -2898,7 +2902,7 @@
         "Params": {
           "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 27,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2939,7 +2943,7 @@
         "Params": {
           "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 27,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2980,7 +2984,7 @@
         "Params": {
           "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 27,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -3021,7 +3025,7 @@
         "Params": {
           "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 27,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -3144,7 +3148,7 @@
         "Params": {
           "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 27,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -3385,6 +3389,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftFighter",
     "CodeName": "AircraftFighterW",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -3575,7 +3580,7 @@
         },
         "ManualAspectRatio": 4.95,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -16,
           "PositiveStallAngle": 16,
           "SkinFriction": 0.02,
@@ -3616,7 +3621,7 @@
         },
         "ManualAspectRatio": 4.95,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -16,
           "PositiveStallAngle": 16,
           "SkinFriction": 0.02,
@@ -3657,7 +3662,7 @@
         },
         "ManualAspectRatio": 4.95,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -16,
           "PositiveStallAngle": 16,
           "SkinFriction": 0.02,
@@ -3698,7 +3703,7 @@
         },
         "ManualAspectRatio": 4.95,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -16,
           "PositiveStallAngle": 16,
           "SkinFriction": 0.02,
@@ -4086,6 +4091,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftTransport",
     "CodeName": "AircraftParatrooperC",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -4933,6 +4939,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftTransport",
     "CodeName": "AircraftParatrooperW",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -6399,6 +6406,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftScout",
     "CodeName": "AircraftScoutC",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -6609,7 +6617,7 @@
         "Params": {
           "LiftCurveSlope": 8,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -6650,7 +6658,7 @@
         "Params": {
           "LiftCurveSlope": 8,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -6691,7 +6699,7 @@
         "Params": {
           "LiftCurveSlope": 8,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -6732,7 +6740,7 @@
         "Params": {
           "LiftCurveSlope": 8,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -6855,7 +6863,7 @@
         "Params": {
           "LiftCurveSlope": 8,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -6943,9 +6951,14 @@
       "VehicleSubsystemRepairCost": 0,
       "bHasTierUpgrades": false
     },
+    "VehicleMapIntelligenceProvider": {
+      "ContainerFlags": 2,
+      "DetectionRadius": 10000,
+      "TransmitPeriodSeconds": 5
+    },
     "WeaponConfigs": [
       {
-        "AmmoCodeName": "MGAmmo",
+        "AmmoCodeName": "AircraftAmmo",
         "ConvergenceDistance": 7500,
         "DisplayName": {
           "Guid": "7FA9CE2942E6A76E827A73839F44A0EE",
@@ -7113,6 +7126,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftScout",
     "CodeName": "AircraftScoutW",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -7240,7 +7254,7 @@
         "MassPercentage": 0.65,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 130,
+          "X": 175,
           "Y": 0,
           "Z": 50
         }
@@ -7248,14 +7262,14 @@
       {
         "Extents": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 280,
+          "X": 150,
           "Y": 25,
           "Z": 25
         },
         "MassPercentage": 0.15,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": -270,
+          "X": -300,
           "Y": 0,
           "Z": 25
         }
@@ -7337,9 +7351,9 @@
         },
         "ManualAspectRatio": 4.478,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -7378,9 +7392,9 @@
         },
         "ManualAspectRatio": 4.478,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -7419,9 +7433,9 @@
         },
         "ManualAspectRatio": 4.478,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -7460,9 +7474,9 @@
         },
         "ManualAspectRatio": 4.478,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -7497,11 +7511,11 @@
         "Dimensions": {
           "$type": "UAssetAPI.UnrealTypes.FVector2D, UAssetAPI",
           "X": 150,
-          "Y": 210
+          "Y": 180
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 5,
+          "LiftCurveSlope": 8,
           "NegativeStallAngle": -15,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -7542,9 +7556,9 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "PositiveStallAngle": 25,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -7583,7 +7597,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 5,
+          "LiftCurveSlope": 8,
           "NegativeStallAngle": -15,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -7674,10 +7688,14 @@
       "VehicleSubsystemRepairCost": 0,
       "bHasTierUpgrades": false
     },
-    "VehicleMapIntelligenceProvider": 5,
+    "VehicleMapIntelligenceProvider": {
+      "ContainerFlags": 2,
+      "DetectionRadius": 10000,
+      "TransmitPeriodSeconds": 5
+    },
     "WeaponConfigs": [
       {
-        "AmmoCodeName": "MGAmmo",
+        "AmmoCodeName": "AircraftAmmo",
         "ConvergenceDistance": 7500,
         "DisplayName": {
           "Guid": "75A25C4C435D539B7F406B975B6D10B2",
@@ -7814,6 +7832,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftTorpedoBomber",
     "CodeName": "AircraftTorpedoW",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -7873,7 +7892,7 @@
     "Description": "The M925 Edellian bomber is the Alliance Sky Brigade’s ace at air-to-sea combat. Featuring twin torpedo bays and a rear-mounted machine gun, the Man-O-War is a veritable threat to any ship’s hull or would-be assailants. The M925's unique capabilities overdelivered, as it was originally conceived as nothing more than a short-range coastal defence bomber. During the M925’s first operation off of the Katoman coast, a small squadron single-handedly sank a Titan. Her crew had no idea how their ship filled with seawater as torpedo after torpedo bored into the underside of her hull. ",
     "DestroyedMesh": "DestroyedMesh",
     "DisplayName": "M925 Austringer Man-O-War",
-    "DriverBombCooldownOverride": 3.5,
+    "DriverBombCooldownOverride": 8,
     "DriverType": "EAirDriverType::Bomber",
     "EngineGroup": "EngineGroup",
     "EngineLoopCue": "War/Content/Audio/SFX/Vehicles/Aircraft/AircraftFighterWEngineLoop_Cue.0",
@@ -8548,6 +8567,7 @@
     "CameraRigComponent": "CameraRigVehicle",
     "CapsuleComponent": "CollisionCylinder",
     "CharacterMovement": "CharMoveComp",
+    "ChassisName": "ChassisAircraftAmphibiousFighter",
     "CodeName": "AircraftWaterW",
     "Collision": "Collision",
     "CollisionCapsules": [
@@ -19614,7 +19634,7 @@
       "AddedBurning": 0,
       "AddedHeat": 0,
       "BreachingModifier": 1,
-      "Damage": 900,
+      "Damage": 1050,
       "DamageFalloff": 0,
       "DamageInnerRadius": 200,
       "DamageType": {
@@ -19710,6 +19730,7 @@
     "Description": "A sturdy, stationary cannon for bombarding high-flying enemy aircraft with explosive shrapnel shells. The DAE 5b anti-aircraft emplacement has become infamous for walls of black smoke its payload leaves behind.",
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DisplayName": "DAE 5b “Zeal”",
+    "EmplacedTrackingModifier": 1,
     "FactionVariant": "EFactionId::Colonials",
     "FoundationMesh": "FoundationMesh",
     "Health": 1250,
@@ -19784,6 +19805,7 @@
     "Description": "A late entry into the Leary arsenal, the AA-70 Bolas was a direct response to a sudden uptick in Colonial aerial aggression. This emplaced cannon excels equally at both slowing and bringing down enemy aircraft.",
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DisplayName": "Leary AA-70 Bolas",
+    "EmplacedTrackingModifier": 1,
     "FactionVariant": "EFactionId::Wardens",
     "FoundationMesh": "FoundationMesh",
     "Health": 1250,
@@ -19845,6 +19867,7 @@
     },
     "TechID": "ETechID::UnlockEmplacedAircraft",
     "UseAreaBox": "UseAreaBox",
+    "ValidBuildTools": 49,
     "bIsInAntiAircraftMode": true,
     "bIsStockpilable": true
   },
@@ -20521,7 +20544,7 @@
       "zh": "“Snare Trap”是一种重新设计的防空高射炮，它使用双管反步兵机枪来稳固阵地。"
     },
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
-    "DisplayName": "Leary Snare Trap 127",
+    "DisplayName": "Leary Snare Trap 20",
     "DisplayNameLocales": {
       "en": "Leary Snare Trap 127"
     },
@@ -26263,6 +26286,7 @@
     "GlobalShippableInfo": "War/Content/Blueprints/Data/BPGlobalShippableInfo.0",
     "Horn": "War/Content/Audio/SFX/Vehicles/Freighter/FreighterHorn_Cue.0",
     "Icon": "War/Content/Textures/UI/VehicleIcons/Freighter02ItemIcon.0",
+    "KillVolume": "KillVolume",
     "LeftSideTrackLocation": "LeftSideTrackLocation",
     "LinearSpeedToTurnSpeedMapCurve": "War/Content/Blueprints/Vehicles/FreighterTurnSpeedCurve.0",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
@@ -26453,6 +26477,7 @@
     "GenericStockpileComponent": "GenericStockpileComponent",
     "Horn": "War/Content/Audio/SFX/Vehicles/Freighter/FreighterHorn_Cue.0",
     "Icon": "War/Content/Textures/UI/VehicleIcons/LightFreighterVehicleIcon.0",
+    "KillVolume": "KillVolume",
     "LeftSideTrackLocation": "LeftSideTrackLocation",
     "LinearSpeedToTurnSpeedMapCurve": "War/Content/Blueprints/Vehicles/GunboatCTurnSpeedCurve.0",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
@@ -27509,7 +27534,8 @@
       {
         "ArmourDirection": "EArmourDirection::Turret",
         "BoneNamesList": [
-          "MainGunHorizontal"
+          "MainGunHorizontal",
+          "MainGunVertical"
         ]
       }
     ],
@@ -33507,7 +33533,7 @@
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
       "OffroadSnowPenalty": 1,
-      "RepairCost": 100,
+      "RepairCost": 130,
       "ResourceAmounts": {
         "OtherResources": [],
         "Resource": {
@@ -33522,7 +33548,7 @@
       "SpeedSqrThreshold": 500,
       "SwimmingFuelConsumptionModifier": 1,
       "TankArmour": 7000,
-      "TankArmourMinPenetrationChance": 0.33,
+      "TankArmourMinPenetrationChance": 0.4,
       "TowingResistanceOverride": 0,
       "UpgradeResourceAmounts": {
         "OtherResources": [],
@@ -36845,7 +36871,7 @@
     "FrontLeftRollCastLocation": "FrontRightAxleCastLocation",
     "FrontRightRollCastLocation": "RearRightAxleCastLocation",
     "FrozenEnterSound": "War/Content/Audio/SFX/Weapons/Satchel/DeployExplosive_Cue.0",
-    "FuelTank": 300,
+    "FuelTank": 250,
     "GenericStockpileComponent": "GenericStockpileComponent",
     "Icon": "War/Content/Textures/UI/VehicleIcons/MediumBoatCIcon.0",
     "KillVolume": "KillVolume",
@@ -36885,7 +36911,7 @@
     "PropellerPositions": {
       "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
       "X": -600,
-      "Y": -250,
+      "Y": -350,
       "Z": -70
     },
     "RearAxleCastLocation": "RearAxleCastLocation",
@@ -36915,10 +36941,10 @@
       "GammaMax": 5,
       "MaxDivePlaneAngle": 35,
       "MaxPropellerRPM": 1000,
-      "MaxRudderAngle": 35,
+      "MaxRudderAngle": 45,
       "ObjectPath": "War/Content/Blueprints/Data/BPShipDynamicData",
-      "RudderDepth": 420,
-      "RudderLength": 420,
+      "RudderDepth": 500,
+      "RudderLength": 500,
       "RudderTurnRate": 75,
       "SecondsToMaxRPM": 1,
       "SlammingPower": 2,
@@ -44793,7 +44819,7 @@
     "ChassisName": "ChassisFieldGear",
     "CodeName": "RadioAircraft",
     "Description": "Allows receiving map intelligence reports on detected airborne targets.",
-    "DisplayName": "Liason Transmitter",
+    "DisplayName": "Liaison Transmitter",
     "EquipmentSlot": "EEquipmentSlot::Utility",
     "Icon": "War/Content/Textures/UI/ItemIcons/RadioItemIcon.0",
     "ItemBox": "ItemBox",
@@ -48310,17 +48336,17 @@
       "CostPerCrate": [
         {
           "ItemCodeName": "Cloth",
-          "Quantity": 150
+          "Quantity": 100
         },
         {
           "ItemCodeName": "Explosive",
-          "Quantity": 160
+          "Quantity": 80
         }
       ],
       "CrateProductionTime": 100,
       "CrateRetrieveTime": 20,
       "ObjectPath": "War/Content/Blueprints/Data/BPItemDynamicData",
-      "QuantityPerCrate": 10,
+      "QuantityPerCrate": 5,
       "ResearchLevel": 0,
       "SingleRetrieveTime": 10
     },
@@ -55628,7 +55654,7 @@
       "MajorDamagePercent": 0.85,
       "MassOverride": 8000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 1250,
+      "MaxHealth": 900,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
