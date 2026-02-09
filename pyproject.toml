@@ -104,6 +104,7 @@ line-length = 100
 target-version = "py312"
 
 [tool.ruff.lint]
+preview = true
 select = [
     "E",   # pycodestyle errors
     "W",   # pycodestyle warnings
