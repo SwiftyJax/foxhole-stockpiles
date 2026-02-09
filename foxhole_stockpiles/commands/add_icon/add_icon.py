@@ -11,6 +11,7 @@ from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.services.icon_manager import IconManager
+from foxhole_stockpiles.services.template_manager import TemplateManager
 
 
 async def main() -> None:
@@ -178,8 +179,16 @@ Note: Icon dimensions must exactly match the target resolution requirements.
                 f"Valid resolutions are: {', '.join(valid_resolutions)}"
             )
 
+    template_manager = TemplateManager(database_path=database_path)
+    databases = await template_manager.load_all_resolutions()
+
     # Add icon using IconManager
-    manager = IconManager(database_path=database_path)
+    ocr = settings.ocr
+    manager = IconManager(
+        database_path=database_path,
+        databases=databases,
+        icon_scale=ocr.box_height / ocr.height,
+    )
 
     for resolution in target_resolutions:
         await manager.add_icon(
@@ -193,5 +202,6 @@ Note: Icon dimensions must exactly match the target resolution requirements.
             replace=args.replace,
         )
 
-    # Save updated database
-    await manager.save_databases()
+    TemplateManager.save_databases_to_hdf5(
+        databases=databases, output_path=database_path, workers=1
+    )

@@ -338,7 +338,26 @@
       "database_index": "Índice na BD:",
       "highest_res_available": "Resolução máx disponível:",
       "highest_res_not_found": "Res. máx: Não encontrada em {resolution}px"
-    }
+    },
+    "save_icon": "Guardar ícone",
+    "save_icon_dialog": "Guardar ícone como",
+    "save_success_title": "Ícone guardado",
+    "save_success_message": "Ícone guardado em: {path}",
+    "save_error_title": "Erro ao guardar",
+    "save_error_message": "Erro ao guardar ícone: {error}",
+    "replace_icon": "Substituir ícone",
+    "select_replacement_icon": "Selecionar ícone de substituição",
+    "replace_success_title": "Ícone substituído",
+    "replace_success_message": "Ícone substituído com sucesso para '{code}'",
+    "replace_error_title": "Erro ao substituir",
+    "replace_error_message": "Erro ao substituir ícone: {error}",
+    "delete_icon": "Eliminar ícone",
+    "delete_confirm_title": "Confirmar eliminação",
+    "delete_confirm_message": "Tem a certeza de que deseja eliminar o ícone de '{code}' na resolução {resolution}p?\n\nEsta ação não pode ser revertida.",
+    "delete_success_title": "Ícone eliminado",
+    "delete_success_message": "Ícone eliminado com sucesso para '{code}'",
+    "delete_error_title": "Erro ao eliminar",
+    "delete_error_message": "Erro ao eliminar ícone: {error}"
   },
 
   "database_builder": {

@@ -338,7 +338,26 @@
       "database_index": "Database Index:",
       "highest_res_available": "Highest Res Available:",
       "highest_res_not_found": "Highest Res: Not found in {resolution}px"
-    }
+    },
+    "save_icon": "Save Icon",
+    "save_icon_dialog": "Save Icon As",
+    "save_success_title": "Icon Saved",
+    "save_success_message": "Icon saved to: {path}",
+    "save_error_title": "Save Failed",
+    "save_error_message": "Failed to save icon: {error}",
+    "replace_icon": "Replace Icon",
+    "select_replacement_icon": "Select Replacement Icon",
+    "replace_success_title": "Icon Replaced",
+    "replace_success_message": "Successfully replaced icon for '{code}'",
+    "replace_error_title": "Replace Failed",
+    "replace_error_message": "Failed to replace icon: {error}",
+    "delete_icon": "Delete Icon",
+    "delete_confirm_title": "Confirm Delete",
+    "delete_confirm_message": "Are you sure you want to delete the icon for '{code}' at {resolution}p resolution?\n\nThis action cannot be undone.",
+    "delete_success_title": "Icon Deleted",
+    "delete_success_message": "Successfully deleted icon for '{code}'",
+    "delete_error_title": "Delete Failed",
+    "delete_error_message": "Failed to delete icon: {error}"
   },
 
   "database_builder": {

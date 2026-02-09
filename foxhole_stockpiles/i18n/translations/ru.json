@@ -338,7 +338,26 @@
       "database_index": "Индекс в базе данных:",
       "highest_res_available": "Макс. доступное разрешение:",
       "highest_res_not_found": "Макс. разрешение: Не найдено в {resolution}px"
-    }
+    },
+    "save_icon": "Сохранить иконку",
+    "save_icon_dialog": "Сохранить иконку как",
+    "save_success_title": "Иконка сохранена",
+    "save_success_message": "Иконка сохранена в: {path}",
+    "save_error_title": "Ошибка сохранения",
+    "save_error_message": "Не удалось сохранить иконку: {error}",
+    "replace_icon": "Заменить иконку",
+    "select_replacement_icon": "Выберите иконку для замены",
+    "replace_success_title": "Иконка заменена",
+    "replace_success_message": "Иконка для '{code}' успешно заменена",
+    "replace_error_title": "Ошибка замены",
+    "replace_error_message": "Не удалось заменить иконку: {error}",
+    "delete_icon": "Удалить иконку",
+    "delete_confirm_title": "Подтвердите удаление",
+    "delete_confirm_message": "Вы уверены, что хотите удалить иконку для '{code}' в разрешении {resolution}p?\n\nЭто действие нельзя отменить.",
+    "delete_success_title": "Иконка удалена",
+    "delete_success_message": "Иконка для '{code}' успешно удалена",
+    "delete_error_title": "Ошибка удаления",
+    "delete_error_message": "Не удалось удалить иконку: {error}"
   },
 
   "database_builder": {

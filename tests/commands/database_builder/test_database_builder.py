@@ -224,7 +224,8 @@ class TestDatabaseBuilderMethods:
         item_folder = builder.assets_path / item_code
         item_folder.mkdir()
 
-        icon_size = int(builder.icon_scaling_factor * 1080)
+        # Calculate icon size the same way DatabaseBuilder does (64/2160 * 1080 = 32)
+        icon_size = 32
         icon_file = item_folder / f"vanilla_{item_code}_{icon_size}.png"
         icon_file.touch()
 
@@ -411,7 +412,8 @@ class TestDatabaseBuilderMethods:
         item_folder = builder.assets_path / item_code
         item_folder.mkdir()
 
-        icon_size = int(builder.icon_scaling_factor * 1080)
+        # Calculate icon size the same way DatabaseBuilder does (64/2160 * 1080 = 32)
+        icon_size = 32
         icon_file = item_folder / f"vanilla_{item_code}_{icon_size}.png"
         icon_file.touch()
 
@@ -455,7 +457,8 @@ class TestDatabaseBuilderMethods:
         item_folder = builder.assets_path / item_code
         item_folder.mkdir()
 
-        icon_size = int(builder.icon_scaling_factor * 1080)
+        # Calculate icon size the same way DatabaseBuilder does (64/2160 * 1080 = 32)
+        icon_size = 32
         icon_file = item_folder / f"vanilla_{item_code}_{icon_size}.png"
         icon_file.touch()
 
@@ -972,7 +975,9 @@ class TestDatabaseBuilderMerge:
 
         from foxhole_stockpiles.services.template_manager import TemplateManager
 
-        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+        TemplateManager.save_databases_to_hdf5(
+            databases=existing_databases, output_path=output_path
+        )
 
         # Create new database with different items
         new_db = TemplateDatabase(SupportedResolution.R_1080)
@@ -1005,7 +1010,9 @@ class TestDatabaseBuilderMerge:
 
         from foxhole_stockpiles.services.template_manager import TemplateManager
 
-        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+        TemplateManager.save_databases_to_hdf5(
+            databases=existing_databases, output_path=output_path
+        )
 
         # Create new database with same item (duplicate)
         new_db = TemplateDatabase(SupportedResolution.R_1080)
@@ -1037,7 +1044,9 @@ class TestDatabaseBuilderMerge:
 
         from foxhole_stockpiles.services.template_manager import TemplateManager
 
-        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+        TemplateManager.save_databases_to_hdf5(
+            databases=existing_databases, output_path=output_path
+        )
 
         # Create new database with same item from different mod
         new_db = TemplateDatabase(SupportedResolution.R_1080)
@@ -1070,7 +1079,9 @@ class TestDatabaseBuilderMerge:
 
         from foxhole_stockpiles.services.template_manager import TemplateManager
 
-        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+        TemplateManager.save_databases_to_hdf5(
+            databases=existing_databases, output_path=output_path
+        )
 
         # Create new database with crated variant
         new_db = TemplateDatabase(SupportedResolution.R_1080)
@@ -1110,7 +1121,9 @@ class TestDatabaseBuilderMerge:
 
         from foxhole_stockpiles.services.template_manager import TemplateManager
 
-        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+        TemplateManager.save_databases_to_hdf5(
+            databases=existing_databases, output_path=output_path
+        )
 
         # Create new database with only 1080 resolution
         new_db = TemplateDatabase(SupportedResolution.R_1080)
@@ -1149,7 +1162,9 @@ class TestDatabaseBuilderMerge:
 
         from foxhole_stockpiles.services.template_manager import TemplateManager
 
-        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+        TemplateManager.save_databases_to_hdf5(
+            databases=existing_databases, output_path=output_path
+        )
 
         # Create new database with only 1440p (which doesn't exist in old database)
         new_db_1440 = TemplateDatabase(SupportedResolution.R_1440)
@@ -1191,7 +1206,9 @@ class TestDatabaseBuilderMerge:
 
         from foxhole_stockpiles.services.template_manager import TemplateManager
 
-        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+        TemplateManager.save_databases_to_hdf5(
+            databases=existing_databases, output_path=output_path
+        )
 
         # Mock _build_resolution_database to return new template
         async def mock_build_db(resolution: SupportedResolution) -> TemplateDatabase:
@@ -1234,7 +1251,9 @@ class TestDatabaseBuilderMerge:
 
         from foxhole_stockpiles.services.template_manager import TemplateManager
 
-        TemplateManager.save_databases_to_hdf5(existing_databases, output_path)
+        TemplateManager.save_databases_to_hdf5(
+            databases=existing_databases, output_path=output_path
+        )
 
         # Mock _build_resolution_database to return new template
         async def mock_build_db(resolution: SupportedResolution) -> TemplateDatabase:

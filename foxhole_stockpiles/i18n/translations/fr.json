@@ -338,7 +338,26 @@
       "database_index": "Index dans la BD :",
       "highest_res_available": "Résolution max disponible :",
       "highest_res_not_found": "Rés. max : Non trouvée en {resolution}px"
-    }
+    },
+    "save_icon": "Enregistrer l'icône",
+    "save_icon_dialog": "Enregistrer l'icône sous",
+    "save_success_title": "Icône enregistrée",
+    "save_success_message": "Icône enregistrée dans : {path}",
+    "save_error_title": "Échec de l'enregistrement",
+    "save_error_message": "Échec de l'enregistrement de l'icône : {error}",
+    "replace_icon": "Remplacer l'icône",
+    "select_replacement_icon": "Sélectionner l'icône de remplacement",
+    "replace_success_title": "Icône remplacée",
+    "replace_success_message": "Icône remplacée avec succès pour '{code}'",
+    "replace_error_title": "Échec du remplacement",
+    "replace_error_message": "Échec du remplacement de l'icône : {error}",
+    "delete_icon": "Supprimer l'icône",
+    "delete_confirm_title": "Confirmer la suppression",
+    "delete_confirm_message": "Êtes-vous sûr de vouloir supprimer l'icône de '{code}' en résolution {resolution}p ?\n\nCette action est irréversible.",
+    "delete_success_title": "Icône supprimée",
+    "delete_success_message": "Icône supprimée avec succès pour '{code}'",
+    "delete_error_title": "Échec de la suppression",
+    "delete_error_message": "Échec de la suppression de l'icône : {error}"
   },
 
   "database_builder": {

@@ -606,10 +606,14 @@ class TestMultiprocessingMigration:
             all_databases = pickle.load(f)
 
         # Save with multiprocessing
-        TemplateManager.save_databases_to_hdf5(all_databases, output_multi, workers=2)
+        TemplateManager.save_databases_to_hdf5(
+            databases=all_databases, output_path=output_multi, workers=2
+        )
 
         # Save without multiprocessing
-        TemplateManager.save_databases_to_hdf5(all_databases, output_single, workers=1)
+        TemplateManager.save_databases_to_hdf5(
+            databases=all_databases, output_path=output_single, workers=1
+        )
 
         # Load both and compare
         manager_multi = TemplateManager(database_path=output_multi)

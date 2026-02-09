@@ -338,7 +338,26 @@
       "database_index": "数据库索引：",
       "highest_res_available": "可用最高分辨率：",
       "highest_res_not_found": "最高分辨率：在 {resolution}px 中未找到"
-    }
+    },
+    "save_icon": "保存图标",
+    "save_icon_dialog": "图标另存为",
+    "save_success_title": "图标已保存",
+    "save_success_message": "图标已保存到：{path}",
+    "save_error_title": "保存失败",
+    "save_error_message": "保存图标失败：{error}",
+    "replace_icon": "替换图标",
+    "select_replacement_icon": "选择替换图标",
+    "replace_success_title": "图标已替换",
+    "replace_success_message": "'{code}' 的图标已成功替换",
+    "replace_error_title": "替换失败",
+    "replace_error_message": "替换图标失败：{error}",
+    "delete_icon": "删除图标",
+    "delete_confirm_title": "确认删除",
+    "delete_confirm_message": "您确定要删除 '{code}' 在 {resolution}p 分辨率下的图标吗？\n\n此操作无法撤销。",
+    "delete_success_title": "图标已删除",
+    "delete_success_message": "'{code}' 的图标已成功删除",
+    "delete_error_title": "删除失败",
+    "delete_error_message": "删除图标失败：{error}"
   },
 
   "database_builder": {

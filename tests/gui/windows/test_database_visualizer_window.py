@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pytest
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QListWidgetItem
+from PyQt6.QtWidgets import QListWidgetItem, QMessageBox
 
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
@@ -771,6 +771,892 @@ class TestDatabaseVisualizerWindowImageDisplay:
         # Both images should have pixmaps
         assert not visualizer_window.current_image.pixmap().isNull()
         assert not visualizer_window.highest_image.pixmap().isNull()
+
+
+class TestDatabaseVisualizerWindowReplaceIcon:
+    """Tests for replace icon functionality."""
+
+    def test_replace_button_disabled_initially(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test that replace button is disabled on init.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        assert not visualizer_window.replace_button.isEnabled()
+        assert visualizer_window.selected_template is None
+
+    def test_template_selection_enables_replace_button(
+        self,
+        visualizer_window: DatabaseVisualizerWindow,
+        mock_template: IconTemplate,
+        mock_database: MagicMock,
+    ) -> None:
+        """Test selecting a template enables replace button.
+
+        Args:
+            visualizer_window: Window fixture.
+            mock_template: Mock template.
+            mock_database: Mock database.
+        """
+        visualizer_window.all_databases = {SupportedResolution.R_1080: mock_database}
+
+        item = QListWidgetItem("TestItem")
+        item.setData(Qt.ItemDataRole.UserRole, (0, mock_template))
+
+        visualizer_window._on_template_selected(item)
+
+        assert visualizer_window.replace_button.isEnabled()
+        assert visualizer_window.selected_template == (0, mock_template)
+
+    def test_resolution_change_clears_selection(
+        self,
+        visualizer_window: DatabaseVisualizerWindow,
+        mock_template: IconTemplate,
+        mock_database: MagicMock,
+    ) -> None:
+        """Test resolution change clears selected template.
+
+        Args:
+            visualizer_window: Window fixture.
+            mock_template: Mock template.
+            mock_database: Mock database.
+        """
+        visualizer_window.all_databases = {SupportedResolution.R_1080: mock_database}
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.replace_button.setEnabled(True)
+
+        visualizer_window.resolution_filter.clear()
+        visualizer_window.resolution_filter.addItem("1080p", SupportedResolution.R_1080)
+
+        visualizer_window._on_resolution_changed()
+
+        assert visualizer_window.selected_template is None
+        assert not visualizer_window.replace_button.isEnabled()
+
+    def test_replace_icon_no_selection_returns_early(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test replace icon does nothing without selection.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        visualizer_window.selected_template = None
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog"
+        ) as mock_dialog:
+            visualizer_window._on_replace_icon()
+            mock_dialog.getOpenFileName.assert_not_called()
+
+    def test_replace_icon_cancelled_dialog_returns_early(
+        self,
+        visualizer_window: DatabaseVisualizerWindow,
+        mock_template: IconTemplate,
+    ) -> None:
+        """Test replace icon returns early when dialog cancelled.
+
+        Args:
+            visualizer_window: Window fixture.
+            mock_template: Mock template.
+        """
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/path/to/db.h5"
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getOpenFileName",
+            return_value=("", ""),
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.Image"
+            ) as mock_image:
+                visualizer_window._on_replace_icon()
+                mock_image.open.assert_not_called()
+
+    def test_replace_icon_image_load_error(
+        self,
+        visualizer_window: DatabaseVisualizerWindow,
+        mock_template: IconTemplate,
+    ) -> None:
+        """Test replace icon handles image load error.
+
+        Args:
+            visualizer_window: Window fixture.
+            mock_template: Mock template.
+        """
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/path/to/db.h5"
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getOpenFileName",
+            return_value=("/path/to/icon.png", "PNG Files (*.png)"),
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.Image.open",
+                side_effect=FileNotFoundError("File not found"),
+            ):
+                with patch.object(visualizer_window, "_show_replace_error") as mock_show_error:
+                    visualizer_window._on_replace_icon()
+                    mock_show_error.assert_called_once()
+                    assert "File not found" in mock_show_error.call_args[0][0]
+
+    def test_replace_icon_success(
+        self,
+        visualizer_window: DatabaseVisualizerWindow,
+        mock_template: IconTemplate,
+    ) -> None:
+        """Test successful icon replacement.
+
+        Args:
+            visualizer_window: Window fixture.
+            mock_template: Mock template.
+        """
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/path/to/db.h5"
+        visualizer_window.all_databases = {SupportedResolution.R_1080: MagicMock()}
+
+        # Create mock PIL image
+        mock_pil_image = MagicMock()
+        mock_pil_image.mode = "RGB"
+        mock_pil_image.size = (32, 32)
+
+        # Mock get_settings to return proper OCR settings
+        mock_settings = MagicMock()
+        mock_settings.ocr.box_height = 64
+        mock_settings.ocr.height = 2160
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.get_settings",
+            return_value=mock_settings,
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getOpenFileName",
+                return_value=("/path/to/icon.png", "PNG Files (*.png)"),
+            ):
+                with patch(
+                    "foxhole_stockpiles.gui.windows.database_visualizer_window.Image.open",
+                    return_value=mock_pil_image,
+                ):
+                    with patch(
+                        "foxhole_stockpiles.gui.windows.database_visualizer_window.np.array",
+                        return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                    ):
+                        with patch(
+                            "foxhole_stockpiles.gui.windows.database_visualizer_window.cv2.cvtColor",
+                            return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                        ):
+                            with patch(
+                                "foxhole_stockpiles.gui.windows.database_visualizer_window.IconManager"
+                            ) as mock_manager_class:
+                                with patch(
+                                    "foxhole_stockpiles.gui.windows.database_visualizer_window.TemplateManager.save_single_resolution"
+                                ):
+                                    with patch(
+                                        "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.information"
+                                    ):
+                                        with patch.object(visualizer_window, "_apply_filters"):
+                                            visualizer_window._on_replace_icon()
+
+                                            mock_manager_class.assert_called_once()
+
+    def test_replace_icon_rgba_image(
+        self,
+        visualizer_window: DatabaseVisualizerWindow,
+        mock_template: IconTemplate,
+    ) -> None:
+        """Test icon replacement with RGBA image conversion.
+
+        Args:
+            visualizer_window: Window fixture.
+            mock_template: Mock template.
+        """
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/path/to/db.h5"
+        visualizer_window.all_databases = {SupportedResolution.R_1080: MagicMock()}
+
+        # Create mock PIL RGBA image
+        mock_pil_image = MagicMock()
+        mock_pil_image.mode = "RGBA"
+        mock_pil_image.size = (32, 32)
+        mock_pil_image.split.return_value = [MagicMock(), MagicMock(), MagicMock(), MagicMock()]
+
+        mock_background = MagicMock()
+
+        # Mock get_settings to return proper OCR settings
+        mock_settings = MagicMock()
+        mock_settings.ocr.box_height = 64
+        mock_settings.ocr.height = 2160
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.get_settings",
+            return_value=mock_settings,
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getOpenFileName",
+                return_value=("/path/to/icon.png", ""),
+            ):
+                with patch(
+                    "foxhole_stockpiles.gui.windows.database_visualizer_window.Image.open",
+                    return_value=mock_pil_image,
+                ):
+                    with patch(
+                        "foxhole_stockpiles.gui.windows.database_visualizer_window.Image.new",
+                        return_value=mock_background,
+                    ) as mock_new:
+                        with patch(
+                            "foxhole_stockpiles.gui.windows.database_visualizer_window.np.array",
+                            return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                        ):
+                            with patch(
+                                "foxhole_stockpiles.gui.windows.database_visualizer_window.cv2.cvtColor",
+                                return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                            ):
+                                with patch(
+                                    "foxhole_stockpiles.gui.windows.database_visualizer_window.IconManager"
+                                ):
+                                    with patch(
+                                        "foxhole_stockpiles.gui.windows.database_visualizer_window.TemplateManager.save_single_resolution"
+                                    ):
+                                        with patch(
+                                            "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.information"
+                                        ):
+                                            with patch.object(visualizer_window, "_apply_filters"):
+                                                visualizer_window._on_replace_icon()
+                                                # Verify RGBA conversion was used
+                                                mock_new.assert_called_once()
+
+    def test_replace_icon_palette_image(
+        self,
+        visualizer_window: DatabaseVisualizerWindow,
+        mock_template: IconTemplate,
+    ) -> None:
+        """Test icon replacement with palette mode image conversion.
+
+        Args:
+            visualizer_window: Window fixture.
+            mock_template: Mock template.
+        """
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/path/to/db.h5"
+        visualizer_window.all_databases = {SupportedResolution.R_1080: MagicMock()}
+
+        # Create mock PIL palette image
+        mock_pil_image = MagicMock()
+        mock_pil_image.mode = "P"  # Palette mode
+        mock_pil_image.size = (32, 32)
+        mock_converted = MagicMock()
+        mock_converted.size = (32, 32)
+        mock_pil_image.convert.return_value = mock_converted
+
+        # Mock get_settings to return proper OCR settings
+        mock_settings = MagicMock()
+        mock_settings.ocr.box_height = 64
+        mock_settings.ocr.height = 2160
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.get_settings",
+            return_value=mock_settings,
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getOpenFileName",
+                return_value=("/path/to/icon.png", ""),
+            ):
+                with patch(
+                    "foxhole_stockpiles.gui.windows.database_visualizer_window.Image.open",
+                    return_value=mock_pil_image,
+                ):
+                    with patch(
+                        "foxhole_stockpiles.gui.windows.database_visualizer_window.np.array",
+                        return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                    ):
+                        with patch(
+                            "foxhole_stockpiles.gui.windows.database_visualizer_window.cv2.cvtColor",
+                            return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                        ):
+                            with patch(
+                                "foxhole_stockpiles.gui.windows.database_visualizer_window.IconManager"
+                            ):
+                                with patch(
+                                    "foxhole_stockpiles.gui.windows.database_visualizer_window.TemplateManager.save_single_resolution"
+                                ):
+                                    with patch(
+                                        "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.information"
+                                    ):
+                                        with patch.object(visualizer_window, "_apply_filters"):
+                                            visualizer_window._on_replace_icon()
+                                            # Verify convert was called
+                                            mock_pil_image.convert.assert_called_with("RGB")
+
+    def test_replace_icon_resize(
+        self,
+        visualizer_window: DatabaseVisualizerWindow,
+        mock_template: IconTemplate,
+    ) -> None:
+        """Test icon replacement with image resize.
+
+        Args:
+            visualizer_window: Window fixture.
+            mock_template: Mock template.
+        """
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/path/to/db.h5"
+        visualizer_window.all_databases = {SupportedResolution.R_1080: MagicMock()}
+
+        # Create mock PIL image with wrong size
+        mock_pil_image = MagicMock()
+        mock_pil_image.mode = "RGB"
+        mock_pil_image.size = (64, 64)  # Wrong size, needs resize
+
+        mock_resized = MagicMock()
+        mock_resized.size = (32, 32)
+        mock_pil_image.resize.return_value = mock_resized
+
+        # Mock get_settings to return proper OCR settings
+        mock_settings = MagicMock()
+        mock_settings.ocr.box_height = 64
+        mock_settings.ocr.height = 2160
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.get_settings",
+            return_value=mock_settings,
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getOpenFileName",
+                return_value=("/path/to/icon.png", ""),
+            ):
+                with patch(
+                    "foxhole_stockpiles.gui.windows.database_visualizer_window.Image.open",
+                    return_value=mock_pil_image,
+                ):
+                    with patch(
+                        "foxhole_stockpiles.gui.windows.database_visualizer_window.np.array",
+                        return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                    ):
+                        with patch(
+                            "foxhole_stockpiles.gui.windows.database_visualizer_window.cv2.cvtColor",
+                            return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                        ):
+                            with patch(
+                                "foxhole_stockpiles.gui.windows.database_visualizer_window.IconManager"
+                            ):
+                                with patch(
+                                    "foxhole_stockpiles.gui.windows.database_visualizer_window.TemplateManager.save_single_resolution"
+                                ):
+                                    with patch(
+                                        "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.information"
+                                    ):
+                                        with patch.object(visualizer_window, "_apply_filters"):
+                                            visualizer_window._on_replace_icon()
+                                            # Verify resize was called
+                                            mock_pil_image.resize.assert_called_once()
+
+    def test_replace_icon_manager_error(
+        self,
+        visualizer_window: DatabaseVisualizerWindow,
+        mock_template: IconTemplate,
+    ) -> None:
+        """Test icon replacement with IconManager error.
+
+        Args:
+            visualizer_window: Window fixture.
+            mock_template: Mock template.
+        """
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/path/to/db.h5"
+        visualizer_window.all_databases = {SupportedResolution.R_1080: MagicMock()}
+
+        mock_pil_image = MagicMock()
+        mock_pil_image.mode = "RGB"
+        mock_pil_image.size = (32, 32)
+
+        # Mock get_settings to return proper OCR settings
+        mock_settings = MagicMock()
+        mock_settings.ocr.box_height = 64
+        mock_settings.ocr.height = 2160
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.get_settings",
+            return_value=mock_settings,
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getOpenFileName",
+                return_value=("/path/to/icon.png", ""),
+            ):
+                with patch(
+                    "foxhole_stockpiles.gui.windows.database_visualizer_window.Image.open",
+                    return_value=mock_pil_image,
+                ):
+                    with patch(
+                        "foxhole_stockpiles.gui.windows.database_visualizer_window.np.array",
+                        return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                    ):
+                        with patch(
+                            "foxhole_stockpiles.gui.windows.database_visualizer_window.cv2.cvtColor",
+                            return_value=np.zeros((32, 32, 3), dtype=np.uint8),
+                        ):
+                            with patch(
+                                "foxhole_stockpiles.gui.windows.database_visualizer_window.IconManager",
+                                side_effect=Exception("Manager error"),
+                            ):
+                                with patch.object(
+                                    visualizer_window, "_show_replace_error"
+                                ) as mock_error:
+                                    visualizer_window._on_replace_icon()
+                                    mock_error.assert_called_once()
+
+    def test_show_replace_error(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test error display helper.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.critical"
+        ) as mock_critical:
+            visualizer_window._show_replace_error("Test error")
+
+            mock_critical.assert_called_once()
+            call_args = mock_critical.call_args[0]
+            assert "Test error" in call_args[2]
+
+
+class TestDatabaseVisualizerWindowLanguageChange:
+    """Tests for language change handling."""
+
+    def test_on_language_changed(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test language change triggers retranslate.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        with patch.object(visualizer_window, "retranslate") as mock_retranslate:
+            visualizer_window._on_language_changed("es")
+            mock_retranslate.assert_called_once()
+
+
+class TestDatabaseVisualizerWindowSaveIcon:
+    """Tests for save icon functionality."""
+
+    def test_save_button_disabled_initially(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test save button is disabled when no template selected.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        assert not visualizer_window.save_button.isEnabled()
+
+    def test_save_icon_no_selection_returns_early(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test save icon returns early when no template selected.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        visualizer_window.selected_template = None
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getSaveFileName"
+        ) as mock_dialog:
+            visualizer_window._on_save_icon()
+            mock_dialog.assert_not_called()
+
+    def test_save_icon_cancelled_dialog_returns_early(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test save icon returns early when dialog cancelled.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        mock_template = MagicMock()
+        mock_template.code = "TestItem"
+        mock_template.resolution.value = "1080"
+        visualizer_window.selected_template = (0, mock_template)
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getSaveFileName",
+            return_value=("", ""),
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.cv2.imwrite"
+            ) as mock_write:
+                visualizer_window._on_save_icon()
+                mock_write.assert_not_called()
+
+    def test_save_icon_success(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test successful icon save.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        mock_template = MagicMock()
+        mock_template.code = "TestItem"
+        mock_template.crated = False
+        mock_template.resolution.value = "1080"
+        mock_template.image = np.zeros((32, 32, 3), dtype=np.uint8)
+        visualizer_window.selected_template = (0, mock_template)
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getSaveFileName",
+            return_value=("/tmp/test.png", ""),
+        ) as mock_dialog:
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.cv2.imwrite"
+            ) as mock_write:
+                with patch(
+                    "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.information"
+                ) as mock_info:
+                    visualizer_window._on_save_icon()
+
+                    # Verify default filename doesn't have _crated
+                    call_args = mock_dialog.call_args
+                    assert call_args[0][2] == "TestItem_1080p.png"
+
+                    mock_write.assert_called_once()
+                    mock_info.assert_called_once()
+
+    def test_save_icon_crated_filename(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test save icon uses _crated suffix for crated items.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        mock_template = MagicMock()
+        mock_template.code = "TestItem"
+        mock_template.crated = True
+        mock_template.resolution.value = "1080"
+        mock_template.image = np.zeros((32, 32, 3), dtype=np.uint8)
+        visualizer_window.selected_template = (0, mock_template)
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getSaveFileName",
+            return_value=("/tmp/test.png", ""),
+        ) as mock_dialog:
+            with patch("foxhole_stockpiles.gui.windows.database_visualizer_window.cv2.imwrite"):
+                with patch(
+                    "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.information"
+                ):
+                    visualizer_window._on_save_icon()
+
+                    # Verify default filename has _crated suffix
+                    call_args = mock_dialog.call_args
+                    assert call_args[0][2] == "TestItem_crated_1080p.png"
+
+    def test_save_icon_error(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test error handling when save fails.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        mock_template = MagicMock()
+        mock_template.code = "TestItem"
+        mock_template.resolution.value = "1080"
+        mock_template.image = np.zeros((32, 32, 3), dtype=np.uint8)
+        visualizer_window.selected_template = (0, mock_template)
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getSaveFileName",
+            return_value=("/tmp/test.png", ""),
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.cv2.imwrite",
+                side_effect=Exception("Write failed"),
+            ):
+                with patch(
+                    "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.critical"
+                ) as mock_critical:
+                    visualizer_window._on_save_icon()
+                    mock_critical.assert_called_once()
+
+
+class TestDatabaseVisualizerWindowDeleteIcon:
+    """Tests for delete icon functionality."""
+
+    def test_delete_button_disabled_initially(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test delete button is disabled when no template selected.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        assert not visualizer_window.delete_button.isEnabled()
+
+    def test_delete_icon_no_selection_returns_early(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test delete icon returns early when no template selected.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        visualizer_window.selected_template = None
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.question"
+        ) as mock_dialog:
+            visualizer_window._on_delete_icon()
+            mock_dialog.assert_not_called()
+
+    def test_delete_icon_cancelled_returns_early(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test delete icon returns early when user cancels confirmation.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        mock_template = MagicMock()
+        mock_template.code = "TestItem"
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/tmp/test.pkl"
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.question",
+            return_value=QMessageBox.StandardButton.No,
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.IconManager"
+            ) as mock_manager:
+                visualizer_window._on_delete_icon()
+                mock_manager.assert_not_called()
+
+    def test_delete_icon_success(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test successful icon delete.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        mock_template = MagicMock()
+        mock_template.code = "TestItem"
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/tmp/test.pkl"
+        mock_database = MagicMock()
+        mock_database.templates = []
+        visualizer_window.all_databases = {SupportedResolution.R_1080: mock_database}
+        visualizer_window.database = mock_database
+
+        # Mock get_settings to return proper OCR settings
+        mock_settings = MagicMock()
+        mock_settings.ocr.box_height = 64
+        mock_settings.ocr.height = 2160
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.get_settings",
+            return_value=mock_settings,
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.question",
+                return_value=QMessageBox.StandardButton.Yes,
+            ):
+                with patch("foxhole_stockpiles.gui.windows.database_visualizer_window.IconManager"):
+                    with patch(
+                        "foxhole_stockpiles.gui.windows.database_visualizer_window.TemplateManager.save_single_resolution"
+                    ):
+                        with patch(
+                            "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.information"
+                        ):
+                            visualizer_window._on_delete_icon()
+
+                            # Verify selection was cleared and buttons disabled
+                            assert visualizer_window.selected_template is None
+                            assert not visualizer_window.save_button.isEnabled()
+                            assert not visualizer_window.replace_button.isEnabled()
+                            assert not visualizer_window.delete_button.isEnabled()
+
+    def test_delete_icon_error(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test error handling when delete fails.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        mock_template = MagicMock()
+        mock_template.code = "TestItem"
+        visualizer_window.selected_template = (0, mock_template)
+        visualizer_window.current_resolution = SupportedResolution.R_1080
+        visualizer_window.database_path = "/tmp/test.pkl"
+        visualizer_window.all_databases = {SupportedResolution.R_1080: MagicMock()}
+
+        # Mock get_settings to return proper OCR settings
+        mock_settings = MagicMock()
+        mock_settings.ocr.box_height = 64
+        mock_settings.ocr.height = 2160
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.get_settings",
+            return_value=mock_settings,
+        ):
+            with patch(
+                "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.question",
+                return_value=QMessageBox.StandardButton.Yes,
+            ):
+                with patch(
+                    "foxhole_stockpiles.gui.windows.database_visualizer_window.IconManager",
+                    side_effect=Exception("Delete failed"),
+                ):
+                    with patch(
+                        "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.critical"
+                    ) as mock_critical:
+                        visualizer_window._on_delete_icon()
+                        mock_critical.assert_called_once()
+
+
+class TestDatabaseVisualizerWindowFilterPreservation:
+    """Tests for filter state preservation during reload."""
+
+    def test_get_current_filter_state(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test getting current filter state.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        visualizer_window.code_filter.setText("TestCode")
+        visualizer_window.crated_normal.setChecked(True)
+        visualizer_window.crated_all.setChecked(False)
+
+        state = visualizer_window._get_current_filter_state()
+
+        assert state["code"] == "TestCode"
+        assert state["crated_normal"] is True
+        assert state["crated_all"] is False
+
+    def test_restore_filter_state(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test restoring filter state.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        state = {
+            "resolution": None,
+            "code": "RestoredCode",
+            "faction": None,
+            "category": None,
+            "mod": None,
+            "crated_all": False,
+            "crated_normal": True,
+            "crated_crated": False,
+        }
+
+        visualizer_window._restore_filter_state(state)  # type: ignore[arg-type]
+
+        assert visualizer_window.code_filter.text() == "RestoredCode"
+        assert visualizer_window.crated_normal.isChecked() is True
+        assert visualizer_window.crated_all.isChecked() is False
+
+    def test_restore_filter_state_with_all_filters(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test restoring filter state with all filter values set.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        # First populate the combo boxes with data
+        visualizer_window.resolution_filter.clear()
+        visualizer_window.resolution_filter.addItem("1080p", SupportedResolution.R_1080)
+        visualizer_window.resolution_filter.addItem("1440p", SupportedResolution.R_1440)
+
+        # Mod filter needs items
+        visualizer_window.mod_filter.clear()
+        visualizer_window.mod_filter.addItem("All", "")
+        visualizer_window.mod_filter.addItem("vanilla", "vanilla")
+        visualizer_window.mod_filter.addItem("testmod", "testmod")
+
+        state = {
+            "resolution": SupportedResolution.R_1440,
+            "code": "FilteredCode",
+            "faction": ItemFaction.COLONIALS,
+            "category": ItemCategory.Vehicle,
+            "mod": "testmod",
+            "crated_all": False,
+            "crated_normal": False,
+            "crated_crated": True,
+        }
+
+        visualizer_window._restore_filter_state(state)
+
+        # Check resolution was restored
+        assert visualizer_window.resolution_filter.currentData() == SupportedResolution.R_1440
+
+        # Check code was restored
+        assert visualizer_window.code_filter.text() == "FilteredCode"
+
+        # Check faction was restored
+        assert visualizer_window.faction_filter.currentData() == ItemFaction.COLONIALS
+
+        # Check category was restored
+        assert visualizer_window.category_filter.currentData() == ItemCategory.Vehicle
+
+        # Check mod was restored
+        assert visualizer_window.mod_filter.currentData() == "testmod"
+
+        # Check crated was restored
+        assert visualizer_window.crated_crated.isChecked() is True
+
+    def test_reload_preserving_filters_clears_selection(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test that reload clears selection and disables buttons.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        visualizer_window.database_path = "/tmp/test.pkl"
+        visualizer_window.selected_template = (0, MagicMock())
+        visualizer_window.save_button.setEnabled(True)
+        visualizer_window.replace_button.setEnabled(True)
+        visualizer_window.delete_button.setEnabled(True)
+
+        with patch.object(visualizer_window, "load_databases"):
+            visualizer_window._reload_preserving_filters()
+
+        assert visualizer_window.selected_template is None
+        assert not visualizer_window.save_button.isEnabled()
+        assert not visualizer_window.replace_button.isEnabled()
+        assert not visualizer_window.delete_button.isEnabled()
+
+    def test_on_databases_loaded_restores_filters(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test that database load restores pending filter state.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        visualizer_window._pending_filter_state = {
+            "resolution": SupportedResolution.R_1080,
+            "code": "SavedCode",
+            "faction": None,
+            "category": None,
+            "mod": None,
+            "crated_all": True,
+            "crated_normal": False,
+            "crated_crated": False,
+        }
+
+        mock_db = MagicMock()
+        mock_db.templates = []
+        all_databases = {SupportedResolution.R_1080: mock_db}
+
+        with patch.object(visualizer_window, "_restore_filter_state") as mock_restore:
+            visualizer_window._on_databases_loaded(all_databases)  # type: ignore[arg-type]
+            mock_restore.assert_called_once()
+
+        assert visualizer_window._pending_filter_state is None
 
 
 class TestDatabaseVisualizerWindowCloseEvent:

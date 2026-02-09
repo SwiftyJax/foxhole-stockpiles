@@ -6,9 +6,7 @@ update operations.
 """
 
 import argparse
-import pickle
 from pathlib import Path
-from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 import cv2
@@ -22,11 +20,12 @@ from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.services.icon_manager import IconManager
 from foxhole_stockpiles.services.template_database import TemplateDatabase
+from foxhole_stockpiles.services.template_manager import TemplateManager
 
 
 @pytest.fixture
 def sample_database_file(tmp_path: Path) -> Path:
-    """Create a sample database file for testing.
+    """Create a sample HDF5 database file for testing.
 
     Args:
         tmp_path (Path): Temporary directory path from pytest fixture.
@@ -34,12 +33,14 @@ def sample_database_file(tmp_path: Path) -> Path:
     Returns:
         Path: Path to the created sample database file.
     """
-    db_path = tmp_path / "test_database.pkl"
+    db_path = tmp_path / "test_database.h5"
 
     # Create databases with actual templates
     databases: dict[SupportedResolution, TemplateDatabase] = {}
 
     for resolution in [SupportedResolution.R_1080, SupportedResolution.R_1440]:
+        # Calculate expected icon size for this resolution
+        icon_size = int((64 / 2160) * int(resolution.value))
         db = TemplateDatabase(resolution)
 
         # Add a sample template
@@ -50,15 +51,14 @@ def sample_database_file(tmp_path: Path) -> Path:
             crated=False,
             mod="vanilla",
             resolution=resolution,
-            image=np.zeros((32, 32, 3), dtype=np.uint8),
+            image=np.zeros((icon_size, icon_size, 3), dtype=np.uint8),
             phash=0,
         )
         db.add_template(template)
         databases[resolution] = db
 
-    # Save to file
-    with open(db_path, "wb") as f:
-        pickle.dump(databases, f, protocol=pickle.HIGHEST_PROTOCOL)
+    # Save to HDF5 file using TemplateManager
+    TemplateManager.save_databases_to_hdf5(databases=databases, output_path=db_path, workers=1)
 
     return db_path
 
@@ -98,35 +98,23 @@ class TestIconManagerInitialization:
         Args:
             sample_database_file (Path): Sample database file from fixture.
         """
-        adder = IconManager(database_path=sample_database_file)
+        # Load databases using TemplateManager
+        template_manager = TemplateManager(database_path=sample_database_file)
+        databases = await template_manager.load_all_resolutions()
+
+        adder = IconManager(
+            database_path=sample_database_file, databases=databases, icon_scale=64 / 2160
+        )
 
         assert adder.database_path == sample_database_file
         assert len(adder.databases) == 2
         assert SupportedResolution.R_1080 in adder.databases
         assert SupportedResolution.R_1440 in adder.databases
 
-    async def test_initialization_with_nonexistent_database(self, tmp_path: Path) -> None:
-        """Test IconManager initialization with nonexistent database.
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        db_path = tmp_path / "nonexistent.pkl"
-
-        with pytest.raises(FileNotFoundError, match="Database file not found"):
-            IconManager(database_path=db_path)
-
-    async def test_initialization_with_invalid_database(self, tmp_path: Path) -> None:
-        """Test IconManager initialization with invalid database file.
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        db_path = tmp_path / "invalid.pkl"
-        db_path.write_text("invalid content")
-
-        with pytest.raises(ValueError, match="Failed to load database"):
-            IconManager(database_path=db_path)
+    async def test_initialization_with_empty_databases_dict(self) -> None:
+        """Test IconManager initialization with empty databases dict."""
+        with pytest.raises(ValueError, match="Databases dictionary cannot be empty"):
+            IconManager(database_path=Path("/tmp/test.h5"), databases={}, icon_scale=64 / 2160)
 
     async def test_initialization_with_empty_database(self, tmp_path: Path) -> None:
         """Test IconManager initialization with empty database.
@@ -134,14 +122,22 @@ class TestIconManagerInitialization:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "empty.pkl"
+        db_path = tmp_path / "empty.h5"
 
-        # Create empty database
-        with open(db_path, "wb") as f:
-            pickle.dump({}, f)
+        # Create empty HDF5 database
+        TemplateManager.save_databases_to_hdf5(
+            databases={SupportedResolution.R_1080: TemplateDatabase(SupportedResolution.R_1080)},
+            output_path=db_path,
+            workers=1,
+        )
 
-        with pytest.raises(ValueError, match="No databases found"):
-            IconManager(database_path=db_path)
+        # Load databases using TemplateManager
+        template_manager = TemplateManager(database_path=db_path)
+        databases = await template_manager.load_all_resolutions()
+
+        # IconManager should load but database will be empty
+        adder = IconManager(database_path=db_path, databases=databases, icon_scale=64 / 2160)
+        assert len(adder.databases[SupportedResolution.R_1080].templates) == 0
 
 
 class TestIconManagerMethods:
@@ -152,7 +148,7 @@ class TestIconManagerMethods:
     """
 
     @pytest.fixture
-    def adder(self, sample_database_file: Path) -> IconManager:
+    async def adder(self, sample_database_file: Path) -> IconManager:
         """Create an IconManager instance for testing.
 
         Args:
@@ -161,7 +157,11 @@ class TestIconManagerMethods:
         Returns:
             IconManager: Configured adder instance for testing.
         """
-        return IconManager(database_path=sample_database_file)
+        template_manager = TemplateManager(database_path=sample_database_file)
+        databases = await template_manager.load_all_resolutions()
+        return IconManager(
+            database_path=sample_database_file, databases=databases, icon_scale=64 / 2160
+        )
 
     async def test_add_icon_success(self, adder: IconManager, sample_icon_file: Path) -> None:
         """Test adding icon successfully.
@@ -455,17 +455,21 @@ class TestIconManagerMethods:
         # Check that the new image has green pixels (from new icon)
         assert np.any(template.image[:, :, 1] > 200)  # Green channel
 
-    async def test_save_databases(self, adder: IconManager, sample_icon_file: Path) -> None:
-        """Test saving databases to file.
+    async def test_add_icon_from_image_success(self, adder: IconManager) -> None:
+        """Test adding icon directly from image array.
 
         Args:
             adder (IconManager): IconManager instance from fixture.
-            sample_icon_file (Path): Sample icon file from fixture.
         """
-        # Add an icon
-        await adder.add_icon(
-            icon_path=sample_icon_file,
-            item_code="SaveTest",
+        initial_count = len(adder.databases[SupportedResolution.R_1080].templates)
+
+        # Create a 32x32 BGR image
+        icon_image = np.zeros((32, 32, 3), dtype=np.uint8)
+        icon_image[:, :, 2] = 128  # Red channel
+
+        adder.add_icon_from_image(
+            icon_image=icon_image,
+            item_code="FromImage",
             faction=ItemFaction.NEUTRAL,
             category=ItemCategory.Item,
             crated=False,
@@ -473,50 +477,186 @@ class TestIconManagerMethods:
             resolution=SupportedResolution.R_1080,
         )
 
-        # Save databases
-        await adder.save_databases()
+        final_count = len(adder.databases[SupportedResolution.R_1080].templates)
+        assert final_count == initial_count + 1
 
-        # Verify file exists
-        assert adder.database_path.exists()
-
-        # Verify backup was removed
-        backup_path = adder.database_path.with_suffix(adder.database_path.suffix + ".backup")
-        assert not backup_path.exists()
-
-        # Verify can load saved database
-        with open(adder.database_path, "rb") as f:
-            loaded_databases = pickle.load(f)
-
-        assert len(loaded_databases) == 2
-        assert SupportedResolution.R_1080 in loaded_databases
-
-    async def test_save_databases_creates_backup(self, adder: IconManager) -> None:
-        """Test that save_databases creates backup before saving.
+    async def test_add_icon_from_image_wrong_dimensions(self, adder: IconManager) -> None:
+        """Test add icon from image with wrong dimensions.
 
         Args:
             adder (IconManager): IconManager instance from fixture.
         """
-        adder.database_path.with_suffix(adder.database_path.suffix + ".backup")
+        # Create wrong size image (64x64 instead of 32x32 for 1080p)
+        icon_image = np.zeros((64, 64, 3), dtype=np.uint8)
 
-        # Mock the write to fail after backup creation
-        original_open = open
+        with pytest.raises(ValueError, match="incorrect dimensions"):
+            adder.add_icon_from_image(
+                icon_image=icon_image,
+                item_code="WrongSize",
+                faction=ItemFaction.NEUTRAL,
+                category=ItemCategory.Item,
+                crated=False,
+                mod="vanilla",
+                resolution=SupportedResolution.R_1080,
+            )
 
-        def mock_open(*args: Any, **kwargs: Any) -> Any:
-            path = str(args[0]) if args else ""
-            if "wb" in args or kwargs.get("mode") == "wb":
-                if not path.endswith(".backup"):
-                    # Simulate failure during save
-                    raise OSError("Simulated save failure")
-            return original_open(*args, **kwargs)
+    async def test_add_icon_from_image_invalid_resolution(self, adder: IconManager) -> None:
+        """Test add icon from image with resolution not in database.
 
-        with patch("builtins.open", side_effect=mock_open):
-            try:
-                await adder.save_databases()
-            except ValueError:
-                pass  # Expected to fail
+        Args:
+            adder (IconManager): IconManager instance from fixture.
+        """
+        icon_image = np.zeros((64, 64, 3), dtype=np.uint8)
 
-        # Original database should still exist (backup restored)
-        assert adder.database_path.exists()
+        with pytest.raises(ValueError, match="Resolution .* not found in database"):
+            adder.add_icon_from_image(
+                icon_image=icon_image,
+                item_code="Test",
+                faction=ItemFaction.NEUTRAL,
+                category=ItemCategory.Item,
+                crated=False,
+                mod="vanilla",
+                resolution=SupportedResolution.R_2160,  # Not in test database
+            )
+
+    async def test_add_icon_from_image_replace(self, adder: IconManager) -> None:
+        """Test replacing icon using add_icon_from_image.
+
+        Args:
+            adder (IconManager): IconManager instance from fixture.
+        """
+        # First add an icon
+        icon_image = np.zeros((32, 32, 3), dtype=np.uint8)
+        icon_image[:, :, 2] = 100  # Red
+
+        adder.add_icon_from_image(
+            icon_image=icon_image,
+            item_code="ReplaceFromImage",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+        )
+
+        initial_count = len(adder.databases[SupportedResolution.R_1080].templates)
+
+        # Replace with different image
+        new_icon = np.zeros((32, 32, 3), dtype=np.uint8)
+        new_icon[:, :, 1] = 255  # Green
+
+        adder.add_icon_from_image(
+            icon_image=new_icon,
+            item_code="ReplaceFromImage",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            replace=True,
+        )
+
+        final_count = len(adder.databases[SupportedResolution.R_1080].templates)
+        assert final_count == initial_count
+
+    async def test_add_icon_from_image_duplicate_without_replace(self, adder: IconManager) -> None:
+        """Test adding duplicate icon from image without replace flag.
+
+        Args:
+            adder (IconManager): IconManager instance from fixture.
+        """
+        icon_image = np.zeros((32, 32, 3), dtype=np.uint8)
+
+        adder.add_icon_from_image(
+            icon_image=icon_image,
+            item_code="DuplicateImage",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+        )
+
+        with pytest.raises(ValueError, match="Icon already exists"):
+            adder.add_icon_from_image(
+                icon_image=icon_image,
+                item_code="DuplicateImage",
+                faction=ItemFaction.NEUTRAL,
+                category=ItemCategory.Item,
+                crated=False,
+                mod="vanilla",
+                resolution=SupportedResolution.R_1080,
+            )
+
+    async def test_delete_icon_success(self, adder: IconManager, sample_icon_file: Path) -> None:
+        """Test deleting an icon successfully.
+
+        Args:
+            adder (IconManager): IconManager instance from fixture.
+            sample_icon_file (Path): Sample icon file from fixture.
+        """
+        # First add an icon
+        await adder.add_icon(
+            icon_path=sample_icon_file,
+            item_code="DeleteTest",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+        )
+
+        initial_count = len(adder.databases[SupportedResolution.R_1080].templates)
+
+        # Now delete it
+        adder.delete_icon(
+            item_code="DeleteTest",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+        )
+
+        # Verify count decreased
+        final_count = len(adder.databases[SupportedResolution.R_1080].templates)
+        assert final_count == initial_count - 1
+
+        # Verify template no longer exists
+        for template in adder.databases[SupportedResolution.R_1080].templates:
+            assert template.code != "DeleteTest"
+
+    async def test_delete_icon_not_found(self, adder: IconManager) -> None:
+        """Test deleting a non-existent icon raises error.
+
+        Args:
+            adder (IconManager): IconManager instance from fixture.
+        """
+        with pytest.raises(ValueError, match="Icon not found"):
+            adder.delete_icon(
+                item_code="NonExistent",
+                faction=ItemFaction.NEUTRAL,
+                category=ItemCategory.Item,
+                crated=False,
+                mod="vanilla",
+                resolution=SupportedResolution.R_1080,
+            )
+
+    async def test_delete_icon_invalid_resolution(self, adder: IconManager) -> None:
+        """Test deleting icon with resolution not in database.
+
+        Args:
+            adder (IconManager): IconManager instance from fixture.
+        """
+        with pytest.raises(ValueError, match="Resolution .* not found in database"):
+            adder.delete_icon(
+                item_code="TestItem",
+                faction=ItemFaction.NEUTRAL,
+                category=ItemCategory.Item,
+                crated=False,
+                mod="vanilla",
+                resolution=SupportedResolution.R_2160,  # Not in test database
+            )
 
 
 class TestMainFunction:
@@ -564,19 +704,18 @@ class TestMainFunction:
         # Mock adder instance
         mock_adder = MagicMock()
         mock_adder.add_icon = AsyncMock(return_value=None)
-        mock_adder.save_databases = AsyncMock(return_value=None)
         mock_adder_class.return_value = mock_adder
 
         await main()
 
-        # Verify IconManager was instantiated
-        mock_adder_class.assert_called_once_with(database_path=sample_database_file)
+        # Verify IconManager was instantiated with database_path and databases
+        mock_adder_class.assert_called_once()
+        call_kwargs = mock_adder_class.call_args.kwargs
+        assert call_kwargs["database_path"] == sample_database_file
+        assert "databases" in call_kwargs
 
         # Verify add_icon was called
         assert mock_adder.add_icon.call_count == 1
-
-        # Verify save_databases was called
-        mock_adder.save_databases.assert_called_once()
 
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconManager")
@@ -616,7 +755,6 @@ class TestMainFunction:
         # Mock adder instance
         mock_adder = MagicMock()
         mock_adder.add_icon = AsyncMock(return_value=None)
-        mock_adder.save_databases = AsyncMock(return_value=None)
         mock_adder_class.return_value = mock_adder
 
         await main()
@@ -662,7 +800,6 @@ class TestMainFunction:
         # Mock adder instance
         mock_adder = MagicMock()
         mock_adder.add_icon = AsyncMock(return_value=None)
-        mock_adder.save_databases = AsyncMock(return_value=None)
         mock_adder_class.return_value = mock_adder
 
         await main()
@@ -709,7 +846,6 @@ class TestMainFunction:
         # Mock adder instance
         mock_adder = MagicMock()
         mock_adder.add_icon = AsyncMock(return_value=None)
-        mock_adder.save_databases = AsyncMock(return_value=None)
         mock_adder_class.return_value = mock_adder
 
         await main()
@@ -754,7 +890,6 @@ class TestMainFunction:
         # Mock adder instance
         mock_adder = MagicMock()
         mock_adder.add_icon = AsyncMock(return_value=None)
-        mock_adder.save_databases = AsyncMock(return_value=None)
         mock_adder_class.return_value = mock_adder
 
         # Should raise SystemExit due to parser.error()
@@ -812,7 +947,6 @@ class TestMainFunction:
             # Mock adder instance
             mock_adder = MagicMock()
             mock_adder.add_icon = AsyncMock(return_value=None)
-            mock_adder.save_databases = AsyncMock(return_value=None)
             mock_adder_class.return_value = mock_adder
 
             await main()
@@ -947,10 +1081,12 @@ class TestMainFunction:
 
     @patch("argparse.ArgumentParser.parse_args")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconManager")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.TemplateManager")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.setup_logging")
     async def test_main_with_quiet_mode(
         self,
         mock_setup_logging: Mock,
+        mock_template_manager_class: Mock,
         mock_adder_class: Mock,
         mock_args: Mock,
         tmp_path: Path,
@@ -959,11 +1095,12 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_template_manager_class (Mock): Mocked TemplateManager class.
             mock_adder_class (Mock): Mocked IconManager class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         icon_path = tmp_path / "icon.png"
@@ -973,7 +1110,6 @@ class TestMainFunction:
             database=db_path,
             icon=icon_path,
             code="TestItem",
-            name="Test Item",
             faction="w",
             category="item",
             crated=False,
@@ -985,10 +1121,14 @@ class TestMainFunction:
             log_file=None,
         )
 
+        # Mock template manager
+        mock_template_manager = MagicMock()
+        mock_template_manager.load_all_resolutions = AsyncMock(return_value={})
+        mock_template_manager_class.return_value = mock_template_manager
+
         # Mock adder instance
         mock_adder = MagicMock()
         mock_adder.add_icon = AsyncMock(return_value=None)
-        mock_adder.save_databases = AsyncMock(return_value=None)
         mock_adder_class.return_value = mock_adder
 
         await main()

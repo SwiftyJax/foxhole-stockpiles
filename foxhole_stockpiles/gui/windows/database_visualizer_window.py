@@ -5,12 +5,15 @@ import logging
 from pathlib import Path
 
 import cv2
+import numpy as np
+from PIL import Image
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtGui import QFont, QImage, QPixmap
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
+    QFileDialog,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -18,6 +21,7 @@ from PyQt6.QtWidgets import (
     QLineEdit,
     QListWidget,
     QListWidgetItem,
+    QMessageBox,
     QProgressBar,
     QPushButton,
     QScrollArea,
@@ -26,11 +30,13 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 from foxhole_stockpiles.models.icon_template import IconTemplate
+from foxhole_stockpiles.services.icon_manager import IconManager
 from foxhole_stockpiles.services.template_database import TemplateDatabase
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
@@ -92,6 +98,8 @@ class DatabaseVisualizerWindow(QDialog):
         self.filtered_templates: list[tuple[int, IconTemplate]] = []
         self.all_templates: list[tuple[int, IconTemplate]] = []
         self.loader_thread: DatabaseLoader | None = None
+        self.selected_template: tuple[int, IconTemplate] | None = None
+        self._pending_filter_state: dict[str, object] | None = None
 
         self.init_ui()
 
@@ -149,6 +157,9 @@ class DatabaseVisualizerWindow(QDialog):
         self.crated_crated.setText(t("database_visualizer.crated_crated"))
         self.clear_button.setText(t("database_visualizer.clear_filters"))
         self.info_label.setText(t("database_visualizer.select_template"))
+        self.save_button.setText(t("database_visualizer.save_icon"))
+        self.replace_button.setText(t("database_visualizer.replace_icon"))
+        self.delete_button.setText(t("database_visualizer.delete_icon"))
         self.image_group.setTitle(t("database_visualizer.template_comparison"))
         self.current_group.setTitle(t("database_visualizer.current_resolution"))
         self.highest_group.setTitle(t("database_visualizer.highest_resolution"))
@@ -259,7 +270,9 @@ class DatabaseVisualizerWindow(QDialog):
         panel = QWidget()
         layout = QVBoxLayout(panel)
 
-        # Template info
+        # Template info and action buttons in horizontal layout
+        info_layout = QHBoxLayout()
+
         self.info_label = QLabel()
         self.info_label.setFont(QFont("Arial", 10))
         self.info_label.setWordWrap(True)
@@ -267,7 +280,35 @@ class DatabaseVisualizerWindow(QDialog):
             "QLabel { background-color: palette(alternate-base); padding: 10px; "
             "border: 1px solid palette(mid); }"
         )
-        layout.addWidget(self.info_label)
+        info_layout.addWidget(self.info_label, stretch=1)
+
+        # Action buttons layout
+        buttons_layout = QVBoxLayout()
+
+        # Save icon button
+        self.save_button = QPushButton()
+        self.save_button.setEnabled(False)
+        self.save_button.setMinimumWidth(120)
+        self.save_button.clicked.connect(self._on_save_icon)
+        buttons_layout.addWidget(self.save_button)
+
+        # Replace icon button
+        self.replace_button = QPushButton()
+        self.replace_button.setEnabled(False)
+        self.replace_button.setMinimumWidth(120)
+        self.replace_button.clicked.connect(self._on_replace_icon)
+        buttons_layout.addWidget(self.replace_button)
+
+        # Delete icon button
+        self.delete_button = QPushButton()
+        self.delete_button.setEnabled(False)
+        self.delete_button.setMinimumWidth(120)
+        self.delete_button.clicked.connect(self._on_delete_icon)
+        buttons_layout.addWidget(self.delete_button)
+
+        info_layout.addLayout(buttons_layout)
+
+        layout.addLayout(info_layout)
 
         # Image comparison area
         self.image_group = QGroupBox()
@@ -330,6 +371,12 @@ class DatabaseVisualizerWindow(QDialog):
 
     def _on_resolution_changed(self) -> None:
         """Handle resolution change."""
+        # Clear selected template when resolution changes
+        self.selected_template = None
+        self.save_button.setEnabled(False)
+        self.replace_button.setEnabled(False)
+        self.delete_button.setEnabled(False)
+
         resolution = self.resolution_filter.currentData()
         if resolution and resolution in self.all_databases:
             self.current_resolution = resolution
@@ -393,8 +440,15 @@ class DatabaseVisualizerWindow(QDialog):
         for resolution in available_resolutions:
             self.resolution_filter.addItem(f"{resolution.value}p", resolution)
 
-        # Select first resolution by default
-        if available_resolutions:
+        # Check if we have a pending filter state to restore
+        pending_state = getattr(self, "_pending_filter_state", None)
+
+        if pending_state:
+            # Restore filter state
+            self._restore_filter_state(pending_state)
+            self._pending_filter_state = None
+        elif available_resolutions:
+            # Select first resolution by default
             self.resolution_filter.setCurrentIndex(0)
             # This will trigger _on_resolution_changed
 
@@ -488,6 +542,12 @@ class DatabaseVisualizerWindow(QDialog):
             item (QListWidgetItem): The selected list item.
         """
         idx, template = item.data(Qt.ItemDataRole.UserRole)
+
+        # Store selected template and enable action buttons
+        self.selected_template = (idx, template)
+        self.save_button.setEnabled(True)
+        self.replace_button.setEnabled(True)
+        self.delete_button.setEnabled(True)
 
         # Find highest resolution available
         highest_resolution = max(self.all_databases.keys(), key=lambda x: int(x.value))
@@ -636,6 +696,293 @@ class DatabaseVisualizerWindow(QDialog):
             t("database_visualizer.current_resolution_scale")
             .replace("{resolution}", current_template.resolution.value)
             .replace("{scale}", f"{current_scale:.1f}")
+        )
+
+    def _on_replace_icon(self) -> None:
+        """Handle replace icon button click."""
+        if not self.selected_template or not self.current_resolution or not self.database_path:
+            return
+
+        _idx, template = self.selected_template
+
+        # Open file dialog to select new icon
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            t("database_visualizer.select_replacement_icon"),
+            "",
+            "PNG Files (*.png);;All Files (*)",
+        )
+
+        if not file_path:
+            return
+
+        # Calculate expected icon size for this resolution
+        ocr_settings = get_settings().ocr
+        expected_size = int(
+            ocr_settings.box_height * int(self.current_resolution.value) / ocr_settings.height
+        )
+
+        # Load the image
+        try:
+            loaded_image = Image.open(file_path)
+        except Exception as e:
+            self._show_replace_error(str(e))
+            return
+
+        # Convert to RGB if necessary (handle RGBA, palette, etc.)
+        if loaded_image.mode == "RGBA":
+            background = Image.new("RGB", loaded_image.size, (0, 0, 0))
+            background.paste(loaded_image, mask=loaded_image.split()[3])
+            pil_image: Image.Image = background
+        elif loaded_image.mode != "RGB":
+            pil_image = loaded_image.convert("RGB")
+        else:
+            pil_image = loaded_image
+
+        # Resize to expected size using high-quality resampling
+        if pil_image.size != (expected_size, expected_size):
+            pil_image = pil_image.resize(
+                (expected_size, expected_size),
+                Image.Resampling.LANCZOS,
+            )
+
+        # Convert to OpenCV format (BGR)
+        rgb_array = np.array(pil_image)
+        bgr_array = cv2.cvtColor(rgb_array, cv2.COLOR_RGB2BGR)
+
+        # Replace the icon in the database
+        try:
+            ocr = get_settings().ocr
+            manager = IconManager(
+                database_path=Path(self.database_path),
+                databases=self.all_databases,
+                icon_scale=ocr.box_height / ocr.height,
+            )
+            manager.add_icon_from_image(
+                icon_image=bgr_array,
+                item_code=template.code,
+                faction=template.faction,
+                category=template.category,
+                crated=template.crated,
+                mod=template.mod,
+                resolution=self.current_resolution,
+                replace=True,
+            )
+            TemplateManager.save_single_resolution(
+                database=self.all_databases[self.current_resolution],
+                resolution=self.current_resolution,
+                output_path=Path(self.database_path),
+            )
+        except Exception as e:
+            self._show_replace_error(str(e))
+            return
+
+        # Show success message
+        QMessageBox.information(
+            self,
+            t("database_visualizer.replace_success_title"),
+            t("database_visualizer.replace_success_message").replace("{code}", template.code),
+        )
+
+        # Update the UI without full reload
+        self._apply_filters()
+
+    def _on_save_icon(self) -> None:
+        """Handle save icon button click."""
+        if not self.selected_template:
+            return
+
+        _idx, template = self.selected_template
+
+        # Open file dialog to select save location
+        crated_suffix = "_crated" if template.crated else ""
+        default_name = f"{template.code}{crated_suffix}_{template.resolution.value}p.png"
+        file_path, _ = QFileDialog.getSaveFileName(
+            self,
+            t("database_visualizer.save_icon_dialog"),
+            default_name,
+            "PNG Files (*.png);;All Files (*)",
+        )
+
+        if not file_path:
+            return
+
+        # Save the icon image
+        try:
+            cv2.imwrite(file_path, template.image)
+        except Exception as e:
+            logger.exception("Failed to save icon")
+            QMessageBox.critical(
+                self,
+                t("database_visualizer.save_error_title"),
+                t("database_visualizer.save_error_message").replace("{error}", str(e)),
+            )
+            return
+
+        QMessageBox.information(
+            self,
+            t("database_visualizer.save_success_title"),
+            t("database_visualizer.save_success_message").replace("{path}", file_path),
+        )
+
+    def _on_delete_icon(self) -> None:
+        """Handle delete icon button click."""
+        if not self.selected_template or not self.current_resolution or not self.database_path:
+            return
+
+        _idx, template = self.selected_template
+
+        # Ask for confirmation
+        reply = QMessageBox.question(
+            self,
+            t("database_visualizer.delete_confirm_title"),
+            t("database_visualizer.delete_confirm_message")
+            .replace("{code}", template.code)
+            .replace("{resolution}", self.current_resolution.value),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+
+        if reply != QMessageBox.StandardButton.Yes:
+            return
+
+        # Delete the icon from the database
+        try:
+            ocr = get_settings().ocr
+            manager = IconManager(
+                database_path=Path(self.database_path),
+                databases=self.all_databases,
+                icon_scale=ocr.box_height / ocr.height,
+            )
+            manager.delete_icon(
+                item_code=template.code,
+                faction=template.faction,
+                category=template.category,
+                crated=template.crated,
+                mod=template.mod,
+                resolution=self.current_resolution,
+            )
+            TemplateManager.save_single_resolution(
+                database=self.all_databases[self.current_resolution],
+                resolution=self.current_resolution,
+                output_path=Path(self.database_path),
+            )
+        except Exception as e:
+            logger.exception("Failed to delete icon")
+            QMessageBox.critical(
+                self,
+                t("database_visualizer.delete_error_title"),
+                t("database_visualizer.delete_error_message").replace("{error}", str(e)),
+            )
+            return
+
+        QMessageBox.information(
+            self,
+            t("database_visualizer.delete_success_title"),
+            t("database_visualizer.delete_success_message").replace("{code}", template.code),
+        )
+
+        # Clear selection and disable buttons
+        self.selected_template = None
+        self.save_button.setEnabled(False)
+        self.replace_button.setEnabled(False)
+        self.delete_button.setEnabled(False)
+
+        # Clear details panel
+        self.info_label.setText(t("database_visualizer.select_template"))
+        self.current_image.clear()
+        self.current_image.setText(t("database_visualizer.no_image_selected"))
+        self.highest_image.clear()
+        self.highest_image.setText(t("database_visualizer.no_image_selected"))
+
+        # Refresh template list from the modified database
+        if self.database:
+            self.all_templates = list(enumerate(self.database.templates))
+            self._apply_filters()
+
+    def _get_current_filter_state(self) -> dict[str, object]:
+        """Get the current state of all filters.
+
+        Returns:
+            dict[str, object]: Dictionary containing current filter values.
+        """
+        return {
+            "resolution": self.resolution_filter.currentData(),
+            "code": self.code_filter.text(),
+            "faction": self.faction_filter.currentData(),
+            "category": self.category_filter.currentData(),
+            "mod": self.mod_filter.currentData(),
+            "crated_all": self.crated_all.isChecked(),
+            "crated_normal": self.crated_normal.isChecked(),
+            "crated_crated": self.crated_crated.isChecked(),
+        }
+
+    def _restore_filter_state(self, state: dict[str, object]) -> None:
+        """Restore filter state after database reload.
+
+        Args:
+            state (dict[str, object]): Dictionary containing filter values to restore.
+        """
+        # Restore resolution
+        if state["resolution"]:
+            index = self.resolution_filter.findData(state["resolution"])
+            if index >= 0:
+                self.resolution_filter.setCurrentIndex(index)
+
+        # Restore code filter
+        self.code_filter.setText(str(state["code"]) if state["code"] else "")
+
+        # Restore faction filter
+        if state["faction"]:
+            index = self.faction_filter.findData(state["faction"])
+            if index >= 0:
+                self.faction_filter.setCurrentIndex(index)
+
+        # Restore category filter
+        if state["category"]:
+            index = self.category_filter.findData(state["category"])
+            if index >= 0:
+                self.category_filter.setCurrentIndex(index)
+
+        # Restore mod filter (handled in _on_resolution_changed, but set if available)
+        if state["mod"]:
+            index = self.mod_filter.findData(state["mod"])
+            if index >= 0:
+                self.mod_filter.setCurrentIndex(index)
+
+        # Restore crated checkboxes
+        self.crated_all.setChecked(bool(state["crated_all"]))
+        self.crated_normal.setChecked(bool(state["crated_normal"]))
+        self.crated_crated.setChecked(bool(state["crated_crated"]))
+
+    def _reload_preserving_filters(self) -> None:
+        """Reload databases while preserving current filter state."""
+        # Save current filter state
+        filter_state = self._get_current_filter_state()
+
+        # Clear selection and disable buttons
+        self.selected_template = None
+        self.save_button.setEnabled(False)
+        self.replace_button.setEnabled(False)
+        self.delete_button.setEnabled(False)
+
+        # Store filter state to restore after load completes
+        self._pending_filter_state = filter_state
+
+        # Reload databases
+        self.load_databases()
+
+    def _show_replace_error(self, error: str) -> None:
+        """Show error message for failed icon replacement.
+
+        Args:
+            error (str): Error message to display.
+        """
+        logger.exception("Failed to replace icon")
+        QMessageBox.critical(
+            self,
+            t("database_visualizer.replace_error_title"),
+            t("database_visualizer.replace_error_message").replace("{error}", error),
         )
 
     def closeEvent(self, event: object) -> None:

@@ -819,6 +819,56 @@ class TemplateManager:
             output_path.stat().st_size / (1024 * 1024),
         )
 
+    @staticmethod
+    def save_single_resolution(
+        database: TemplateDatabase,
+        resolution: SupportedResolution,
+        output_path: Path,
+    ) -> None:
+        """Save a single resolution database to an existing HDF5 file.
+
+        This is faster than save_databases_to_hdf5 when only one resolution was modified.
+
+        Args:
+            database (TemplateDatabase): Database to save
+            resolution (SupportedResolution): Resolution being saved
+            output_path (Path): Output file path (must exist)
+
+        Raises:
+            FileNotFoundError: If output file doesn't exist
+        """
+        if not output_path.exists():
+            raise FileNotFoundError(f"Database file not found: {output_path}")
+
+        logger.debug("Saving single resolution %s to HDF5 file: %s", resolution.value, output_path)
+
+        # Invalidate cache for this resolution
+        with TemplateManager._shared_lock:
+            cache_key = (output_path, resolution)
+            if cache_key in TemplateManager._shared_databases:
+                TemplateManager._shared_databases.pop(cache_key, None)
+                logger.debug("Invalidated cache for %s/%s", output_path, resolution.value)
+
+        # Prepare data for this resolution
+        prep_start = time.perf_counter()
+        prepared_data = _prepare_resolution_data(resolution, database)
+        prep_time = time.perf_counter() - prep_start
+        logger.debug("Data preparation time: %.3f seconds", prep_time)
+
+        # Update HDF5 file
+        write_start = time.perf_counter()
+        with h5py.File(str(output_path), "a") as f:
+            # Delete existing group if it exists
+            if resolution.value in f:
+                del f[resolution.value]
+
+            # Create new group with updated data
+            group = f.create_group(resolution.value)
+            _write_prepared_data_to_group(group, prepared_data)
+
+        write_time = time.perf_counter() - write_start
+        logger.debug("HDF5 write time: %.3f seconds", write_time)
+
     def needs_migration(self) -> bool:
         """Check if database needs to be migrated to current version.
 

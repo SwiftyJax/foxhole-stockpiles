@@ -2,7 +2,6 @@
 
 import asyncio
 import logging
-import pickle
 from pathlib import Path
 
 import cv2
@@ -18,51 +17,40 @@ from foxhole_stockpiles.services.template_database import TemplateDatabase
 class IconManager:
     """Manages icons in template databases (add, replace, delete)."""
 
-    def __init__(self, database_path: Path) -> None:
-        """Initialize icon manager.
+    def __init__(
+        self,
+        database_path: Path,
+        databases: dict[SupportedResolution, TemplateDatabase],
+        icon_scale: float,
+    ) -> None:
+        """Initialize icon manager with pre-loaded databases.
 
         Args:
-            database_path (Path): Path to existing database file
+            database_path (Path): Path to database file (for saving)
+            databases (dict[SupportedResolution, TemplateDatabase]): Pre-loaded databases
+            icon_scale (float): Icon scaling factor (ocr.box_height / ocr.height)
 
         Raises:
-            FileNotFoundError: If database file does not exist
-            ValueError: If database cannot be loaded
+            ValueError: If databases dict is empty
         """
         self._logger = logging.getLogger(__name__)
         self.database_path = database_path
+        self.databases = databases
+        self.icon_scale = icon_scale
 
-        if not database_path.exists():
-            raise FileNotFoundError(f"Database file not found: {database_path}")
-
-        # Load existing databases
-        self.databases = self._load_databases()
         if not self.databases:
-            raise ValueError(f"No databases found in {database_path}")
+            raise ValueError("Databases dictionary cannot be empty")
 
-    def _load_databases(self) -> dict[SupportedResolution, TemplateDatabase]:
-        """Load databases from pickle file.
+    def _calculate_icon_size(self, resolution_height: int) -> int:
+        """Calculate icon size for a given resolution.
+
+        Args:
+            resolution_height (int): Vertical resolution in pixels
 
         Returns:
-            dict[SupportedResolution, TemplateDatabase]: Loaded databases
-
-        Raises:
-            ValueError: If database file is corrupted or invalid
+            int: Icon size in pixels for the given resolution
         """
-        self._logger.debug("Loading databases from %s", self.database_path)
-
-        try:
-            with open(self.database_path, "rb") as f:
-                databases: dict[SupportedResolution, TemplateDatabase] = pickle.load(f)
-
-            self._logger.info(
-                "Loaded %d resolution databases from %s",
-                len(databases),
-                self.database_path,
-            )
-            return databases
-
-        except Exception as e:
-            raise ValueError(f"Failed to load database: {e}") from e
+        return int(self.icon_scale * resolution_height)
 
     async def add_icon(
         self,
@@ -109,8 +97,7 @@ class IconManager:
             raise ValueError(f"Failed to load icon image: {icon_path}")
 
         # Calculate expected icon size for this resolution
-        icon_scaling_factor = 64 / 2160  # 64px at 2160p
-        expected_size = int(icon_scaling_factor * int(resolution.value))
+        expected_size = self._calculate_icon_size(int(resolution.value))
 
         # Validate icon dimensions
         if icon_image.shape[0] != expected_size or icon_image.shape[1] != expected_size:
@@ -131,6 +118,17 @@ class IconManager:
             mod=mod,
         )
 
+        # Create template
+        template = IconTemplate(
+            image=icon_image.astype(numpy.uint8),
+            code=item_code,
+            crated=crated,
+            resolution=resolution,
+            faction=faction,
+            category=category,
+            mod=mod,
+        )
+
         if existing_idx is not None:
             if not replace:
                 raise ValueError(
@@ -139,13 +137,84 @@ class IconManager:
                     f"crated={crated}, mod={mod}) in resolution {resolution.value}. "
                     f"Use --replace flag to replace existing icon."
                 )
-            # Remove existing template
+            # Replace in-place to preserve position
             self._logger.debug(
                 "Replacing existing icon at index %d for '%s'", existing_idx, item_code
             )
-            database.templates.pop(existing_idx)
-            # Rebuild lookup tables after removal
-            self._rebuild_lookup_tables(database)
+            database.templates[existing_idx] = template
+        else:
+            # Add to database
+            database.add_template(template=template)
+
+        action = "Replaced" if existing_idx is not None else "Added"
+        self._logger.info(
+            "%s icon for '%s' to resolution %s (crated=%s, faction=%s, category=%s, mod=%s)",
+            action,
+            item_code,
+            resolution.value,
+            crated,
+            faction.value,
+            category.value,
+            mod,
+        )
+
+    def add_icon_from_image(
+        self,
+        icon_image: numpy.ndarray,
+        item_code: str,
+        faction: ItemFaction,
+        category: ItemCategory,
+        crated: bool,
+        mod: str,
+        resolution: SupportedResolution,
+        replace: bool = False,
+    ) -> None:
+        """Add an icon from an image array to the database (synchronous).
+
+        This is useful when the image is already loaded (e.g., in GUI applications).
+
+        Args:
+            icon_image (numpy.ndarray): Icon image as BGR numpy array
+            item_code (str): Item code name
+            faction (ItemFaction): Item faction
+            category (ItemCategory): Item category
+            crated (bool): Whether this is a crated variant
+            mod (str): Mod name
+            resolution (SupportedResolution): Target resolution
+            replace (bool): If True, replace existing icon with same metadata; if False, error
+                on duplicate
+
+        Raises:
+            ValueError: If resolution not found in database, image is invalid,
+                        or duplicate exists without replace flag
+        """
+        if resolution not in self.databases:
+            raise ValueError(
+                f"Resolution {resolution.value} not found in database. "
+                f"Available resolutions: {[r.value for r in self.databases.keys()]}"
+            )
+
+        # Calculate expected icon size for this resolution
+        expected_size = self._calculate_icon_size(int(resolution.value))
+
+        # Validate icon dimensions
+        if icon_image.shape[0] != expected_size or icon_image.shape[1] != expected_size:
+            raise ValueError(
+                f"Icon has incorrect dimensions {icon_image.shape[1]}x{icon_image.shape[0]}. "
+                f"Expected {expected_size}x{expected_size} for resolution {resolution.value}. "
+                f"Please resize the icon before adding it to the database."
+            )
+
+        # Check for existing icon with same metadata
+        database = self.databases[resolution]
+        existing_idx = self._find_existing_icon(
+            database=database,
+            item_code=item_code,
+            faction=faction,
+            category=category,
+            crated=crated,
+            mod=mod,
+        )
 
         # Create template
         template = IconTemplate(
@@ -158,13 +227,86 @@ class IconManager:
             mod=mod,
         )
 
-        # Add to database
-        database.add_template(template=template)
+        if existing_idx is not None:
+            if not replace:
+                raise ValueError(
+                    f"Icon already exists for '{item_code}' "
+                    f"(faction={faction.value}, category={category.value}, "
+                    f"crated={crated}, mod={mod}) in resolution {resolution.value}. "
+                    f"Use --replace flag to replace existing icon."
+                )
+            # Replace in-place to preserve position
+            self._logger.debug(
+                "Replacing existing icon at index %d for '%s'", existing_idx, item_code
+            )
+            database.templates[existing_idx] = template
+        else:
+            # Add to database
+            database.add_template(template=template)
 
         action = "Replaced" if existing_idx is not None else "Added"
         self._logger.info(
             "%s icon for '%s' to resolution %s (crated=%s, faction=%s, category=%s, mod=%s)",
             action,
+            item_code,
+            resolution.value,
+            crated,
+            faction.value,
+            category.value,
+            mod,
+        )
+
+    def delete_icon(
+        self,
+        item_code: str,
+        faction: ItemFaction,
+        category: ItemCategory,
+        crated: bool,
+        mod: str,
+        resolution: SupportedResolution,
+    ) -> None:
+        """Delete an icon from the database for a specific resolution.
+
+        Args:
+            item_code (str): Item code name
+            faction (ItemFaction): Item faction
+            category (ItemCategory): Item category
+            crated (bool): Whether this is a crated variant
+            mod (str): Mod name
+            resolution (SupportedResolution): Target resolution
+
+        Raises:
+            ValueError: If resolution not found in database or icon not found
+        """
+        if resolution not in self.databases:
+            raise ValueError(
+                f"Resolution {resolution.value} not found in database. "
+                f"Available resolutions: {[r.value for r in self.databases.keys()]}"
+            )
+
+        database = self.databases[resolution]
+        existing_idx = self._find_existing_icon(
+            database=database,
+            item_code=item_code,
+            faction=faction,
+            category=category,
+            crated=crated,
+            mod=mod,
+        )
+
+        if existing_idx is None:
+            raise ValueError(
+                f"Icon not found for '{item_code}' "
+                f"(faction={faction.value}, category={category.value}, "
+                f"crated={crated}, mod={mod}) in resolution {resolution.value}."
+            )
+
+        # Remove the template
+        database.templates.pop(existing_idx)
+        self._rebuild_lookup_tables(database)
+
+        self._logger.info(
+            "Deleted icon for '%s' from resolution %s (crated=%s, faction=%s, category=%s, mod=%s)",
             item_code,
             resolution.value,
             crated,
@@ -233,45 +375,3 @@ class IconManager:
             if template.category.value not in database.category_lookup:
                 database.category_lookup[template.category.value] = []
             database.category_lookup[template.category.value].append(idx)
-
-    async def save_databases(self) -> None:
-        """Save updated databases back to file."""
-        self._logger.debug("Saving databases to %s", self.database_path)
-
-        # Create backup of original database
-        backup_path = self.database_path.with_suffix(self.database_path.suffix + ".backup")
-        if self.database_path.exists():
-            await asyncio.to_thread(lambda: self.database_path.rename(backup_path))
-            self._logger.debug("Created backup at %s", backup_path)
-
-        try:
-            # Save updated database
-            def write_file() -> None:
-                """Write databases to pickle file synchronously."""
-                with open(self.database_path, "wb") as f:
-                    pickle.dump(self.databases, f, protocol=pickle.HIGHEST_PROTOCOL)
-
-            await asyncio.to_thread(write_file)
-
-            # Log statistics
-            total_templates = sum(len(db.templates) for db in self.databases.values())
-            file_size = self.database_path.stat().st_size / (1024 * 1024)  # MB
-
-            self._logger.info(
-                "Database saved: %d resolutions, %d total templates, %.1f MB",
-                len(self.databases),
-                total_templates,
-                file_size,
-            )
-
-            # Remove backup on success
-            if backup_path.exists():
-                await asyncio.to_thread(backup_path.unlink)
-                self._logger.debug("Removed backup file")
-
-        except Exception as e:
-            # Restore backup on failure
-            if backup_path.exists():
-                await asyncio.to_thread(lambda: backup_path.rename(self.database_path))
-                self._logger.error("Restored backup after save failure")
-            raise ValueError(f"Failed to save database: {e}") from e

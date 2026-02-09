@@ -338,7 +338,26 @@
       "database_index": "DB-Index:",
       "highest_res_available": "Höchste Aufl. verfügbar:",
       "highest_res_not_found": "Höchste Aufl.: Nicht gefunden bei {resolution}px"
-    }
+    },
+    "save_icon": "Symbol speichern",
+    "save_icon_dialog": "Symbol speichern unter",
+    "save_success_title": "Symbol gespeichert",
+    "save_success_message": "Symbol gespeichert unter: {path}",
+    "save_error_title": "Speichern fehlgeschlagen",
+    "save_error_message": "Fehler beim Speichern des Symbols: {error}",
+    "replace_icon": "Symbol ersetzen",
+    "select_replacement_icon": "Ersatzsymbol auswählen",
+    "replace_success_title": "Symbol ersetzt",
+    "replace_success_message": "Symbol für '{code}' erfolgreich ersetzt",
+    "replace_error_title": "Ersetzen fehlgeschlagen",
+    "replace_error_message": "Fehler beim Ersetzen des Symbols: {error}",
+    "delete_icon": "Symbol löschen",
+    "delete_confirm_title": "Löschen bestätigen",
+    "delete_confirm_message": "Sind Sie sicher, dass Sie das Symbol für '{code}' bei {resolution}p Auflösung löschen möchten?\n\nDiese Aktion kann nicht rückgängig gemacht werden.",
+    "delete_success_title": "Symbol gelöscht",
+    "delete_success_message": "Symbol für '{code}' erfolgreich gelöscht",
+    "delete_error_title": "Löschen fehlgeschlagen",
+    "delete_error_message": "Fehler beim Löschen des Symbols: {error}"
   },
 
   "database_builder": {
