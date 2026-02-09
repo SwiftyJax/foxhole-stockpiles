@@ -1,7 +1,7 @@
 """Tests for commands.add_icon.add_icon module.
 
 This module contains comprehensive tests for the add icon command,
-including IconAdder class functionality, icon addition, and database
+including IconManager class functionality, icon addition, and database
 update operations.
 """
 
@@ -15,11 +15,12 @@ import cv2
 import numpy as np
 import pytest
 
-from foxhole_stockpiles.commands.add_icon.add_icon import IconAdder, main
+from foxhole_stockpiles.commands.add_icon.add_icon import main
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.icon_template import IconTemplate
+from foxhole_stockpiles.services.icon_manager import IconManager
 from foxhole_stockpiles.services.template_database import TemplateDatabase
 
 
@@ -84,20 +85,20 @@ def sample_icon_file(tmp_path: Path) -> Path:
     return icon_path
 
 
-class TestIconAdderInitialization:
-    """Test suite for IconAdder initialization.
+class TestIconManagerInitialization:
+    """Test suite for IconManager initialization.
 
-    This class contains tests for IconAdder instance creation
+    This class contains tests for IconManager instance creation
     with various parameter combinations and configurations.
     """
 
     async def test_initialization_with_valid_database(self, sample_database_file: Path) -> None:
-        """Test IconAdder initialization with valid database.
+        """Test IconManager initialization with valid database.
 
         Args:
             sample_database_file (Path): Sample database file from fixture.
         """
-        adder = IconAdder(database_path=sample_database_file)
+        adder = IconManager(database_path=sample_database_file)
 
         assert adder.database_path == sample_database_file
         assert len(adder.databases) == 2
@@ -105,7 +106,7 @@ class TestIconAdderInitialization:
         assert SupportedResolution.R_1440 in adder.databases
 
     async def test_initialization_with_nonexistent_database(self, tmp_path: Path) -> None:
-        """Test IconAdder initialization with nonexistent database.
+        """Test IconManager initialization with nonexistent database.
 
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
@@ -113,10 +114,10 @@ class TestIconAdderInitialization:
         db_path = tmp_path / "nonexistent.pkl"
 
         with pytest.raises(FileNotFoundError, match="Database file not found"):
-            IconAdder(database_path=db_path)
+            IconManager(database_path=db_path)
 
     async def test_initialization_with_invalid_database(self, tmp_path: Path) -> None:
-        """Test IconAdder initialization with invalid database file.
+        """Test IconManager initialization with invalid database file.
 
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
@@ -125,10 +126,10 @@ class TestIconAdderInitialization:
         db_path.write_text("invalid content")
 
         with pytest.raises(ValueError, match="Failed to load database"):
-            IconAdder(database_path=db_path)
+            IconManager(database_path=db_path)
 
     async def test_initialization_with_empty_database(self, tmp_path: Path) -> None:
-        """Test IconAdder initialization with empty database.
+        """Test IconManager initialization with empty database.
 
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
@@ -140,33 +141,33 @@ class TestIconAdderInitialization:
             pickle.dump({}, f)
 
         with pytest.raises(ValueError, match="No databases found"):
-            IconAdder(database_path=db_path)
+            IconManager(database_path=db_path)
 
 
-class TestIconAdderMethods:
-    """Test suite for IconAdder methods.
+class TestIconManagerMethods:
+    """Test suite for IconManager methods.
 
-    This class contains tests for the core functionality of IconAdder
+    This class contains tests for the core functionality of IconManager
     including icon addition, database saving, and error handling.
     """
 
     @pytest.fixture
-    def adder(self, sample_database_file: Path) -> IconAdder:
-        """Create an IconAdder instance for testing.
+    def adder(self, sample_database_file: Path) -> IconManager:
+        """Create an IconManager instance for testing.
 
         Args:
             sample_database_file (Path): Sample database file from fixture.
 
         Returns:
-            IconAdder: Configured adder instance for testing.
+            IconManager: Configured adder instance for testing.
         """
-        return IconAdder(database_path=sample_database_file)
+        return IconManager(database_path=sample_database_file)
 
-    async def test_add_icon_success(self, adder: IconAdder, sample_icon_file: Path) -> None:
+    async def test_add_icon_success(self, adder: IconManager, sample_icon_file: Path) -> None:
         """Test adding icon successfully.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
         """
         initial_count = len(adder.databases[SupportedResolution.R_1080].templates)
@@ -193,11 +194,13 @@ class TestIconAdderMethods:
         assert new_template.crated is False
         assert new_template.mod == "vanilla"
 
-    async def test_add_icon_crated_variant(self, adder: IconAdder, sample_icon_file: Path) -> None:
+    async def test_add_icon_crated_variant(
+        self, adder: IconManager, sample_icon_file: Path
+    ) -> None:
         """Test adding crated icon variant.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
         """
         await adder.add_icon(
@@ -217,11 +220,11 @@ class TestIconAdderMethods:
         assert new_template.faction == ItemFaction.COLONIALS
         assert new_template.category == ItemCategory.Vehicle
 
-    async def test_add_icon_with_nonexistent_file(self, adder: IconAdder) -> None:
+    async def test_add_icon_with_nonexistent_file(self, adder: IconManager) -> None:
         """Test adding icon with nonexistent file.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
         """
         fake_path = Path("nonexistent_icon.png")
 
@@ -237,12 +240,12 @@ class TestIconAdderMethods:
             )
 
     async def test_add_icon_with_invalid_resolution(
-        self, adder: IconAdder, sample_icon_file: Path
+        self, adder: IconManager, sample_icon_file: Path
     ) -> None:
         """Test adding icon with resolution not in database.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
         """
         with pytest.raises(ValueError, match="Resolution .* not found in database"):
@@ -258,13 +261,13 @@ class TestIconAdderMethods:
 
     @patch("cv2.imread")
     async def test_add_icon_with_failed_image_load(
-        self, mock_imread: Mock, adder: IconAdder, sample_icon_file: Path
+        self, mock_imread: Mock, adder: IconManager, sample_icon_file: Path
     ) -> None:
         """Test adding icon when image fails to load.
 
         Args:
             mock_imread (Mock): Mocked cv2.imread function.
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
         """
         mock_imread.return_value = None
@@ -281,12 +284,12 @@ class TestIconAdderMethods:
             )
 
     async def test_add_icon_multiple_factions(
-        self, adder: IconAdder, sample_icon_file: Path
+        self, adder: IconManager, sample_icon_file: Path
     ) -> None:
         """Test adding icons with different factions.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
         """
         # Add Colonial icon
@@ -319,11 +322,11 @@ class TestIconAdderMethods:
         assert len(colonial_templates) >= 1
         assert len(warden_templates) >= 1
 
-    async def test_add_icon_custom_mod(self, adder: IconAdder, sample_icon_file: Path) -> None:
+    async def test_add_icon_custom_mod(self, adder: IconManager, sample_icon_file: Path) -> None:
         """Test adding icon with custom mod name.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
         """
         await adder.add_icon(
@@ -340,11 +343,11 @@ class TestIconAdderMethods:
         new_template = adder.databases[SupportedResolution.R_1080].templates[-1]
         assert new_template.mod == "custom_mod"
 
-    async def test_add_icon_with_wrong_dimensions(self, adder: IconAdder, tmp_path: Path) -> None:
+    async def test_add_icon_with_wrong_dimensions(self, adder: IconManager, tmp_path: Path) -> None:
         """Test adding icon with incorrect dimensions.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
         # Create icon with wrong size (16x16 instead of 32x32 for 1080p)
@@ -364,12 +367,12 @@ class TestIconAdderMethods:
             )
 
     async def test_add_duplicate_icon_without_replace(
-        self, adder: IconAdder, sample_icon_file: Path
+        self, adder: IconManager, sample_icon_file: Path
     ) -> None:
         """Test that adding duplicate icon without replace flag fails.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
         """
         # Add icon first time
@@ -397,12 +400,12 @@ class TestIconAdderMethods:
             )
 
     async def test_replace_existing_icon(
-        self, adder: IconAdder, sample_icon_file: Path, tmp_path: Path
+        self, adder: IconManager, sample_icon_file: Path, tmp_path: Path
     ) -> None:
         """Test replacing existing icon with replace flag.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
             tmp_path (Path): Temporary directory path from fixture.
         """
@@ -452,11 +455,11 @@ class TestIconAdderMethods:
         # Check that the new image has green pixels (from new icon)
         assert np.any(template.image[:, :, 1] > 200)  # Green channel
 
-    async def test_save_databases(self, adder: IconAdder, sample_icon_file: Path) -> None:
+    async def test_save_databases(self, adder: IconManager, sample_icon_file: Path) -> None:
         """Test saving databases to file.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
         """
         # Add an icon
@@ -487,11 +490,11 @@ class TestIconAdderMethods:
         assert len(loaded_databases) == 2
         assert SupportedResolution.R_1080 in loaded_databases
 
-    async def test_save_databases_creates_backup(self, adder: IconAdder) -> None:
+    async def test_save_databases_creates_backup(self, adder: IconManager) -> None:
         """Test that save_databases creates backup before saving.
 
         Args:
-            adder (IconAdder): IconAdder instance from fixture.
+            adder (IconManager): IconManager instance from fixture.
         """
         adder.database_path.with_suffix(adder.database_path.suffix + ".backup")
 
@@ -524,7 +527,7 @@ class TestMainFunction:
     """
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconAdder")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconManager")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.setup_logging")
     async def test_main_with_default_args(
         self,
@@ -538,7 +541,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_adder_class (Mock): Mocked IconAdder class.
+            mock_adder_class (Mock): Mocked IconManager class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             sample_database_file (Path): Sample database file from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
@@ -566,7 +569,7 @@ class TestMainFunction:
 
         await main()
 
-        # Verify IconAdder was instantiated
+        # Verify IconManager was instantiated
         mock_adder_class.assert_called_once_with(database_path=sample_database_file)
 
         # Verify add_icon was called
@@ -576,7 +579,7 @@ class TestMainFunction:
         mock_adder.save_databases.assert_called_once()
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconAdder")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconManager")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.setup_logging")
     async def test_main_with_multiple_resolutions(
         self,
@@ -590,7 +593,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_adder_class (Mock): Mocked IconAdder class.
+            mock_adder_class (Mock): Mocked IconManager class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             sample_database_file (Path): Sample database file from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
@@ -622,7 +625,7 @@ class TestMainFunction:
         assert mock_adder.add_icon.call_count == 2
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconAdder")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconManager")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.setup_logging")
     async def test_main_with_crated_flag(
         self,
@@ -636,7 +639,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_adder_class (Mock): Mocked IconAdder class.
+            mock_adder_class (Mock): Mocked IconManager class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             sample_database_file (Path): Sample database file from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
@@ -669,7 +672,7 @@ class TestMainFunction:
         assert call_kwargs["crated"] is True
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconAdder")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconManager")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.setup_logging")
     async def test_main_with_verbose_mode(
         self,
@@ -683,7 +686,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_adder_class (Mock): Mocked IconAdder class.
+            mock_adder_class (Mock): Mocked IconManager class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             sample_database_file (Path): Sample database file from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
@@ -715,7 +718,7 @@ class TestMainFunction:
         mock_setup_logging.assert_called_once()
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconAdder")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconManager")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.setup_logging")
     async def test_main_with_invalid_resolution(
         self,
@@ -729,7 +732,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_adder_class (Mock): Mocked IconAdder class.
+            mock_adder_class (Mock): Mocked IconManager class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             sample_database_file (Path): Sample database file from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
@@ -761,7 +764,7 @@ class TestMainFunction:
         assert exc_info.value.code == 2
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconAdder")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconManager")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.setup_logging")
     async def test_main_with_different_factions(
         self,
@@ -775,7 +778,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_adder_class (Mock): Mocked IconAdder class.
+            mock_adder_class (Mock): Mocked IconManager class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             sample_database_file (Path): Sample database file from fixture.
             sample_icon_file (Path): Sample icon file from fixture.
@@ -943,7 +946,7 @@ class TestMainFunction:
         assert exc_info.value.code == 1
 
     @patch("argparse.ArgumentParser.parse_args")
-    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconAdder")
+    @patch("foxhole_stockpiles.commands.add_icon.add_icon.IconManager")
     @patch("foxhole_stockpiles.commands.add_icon.add_icon.setup_logging")
     async def test_main_with_quiet_mode(
         self,
@@ -956,7 +959,7 @@ class TestMainFunction:
 
         Args:
             mock_setup_logging (Mock): Mocked setup_logging function.
-            mock_adder_class (Mock): Mocked IconAdder class.
+            mock_adder_class (Mock): Mocked IconManager class.
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
