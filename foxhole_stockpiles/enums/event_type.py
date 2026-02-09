@@ -1,9 +1,9 @@
 """Event type enumeration."""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class EventType(str, Enum):
+class EventType(StrEnum):
     """Event types for the notification system."""
 
     # Stockpile scanning events

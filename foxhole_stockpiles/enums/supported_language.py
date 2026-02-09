@@ -1,9 +1,9 @@
 """Supported language enumeration for OCR text detection."""
 
-from enum import Enum
+from enum import StrEnum
 
 
-class SupportedLanguage(str, Enum):
+class SupportedLanguage(StrEnum):
     """Enumeration of supported languages for OCR text detection.
 
     Uses standard ISO 639-1 language codes (i18n format) as values.
