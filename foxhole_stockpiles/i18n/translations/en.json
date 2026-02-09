@@ -302,6 +302,9 @@
   "database_visualizer": {
     "title": "Template Database Visualizer",
     "title_with_resolution": "Template Database Visualizer - {resolution}p",
+    "database_group": "Database",
+    "select_database": "Select Database File",
+    "database_filter": "HDF5 Database (*.h5);;All Files (*)",
     "filters_group": "Filters",
     "resolution": "Resolution:",
     "code": "Code:",

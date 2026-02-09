@@ -302,6 +302,9 @@
   "database_visualizer": {
     "title": "模板数据库可视化器",
     "title_with_resolution": "模板数据库可视化器 - {resolution}p",
+    "database_group": "数据库",
+    "select_database": "选择数据库文件",
+    "database_filter": "HDF5 数据库 (*.h5);;所有文件 (*)",
     "filters_group": "过滤器",
     "resolution": "分辨率：",
     "code": "代码：",

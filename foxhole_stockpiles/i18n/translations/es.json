@@ -302,6 +302,9 @@
   "database_visualizer": {
     "title": "Visualizador de base de datos de plantillas",
     "title_with_resolution": "Visualizador de base de datos de plantillas - {resolution}p",
+    "database_group": "Base de datos",
+    "select_database": "Seleccionar archivo de base de datos",
+    "database_filter": "Base de datos HDF5 (*.h5);;Todos los archivos (*)",
     "filters_group": "Filtros",
     "resolution": "Resolución:",
     "code": "Código:",

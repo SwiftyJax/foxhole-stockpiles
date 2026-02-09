@@ -302,6 +302,9 @@
   "database_visualizer": {
     "title": "Визуализатор базы данных шаблонов",
     "title_with_resolution": "Визуализатор базы данных шаблонов - {resolution}p",
+    "database_group": "База данных",
+    "select_database": "Выбрать файл базы данных",
+    "database_filter": "База данных HDF5 (*.h5);;Все файлы (*)",
     "filters_group": "Фильтры",
     "resolution": "Разрешение:",
     "code": "Код:",

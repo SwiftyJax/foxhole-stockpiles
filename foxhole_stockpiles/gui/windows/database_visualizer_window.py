@@ -144,6 +144,8 @@ class DatabaseVisualizerWindow(QDialog):
     def retranslate(self) -> None:
         """Update all translatable strings."""
         self.setWindowTitle(t("database_visualizer.title"))
+        self.database_group.setTitle(t("database_visualizer.database_group"))
+        self.browse_button.setText(t("common.browse"))
         self.filters_group.setTitle(t("database_visualizer.filters_group"))
         self.resolution_label.setText(t("database_visualizer.resolution"))
         self.code_label.setText(t("database_visualizer.code"))
@@ -156,7 +158,8 @@ class DatabaseVisualizerWindow(QDialog):
         self.crated_normal.setText(t("database_visualizer.crated_normal"))
         self.crated_crated.setText(t("database_visualizer.crated_crated"))
         self.clear_button.setText(t("database_visualizer.clear_filters"))
-        self.info_label.setText(t("database_visualizer.select_template"))
+        self.info_label_left.setText(t("database_visualizer.select_template"))
+        self.info_label_right.setText("")
         self.save_button.setText(t("database_visualizer.save_icon"))
         self.replace_button.setText(t("database_visualizer.replace_icon"))
         self.delete_button.setText(t("database_visualizer.delete_icon"))
@@ -270,17 +273,45 @@ class DatabaseVisualizerWindow(QDialog):
         panel = QWidget()
         layout = QVBoxLayout(panel)
 
+        # Database selection section at the top
+        self.database_group = QGroupBox()
+        database_layout = QHBoxLayout(self.database_group)
+        self.database_path_edit = QLineEdit()
+        self.database_path_edit.setReadOnly(True)
+        self.database_path_edit.setText(self.database_path or "")
+        database_layout.addWidget(self.database_path_edit)
+        self.browse_button = QPushButton()
+        self.browse_button.clicked.connect(self._on_browse_database)
+        database_layout.addWidget(self.browse_button)
+        layout.addWidget(self.database_group)
+
         # Template info and action buttons in horizontal layout
         info_layout = QHBoxLayout()
 
-        self.info_label = QLabel()
-        self.info_label.setFont(QFont("Arial", 10))
-        self.info_label.setWordWrap(True)
-        self.info_label.setStyleSheet(
+        # Two-column info layout
+        info_columns_layout = QHBoxLayout()
+
+        # Left column: code, faction, category, mod, crated
+        self.info_label_left = QLabel()
+        self.info_label_left.setFont(QFont("Arial", 10))
+        self.info_label_left.setWordWrap(True)
+        self.info_label_left.setStyleSheet(
             "QLabel { background-color: palette(alternate-base); padding: 10px; "
             "border: 1px solid palette(mid); }"
         )
-        info_layout.addWidget(self.info_label, stretch=1)
+        info_columns_layout.addWidget(self.info_label_left)
+
+        # Right column: resolution, shape, index, highest res
+        self.info_label_right = QLabel()
+        self.info_label_right.setFont(QFont("Arial", 10))
+        self.info_label_right.setWordWrap(True)
+        self.info_label_right.setStyleSheet(
+            "QLabel { background-color: palette(alternate-base); padding: 10px; "
+            "border: 1px solid palette(mid); }"
+        )
+        info_columns_layout.addWidget(self.info_label_right)
+
+        info_layout.addLayout(info_columns_layout, stretch=1)
 
         # Action buttons layout
         buttons_layout = QVBoxLayout()
@@ -347,6 +378,33 @@ class DatabaseVisualizerWindow(QDialog):
         layout.addWidget(self.image_group)
 
         return panel
+
+    def _on_browse_database(self) -> None:
+        """Handle browse database button click."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            t("database_visualizer.select_database"),
+            self.database_path or "",
+            t("database_visualizer.database_filter"),
+        )
+        if file_path:
+            self.database_path = file_path
+            self.database_path_edit.setText(file_path)
+            # Clear current state
+            self.all_databases.clear()
+            self.all_templates.clear()
+            self.filtered_templates.clear()
+            self.template_list.clear()
+            self.selected_template = None
+            self.database = None
+            self.current_resolution = None
+            # Reset resolution filter
+            self.resolution_filter.blockSignals(True)
+            self.resolution_filter.clear()
+            self.resolution_filter.addItem("Loading...", None)
+            self.resolution_filter.blockSignals(False)
+            # Load new database
+            self.load_databases()
 
     def _on_crated_all_toggled(self, checked: bool) -> None:
         """Handle 'All' crated checkbox toggle.
@@ -567,31 +625,36 @@ class DatabaseVisualizerWindow(QDialog):
                     highest_template = high_template
                     break
 
-        # Update info label
-        highest_info = ""
-        if highest_template:
-            highest_info = (
-                f"<br><b>{t('database_visualizer.info.highest_res_available')}</b> "
-                f"{highest_template.resolution.value}px (shape: {highest_template.image.shape})"
-            )
-        else:
-            not_found_msg = t("database_visualizer.info.highest_res_not_found")
-            not_found_msg = not_found_msg.replace("{resolution}", highest_resolution.value)
-            highest_info = f"<br><b>{not_found_msg}</b>"
-
-        current_res = f"{template.resolution.value}px"
-        info_text = (
+        # Update info labels (two columns)
+        # Left column: code, faction, category, mod, crated
+        info_text_left = (
             f"<b>{t('database_visualizer.info.code')}</b> {template.code}<br>"
             f"<b>{t('database_visualizer.info.faction')}</b> {template.faction.value}<br>"
             f"<b>{t('database_visualizer.info.category')}</b> {template.category.value}<br>"
             f"<b>{t('database_visualizer.info.mod')}</b> {template.mod}<br>"
-            f"<b>{t('database_visualizer.info.crated')}</b> {template.crated}<br>"
+            f"<b>{t('database_visualizer.info.crated')}</b> {template.crated}"
+        )
+        self.info_label_left.setText(info_text_left)
+
+        # Right column: resolution, shape, index, highest res
+        current_res = f"{template.resolution.value}px"
+        if highest_template:
+            highest_info = (
+                f"<b>{t('database_visualizer.info.highest_res_available')}</b> "
+                f"{highest_template.resolution.value}px ({highest_template.image.shape})"
+            )
+        else:
+            not_found_msg = t("database_visualizer.info.highest_res_not_found")
+            not_found_msg = not_found_msg.replace("{resolution}", highest_resolution.value)
+            highest_info = f"<b>{not_found_msg}</b>"
+
+        info_text_right = (
             f"<b>{t('database_visualizer.info.current_resolution')}</b> {current_res}<br>"
             f"<b>{t('database_visualizer.info.current_shape')}</b> {template.image.shape}<br>"
-            f"<b>{t('database_visualizer.info.database_index')}</b> {idx}"
+            f"<b>{t('database_visualizer.info.database_index')}</b> {idx}<br>"
             f"{highest_info}"
         )
-        self.info_label.setText(info_text)
+        self.info_label_right.setText(info_text_right)
 
         # Display comparison images
         self._display_comparison_images(template, highest_template)
@@ -889,7 +952,8 @@ class DatabaseVisualizerWindow(QDialog):
         self.delete_button.setEnabled(False)
 
         # Clear details panel
-        self.info_label.setText(t("database_visualizer.select_template"))
+        self.info_label_left.setText(t("database_visualizer.select_template"))
+        self.info_label_right.setText("")
         self.current_image.clear()
         self.current_image.setText(t("database_visualizer.no_image_selected"))
         self.highest_image.clear()

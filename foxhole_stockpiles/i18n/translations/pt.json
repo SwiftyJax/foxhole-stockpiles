@@ -302,6 +302,9 @@
   "database_visualizer": {
     "title": "Visualizador de base de dados de modelos",
     "title_with_resolution": "Visualizador de base de dados de modelos - {resolution}p",
+    "database_group": "Base de dados",
+    "select_database": "Selecionar ficheiro de base de dados",
+    "database_filter": "Base de dados HDF5 (*.h5);;Todos os ficheiros (*)",
     "filters_group": "Filtros",
     "resolution": "Resolução:",
     "code": "Código:",

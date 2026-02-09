@@ -302,6 +302,9 @@
   "database_visualizer": {
     "title": "Vorlagen-Datenbank-Visualisierer",
     "title_with_resolution": "Vorlagen-Datenbank-Visualisierer - {resolution}p",
+    "database_group": "Datenbank",
+    "select_database": "Datenbankdatei auswählen",
+    "database_filter": "HDF5-Datenbank (*.h5);;Alle Dateien (*)",
     "filters_group": "Filter",
     "resolution": "Auflösung:",
     "code": "Code:",

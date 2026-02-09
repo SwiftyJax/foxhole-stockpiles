@@ -219,7 +219,8 @@ class TestDatabaseVisualizerWindowUI:
         """
         assert visualizer_window.current_image is not None
         assert visualizer_window.highest_image is not None
-        assert visualizer_window.info_label is not None
+        assert visualizer_window.info_label_left is not None
+        assert visualizer_window.info_label_right is not None
 
     def test_progress_bar_hidden_initially(
         self, visualizer_window: DatabaseVisualizerWindow
@@ -562,11 +563,11 @@ class TestDatabaseVisualizerWindowTemplateSelection:
 
         visualizer_window._on_template_selected(item)
 
-        # Info label should contain template details
-        info_text = visualizer_window.info_label.text()
-        assert "TestItem" in info_text
-        assert "neutral" in info_text
-        assert "vanilla" in info_text
+        # Info labels should contain template details
+        info_text_left = visualizer_window.info_label_left.text()
+        assert "TestItem" in info_text_left
+        assert "neutral" in info_text_left
+        assert "vanilla" in info_text_left
 
 
 class TestDatabaseVisualizerWindowFiltersAdvanced:
@@ -699,10 +700,10 @@ class TestDatabaseVisualizerWindowTemplateSelectionAdvanced:
 
         visualizer_window._on_template_selected(item)
 
-        # Info label should indicate highest resolution not found
-        info_text = visualizer_window.info_label.text()
+        # Right info label should indicate highest resolution not found
+        info_text_right = visualizer_window.info_label_right.text()
         # Check for the resolution (1080px) in the not found message
-        assert "1080" in info_text
+        assert "1080" in info_text_right
 
 
 class TestDatabaseVisualizerWindowImageDisplay:
@@ -1694,3 +1695,80 @@ class TestDatabaseVisualizerWindowCloseEvent:
         visualizer_window.closeEvent(mock_event)
 
         mock_event.accept.assert_called_once()
+
+
+class TestDatabaseVisualizerWindowBrowseDatabase:
+    """Tests for browse database functionality."""
+
+    def test_browse_database_cancelled(self, visualizer_window: DatabaseVisualizerWindow) -> None:
+        """Test browse database when user cancels dialog.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        visualizer_window.database_path = "/original/path.h5"
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getOpenFileName",
+            return_value=("", ""),
+        ):
+            visualizer_window._on_browse_database()
+
+        # Path should remain unchanged
+        assert visualizer_window.database_path == "/original/path.h5"
+
+    def test_browse_database_selects_new_file(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test browse database when user selects a new file.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        visualizer_window.database_path = "/original/path.h5"
+        visualizer_window.all_databases = {SupportedResolution.R_1080: MagicMock()}
+        visualizer_window.all_templates = [(0, MagicMock())]
+        visualizer_window.filtered_templates = [(0, MagicMock())]
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.database_visualizer_window.QFileDialog.getOpenFileName",
+            return_value=("/new/path.h5", ""),
+        ):
+            with patch.object(visualizer_window, "load_databases") as mock_load:
+                visualizer_window._on_browse_database()
+
+                # Path should be updated
+                assert visualizer_window.database_path == "/new/path.h5"
+                assert visualizer_window.database_path_edit.text() == "/new/path.h5"
+
+                # State should be cleared
+                assert visualizer_window.all_databases == {}
+                assert visualizer_window.all_templates == []
+                assert visualizer_window.filtered_templates == []
+                assert visualizer_window.selected_template is None
+                assert visualizer_window.database is None
+                assert visualizer_window.current_resolution is None
+
+                # load_databases should be called
+                mock_load.assert_called_once()
+
+    def test_database_path_edit_shows_initial_path(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test that database path edit shows initial path.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        # The fixture creates with database_path=None, so it should be empty
+        assert visualizer_window.database_path_edit.text() == ""
+
+    def test_database_path_edit_is_readonly(
+        self, visualizer_window: DatabaseVisualizerWindow
+    ) -> None:
+        """Test that database path edit is read-only.
+
+        Args:
+            visualizer_window: Window fixture.
+        """
+        assert visualizer_window.database_path_edit.isReadOnly()
