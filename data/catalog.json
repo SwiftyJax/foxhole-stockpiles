@@ -5,9 +5,9 @@
       "AddedBurning": 0,
       "AddedHeat": 0,
       "BreachingModifier": 1,
-      "Damage": 2200,
+      "Damage": 1200,
       "DamageFalloff": 1,
-      "DamageInnerRadius": 900,
+      "DamageInnerRadius": 850,
       "DamageType": {
         "DisplayName": "Shrapnel",
         "Icon": "War/Content/Textures/UI/ItemIcons/SubtypeSHIcon.0",
@@ -19,17 +19,17 @@
         "bExposeInUI": true
       },
       "EnvironmentImpactAmount": 0,
-      "ExplosionRadius": 1125,
+      "ExplosionRadius": 1150,
       "ObjectPath": "War/Content/Blueprints/Data/BPAmmoDynamicData",
       "Suppression": 200
     },
     "ChassisName": "Anti-Aircraft Ammo",
     "CodeName": "AAAmmo",
     "Description": "Specially designed rounds for use with anti-aircraft batteries.",
-    "DirectFireExplosionClass": "War/Content/Blueprints/Items/BPAntiAircraftExplosion.0",
     "DisplayName": "950-70b Anti-Aircraft Shell",
     "Encumbrance": 300,
     "EquipmentSlot": "EEquipmentSlot::Large",
+    "ExplosionClass": "War/Content/Blueprints/Items/BPAntiAircraftExplosion.0",
     "Icon": "War/Content/Textures/UI/VehicleIcons/AAAmmoIcon.0",
     "ItemBox": "ItemBox",
     "ItemCategory": "EItemCategory::HeavyAmmo",
@@ -58,11 +58,11 @@
       "CostPerCrate": [
         {
           "ItemCodeName": "Cloth",
-          "Quantity": 120
+          "Quantity": 100
         },
         {
           "ItemCodeName": "HeavyExplosive",
-          "Quantity": 60
+          "Quantity": 15
         }
       ],
       "CrateProductionTime": 65,
@@ -87,6 +87,10 @@
     },
     "ItemProfileType": "EItemProfileType::HeavyAmmo",
     "ObjectPath": "War/Content/Blueprints/ItemPickups/BPAAAmmoPickup",
+    "ProductionCategories": {
+      "Factory": "EFactoryQueueType::HeavyAmmo",
+      "MassProductionFactory": "EFactoryQueueType::HeavyAmmo"
+    },
     "RootComponent": "ItemBox",
     "ShotSoundCue": "War/Content/Audio/SFX/Structure/Aircraft/AAShot01_Cue.0",
     "StealthComponent": "StealthComponent",
@@ -326,7 +330,7 @@
     },
     "FuselageGroup": "FuselageGroup",
     "GenericStockpileComponent": "GenericStockpileComponent",
-    "Icon": "War/Content/Blueprints/Vehicles/AircraftBomberC/Textures/AircraftBomberCIcon.0",
+    "Icon": "War/Content/Textures/UI/VehicleIcons/AircraftBomberCIcon.0",
     "IntelType": "EMapIntelligenceType::LargeAircraft",
     "LeftWingGroup": "LeftWingGroup",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
@@ -350,14 +354,14 @@
       {
         "Extents": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 429.916382,
+          "X": 400,
           "Y": 100,
           "Z": 157.331207
         },
         "MassPercentage": 0.8,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 129.866837,
+          "X": 115,
           "Y": 0,
           "Z": -43.517895
         }
@@ -445,6 +449,7 @@
       "Type": "EShippableType::Large",
       "bAllowPackagingToCrate": true
     },
+    "SquadLockDuration": 172800,
     "StealthComponent": "StealthComponent",
     "Surfaces": [
       {
@@ -457,7 +462,7 @@
         },
         "ManualAspectRatio": 6.0284,
         "Params": {
-          "LiftCurveSlope": 7,
+          "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -498,7 +503,7 @@
         },
         "ManualAspectRatio": 6.0284,
         "Params": {
-          "LiftCurveSlope": 7,
+          "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -539,7 +544,7 @@
         },
         "ManualAspectRatio": 6.0284,
         "Params": {
-          "LiftCurveSlope": 7,
+          "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -580,7 +585,7 @@
         },
         "ManualAspectRatio": 6.0284,
         "Params": {
-          "LiftCurveSlope": 7,
+          "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -616,12 +621,12 @@
         "ControlSurfaceFraction": 0.5,
         "Dimensions": {
           "$type": "UAssetAPI.UnrealTypes.FVector2D, UAssetAPI",
-          "X": 220,
+          "X": 300,
           "Y": 780
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 7,
+          "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -630,9 +635,9 @@
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.9999,
+            "W": 1,
             "X": 0,
-            "Y": -0.014111,
+            "Y": 0,
             "Z": 0
           },
           "Scale3D": {
@@ -643,7 +648,7 @@
           },
           "Translation": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-            "X": -1192.089966,
+            "X": -1215.089966,
             "Y": 0,
             "Z": -0.473778
           }
@@ -662,7 +667,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 7,
+          "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -703,7 +708,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 7,
+          "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -744,7 +749,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 7,
+          "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -785,7 +790,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 7,
+          "LiftCurveSlope": 9.5,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -866,7 +871,7 @@
         "OtherResources": [
           {
             "CodeName": "FacilityMaterials8",
-            "Quantity": 85
+            "Quantity": 65
           },
           {
             "CodeName": "FacilityMaterials6",
@@ -878,18 +883,18 @@
           },
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 4
+            "Quantity": 12
           }
         ],
         "Resource": {
           "CodeName": "FacilityMaterials3",
-          "Quantity": 110
+          "Quantity": 60
         }
       },
       "DefaultSurfaceMovementRate": 0.3,
       "EngineForce": 25000,
       "FuelCapacity": 350,
-      "FuelConsumptionPerSecond": 0.897,
+      "FuelConsumptionPerSecond": 0.858,
       "ItemHolderCapacity": 2,
       "ItemSlotFilters": [
         {
@@ -906,7 +911,7 @@
       "MajorDamagePercent": 0.7,
       "MassOverride": 13000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 45000,
+      "MaxHealth": 15000,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -1083,8 +1088,8 @@
         }
       },
       {
-        "HalfHeight": 1650,
-        "Radius": 300,
+        "HalfHeight": 1550,
+        "Radius": 260,
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
@@ -1177,7 +1182,7 @@
     },
     "FuselageGroup": "FuselageGroup",
     "GenericStockpileComponent": "GenericStockpileComponent",
-    "Icon": "War/Content/Blueprints/Vehicles/AircraftBomberW/Textures/AircraftBomberWIcon.0",
+    "Icon": "War/Content/Textures/UI/VehicleIcons/AircraftBomberWIcon.0",
     "IntelType": "EMapIntelligenceType::LargeAircraft",
     "LeftWingGroup": "LeftWingGroup",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
@@ -1311,6 +1316,7 @@
       "Type": "EShippableType::Large",
       "bAllowPackagingToCrate": true
     },
+    "SquadLockDuration": 172800,
     "StealthComponent": "StealthComponent",
     "Surfaces": [
       {
@@ -1650,7 +1656,7 @@
         "OtherResources": [
           {
             "CodeName": "FacilityMaterials8",
-            "Quantity": 85
+            "Quantity": 65
           },
           {
             "CodeName": "FacilityMaterials6",
@@ -1662,18 +1668,18 @@
           },
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 4
+            "Quantity": 12
           }
         ],
         "Resource": {
           "CodeName": "FacilityMaterials3",
-          "Quantity": 110
+          "Quantity": 60
         }
       },
       "DefaultSurfaceMovementRate": 0.3,
       "EngineForce": 25000,
       "FuelCapacity": 300,
-      "FuelConsumptionPerSecond": 0.769,
+      "FuelConsumptionPerSecond": 0.7359,
       "ItemHolderCapacity": 2,
       "ItemSlotFilters": [
         {
@@ -1690,7 +1696,7 @@
       "MajorDamagePercent": 0.7,
       "MassOverride": 13000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 45000,
+      "MaxHealth": 15000,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -2025,7 +2031,6 @@
         }
       }
     ],
-    "MaxDeviationAtStandardDropHeight": 0,
     "Mesh": "CharacterMesh0",
     "MinNetUpdateFrequency": 5,
     "MinorDamagePS": "MinorDamagePS",
@@ -2052,6 +2057,7 @@
       "Type": "EShippableType::Large",
       "bAllowPackagingToCrate": true
     },
+    "SquadLockDuration": 172800,
     "StealthComponent": "StealthComponent",
     "Surfaces": [
       {
@@ -2066,7 +2072,7 @@
         "Params": {
           "LiftCurveSlope": 12,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2107,7 +2113,7 @@
         "Params": {
           "LiftCurveSlope": 12,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2148,7 +2154,7 @@
         "Params": {
           "LiftCurveSlope": 12,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2189,7 +2195,7 @@
         "Params": {
           "LiftCurveSlope": 12,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2271,7 +2277,7 @@
         "Params": {
           "LiftCurveSlope": 12,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2312,7 +2318,7 @@
         "Params": {
           "LiftCurveSlope": 12,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2394,7 +2400,7 @@
         "Params": {
           "LiftCurveSlope": 12,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2435,7 +2441,7 @@
         "Params": {
           "LiftCurveSlope": 12,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2476,7 +2482,7 @@
         "Params": {
           "LiftCurveSlope": 12,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -2522,26 +2528,22 @@
           },
           {
             "CodeName": "FacilityMaterials6",
-            "Quantity": 150
-          },
-          {
-            "CodeName": "FacilityMaterials7",
-            "Quantity": 50
+            "Quantity": 100
           },
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 1
+            "Quantity": 5
           }
         ],
         "Resource": {
           "CodeName": "FacilityMaterials2",
-          "Quantity": 250
+          "Quantity": 40
         }
       },
       "DefaultSurfaceMovementRate": 0.3,
       "EngineForce": 25000,
       "FuelCapacity": 100,
-      "FuelConsumptionPerSecond": 0.256,
+      "FuelConsumptionPerSecond": 0.239,
       "ItemHolderCapacity": 2,
       "ItemSlotFilters": [
         {
@@ -2552,13 +2554,13 @@
         {
           "CodeName": "DiveBomberAmmo",
           "ExtraCodeNames": [],
-          "StackLimit": 2
+          "StackLimit": 3
         }
       ],
       "MajorDamagePercent": 0.7,
       "MassOverride": 4000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 16500,
+      "MaxHealth": 5500,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -2597,9 +2599,9 @@
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.906308,
+            "W": 1,
             "X": 0,
-            "Y": 0.422618,
+            "Y": 0,
             "Z": 0
           },
           "Scale3D": {
@@ -2625,9 +2627,9 @@
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.866026,
+            "W": 1,
             "X": 0,
-            "Y": 0.5,
+            "Y": 0,
             "Z": 0
           },
           "Scale3D": {
@@ -2653,9 +2655,9 @@
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.866026,
+            "W": 1,
             "X": 0,
-            "Y": 0.499999,
+            "Y": 0,
             "Z": 0
           },
           "Scale3D": {
@@ -2678,6 +2680,7 @@
       }
     ],
     "bAllowReloadAsDriver": true,
+    "bCanBeRepairedByLargeShips": true,
     "bCanFireWithBombBayDoorsClosed": true,
     "bCanFireWithLandingGearDown": true,
     "bCanLowerGearWithBombBayDoorsOpen": true,
@@ -2833,7 +2836,7 @@
         "MassPercentage": 0.7,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 105,
+          "X": 120,
           "Y": 0,
           "Z": 0
         }
@@ -2880,6 +2883,7 @@
       "bAllowPackagingToCrate": true
     },
     "SimulatedHitNotifies": "EFastArraySerializerDeltaFlags::HasBeenSerialized",
+    "SquadLockDuration": 172800,
     "StealthComponent": "StealthComponent",
     "Surfaces": [
       {
@@ -3178,28 +3182,20 @@
         "OtherResources": [
           {
             "CodeName": "FacilityMaterials4",
-            "Quantity": 150
-          },
-          {
-            "CodeName": "FacilityMaterials5",
-            "Quantity": 50
-          },
-          {
-            "CodeName": "FacilityMaterials6",
-            "Quantity": 75
+            "Quantity": 200
           },
           {
             "CodeName": "FacilityMaterials7",
-            "Quantity": 125
+            "Quantity": 100
           },
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 1
+            "Quantity": 2
           }
         ],
         "Resource": {
           "CodeName": "FacilityMaterials2",
-          "Quantity": 250
+          "Quantity": 40
         }
       },
       "DefaultSurfaceMovementRate": 0.3,
@@ -3217,7 +3213,7 @@
       "MajorDamagePercent": 0.7,
       "MassOverride": 4000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 16500,
+      "MaxHealth": 5500,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -3362,6 +3358,7 @@
       }
     ],
     "bAllowReloadAsDriver": true,
+    "bCanBeRepairedByLargeShips": true,
     "bIsReserveStockpiled": true,
     "bIsUsableFromVehicle": true
   },
@@ -3483,7 +3480,7 @@
     "FuelTank": "FacilityOil1",
     "FuselageGroup": "FuselageGroup",
     "GenericStockpileComponent": "GenericStockpileComponent",
-    "Icon": "War/Content/Blueprints/Vehicles/Aircraft/AircraftFighterW/Textures/AircraftFighterWIcon.0",
+    "Icon": "War/Content/Textures/UI/VehicleIcons/AircraftFighterWIcon.0",
     "LeftWingGroup": "LeftWingGroup",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
     "MajorDamagePS": "MajorDamagePS",
@@ -3565,6 +3562,7 @@
       "bAllowPackagingToCrate": true
     },
     "SimulatedHitNotifies": "EFastArraySerializerDeltaFlags::HasBeenSerialized",
+    "SquadLockDuration": 172800,
     "StealthComponent": "StealthComponent",
     "Surfaces": [
       {
@@ -3863,28 +3861,20 @@
         "OtherResources": [
           {
             "CodeName": "FacilityMaterials4",
-            "Quantity": 150
-          },
-          {
-            "CodeName": "FacilityMaterials5",
-            "Quantity": 50
-          },
-          {
-            "CodeName": "FacilityMaterials6",
-            "Quantity": 75
+            "Quantity": 200
           },
           {
             "CodeName": "FacilityMaterials7",
-            "Quantity": 125
+            "Quantity": 100
           },
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 1
+            "Quantity": 2
           }
         ],
         "Resource": {
           "CodeName": "FacilityMaterials2",
-          "Quantity": 250
+          "Quantity": 40
         }
       },
       "DefaultSurfaceMovementRate": 0.3,
@@ -3907,7 +3897,7 @@
       "MajorDamagePercent": 0.7,
       "MassOverride": 4000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 18000,
+      "MaxHealth": 6000,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -4244,7 +4234,7 @@
     },
     "FuselageGroup": "FuselageGroup",
     "GenericStockpileComponent": "GenericStockpileComponent",
-    "Icon": "War/Content/Blueprints/Vehicles/AircraftParatrooperC/Textures/AircraftParatrooperCIcon.0",
+    "Icon": "War/Content/Textures/UI/VehicleIcons/AircraftParatrooperCIcon.0",
     "IntelType": "EMapIntelligenceType::LargeAircraft",
     "LeftWingGroup": "LeftWingGroup",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
@@ -4384,6 +4374,7 @@
       "Type": "EShippableType::Large",
       "bAllowPackagingToCrate": true
     },
+    "SquadLockDuration": 172800,
     "StealthComponent": "StealthComponent",
     "Surfaces": [
       {
@@ -4764,30 +4755,26 @@
         "OtherResources": [
           {
             "CodeName": "FacilityMaterials6",
-            "Quantity": 85
+            "Quantity": 20
           },
           {
             "CodeName": "FacilityMaterials7",
-            "Quantity": 110
-          },
-          {
-            "CodeName": "FacilityMaterials8",
-            "Quantity": 15
+            "Quantity": 20
           },
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 1
+            "Quantity": 4
           }
         ],
         "Resource": {
           "CodeName": "FacilityMaterials3",
-          "Quantity": 25
+          "Quantity": 5
         }
       },
       "DefaultSurfaceMovementRate": 0.3,
       "EngineForce": 25000,
-      "FuelCapacity": 350,
-      "FuelConsumptionPerSecond": 0.897,
+      "FuelCapacity": 425,
+      "FuelConsumptionPerSecond": 1.04,
       "ItemHolderCapacity": 1,
       "ItemSlotFilters": [
         {
@@ -4799,7 +4786,7 @@
       "MajorDamagePercent": 0.7,
       "MassOverride": 6000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 25000,
+      "MaxHealth": 8300,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -4918,6 +4905,7 @@
         "bEnabled": true
       }
     ],
+    "bCanUseStructures": true,
     "bHasBackDoors": true,
     "bIsReserveStockpiled": true,
     "bIsUsableFromVehicle": true
@@ -5030,7 +5018,7 @@
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
             "X": 340,
             "Y": -243,
-            "Z": 240
+            "Z": 130
           }
         }
       },
@@ -5056,7 +5044,7 @@
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
             "X": 340,
             "Y": 243,
-            "Z": 240
+            "Z": 130
           }
         }
       }
@@ -5068,7 +5056,7 @@
     },
     "FuselageGroup": "FuselageGroup",
     "GenericStockpileComponent": "GenericStockpileComponent",
-    "Icon": "War/Content/Blueprints/Vehicles/Aircraft/AircraftParatrooperW/Textures/AircraftParatrooperWIcon.0",
+    "Icon": "War/Content/Textures/UI/VehicleIcons/AircraftParatrooperWIcon.0",
     "IntelType": "EMapIntelligenceType::LargeAircraft",
     "LeftWingGroup": "LeftWingGroup",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
@@ -5077,14 +5065,14 @@
       {
         "Extents": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 500,
+          "X": 350,
           "Y": 120,
           "Z": 120
         },
         "MassPercentage": 0.7,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 0,
+          "X": 80,
           "Y": 0,
           "Z": 0
         }
@@ -5092,14 +5080,14 @@
       {
         "Extents": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 250,
+          "X": 350,
           "Y": 100,
           "Z": 100
         },
         "MassPercentage": 0.2,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": -750,
+          "X": -650,
           "Y": 0,
           "Z": 20
         }
@@ -5181,6 +5169,7 @@
       "Type": "EShippableType::Large",
       "bAllowPackagingToCrate": true
     },
+    "SquadLockDuration": 172800,
     "StealthComponent": "StealthComponent",
     "Surfaces": [
       {
@@ -5193,7 +5182,7 @@
         },
         "ManualAspectRatio": 4,
         "Params": {
-          "LiftCurveSlope": 10,
+          "LiftCurveSlope": 8,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -5234,7 +5223,7 @@
         },
         "ManualAspectRatio": 4,
         "Params": {
-          "LiftCurveSlope": 10,
+          "LiftCurveSlope": 8,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -5275,7 +5264,7 @@
         },
         "ManualAspectRatio": 4,
         "Params": {
-          "LiftCurveSlope": 10,
+          "LiftCurveSlope": 8,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -5316,7 +5305,7 @@
         },
         "ManualAspectRatio": 4,
         "Params": {
-          "LiftCurveSlope": 10,
+          "LiftCurveSlope": 8,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -5357,7 +5346,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 4,
+          "LiftCurveSlope": 7,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -5398,7 +5387,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 10,
+          "LiftCurveSlope": 8,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -5439,7 +5428,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 10,
+          "LiftCurveSlope": 8,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -5480,7 +5469,7 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 10,
+          "LiftCurveSlope": 8,
           "NegativeStallAngle": -12,
           "PositiveStallAngle": 15,
           "SkinFriction": 0.02,
@@ -5520,30 +5509,26 @@
         "OtherResources": [
           {
             "CodeName": "FacilityMaterials6",
-            "Quantity": 85
+            "Quantity": 20
           },
           {
             "CodeName": "FacilityMaterials7",
-            "Quantity": 110
-          },
-          {
-            "CodeName": "FacilityMaterials8",
-            "Quantity": 15
+            "Quantity": 20
           },
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 1
+            "Quantity": 4
           }
         ],
         "Resource": {
           "CodeName": "FacilityMaterials3",
-          "Quantity": 25
+          "Quantity": 5
         }
       },
       "DefaultSurfaceMovementRate": 0.3,
       "EngineForce": 25000,
-      "FuelCapacity": 350,
-      "FuelConsumptionPerSecond": 0.897,
+      "FuelCapacity": 250,
+      "FuelConsumptionPerSecond": 0.558,
       "ItemHolderCapacity": 1,
       "ItemSlotFilters": [
         {
@@ -5555,7 +5540,7 @@
       "MajorDamagePercent": 0.7,
       "MassOverride": 6000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 25000,
+      "MaxHealth": 8300,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -5640,7 +5625,7 @@
             "Z": -220
           }
         },
-        "SuspensionLength": 400,
+        "SuspensionLength": 150,
         "bCanBrake": true,
         "bCanSwivel": false,
         "bEnabled": true
@@ -5668,12 +5653,13 @@
             "Z": -220
           }
         },
-        "SuspensionLength": 400,
+        "SuspensionLength": 150,
         "bCanBrake": true,
         "bCanSwivel": false,
         "bEnabled": true
       }
     ],
+    "bCanUseStructures": true,
     "bHasBackDoors": true,
     "bHasRetractableLandingGear": false,
     "bIsReserveStockpiled": true,
@@ -6509,7 +6495,7 @@
     "FactionVariant": "EFactionId::Colonials",
     "FuselageGroup": "FuselageGroup",
     "GenericStockpileComponent": "GenericStockpileComponent",
-    "Icon": "War/Content/Blueprints/Vehicles/Aircraft/AircraftScoutC/Textures/AircraftScoutCIcon.0",
+    "Icon": "War/Content/Textures/UI/VehicleIcons/AircraftScoutCIcon.0",
     "LeftWingGroup": "LeftWingGroup",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
     "MajorDamagePS": "MajorDamagePS",
@@ -6907,7 +6893,7 @@
       "DefaultSurfaceMovementRate": 0.3,
       "EngineForce": 25000,
       "FuelCapacity": 100,
-      "FuelConsumptionPerSecond": 0.256,
+      "FuelConsumptionPerSecond": 0.197,
       "ItemHolderCapacity": 2,
       "ItemSlotFilters": [
         {
@@ -6924,7 +6910,7 @@
       "MajorDamagePercent": 0.7,
       "MassOverride": 1500,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 1500,
+      "MaxHealth": 500,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -6934,7 +6920,7 @@
         "OtherResources": [],
         "Resource": {
           "CodeName": "Wood",
-          "Quantity": 125
+          "Quantity": 80
         }
       },
       "ResourcesPerBuildCycle": 1,
@@ -7094,9 +7080,11 @@
       }
     ],
     "bAllowReloadAsDriver": true,
+    "bCanBeRepairedByLargeShips": true,
     "bCanFireWithLandingGearDown": true,
     "bCantEnterWithItems": true,
-    "bIsReserveStockpiled": true
+    "bIsReserveStockpiled": true,
+    "bPreventEnemyAccess": false
   },
   {
     "AFKTimeoutComponent": "AFKTimeoutComponent",
@@ -7222,7 +7210,7 @@
     "FactionVariant": "EFactionId::Wardens",
     "FuselageGroup": "FuselageGroup",
     "GenericStockpileComponent": "GenericStockpileComponent",
-    "Icon": "War/Content/Blueprints/Vehicles/Aircraft/AircraftScoutW/Textures/AircraftScoutWIcon.0",
+    "Icon": "War/Content/Textures/UI/VehicleIcons/AircraftScoutWIcon.0",
     "LeftWingGroup": "LeftWingGroup",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
     "MajorDamagePS": "MajorDamagePS",
@@ -7636,7 +7624,7 @@
       "DefaultSurfaceMovementRate": 0.3,
       "EngineForce": 25000,
       "FuelCapacity": 100,
-      "FuelConsumptionPerSecond": 0.256,
+      "FuelConsumptionPerSecond": 0.197,
       "ItemHolderCapacity": 2,
       "ItemSlotFilters": [
         {
@@ -7653,7 +7641,7 @@
       "MajorDamagePercent": 0.7,
       "MassOverride": 1500,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 1500,
+      "MaxHealth": 500,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -7663,7 +7651,7 @@
         "OtherResources": [],
         "Resource": {
           "CodeName": "Wood",
-          "Quantity": 125
+          "Quantity": 80
         }
       },
       "ResourcesPerBuildCycle": 1,
@@ -7798,7 +7786,8 @@
     "bAllowReloadAsDriver": true,
     "bCanBeRepairedByLargeShips": true,
     "bCantEnterWithItems": true,
-    "bIsReserveStockpiled": true
+    "bIsReserveStockpiled": true,
+    "bPreventEnemyAccess": false
   },
   {
     "AFKTimeoutComponent": "AFKTimeoutComponent",
@@ -7884,6 +7873,7 @@
     "Description": "The M925 Edellian bomber is the Alliance Sky Brigade’s ace at air-to-sea combat. Featuring twin torpedo bays and a rear-mounted machine gun, the Man-O-War is a veritable threat to any ship’s hull or would-be assailants. The M925's unique capabilities overdelivered, as it was originally conceived as nothing more than a short-range coastal defence bomber. During the M925’s first operation off of the Katoman coast, a small squadron single-handedly sank a Titan. Her crew had no idea how their ship filled with seawater as torpedo after torpedo bored into the underside of her hull. ",
     "DestroyedMesh": "DestroyedMesh",
     "DisplayName": "M925 Austringer Man-O-War",
+    "DriverBombCooldownOverride": 3.5,
     "DriverType": "EAirDriverType::Bomber",
     "EngineGroup": "EngineGroup",
     "EngineLoopCue": "War/Content/Audio/SFX/Vehicles/Aircraft/AircraftFighterWEngineLoop_Cue.0",
@@ -7975,7 +7965,7 @@
     },
     "FuselageGroup": "FuselageGroup",
     "GenericStockpileComponent": "GenericStockpileComponent",
-    "Icon": "War/Content/Blueprints/Vehicles/AircraftTorpedoW/Textures/AircraftTorpedoWIcon.0",
+    "Icon": "War/Content/Textures/UI/VehicleIcons/AircraftTorpedoWIcon.0",
     "LeftWingGroup": "LeftWingGroup",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
     "MajorDamagePS": "MajorDamagePS",
@@ -8005,7 +7995,7 @@
         "MassPercentage": 0.82,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": -50,
+          "X": 30,
           "Y": 0,
           "Z": -140
         }
@@ -8050,14 +8040,14 @@
         "MassPercentage": 0.1,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": -800,
+          "X": -700,
           "Y": 0,
           "Z": -70
         }
       }
     ],
     "MaxBombAmmoCount": 2,
-    "MaxDeviationAtStandardDropHeight": 150,
+    "MaxDeviationAtStandardDropHeight": 3000,
     "Mesh": "CharacterMesh0",
     "MinNetUpdateFrequency": 5,
     "MinorDamagePS": "MinorDamagePS",
@@ -8080,11 +8070,12 @@
       "bAllowPackagingToCrate": true
     },
     "SimulatedHitNotifies": "EFastArraySerializerDeltaFlags::HasBeenSerialized",
+    "SquadLockDuration": 172800,
     "StealthComponent": "StealthComponent",
     "Surfaces": [
       {
         "AerodynamicCenterFraction": 0.25,
-        "ControlSurfaceFraction": 0.15,
+        "ControlSurfaceFraction": 0.2,
         "Dimensions": {
           "$type": "UAssetAPI.UnrealTypes.FVector2D, UAssetAPI",
           "X": 350,
@@ -8092,9 +8083,9 @@
         },
         "ManualAspectRatio": 5.82,
         "Params": {
-          "LiftCurveSlope": 9,
+          "LiftCurveSlope": 14,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -8104,7 +8095,7 @@
             "W": 0.996194,
             "X": 0,
             "Y": 0,
-            "Z": 0.087159
+            "Z": 0.08716
           },
           "Scale3D": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
@@ -8125,7 +8116,7 @@
       },
       {
         "AerodynamicCenterFraction": 0.25,
-        "ControlSurfaceFraction": 0.15,
+        "ControlSurfaceFraction": 0.2,
         "Dimensions": {
           "$type": "UAssetAPI.UnrealTypes.FVector2D, UAssetAPI",
           "X": 350,
@@ -8133,9 +8124,9 @@
         },
         "ManualAspectRatio": 5.82,
         "Params": {
-          "LiftCurveSlope": 9,
+          "LiftCurveSlope": 14,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -8145,7 +8136,7 @@
             "W": 0.996194,
             "X": 0,
             "Y": 0,
-            "Z": -0.087158
+            "Z": -0.08716
           },
           "Scale3D": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
@@ -8174,19 +8165,19 @@
         },
         "ManualAspectRatio": 5.82,
         "Params": {
-          "LiftCurveSlope": 9,
+          "LiftCurveSlope": 14,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.996195,
+            "W": 0.996194,
             "X": 0,
             "Y": 0,
-            "Z": 0.087156
+            "Z": 0.08716
           },
           "Scale3D": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
@@ -8215,19 +8206,19 @@
         },
         "ManualAspectRatio": 5.82,
         "Params": {
-          "LiftCurveSlope": 9,
+          "LiftCurveSlope": 14,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.996195,
+            "W": 0.996194,
             "X": 0,
             "Y": 0,
-            "Z": -0.087156
+            "Z": -0.08716
           },
           "Scale3D": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
@@ -8251,23 +8242,23 @@
         "ControlSurfaceFraction": 0.3,
         "Dimensions": {
           "$type": "UAssetAPI.UnrealTypes.FVector2D, UAssetAPI",
-          "X": 300,
+          "X": 400,
           "Y": 760
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 8,
-          "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "LiftCurveSlope": 11,
+          "NegativeStallAngle": -35,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.9999,
+            "W": 0.999657,
             "X": 0,
-            "Y": -0.014111,
+            "Y": -0.026177,
             "Z": 0
           },
           "Scale3D": {
@@ -8297,9 +8288,9 @@
         },
         "ManualAspectRatio": 0,
         "Params": {
-          "LiftCurveSlope": 8,
-          "NegativeStallAngle": -15,
-          "PositiveStallAngle": 15,
+          "LiftCurveSlope": 11,
+          "NegativeStallAngle": -35,
+          "PositiveStallAngle": 35,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
@@ -8382,30 +8373,30 @@
           },
           {
             "CodeName": "FacilityMaterials5",
-            "Quantity": 175
+            "Quantity": 100
           },
           {
             "CodeName": "FacilityMaterials6",
-            "Quantity": 150
+            "Quantity": 20
           },
           {
             "CodeName": "FacilityMaterials7",
-            "Quantity": 50
+            "Quantity": 20
           },
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 1
+            "Quantity": 5
           }
         ],
         "Resource": {
           "CodeName": "FacilityMaterials2",
-          "Quantity": 285
+          "Quantity": 25
         }
       },
       "DefaultSurfaceMovementRate": 0.3,
       "EngineForce": 25000,
       "FuelCapacity": 200,
-      "FuelConsumptionPerSecond": 0.513,
+      "FuelConsumptionPerSecond": 0.478,
       "ItemHolderCapacity": 1,
       "ItemSlotFilters": [
         {
@@ -8417,7 +8408,7 @@
       "MajorDamagePercent": 0.7,
       "MassOverride": 9000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 32500,
+      "MaxHealth": 10800,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -8474,7 +8465,7 @@
             "Z": -250
           }
         },
-        "SuspensionLength": 0,
+        "SuspensionLength": 100,
         "bCanBrake": false,
         "bCanSwivel": true,
         "bEnabled": true
@@ -8497,12 +8488,12 @@
           },
           "Translation": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-            "X": -35,
+            "X": 0,
             "Y": -409,
             "Z": -265
           }
         },
-        "SuspensionLength": 0,
+        "SuspensionLength": 50,
         "bCanBrake": true,
         "bCanSwivel": false,
         "bEnabled": true
@@ -8525,12 +8516,12 @@
           },
           "Translation": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-            "X": -35,
+            "X": 0,
             "Y": 409,
             "Z": -265
           }
         },
-        "SuspensionLength": 0,
+        "SuspensionLength": 50,
         "bCanBrake": true,
         "bCanSwivel": false,
         "bEnabled": true
@@ -8636,6 +8627,7 @@
         }
       }
     ],
+    "DepthCuttoffForSwimDamage": 100,
     "Description": "This unique Nevish fighter was specially designed to be launched from Mercy-class aircraft carriers, with the flexibility to operate in different environments. Fitted with several front-facing armaments, the White Raven is known to swarm enemy armadas out of nowhere. They soon find themselves careening out of the clouds. ",
     "DestroyedMesh": "DestroyedMesh",
     "DisplayName": "Tulka I1.9 White Raven",
@@ -8675,7 +8667,7 @@
     "FuelTank": "FacilityOil1",
     "FuselageGroup": "FuselageGroup",
     "GenericStockpileComponent": "GenericStockpileComponent",
-    "Icon": "War/Content/Blueprints/Vehicles/Aircraft/AircraftWaterW/Textures/AircraftWaterWIcon.0",
+    "Icon": "War/Content/Textures/UI/VehicleIcons/AircraftWaterWIcon.0",
     "LeftWingGroup": "LeftWingGroup",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
     "MajorDamagePS": "MajorDamagePS",
@@ -8685,14 +8677,14 @@
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
           "X": 95,
           "Y": 370,
-          "Z": 60
+          "Z": 20
         },
-        "MassPercentage": 0.2,
+        "MassPercentage": 0.08,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
           "X": 25,
           "Y": 0,
-          "Z": 30
+          "Z": -20
         }
       },
       {
@@ -8702,12 +8694,12 @@
           "Y": 60,
           "Z": 60
         },
-        "MassPercentage": 0.5,
+        "MassPercentage": 0.7,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
           "X": 125,
           "Y": 0,
-          "Z": 0
+          "Z": -25
         }
       },
       {
@@ -8717,27 +8709,12 @@
           "Y": 50,
           "Z": 52
         },
-        "MassPercentage": 0.28,
+        "MassPercentage": 0.21,
         "Offset": {
           "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
           "X": -225,
           "Y": 0,
-          "Z": 0
-        }
-      },
-      {
-        "Extents": {
-          "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 240,
-          "Y": 30,
-          "Z": 30
-        },
-        "MassPercentage": 0.2,
-        "Offset": {
-          "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-          "X": 80,
-          "Y": 0,
-          "Z": -160
+          "Z": -25
         }
       }
     ],
@@ -8799,6 +8776,7 @@
       "bAllowPackagingToCrate": true
     },
     "SimulatedHitNotifies": "EFastArraySerializerDeltaFlags::HasBeenSerialized",
+    "SquadLockDuration": 172800,
     "StealthComponent": "StealthComponent",
     "Surfaces": [
       {
@@ -8809,21 +8787,21 @@
           "X": 200,
           "Y": 200
         },
-        "ManualAspectRatio": 4.87,
+        "ManualAspectRatio": 3.623,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 27,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.976297,
+            "W": 1,
             "X": 0,
             "Y": 0,
-            "Z": 0.216436
+            "Z": 0
           },
           "Scale3D": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
@@ -8850,21 +8828,21 @@
           "X": 200,
           "Y": 200
         },
-        "ManualAspectRatio": 4.87,
+        "ManualAspectRatio": 3.623,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 27,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.976297,
+            "W": 1,
             "X": 0,
             "Y": 0,
-            "Z": -0.216435
+            "Z": 0
           },
           "Scale3D": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
@@ -8885,27 +8863,27 @@
       },
       {
         "AerodynamicCenterFraction": 0.25,
-        "ControlSurfaceFraction": 0.1,
+        "ControlSurfaceFraction": 0.2,
         "Dimensions": {
           "$type": "UAssetAPI.UnrealTypes.FVector2D, UAssetAPI",
           "X": 200,
-          "Y": 200
+          "Y": 162.300003
         },
-        "ManualAspectRatio": 2.47,
+        "ManualAspectRatio": 3.623,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 27,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.976301,
+            "W": 1,
             "X": 0,
             "Y": 0,
-            "Z": 0.216419
+            "Z": 0
           },
           "Scale3D": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
@@ -8915,7 +8893,7 @@
           },
           "Translation": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-            "X": -59.5,
+            "X": 25,
             "Y": 281.179993,
             "Z": -15
           }
@@ -8926,27 +8904,27 @@
       },
       {
         "AerodynamicCenterFraction": 0.25,
-        "ControlSurfaceFraction": 0.1,
+        "ControlSurfaceFraction": 0.2,
         "Dimensions": {
           "$type": "UAssetAPI.UnrealTypes.FVector2D, UAssetAPI",
           "X": 200,
-          "Y": 200
+          "Y": 162.300003
         },
-        "ManualAspectRatio": 2.47,
+        "ManualAspectRatio": 3.623,
         "Params": {
-          "LiftCurveSlope": 8,
+          "LiftCurveSlope": 10,
           "NegativeStallAngle": -16,
-          "PositiveStallAngle": 16,
+          "PositiveStallAngle": 27,
           "SkinFriction": 0.02,
           "ZeroLiftAngleOfAttack": 0
         },
         "RelativeTransform": {
           "Rotation": {
             "$type": "UAssetAPI.UnrealTypes.FQuat, UAssetAPI",
-            "W": 0.976301,
+            "W": 1,
             "X": 0,
             "Y": 0,
-            "Z": -0.216418
+            "Z": 0
           },
           "Scale3D": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
@@ -8956,7 +8934,7 @@
           },
           "Translation": {
             "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-            "X": -59.5,
+            "X": 25,
             "Y": -281.179993,
             "Z": -15
           }
@@ -9096,35 +9074,27 @@
       "AltResourceAmounts": {
         "OtherResources": [
           {
-            "CodeName": "FacilityMaterials4",
-            "Quantity": 50
-          },
-          {
             "CodeName": "FacilityMaterials5",
-            "Quantity": 95
+            "Quantity": 145
           },
           {
             "CodeName": "FacilityMaterials6",
-            "Quantity": 100
-          },
-          {
-            "CodeName": "FacilityMaterials7",
-            "Quantity": 100
+            "Quantity": 40
           },
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 1
+            "Quantity": 2
           }
         ],
         "Resource": {
           "CodeName": "FacilityMaterials2",
-          "Quantity": 195
+          "Quantity": 40
         }
       },
       "DefaultSurfaceMovementRate": 0.3,
       "EngineForce": 25000,
       "FuelCapacity": 100,
-      "FuelConsumptionPerSecond": 0.256,
+      "FuelConsumptionPerSecond": 0.2453,
       "ItemHolderCapacity": 1,
       "ItemSlotFilters": [
         {
@@ -9134,9 +9104,9 @@
         }
       ],
       "MajorDamagePercent": 0.7,
-      "MassOverride": 1500,
+      "MassOverride": 2200,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 16500,
+      "MaxHealth": 5750,
       "MinTankArmourPercent": 0.33,
       "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -9425,6 +9395,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "R-12 - “Salus” Ambulance",
     "DisplayNameLocales": {
       "de": "R-12 - “Salus” Krankenwagen",
@@ -9634,6 +9609,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "R-12b - “Salva” Flame Truck",
     "DisplayNameLocales": {
       "de": "R-12b - “Salva” Feuerwehr",
@@ -9682,6 +9662,9 @@
     ],
     "ObjectPath": "War/Content/Blueprints/Vehicles/LogisticsVehicles/BPAmbulanceFlameC",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -9725,6 +9708,7 @@
       }
     ],
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -9865,6 +9849,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Dunne Dousing Engine 3r",
     "DisplayNameLocales": {
       "en": "Dunne Dousing Engine 3r"
@@ -9908,6 +9897,9 @@
     ],
     "ObjectPath": "War/Content/Blueprints/Vehicles/LogisticsVehicles/BPAmbulanceFlameW",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -9951,6 +9943,7 @@
       }
     ],
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -10090,6 +10083,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Dunne Responder 3e",
     "DisplayNameLocales": {
       "en": "Dunne Responder 3e"
@@ -10370,6 +10368,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "O’Brien V.101 Freeman",
     "DisplayNameLocales": {
       "de": "O'Brien V.101 Freeman",
@@ -10403,6 +10406,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCar2LargeW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -10445,7 +10451,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -10593,6 +10599,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "O’Brien v.200 Squire",
     "DisplayNameLocales": {
       "en": "O’Brien v.200 Squire"
@@ -10674,6 +10685,9 @@
       "GunnerIndex": 1,
       "bUseForMuzzleTransform": true
     },
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -10705,7 +10719,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -10854,6 +10868,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "O’Brien V.190 Knave",
     "DisplayNameLocales": {
       "de": "O'Brien V.190 Knave",
@@ -11079,6 +11098,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "O’Brien V.113 Gravekeeper",
     "DisplayNameLocales": {
       "en": "O’Brien V.113 Gravekeeper"
@@ -11111,6 +11135,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarATW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -11153,7 +11180,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -11298,6 +11325,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "T3 “Xiphos”",
     "DisplayNameLocales": {
       "en": "T3 “Xiphos”"
@@ -11504,6 +11536,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "O’Brien V.130 Wild Jack",
     "DisplayNameLocales": {
       "en": "O’Brien V.130 Wild Jack"
@@ -11536,6 +11573,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarFlameW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -11582,7 +11622,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -11727,6 +11767,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "O’Brien V.121 Highlander",
     "DisplayNameLocales": {
       "en": "O’Brien V.121 Highlander"
@@ -11764,6 +11809,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarMobilityW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -11810,7 +11858,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -11955,6 +12003,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "T5 “Percutio”",
     "DisplayNameLocales": {
       "en": "T5 “Percutio”"
@@ -11987,6 +12040,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarOffensiveC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -12029,7 +12085,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -12174,6 +12230,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "T8 “Gemini”",
     "DisplayNameLocales": {
       "en": "T8 “Gemini”"
@@ -12212,6 +12273,9 @@
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ArmoredCar/BPArmoredCarBaseC.0",
     "PassengerArea": "PassengerBaseBox",
     "PayloadMeshes": 1,
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -12254,7 +12318,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -12399,6 +12463,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "O’Brien V.110",
     "DisplayNameLocales": {
       "en": "O’Brien V.110"
@@ -14678,7 +14747,7 @@
       "ru": "Neville 20мм ПТ ружье не имеющих себе равных в универсальности и портативности.",
       "zh": "Neville 作为一种便携的弹匣式反装甲武器，拥有着无可比拟的功能性。"
     },
-    "DisplayName": "20 Neville Anti-Tank Rifle",
+    "DisplayName": "Neville Anti-Tank Rifle",
     "DisplayNameLocales": {
       "de": "20 Neville Panzerbüchse",
       "en": "20 Neville Anti-Tank Rifle",
@@ -16278,6 +16347,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "BMS - Aquatipper",
     "DisplayNameLocales": {
       "en": "BMS - Aquatipper"
@@ -16778,7 +16852,7 @@
       "AddedBurning": 0,
       "AddedHeat": 0,
       "BreachingModifier": 1,
-      "Damage": 1500,
+      "Damage": 1200,
       "DamageFalloff": 0,
       "DamageInnerRadius": 700,
       "DamageType": {
@@ -16897,6 +16971,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "R-15 - “Chariot”",
     "DisplayNameLocales": {
       "en": "R-15 - “Chariot”"
@@ -17090,6 +17169,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Dunne Caravaner 2f",
     "DisplayNameLocales": {
       "en": "Dunne Caravaner 2f"
@@ -17703,6 +17787,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "BMS - Universal Assembly Rig",
     "DisplayNameLocales": {
       "en": "BMS - Universal Assembly Rig"
@@ -18061,6 +18150,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "BMS - Fabricator",
     "DisplayNameLocales": {
       "en": "BMS - Fabricator"
@@ -18390,6 +18484,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "BMS - Class 2 Mobile Auto-Crane",
     "DisplayNameLocales": {
       "de": "BMS - Klasse 2 Mobiler Auto-Kran",
@@ -18986,6 +19085,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Noble Firebrand Mk. XVII",
     "DisplayNameLocales": {
       "en": "Noble Firebrand Mk. XVII"
@@ -19017,6 +19121,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/DestroyerTank/BPDestroyerTankFlameW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/DestroyerTank/BPDestroyerTankBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -19071,6 +19178,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -19252,6 +19360,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Noble Widow MK. XIV",
     "DisplayNameLocales": {
       "en": "Noble Widow MK. XIV"
@@ -19503,7 +19616,7 @@
       "BreachingModifier": 1,
       "Damage": 900,
       "DamageFalloff": 0,
-      "DamageInnerRadius": 400,
+      "DamageInnerRadius": 200,
       "DamageType": {
         "DescriptionDetails": "High chance of disabling all vehicle subsystems",
         "DisplayName": "Armour Piercing",
@@ -19511,7 +19624,7 @@
         "ObjectPath": "War/Content/Blueprints/DamageTypes/BPArmourPiercingDiveDamageType.0",
         "TankArmourEffectType": "ETankArmourEffectType::Large",
         "Type": "EDamageType::ArmourPiercing",
-        "VehicleSubsystemDisableMultipliers": 3,
+        "VehicleSubsystemDisableMultipliers": 7,
         "bApplyTankArmourAngleRangeBonuses": false,
         "bApplyTankArmourMechanics": true,
         "bExposeInUI": true
@@ -19591,10 +19704,10 @@
   {
     "ArrowComponent": "StructureArrow",
     "BuildCategory": "EBuildCategory::Shippables",
-    "BuildLocationType": "EBuildLocationType::Facility",
+    "BuildLocationType": "EBuildLocationType::ConstructionYard",
     "ChassisName": "Emplaced Anti-Air Cannon",
     "CodeName": "EmplacedAircraftC",
-    "Description": "A sturdy, stationary cannon for bombarding low-flying enemy aircraft with explosive shells. The DAE 5b anti-aircraft emplacement has become infamous for walls of black smoke its payload leaves behind.",
+    "Description": "A sturdy, stationary cannon for bombarding high-flying enemy aircraft with explosive shrapnel shells. The DAE 5b anti-aircraft emplacement has become infamous for walls of black smoke its payload leaves behind.",
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DisplayName": "DAE 5b “Zeal”",
     "FactionVariant": "EFactionId::Colonials",
@@ -19614,6 +19727,9 @@
     ],
     "ObjectPath": "War/Content/Blueprints/Structures/Emplacements/BPEmplacedAircraftC",
     "PackagedMesh": "War/Content/Meshes/Structures/EmplacedAircraftCPacked.0",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Structures"
+    },
     "RootComponent": "StructureArrow",
     "ShippableInfo": "EShippableType::Normal",
     "StealthComponent": "StealthComponent",
@@ -19662,7 +19778,7 @@
   {
     "ArrowComponent": "StructureArrow",
     "BuildCategory": "EBuildCategory::Shippables",
-    "BuildLocationType": "EBuildLocationType::Facility",
+    "BuildLocationType": "EBuildLocationType::ConstructionYard",
     "ChassisName": "Emplaced Anti-Aircraft Cannon",
     "CodeName": "EmplacedAircraftW",
     "Description": "A late entry into the Leary arsenal, the AA-70 Bolas was a direct response to a sudden uptick in Colonial aerial aggression. This emplaced cannon excels equally at both slowing and bringing down enemy aircraft.",
@@ -19685,6 +19801,9 @@
     ],
     "ObjectPath": "War/Content/Blueprints/Structures/Emplacements/BPEmplacedAircraftW",
     "PackagedMesh": "War/Content/Meshes/Structures/EmplacedAircraftWPacked.0",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Structures"
+    },
     "RootComponent": "StructureArrow",
     "ShippableInfo": "EShippableType::Normal",
     "StealthComponent": "StealthComponent",
@@ -20297,7 +20416,7 @@
     "bRotateDropLocation": true
   },
   {
-    "AntiAirTrackingModifier": 4,
+    "AntiAirTrackingModifier": 6,
     "ArrowComponent": "StructureArrow",
     "BuildCategory": "EBuildCategory::Shippables",
     "BuildLocationType": "EBuildLocationType::ConstructionYard",
@@ -20377,7 +20496,7 @@
     "bRotateDropLocation": true
   },
   {
-    "AntiAirTrackingModifier": 4,
+    "AntiAirTrackingModifier": 6,
     "ArrowComponent": "StructureArrow",
     "BuildCategory": "EBuildCategory::Shippables",
     "BuildLocationType": "EBuildLocationType::ConstructionYard",
@@ -21470,6 +21589,48 @@
   },
   {
     "ChassisName": "ChassisLargeMaterial",
+    "CodeName": "FacilityMaterials12",
+    "Description": "Incredibly rare small components used in some specialized equipment.",
+    "DisplayName": "Rare Materials",
+    "Encumbrance": 300,
+    "Icon": "War/Content/Textures/UI/ItemIcons/MetalBeamPlatformItemIcon.0",
+    "ItemBox": "ItemBox",
+    "ItemCategory": "EItemCategory::Supplies",
+    "ItemDynamicData": {
+      "CostPerCrate": [
+        {
+          "ItemCodeName": "Cloth",
+          "Quantity": 50
+        }
+      ],
+      "CrateProductionTime": 15,
+      "CrateRetrieveTime": 10,
+      "ObjectPath": "War/Content/Blueprints/Data/BPItemDynamicData",
+      "QuantityPerCrate": 1,
+      "ResearchLevel": 0,
+      "SingleRetrieveTime": 1.5
+    },
+    "ItemFlagsMask": 257,
+    "ItemProfileData": {
+      "ObjectPath": "War/Content/Blueprints/Data/BPItemProfileTable",
+      "ReserveStockpileMaxQuantity": 300,
+      "RetrieveQuantity": 10,
+      "StackTransferLimit": 2,
+      "bIsConvertibleToCrate": true,
+      "bIsCratable": true,
+      "bIsStackable": true,
+      "bIsStockpilable": true,
+      "bIsStockpiledWithAmmo": false,
+      "bUsableInVehicle": false
+    },
+    "ItemProfileType": "EItemProfileType::RefinedResource",
+    "ObjectPath": "War/Content/Blueprints/ItemPickups/Facilities/BPFacilityMaterials12Pickup",
+    "RootComponent": "ItemBox",
+    "StealthComponent": "StealthComponent",
+    "TechID": "ETechID::UnlockFacilityMineOilRig"
+  },
+  {
+    "ChassisName": "ChassisLargeMaterial",
     "CodeName": "FacilityMaterials2",
     "Description": "Refined metal bars needed to produce advanced structures, vehicles, and equipment at Facilities.",
     "DescriptionLocales": {
@@ -22337,6 +22498,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "GA6 “Cestus”",
     "DisplayNameLocales": {
       "en": "GA6 “Cestus”"
@@ -22377,6 +22543,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/FieldWeapons/BPFieldAT2C",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/FieldWeapons/BPFieldGunBase.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -22388,6 +22557,7 @@
     "SkiddingDirtPS": "SkiddingDirtPS",
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFieldAT2",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -22530,6 +22700,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Duncan’s Coin 14.5mm",
     "DisplayNameLocales": {
       "de": "Duncans Coin 20mm",
@@ -22569,6 +22744,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/FieldWeapons/BPFieldAT2W",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/FieldWeapons/BPFieldGunBase.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -22580,6 +22758,7 @@
     "SkiddingDirtPS": "SkiddingDirtPS",
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFieldAT2",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -22722,6 +22901,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "AA-2 \"Battering Ram\"",
     "DisplayNameLocales": {
       "en": "AA-2 \"Battering Ram\""
@@ -22890,6 +23074,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Balfour Rampart 68mm",
     "DisplayNameLocales": {
       "en": "Balfour Rampart 68mm",
@@ -22925,6 +23114,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/FieldWeapons/BPFieldATDamageW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/FieldWeapons/BPFieldGunBase.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -22936,6 +23128,7 @@
     "SkiddingDirtPS": "SkiddingDirtPS",
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFieldATDamageGun",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -23074,6 +23267,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Collins Cannon 68mm",
     "DisplayNameLocales": {
       "de": "Collins Geschütz 68mm",
@@ -23247,6 +23445,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "40-45 “Smelter”",
     "DisplayNameLocales": {
       "en": "40-45 “Smelter”"
@@ -23279,6 +23482,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/FieldWeapons/BPFieldCannonDamageC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/FieldWeapons/BPFieldGunBase.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -23290,6 +23496,7 @@
     "SkiddingDirtPS": "SkiddingDirtPS",
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFieldCannonDamage",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -23428,6 +23635,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Balfour Wolfhound 40mm",
     "DisplayNameLocales": {
       "en": "Balfour Wolfhound 40mm",
@@ -23599,6 +23811,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "G40 “Sagittarii”",
     "DisplayNameLocales": {
       "en": "G40 “Sagittarii”"
@@ -23767,6 +23984,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Swallowtail 988/127-2",
     "DisplayNameLocales": {
       "en": "Swallowtail 988/127-2"
@@ -23935,6 +24157,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "30-250 “Tisiphone” Field Cannon",
     "DisplayNameLocales": {
       "de": "30-250 \"Tisiphone\" Feldkanone",
@@ -24106,6 +24333,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Balfour Falconer 250mm",
     "DisplayNameLocales": {
       "en": "Balfour Falconer 250mm",
@@ -25107,6 +25339,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "BMS - Packmule Flatbed",
     "DisplayNameLocales": {
       "de": "BMS - Packmule Schwerlasttransporter",
@@ -25738,7 +25975,7 @@
         "OtherResources": [
           {
             "CodeName": "FacilityMaterials9",
-            "Quantity": 40
+            "Quantity": 20
           },
           {
             "CodeName": "FacilityMaterials11",
@@ -25999,6 +26236,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "BMS - Ironship",
     "DisplayNameLocales": {
       "en": "BMS - Ironship"
@@ -26193,6 +26435,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Das Krokodil by VAC",
     "DriveLoop": "DriveLoop",
     "EncumbranceManager": true,
@@ -26203,12 +26450,6 @@
     "FrontRightRollCastLocation": "RearRightAxleCastLocation",
     "FrontRightWaterEmitter": "FrontRightWaterEmitter",
     "FuelTank": 200,
-    "FuelTankerInfo": {
-      "$type": "UAssetAPI.UnrealTypes.FVector, UAssetAPI",
-      "X": -950,
-      "Y": 0,
-      "Z": 0
-    },
     "GenericStockpileComponent": "GenericStockpileComponent",
     "Horn": "War/Content/Audio/SFX/Vehicles/Freighter/FreighterHorn_Cue.0",
     "Icon": "War/Content/Textures/UI/VehicleIcons/LightFreighterVehicleIcon.0",
@@ -26258,8 +26499,8 @@
       "MaxPropellerRPM": 1000,
       "MaxRudderAngle": 45,
       "ObjectPath": "War/Content/Blueprints/Data/BPShipDynamicData",
-      "RudderDepth": 200,
-      "RudderLength": 200,
+      "RudderDepth": 250,
+      "RudderLength": 250,
       "RudderTurnRate": 75,
       "SecondsToMaxRPM": 1,
       "SlammingPower": 2,
@@ -26267,7 +26508,6 @@
       "VerticalThrustVectoringPercent": 0
     },
     "StealthComponent": "StealthComponent",
-    "TechID": "ETechID::UnlockFreighterLight",
     "UberGraphFrame": {},
     "VehicleBuildType": "EVehicleBuildType::Shipyard",
     "VehicleDynamicData": {
@@ -27273,7 +27513,7 @@
         ]
       }
     ],
-    "ArmourType": "EArmourType::Tier1Ship",
+    "ArmourType": "EArmourType::Tier2Ship",
     "BackUpSFXLoop": "BackUpSFXLoop",
     "BreakdownSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/TruckStall_Cue.0",
     "BuildOffset": {
@@ -27292,6 +27532,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Type B - “Lucian”",
     "DriveLoop": "DriveLoop",
     "FactionVariant": "EFactionId::Colonials",
@@ -27370,7 +27615,6 @@
     },
     "SpoolingHandler": true,
     "StealthComponent": "StealthComponent",
-    "TechID": "ETechID::UnlockGunboat2",
     "UberGraphFrame": {},
     "VehicleBuildType": "EVehicleBuildType::Shipyard",
     "VehicleDynamicData": {
@@ -27474,7 +27718,7 @@
   },
   {
     "AFKTimeoutComponent": "AFKTimeoutComponent",
-    "ArmourType": "EArmourType::Tier1Ship",
+    "ArmourType": "EArmourType::Tier2Ship",
     "BackUpSFXLoop": "BackUpSFXLoop",
     "BreakdownSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/TruckStall_Cue.0",
     "BuildOffset": {
@@ -27493,6 +27737,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "81f-f Ronan Blackguard",
     "DriveLoop": "DriveLoop",
     "FactionVariant": "EFactionId::Wardens",
@@ -27566,7 +27815,6 @@
       "VerticalThrustVectoringPercent": 0
     },
     "StealthComponent": "StealthComponent",
-    "TechID": "ETechID::UnlockGunboat2",
     "UberGraphFrame": {},
     "VehicleBuildType": "EVehicleBuildType::Shipyard",
     "VehicleDynamicData": {
@@ -27678,7 +27926,7 @@
         ]
       }
     ],
-    "ArmourType": "EArmourType::Tier1Ship",
+    "ArmourType": "EArmourType::Tier2Ship",
     "BackUpSFXLoop": "BackUpSFXLoop",
     "BreakdownSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/TruckStall_Cue.0",
     "BuildOffset": {
@@ -27704,6 +27952,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Type C - “Charon”",
     "DisplayNameLocales": {
       "en": "Type C - “Charon”"
@@ -27895,7 +28148,7 @@
         ]
       }
     ],
-    "ArmourType": "EArmourType::Tier1Ship",
+    "ArmourType": "EArmourType::Tier2Ship",
     "BackUpSFXLoop": "BackUpSFXLoop",
     "BreakdownSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/TruckStall_Cue.0",
     "BuildOffset": {
@@ -27922,6 +28175,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "74b-1 Ronan Gunship",
     "DisplayNameLocales": {
       "en": "74b-1 Ronan Gunship"
@@ -28004,7 +28262,7 @@
       "RudderTurnRate": 75,
       "SecondsToMaxRPM": 1,
       "SlammingPower": 2,
-      "ThrustVectoringPercent": 0.5,
+      "ThrustVectoringPercent": 0.6,
       "VerticalThrustVectoringPercent": 0
     },
     "StealthComponent": "StealthComponent",
@@ -28151,6 +28409,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "HH-d “Peltast”",
     "DisplayNameLocales": {
       "en": "HH-d “Peltast”"
@@ -28183,6 +28446,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Halftrack/BPHalfTrackArtilleryC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Halftrack/BPHalfTrackBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -28238,7 +28504,7 @@
     ],
     "Treads": 3,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -28400,6 +28666,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "HH-a “Javelin”",
     "DisplayNameLocales": {
       "en": "HH-a “Javelin”"
@@ -28627,6 +28898,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "HH-b “Hoplite”",
     "DisplayNameLocales": {
       "en": "HH-b “Hoplite”"
@@ -28659,6 +28935,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Halftrack/BPHalfTrackDefensiveC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Halftrack/BPHalfTrackBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -28714,7 +28993,7 @@
     ],
     "Treads": 2,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -28870,6 +29149,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Niska-Rycker Mk. IX Skycaller",
     "DisplayNameLocales": {
       "en": "Niska-Rycker Mk. IX Skycaller"
@@ -28917,6 +29201,9 @@
       "GunnerIndex": 1,
       "bUseForMuzzleTransform": true
     },
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -28960,9 +29247,10 @@
     ],
     "Treads": {
       "TrackLength": 10000,
-      "TrackMaterialIndices": 2
+      "TrackMaterialIndices": 1
     },
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleMovementProfileData": {
       "AirResistance": 70,
       "BrakeForce": 20000,
@@ -29057,6 +29345,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Niska Mk. II Blinder",
     "DisplayNameLocales": {
       "en": "Niska Mk. II Blinder"
@@ -29089,6 +29382,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Halftrack/BPHalfTrackOffensiveW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Halftrack/BPHalftrackBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -29132,7 +29428,7 @@
     ],
     "Treads": 10000,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -29295,6 +29591,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Niska Mk. III Scar Twin",
     "DisplayNameLocales": {
       "en": "Niska Mk. III Scar Twin"
@@ -29332,6 +29633,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Halftrack/BPHalftrackTwinW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Halftrack/BPHalftrackBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -29375,7 +29679,7 @@
     ],
     "Treads": 10000,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleMovementProfileData": {
       "AirResistance": 70,
       "BrakeForce": 20000,
@@ -29470,6 +29774,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Niska Mk. I Gun Motor Carriage",
     "DisplayNameLocales": {
       "de": "Niska Mk. I motorisierter Waffenträger",
@@ -29679,6 +29988,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "BMS - Scrap Hauler",
     "DisplayNameLocales": {
       "en": "BMS - Scrap Hauler"
@@ -29715,6 +30029,9 @@
     "NoTargetParticleSystem": "NoTargetParticleSystem",
     "ObjectPath": "War/Content/Blueprints/Vehicles/LogisticsVehicles/BPHarvester",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -29768,6 +30085,7 @@
       "TrackMaterialIndices": 0
     },
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -30133,6 +30451,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "AU-A150 Taurine Rigger",
     "DisplayNameLocales": {
       "en": "AU-A150 Taurine Rigger"
@@ -30165,6 +30488,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/HeavyTruck/BPHeavyTruckC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/HeavyTruck/BPHeavyTruckBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -30208,6 +30534,7 @@
     ],
     "Treads": 22000,
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [],
@@ -30339,6 +30666,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Cnute Cliffwrest",
     "DisplayNameLocales": {
       "en": "Cnute Cliffwrest"
@@ -30368,6 +30700,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/HeavyTruck/BPHeavyTruckW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/HeavyTruck/BPHeavyTruckBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -30410,6 +30745,7 @@
       }
     ],
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [],
@@ -31205,6 +31541,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "AB-8 “Acheron”",
     "DisplayNameLocales": {
       "en": "AB-8 “Acheron”"
@@ -31429,6 +31770,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "AB-11 “Doru”",
     "DisplayNameLocales": {
       "en": "AB-11 “Doru”"
@@ -31458,6 +31804,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/LandingCraft/BPLandingCraftOffensiveC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/LandingCraft/BPLandingCraftBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -31516,7 +31865,7 @@
       "TrackMaterialIndices": 1
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -31674,6 +32023,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Mulloy LPC",
     "DisplayNameLocales": {
       "en": "Mulloy LPC"
@@ -31885,6 +32239,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "945g “Stygian Bolt”",
     "DisplayNameLocales": {
       "en": "945g “Stygian Bolt”"
@@ -31916,6 +32275,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/FieldWeapons/BPLargeFieldATC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/FieldWeapons/BPLargeFieldGunBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -31927,6 +32289,7 @@
     "SkiddingDirtPS": "SkiddingDirtPS",
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFacilityTier3",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -32077,6 +32440,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Balfour Stockade 75mm",
     "DisplayNameLocales": {
       "en": "Balfour Stockade 75mm",
@@ -32115,6 +32483,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/FieldWeapons/BPLargeFieldCannonW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/FieldWeapons/BPLargeFieldGunBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -32126,6 +32497,7 @@
     "SkiddingDirtPS": "SkiddingDirtPS",
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFacilityTier3",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -32279,6 +32651,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "120-68 “Koronides” Field Gun",
     "DisplayNameLocales": {
       "de": "120-68 “Koronides” Feldartillerie",
@@ -32458,6 +32835,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "40-250 “Alekto” Heavy Cannon",
     "DisplayNameLocales": {
       "de": "35-250 “Alekto” Schwere Feldkanone",
@@ -32493,6 +32875,9 @@
     ],
     "ObjectPath": "War/Content/Blueprints/Vehicles/FieldWeapons/BPLargeFieldMortarC",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -32505,6 +32890,7 @@
     "SkiddingDirtPS": "SkiddingDirtPS",
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFieldMortarLarge",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -32658,6 +33044,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Rycker 4/3-F Wasp Nest",
     "DisplayNameLocales": {
       "en": "Rycker 4/3-F Wasp Nest"
@@ -32694,6 +33085,9 @@
       "GunnerIndex": 1,
       "bUseForMuzzleTransform": true
     },
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -32706,6 +33100,7 @@
     "SkiddingDirtPS": "SkiddingDirtPS",
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFacilityTier2",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -33002,6 +33397,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "K-81e “Sombre”",
     "DriveLoop": "DriveLoop",
     "FactionVariant": "EFactionId::Colonials",
@@ -33016,6 +33416,7 @@
     "LinearSpeedToTurnSpeedMapCurve": "War/Content/Blueprints/Vehicles/GunboatCTurnSpeedCurve.0",
     "LockSound": "War/Content/Audio/SFX/Vehicles/Lock_Cue.0",
     "MajorDamagePS": "MajorDamagePS",
+    "MaxPlatformPlayers": 2,
     "Mesh": "CharacterMesh0",
     "MinorDamagePS": "MinorDamagePS",
     "MuzzleInfo": [
@@ -33089,7 +33490,6 @@
       "VerticalThrustVectoringPercent": 0
     },
     "StealthComponent": "StealthComponent",
-    "TechID": "ETechID::UnlockLightBoatInfantry",
     "UberGraphFrame": {},
     "VehicleBuildType": "EVehicleBuildType::Shipyard",
     "VehicleDynamicData": {
@@ -33104,7 +33504,7 @@
       "MaxEncumbranceMassOverride": 0,
       "MaxHealth": 1500,
       "MinTankArmourPercent": 0.33,
-      "MinorDamagePercent": 0.7,
+      "MinorDamagePercent": 0.5,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
       "OffroadSnowPenalty": 1,
       "RepairCost": 100,
@@ -33112,10 +33512,10 @@
         "OtherResources": [],
         "Resource": {
           "CodeName": "Cloth",
-          "Quantity": 125
+          "Quantity": 100
         }
       },
-      "ResourcesPerBuildCycle": 1,
+      "ResourcesPerBuildCycle": 2,
       "ReverseSpeedModifier": 1,
       "RotationRate": 0.25,
       "RotationSpeedCuttoff": 0,
@@ -33205,6 +33605,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "68A-4 Ronan Fathomer",
     "DriveLoop": "DriveLoop",
     "FactionVariant": "EFactionId::Wardens",
@@ -33304,16 +33709,15 @@
       "MaxPropellerRPM": 500,
       "MaxRudderAngle": 35,
       "ObjectPath": "War/Content/Blueprints/Data/BPShipDynamicData",
-      "RudderDepth": 125,
-      "RudderLength": 125,
+      "RudderDepth": 225,
+      "RudderLength": 225,
       "RudderTurnRate": 75,
       "SecondsToMaxRPM": 1,
       "SlammingPower": 2,
-      "ThrustVectoringPercent": 0.25,
+      "ThrustVectoringPercent": 0.4,
       "VerticalThrustVectoringPercent": 0
     },
     "StealthComponent": "StealthComponent",
-    "TechID": "ETechID::UnlockLightBoatInfantry",
     "UberGraphFrame": {},
     "VehicleBuildType": "EVehicleBuildType::Shipyard",
     "VehicleDynamicData": {
@@ -33336,10 +33740,10 @@
         "OtherResources": [],
         "Resource": {
           "CodeName": "Cloth",
-          "Quantity": 175
+          "Quantity": 125
         }
       },
-      "ResourcesPerBuildCycle": 1,
+      "ResourcesPerBuildCycle": 2,
       "ReverseSpeedModifier": 1,
       "RotationRate": 0.25,
       "RotationSpeedCuttoff": 0,
@@ -33481,6 +33885,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "HC-2 “Scorpion”",
     "DisplayNameLocales": {
       "en": "HC-2 “Scorpion”"
@@ -33827,6 +34236,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Devitt-Caine Mk. IV MMR",
     "DisplayNameLocales": {
       "en": "Devitt-Caine Mk. IV MMR"
@@ -33858,6 +34272,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankArtilleryW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -33909,7 +34326,7 @@
     ],
     "Treads": 5,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -34090,6 +34507,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "H-5 \"Hatchet\"",
     "DisplayNameLocales": {
       "en": "H-5 \"Hatchet\""
@@ -34331,6 +34753,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Devitt Ironhide Mk. IV",
     "DisplayNameLocales": {
       "en": "Devitt Ironhide Mk. IV"
@@ -34341,7 +34768,7 @@
     "FrontAxleCastLocation": "FrontAxelCastLocation",
     "FrontLeftRollCastLocation": "FrontRightAxleCastLocation",
     "FrontRightRollCastLocation": "RearRightAxleCastLocation",
-    "FuelTank": 200,
+    "FuelTank": 300,
     "Icon": "War/Content/Textures/UI/VehicleIcons/LightTankWarDefensiveVehicleIcon.0",
     "IdleLoop": "IdleLoop",
     "LeftSideTrackLocation": "LeftSideTrackLocation",
@@ -34362,6 +34789,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankDefensiveW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -34413,7 +34843,7 @@
     ],
     "Treads": 3,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -34594,6 +35024,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "H-19 “Vulcan”",
     "DisplayNameLocales": {
       "en": "H-19 “Vulcan”"
@@ -34604,7 +35039,7 @@
     "FrontAxleCastLocation": "FrontAxelCastLocation",
     "FrontLeftRollCastLocation": "FrontRightAxleCastLocation",
     "FrontRightRollCastLocation": "RearRightAxleCastLocation",
-    "FuelTank": 225,
+    "FuelTank": 325,
     "Icon": "War/Content/Textures/UI/VehicleIcons/LightTankFlameCIcon.0",
     "IdleLoop": "IdleLoop",
     "LeftSideTrackLocation": "LeftSideTrackLocation",
@@ -34625,6 +35060,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankFlameC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -34676,7 +35114,7 @@
     ],
     "Treads": 0,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -34860,6 +35298,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "H-8 “Kranesca”",
     "DisplayNameLocales": {
       "en": "H-8 “Kranesca”"
@@ -34870,7 +35313,7 @@
     "FrontAxleCastLocation": "FrontAxelCastLocation",
     "FrontLeftRollCastLocation": "FrontRightAxleCastLocation",
     "FrontRightRollCastLocation": "RearRightAxleCastLocation",
-    "FuelTank": 200,
+    "FuelTank": 300,
     "Icon": "War/Content/Textures/UI/VehicleIcons/LightTankColMobilityVehicleIcon.0",
     "IdleLoop": "IdleLoop",
     "LeftSideTrackLocation": "LeftSideTrackLocation",
@@ -34891,6 +35334,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankMobilityC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -34942,7 +35388,7 @@
     ],
     "Treads": 0,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -35124,6 +35570,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "H-10 “Pelekys”",
     "DisplayNameLocales": {
       "en": "H-10 “Pelekys”"
@@ -35155,6 +35606,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankOffensiveC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/LightTank/BPLightTankBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -35206,7 +35660,7 @@
     ],
     "Treads": 0,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -35387,6 +35841,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Devitt Mk. III",
     "DisplayNameLocales": {
       "en": "Devitt Mk. III"
@@ -36374,6 +36833,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Strider",
     "DriveLoop": "DriveLoop",
     "FactionVariant": "EFactionId::Colonials",
@@ -36453,8 +36917,8 @@
       "MaxPropellerRPM": 1000,
       "MaxRudderAngle": 35,
       "ObjectPath": "War/Content/Blueprints/Data/BPShipDynamicData",
-      "RudderDepth": 320,
-      "RudderLength": 320,
+      "RudderDepth": 420,
+      "RudderLength": 420,
       "RudderTurnRate": 75,
       "SecondsToMaxRPM": 1,
       "SlammingPower": 2,
@@ -36462,7 +36926,6 @@
       "VerticalThrustVectoringPercent": 0
     },
     "StealthComponent": "StealthComponent",
-    "TechID": "ETechID::UnlockMediumBoat",
     "UberGraphFrame": {},
     "VehicleBuildType": "EVehicleBuildType::Shipyard",
     "VehicleDynamicData": {
@@ -36485,10 +36948,10 @@
         "OtherResources": [],
         "Resource": {
           "CodeName": "Cloth",
-          "Quantity": 250
+          "Quantity": 100
         }
       },
-      "ResourcesPerBuildCycle": 1,
+      "ResourcesPerBuildCycle": 5,
       "ReverseSpeedModifier": 1,
       "RotationRate": 0.35,
       "RotationSpeedCuttoff": 0,
@@ -36559,6 +37022,14 @@
   },
   {
     "AFKTimeoutComponent": "AFKTimeoutComponent",
+    "ArmourDirectionBoneNamesList": [
+      {
+        "ArmourDirection": "EArmourDirection::Turret",
+        "BoneNamesList": [
+          "Gunner_Horizontal"
+        ]
+      }
+    ],
     "ArmourType": "EArmourType::Tier1Ship",
     "BackUpSFXLoop": "BackUpSFXLoop",
     "BreakdownSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/TruckStall_Cue.0",
@@ -36578,6 +37049,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Rinnspeir Ornitier-Class Gunship",
     "DriveLoop": "DriveLoop",
     "FactionVariant": "EFactionId::Wardens",
@@ -36599,7 +37075,12 @@
       {
         "GunnerIndex": 1,
         "MuzzleIndex": 0,
-        "SocketName": "S_BowGunnerMuzzle"
+        "SocketName": "S_BowGunnerLMuzzle"
+      },
+      {
+        "GunnerIndex": 1,
+        "MuzzleIndex": 1,
+        "SocketName": "S_BowGunnerRMuzzle"
       },
       {
         "GunnerIndex": 2,
@@ -36624,6 +37105,7 @@
     ],
     "ObjectPath": "War/Content/Blueprints/Vehicles/MediumBoats/MediumBoatW/BPMediumBoatW",
     "PassengerArea": "PassengerBaseBox",
+    "PayloadMeshes": 2,
     "ProductionCategories": {
       "MassProductionFactory": "EFactoryQueueType::Vehicles"
     },
@@ -36662,16 +37144,15 @@
       "MaxPropellerRPM": 500,
       "MaxRudderAngle": 35,
       "ObjectPath": "War/Content/Blueprints/Data/BPShipDynamicData",
-      "RudderDepth": 300,
-      "RudderLength": 300,
+      "RudderDepth": 400,
+      "RudderLength": 400,
       "RudderTurnRate": 75,
       "SecondsToMaxRPM": 1,
       "SlammingPower": 2,
-      "ThrustVectoringPercent": 0.5,
+      "ThrustVectoringPercent": 0.6,
       "VerticalThrustVectoringPercent": 0
     },
     "StealthComponent": "StealthComponent",
-    "TechID": "ETechID::UnlockMediumBoat",
     "UberGraphFrame": {},
     "VehicleBuildType": "EVehicleBuildType::Shipyard",
     "VehicleDynamicData": {
@@ -36684,7 +37165,7 @@
       "MajorDamagePercent": 0.85,
       "MassOverride": 200000,
       "MaxEncumbranceMassOverride": 0,
-      "MaxHealth": 2000,
+      "MaxHealth": 2050,
       "MinTankArmourPercent": 0.3,
       "MinorDamagePercent": 0.7,
       "ObjectPath": "War/Content/Blueprints/Data/BPVehicleDynamicData",
@@ -36694,10 +37175,10 @@
         "OtherResources": [],
         "Resource": {
           "CodeName": "Cloth",
-          "Quantity": 200
+          "Quantity": 90
         }
       },
-      "ResourcesPerBuildCycle": 1,
+      "ResourcesPerBuildCycle": 5,
       "ReverseSpeedModifier": 1,
       "RotationRate": 0.35,
       "RotationSpeedCuttoff": 0,
@@ -36831,6 +37312,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "86K-a “Bardiche”",
     "DisplayNameLocales": {
       "en": "86K-a “Bardiche”"
@@ -37083,6 +37569,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Gallagher Thornfall Mk. VI",
     "DisplayNameLocales": {
       "en": "Gallagher Thornfall Mk. VI"
@@ -37160,6 +37651,9 @@
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTank2BaseW.0",
     "PassengerArea": "PassengerBaseBox",
     "PayloadMeshes": 2,
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -37214,7 +37708,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -37405,6 +37899,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Gallagher Highwayman Mk. III",
     "DisplayNameLocales": {
       "en": "Gallagher Highwayman Mk. III"
@@ -37446,6 +37945,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTank2MultiW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTank2BaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -37500,7 +38002,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -37682,6 +38184,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Gallagher Outlaw Mk. II",
     "DisplayNameLocales": {
       "en": "Gallagher Outlaw Mk. II"
@@ -37723,6 +38230,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTank2RangeW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTank2BaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -37777,7 +38287,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -37957,6 +38467,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "86K-c “Ranseur”",
     "DisplayNameLocales": {
       "en": "86K-c “Ranseur”"
@@ -37967,7 +38482,7 @@
     "FrontAxleCastLocation": "FrontAxelCastLocation",
     "FrontLeftRollCastLocation": "FrontRightAxleCastLocation",
     "FrontRightRollCastLocation": "RearRightAxleCastLocation",
-    "FuelTank": 275,
+    "FuelTank": 375,
     "Icon": "War/Content/Textures/UI/VehicleIcons/MediumTank2TwinCVehicleIcon.0",
     "IdleLoop": "IdleLoop",
     "LeftSideTrackLocation": "LeftSideTrackLocation",
@@ -38009,6 +38524,9 @@
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTank2BaseC.0",
     "PassengerArea": "PassengerBaseBox",
     "PayloadMeshes": 2,
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -38063,7 +38581,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -38245,6 +38763,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Gallagher Brigand Mk. I",
     "DisplayNameLocales": {
       "en": "Gallagher Brigand Mk. I"
@@ -38497,6 +39020,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "90T-v “Nemesis”",
     "DisplayNameLocales": {
       "en": "90T-v “Nemesis”"
@@ -38738,6 +39266,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Silverhand Lordscar - Mk. X",
     "DisplayNameLocales": {
       "en": "Silverhand Lordscar - Mk. X"
@@ -38769,6 +39302,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTankATW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/MediumTank/MediumTankBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -38820,7 +39356,7 @@
     ],
     "Treads": 1,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -38997,6 +39533,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "85K-b “Falchion”",
     "DisplayNameLocales": {
       "en": "85K-b “Falchion”"
@@ -39234,6 +39775,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "85V-g \"Talos\"",
     "DisplayNameLocales": {
       "en": "85V-g \"Talos\""
@@ -39265,6 +39811,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTankLargeC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTankBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -39316,7 +39865,7 @@
     ],
     "Treads": 1,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -39502,6 +40051,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "85K-a “Spatha”",
     "DisplayNameLocales": {
       "en": "85K-a “Spatha”"
@@ -39512,7 +40066,7 @@
     "FrontAxleCastLocation": "FrontAxelCastLocation",
     "FrontLeftRollCastLocation": "FrontRightAxleCastLocation",
     "FrontRightRollCastLocation": "RearRightAxleCastLocation",
-    "FuelTank": 225,
+    "FuelTank": 325,
     "Icon": "War/Content/Textures/UI/VehicleIcons/ColonialMediumTankOffensive.0",
     "IdleLoop": "IdleLoop",
     "LeftSideTrackLocation": "LeftSideTrackLocation",
@@ -39533,6 +40087,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTankOffensiveC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTankBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -39584,7 +40141,7 @@
     ],
     "Treads": 1,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -39766,6 +40323,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Silverhand Chieftain - Mk. VI",
     "DisplayNameLocales": {
       "en": "Silverhand Chieftain - Mk. VI"
@@ -39807,6 +40369,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/MediumTank/BPMediumTankSiegeW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/MediumTank/MediumTankBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -39861,7 +40426,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -40042,6 +40607,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Silverhand - Mk. IV",
     "DisplayNameLocales": {
       "en": "Silverhand - Mk. IV"
@@ -40937,6 +41507,11 @@
     "DestroyedFX": "War/Content/FX/ATLaunchedGrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Bellweather by VAC",
     "DriveLoop": "DriveLoop",
     "FrontAxleCastLocation": "FrontAxelCastLocation",
@@ -41038,7 +41613,6 @@
       "VerticalThrustVectoringPercent": 0
     },
     "StealthComponent": "StealthComponent",
-    "TechID": "ETechID::UnlockMineBoat",
     "UberGraphFrame": {},
     "VehicleBuildType": "EVehicleBuildType::Shipyard",
     "VehicleDynamicData": {
@@ -41235,15 +41809,17 @@
       "AddedBurning": 0,
       "AddedHeat": 0,
       "BreachingModifier": 1,
-      "Damage": 2200,
+      "Damage": 500,
       "DamageFalloff": 1,
       "DamageInnerRadius": 650,
       "DamageType": {
-        "DescriptionDetails": "Always has a chance to breach bunkers",
-        "DisplayName": "Explosive",
-        "Icon": "War/Content/Textures/UI/ItemIcons/SubtypeSEIcon.0",
-        "ObjectPath": "War/Content/Blueprints/DamageTypes/BPExplosiveDamageType.0",
-        "Type": "EDamageType::Explosive",
+        "DescriptionDetails": "High chance to penetrate armoured vehicles.\nAdditional 100% chance to penetrate armoured vehicles.",
+        "DisplayName": "Armour Piercing",
+        "Icon": "War/Content/Textures/UI/ItemIcons/SubtypeAPIcon.0",
+        "ObjectPath": "War/Content/Blueprints/DamageTypes/BPArmourPiercingWaterMineDamageType.0",
+        "TankArmourEffectType": "ETankArmourEffectType::Large",
+        "Type": "EDamageType::ArmourPiercing",
+        "bApplyTankArmourAngleRangeBonuses": false,
         "bExposeInUI": true
       },
       "EnvironmentImpactAmount": 0,
@@ -41323,7 +41899,7 @@
     },
     "RootComponent": "ItemBox",
     "StealthComponent": "StealthComponent",
-    "SubTypeIcon": "War/Content/Textures/UI/ItemIcons/SubtypeSEIcon.0",
+    "SubTypeIcon": "War/Content/Textures/UI/ItemIcons/SubtypeAPIcon.0",
     "bIsLarge": true
   },
   {
@@ -42119,6 +42695,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "HC-7 \"Ballista\"",
     "DisplayNameLocales": {
       "en": "HC-7 \"Ballista\""
@@ -42129,7 +42710,7 @@
     "FrontAxleCastLocation": "FrontAxelCastLocation",
     "FrontLeftRollCastLocation": "FrontRightAxleCastLocation",
     "FrontRightRollCastLocation": "RearRightAxleCastLocation",
-    "FuelTank": 200,
+    "FuelTank": 300,
     "Icon": "War/Content/Textures/UI/VehicleIcons/MortarTankVehicleIcon.0",
     "IdleLoop": "IdleLoop",
     "LeftSideTrackLocation": "LeftSideTrackLocation",
@@ -42149,6 +42730,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/MortarTank/BPMortarTankC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/MortarTank/BPMortarTankBase.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -42203,7 +42787,7 @@
       "TrackMaterialIndices": 1
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -42338,6 +42922,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "03MM “Caster”",
     "DisplayNameLocales": {
       "en": "03MM “Caster”"
@@ -42528,6 +43117,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "00MS “Stinger”",
     "DisplayNameLocales": {
       "en": "00MS “Stinger”"
@@ -42553,6 +43147,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Motorcycle/BPMotorcycleOffensiveC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Motorcycle/BPMotorcycleBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -42595,7 +43192,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [],
@@ -42721,6 +43318,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Kivela Power Wheel 80-1",
     "DisplayNameLocales": {
       "en": "Kivela Power Wheel 80-1"
@@ -43499,9 +44101,9 @@
         }
       ],
       "CrateProductionTime": 90,
-      "CrateRetrieveTime": 16,
+      "CrateRetrieveTime": 5,
       "ObjectPath": "War/Content/Blueprints/Data/BPItemDynamicData",
-      "QuantityPerCrate": 10,
+      "QuantityPerCrate": 1,
       "ResearchLevel": 0,
       "SingleRetrieveTime": 5
     },
@@ -43511,21 +44113,22 @@
       "ReserveStockpileMaxQuantity": 100,
       "RetrieveQuantity": 1,
       "StackTransferLimit": 1,
-      "bIsConvertibleToCrate": false,
+      "bIsConvertibleToCrate": true,
       "bIsCratable": true,
       "bIsStackable": false,
       "bIsStockpilable": true,
       "bIsStockpiledWithAmmo": false,
       "bUsableInVehicle": false
     },
-    "ItemProfileType": "EItemProfileType::Uniform",
+    "ItemProfileType": "EItemProfileType::ReserveableUniform",
     "ObjectPath": "War/Content/Blueprints/ItemPickups/Uniforms/BPPilotUniformCPickup",
     "ParentBlueprint": "War/Content/Blueprints/ItemPickups/Uniforms/BPUniformPickup.0",
     "RootComponent": "ItemBox",
     "StealthComponent": "StealthComponent",
     "SubTypeIcon": "War/Content/Textures/UI/ItemIcons/SubtypeAirIcon.0",
     "TechID": "ETechID::UnlockPilotUniform",
-    "UniformType": "EUniformType::PilotC"
+    "UniformType": "EUniformType::PilotC",
+    "bIsReservableWhenCrated": true
   },
   {
     "ChassisName": "Warden Pilot Uniform",
@@ -43547,9 +44150,9 @@
         }
       ],
       "CrateProductionTime": 90,
-      "CrateRetrieveTime": 16,
+      "CrateRetrieveTime": 5,
       "ObjectPath": "War/Content/Blueprints/Data/BPItemDynamicData",
-      "QuantityPerCrate": 10,
+      "QuantityPerCrate": 1,
       "ResearchLevel": 0,
       "SingleRetrieveTime": 5
     },
@@ -43559,21 +44162,22 @@
       "ReserveStockpileMaxQuantity": 100,
       "RetrieveQuantity": 1,
       "StackTransferLimit": 1,
-      "bIsConvertibleToCrate": false,
+      "bIsConvertibleToCrate": true,
       "bIsCratable": true,
       "bIsStackable": false,
       "bIsStockpilable": true,
       "bIsStockpiledWithAmmo": false,
       "bUsableInVehicle": false
     },
-    "ItemProfileType": "EItemProfileType::Uniform",
+    "ItemProfileType": "EItemProfileType::ReserveableUniform",
     "ObjectPath": "War/Content/Blueprints/ItemPickups/Uniforms/BPPilotUniformWPickup",
     "ParentBlueprint": "War/Content/Blueprints/ItemPickups/Uniforms/BPUniformPickup.0",
     "RootComponent": "ItemBox",
     "StealthComponent": "StealthComponent",
     "SubTypeIcon": "War/Content/Textures/UI/ItemIcons/SubtypeAirIcon.0",
     "TechID": "ETechID::UnlockPilotUniform",
-    "UniformType": "EUniformType::PilotW"
+    "UniformType": "EUniformType::PilotW",
+    "bIsReservableWhenCrated": true
   },
   {
     "ChassisName": "ChassisLargeMaterial",
@@ -47650,7 +48254,7 @@
       "AddedBurning": 0,
       "AddedHeat": 0,
       "BreachingModifier": 3,
-      "Damage": 400,
+      "Damage": 550,
       "DamageFalloff": 0,
       "DamageInnerRadius": 0,
       "DamageType": {
@@ -47682,8 +48286,8 @@
     "DisplayNameLocales": {
       "en": "Alligator Charge"
     },
-    "Encumbrance": 385,
-    "EquipmentSlot": "EEquipmentSlot::Tertiary",
+    "Encumbrance": 125,
+    "EquipmentSlot": "EEquipmentSlot::Large",
     "FactionVariant": "EFactionId::Wardens",
     "Icon": "War/Content/Textures/UI/StructureIcons/SatchelCharge.0",
     "ItemBox": "ItemBox",
@@ -47740,7 +48344,8 @@
     "RootComponent": "ItemBox",
     "StealthComponent": "StealthComponent",
     "SubTypeIcon": "War/Content/Textures/UI/ItemIcons/SubtypeLRAIcon.0",
-    "TechID": "ETechID::UnlockSatchelCharge"
+    "TechID": "ETechID::UnlockSatchelCharge",
+    "bIsLarge": true
   },
   {
     "AFKTimeoutComponent": "AFKTimeoutComponent",
@@ -47805,6 +48410,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "King Jester Mk. I-1",
     "DisplayNameLocales": {
       "en": "King Jester Mk. I-1"
@@ -47848,6 +48458,9 @@
     "PayloadMeshes": {
       "GunnerIndex": 1,
       "bUseForMuzzleTransform": true
+    },
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
     },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
@@ -47904,6 +48517,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -48080,6 +48694,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "King Gallant Mk. II",
     "DisplayNameLocales": {
       "en": "King Gallant Mk. II"
@@ -48090,7 +48709,7 @@
     "FrontAxleCastLocation": "FrontAxelCastLocation",
     "FrontLeftRollCastLocation": "FrontRightAxleCastLocation",
     "FrontRightRollCastLocation": "RearRightAxleCastLocation",
-    "FuelTank": 250,
+    "FuelTank": 350,
     "Icon": "War/Content/Textures/UI/VehicleIcons/ScoutTankOffensiveWIcon.0",
     "IdleLoop": "IdleLoop",
     "LeftSideTrackLocation": "LeftSideTrackLocation",
@@ -48111,6 +48730,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/ScoutTank/BPScoutTankOffensiveW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ScoutTank/ScoutTankWBase.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -48162,7 +48784,7 @@
     ],
     "Treads": 1,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -48332,6 +48954,11 @@
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
     "DisabledFuelTankFX": "DisabledFuelTankFX",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "King Spire Mk. I",
     "DisplayNameLocales": {
       "en": "King Spire Mk. I"
@@ -48688,6 +49315,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "UV-05a “Argonaut”",
     "DisplayNameLocales": {
       "en": "UV-05a “Argonaut”"
@@ -48763,7 +49395,7 @@
       "EngineForce": 9000,
       "FuelCapacity": 100,
       "FuelConsumptionPerSecond": 0.05,
-      "ItemHolderCapacity": 5,
+      "ItemHolderCapacity": 6,
       "ItemSlotFilters": [],
       "MajorDamagePercent": 0.8,
       "MassOverride": 0,
@@ -48872,6 +49504,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "UV-24 “Icarus”",
     "DisplayNameLocales": {
       "en": "UV-24 “Icarus”"
@@ -48896,6 +49533,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/ScoutVehicle/BPScoutVehicleOffensiveC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ScoutVehicle/BPScoutVehicleBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -48939,7 +49579,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -49075,6 +49715,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Drummond Spitfire 100d",
     "DisplayNameLocales": {
       "en": "Drummond Spitfire 100d"
@@ -49099,6 +49744,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/ScoutVehicle/BPScoutVehicleOffensiveW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ScoutVehicle/BPScoutVehicleBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -49142,7 +49790,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -49279,6 +49927,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "UV-5c “Odyssey”",
     "DisplayNameLocales": {
       "en": "UV-5c “Odyssey”"
@@ -49303,6 +49956,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/ScoutVehicle/BPScoutVehicleUtilityC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/ScoutVehicle/BPScoutVehicleBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -49344,7 +50000,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [],
@@ -49357,7 +50013,7 @@
       "EngineForce": 8500,
       "FuelCapacity": 100,
       "FuelConsumptionPerSecond": 0.05,
-      "ItemHolderCapacity": 6,
+      "ItemHolderCapacity": 7,
       "ItemSlotFilters": [],
       "MajorDamagePercent": 0.8,
       "MassOverride": 0,
@@ -49475,6 +50131,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Drummond Loscann 55c",
     "DisplayNameLocales": {
       "en": "Drummond Loscann 55c"
@@ -49507,6 +50168,9 @@
     "MinorDamagePS": "MinorDamagePS",
     "ObjectPath": "War/Content/Blueprints/Vehicles/ScoutVehicle/BPScoutVehicleUtilityW",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -49548,6 +50212,7 @@
       }
     ],
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -49565,7 +50230,7 @@
       "EngineForce": 7450,
       "FuelCapacity": 100,
       "FuelConsumptionPerSecond": 0.1,
-      "ItemHolderCapacity": 6,
+      "ItemHolderCapacity": 7,
       "ItemSlotFilters": [],
       "MajorDamagePercent": 0.8,
       "MassOverride": 0,
@@ -49685,6 +50350,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Drummond 100a",
     "DisplayNameLocales": {
       "en": "Drummond 100a"
@@ -49760,7 +50430,7 @@
       "EngineForce": 8500,
       "FuelCapacity": 100,
       "FuelConsumptionPerSecond": 0.05,
-      "ItemHolderCapacity": 8,
+      "ItemHolderCapacity": 9,
       "ItemSlotFilters": [],
       "MajorDamagePercent": 0.8,
       "MassOverride": 0,
@@ -52341,15 +53011,17 @@
       "AddedBurning": 0,
       "AddedHeat": 0,
       "BreachingModifier": 1,
-      "Damage": 750,
+      "Damage": 650,
       "DamageFalloff": 1,
       "DamageInnerRadius": 750,
       "DamageType": {
-        "DescriptionDetails": "Always has a chance to breach bunkers",
-        "DisplayName": "Explosive",
-        "Icon": "War/Content/Textures/UI/ItemIcons/SubtypeSEIcon.0",
-        "ObjectPath": "War/Content/Blueprints/DamageTypes/BPExplosiveDamageType.0",
-        "Type": "EDamageType::Explosive",
+        "DescriptionDetails": "High chance to penetrate armoured vehicles.\nAdditional 100% chance to penetrate armoured vehicles.",
+        "DisplayName": "Armour Piercing",
+        "Icon": "War/Content/Textures/UI/ItemIcons/SubtypeAPIcon.0",
+        "ObjectPath": "War/Content/Blueprints/DamageTypes/BPArmourPiercingWaterMineDamageType.0",
+        "TankArmourEffectType": "ETankArmourEffectType::Large",
+        "Type": "EDamageType::ArmourPiercing",
+        "bApplyTankArmourAngleRangeBonuses": false,
         "bExposeInUI": true
       },
       "EnvironmentImpactAmount": 0,
@@ -52365,7 +53037,7 @@
     "EquipmentSlot": "EEquipmentSlot::Large",
     "Icon": "War/Content/Textures/UI/ItemIcons/SurfaceMineIcon.0",
     "ItemBox": "ItemBox",
-    "ItemCategory": "EItemCategory::Utility",
+    "ItemCategory": "EItemCategory::HeavyAmmo",
     "ItemComponentClass": {
       "ActivityStateInfos": {
         "ActivityMontage": "War/Content/Animation/Character/NWP_NoWeapon/NWP_HeavyMetalEquipping.0",
@@ -52426,7 +53098,7 @@
     },
     "RootComponent": "ItemBox",
     "StealthComponent": "StealthComponent",
-    "SubTypeIcon": "War/Content/Textures/UI/ItemIcons/SubtypeSEIcon.0",
+    "SubTypeIcon": "War/Content/Textures/UI/ItemIcons/SubtypeAPIcon.0",
     "bIsLarge": true
   },
   {
@@ -52599,6 +53271,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "T12 “Actaeon” Tankette",
     "DisplayNameLocales": {
       "en": "T12 “Actaeon” Tankette",
@@ -52821,6 +53498,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "T14 “Vesta” Tankette",
     "DisplayNameLocales": {
       "en": "T14 “Vesta” Tankette",
@@ -52857,6 +53539,9 @@
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Tankette/BPTanketteBaseC.0",
     "PassengerArea": "PassengerBaseBox",
     "PayloadMeshes": 1,
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -52900,7 +53585,7 @@
     ],
     "Treads": 1,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -53055,6 +53740,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "T13 “Deioneus” Rocket Battery",
     "DisplayNameLocales": {
       "de": "T13 “Deioneus” Raketenbatterie",
@@ -53093,6 +53783,9 @@
     "PayloadMeshes": {
       "GunnerIndex": 1,
       "bUseForMuzzleTransform": true
+    },
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
     },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
@@ -53140,6 +53833,7 @@
       "TrackMaterialIndices": 1
     },
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -53301,6 +53995,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "T20 “Ixion” Tankette",
     "DisplayNameLocales": {
       "en": "T20 “Ixion” Tankette",
@@ -53336,6 +54035,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Tankette/BPTanketteOffensiveC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Tankette/BPTanketteBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -53379,7 +54081,7 @@
     ],
     "Treads": 1,
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -53891,6 +54593,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Rooster - Lamploader",
     "DisplayNameLocales": {
       "en": "Rooster - Lamploader"
@@ -53936,6 +54643,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Trailers/BPTrailerLiquid",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Trailers/BPTrailerStockpileBase.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -53948,6 +54658,7 @@
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFacilityTier2",
     "UseAreaBox": "UseAreaBox",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -54079,6 +54790,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Rooster - Tumblebox",
     "DisplayNameLocales": {
       "en": "Rooster - Tumblebox"
@@ -54112,6 +54828,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Trailers/BPTrailerMaterial",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Trailers/BPTrailerStockpileBase.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -54124,6 +54843,7 @@
     "StealthComponent": "StealthComponent",
     "TechID": "ETechID::UnlockFacilityTier2",
     "UseAreaBox": "UseAreaBox",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -54255,6 +54975,11 @@
     "DestroyedFX": "War/Content/FX/GrenadeBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Rooster - Junkwagon",
     "DisplayNameLocales": {
       "en": "Rooster - Junkwagon"
@@ -54604,6 +55329,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "R-1 Hauler",
     "DisplayNameLocales": {
       "en": "R-1 Hauler"
@@ -54797,6 +55527,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Dunne Leatherback 2a",
     "DisplayNameLocales": {
       "en": "Dunne Leatherback 2a"
@@ -54831,6 +55566,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Truck/BPTruckDefensiveW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Truck/BPTruckBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -54872,7 +55610,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [],
@@ -55003,6 +55741,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "RR-3 “Stolon” Tanker",
     "DisplayNameLocales": {
       "de": "RR-3 “Stolon” Tankwagen",
@@ -55240,6 +55983,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Dunne Fuelrunner 2d",
     "DisplayNameLocales": {
       "en": "Dunne Fuelrunner 2d"
@@ -55467,6 +56215,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "R-5b “Sisyphus” Hauler",
     "DisplayNameLocales": {
       "en": "R-5b “Sisyphus” Hauler"
@@ -55501,6 +56254,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Truck/BPTruckMobilityC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Truck/BPTruckBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -55542,7 +56298,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [],
@@ -55664,6 +56420,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Dunne Landrunner 12c",
     "DisplayNameLocales": {
       "en": "Dunne Landrunner 12c"
@@ -55698,6 +56459,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Truck/BPTruckMobilityW",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Truck/BPTruckBaseW.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -55743,7 +56507,7 @@
       "TrackMaterialIndices": 2
     },
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [],
@@ -55869,6 +56633,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "R-17 “Retiarius” Skirmisher",
     "DisplayNameLocales": {
       "en": "R-17 “Retiarius” Skirmisher"
@@ -55983,6 +56752,9 @@
       "GunnerIndex": 1,
       "bUseForMuzzleTransform": true
     },
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -56027,6 +56799,7 @@
       }
     ],
     "UberGraphFrame": {},
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [
@@ -56165,6 +56938,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "R-9 “Speartip” Escort",
     "DisplayNameLocales": {
       "en": "R-9 “Speartip” Escort"
@@ -56199,6 +56977,9 @@
     "ObjectPath": "War/Content/Blueprints/Vehicles/Truck/BPTruckOffensiveC",
     "ParentBlueprint": "War/Content/Blueprints/Vehicles/Truck/BPTruckBaseC.0",
     "PassengerArea": "PassengerBaseBox",
+    "ProductionCategories": {
+      "MassProductionFactory": "EFactoryQueueType::Vehicles"
+    },
     "RearAxleCastLocation": "RearAxleCastLocation",
     "RearLeftTireDirtHighSpeedPS": "RearLeftTireDirtHighSpeedPS",
     "RearLeftTireDirtLowSpeedPS": "RearLeftTireDirtLowSpeedPS",
@@ -56241,7 +57022,7 @@
       }
     ],
     "UberGraphFrame": {},
-    "VehicleBuildType": "EVehicleBuildType::NotBuildable",
+    "VehicleBuildType": "EVehicleBuildType::VehicleFacility",
     "VehicleDynamicData": {
       "AltResourceAmounts": {
         "OtherResources": [],
@@ -56363,6 +57144,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "R-5 “Atlas” Hauler",
     "DisplayNameLocales": {
       "en": "R-5 “Atlas” Hauler"
@@ -56564,6 +57350,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Dunne Loadlugger 3c",
     "DisplayNameLocales": {
       "en": "Dunne Loadlugger 3c",
@@ -56767,6 +57558,11 @@
     "DestroyedFX": "War/Content/FX/MortarBlast.0",
     "DestroyedMesh": "DestroyedMesh",
     "DestroyedSoundCue": "War/Content/Audio/SFX/Vehicles/Truck/VehicleDeath_Cue.0",
+    "DisabledTurret2FX": "DisabledTurret2FX",
+    "DisabledTurret3FX": "DisabledTurret3FX",
+    "DisabledTurret4FX": "DisabledTurret4FX",
+    "DisabledTurret5FX": "DisabledTurret5FX",
+    "DisabledTurretFX": "DisabledTurretFX",
     "DisplayName": "Dunne Transport",
     "DisplayNameLocales": {
       "en": "Dunne Transport"

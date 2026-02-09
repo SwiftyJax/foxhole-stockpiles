@@ -14,11 +14,10 @@ RUN apt-get update && \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy pyproject.toml and create minimal package structure for dependency installation
+# Copy pyproject.toml and __init__.py for dependency installation
 COPY pyproject.toml /app/
+COPY foxhole_stockpiles/__init__.py /app/foxhole_stockpiles/__init__.py
 WORKDIR /app
-# Create a dummy __init__.py so pip can install dependencies from pyproject.toml
-RUN mkdir -p foxhole_stockpiles && touch foxhole_stockpiles/__init__.py
 
 # Install dependencies from pyproject.toml
 RUN pip install --no-cache-dir --upgrade pip && \
@@ -55,20 +54,24 @@ RUN apt-get update && \
 # Copy virtual environment from builder
 COPY --from=builder /opt/venv /opt/venv
 
+# Activate virtual environment
+ENV PATH="/opt/venv/bin:$PATH"
+
 # Copy application code
+COPY pyproject.toml /app/
 COPY foxhole_stockpiles /app/foxhole_stockpiles
 
 # Set up working directory
 WORKDIR /app
+
+# Create entry point scripts (deps already installed)
+RUN pip install --no-cache-dir --no-deps .
 
 # Write git info to file for runtime access
 RUN echo "GIT_COMMIT_HASH=${GIT_COMMIT_HASH}" > /app/.git_info && \
     echo "GIT_COMMIT_SHORT_HASH=${GIT_COMMIT_SHORT_HASH}" >> /app/.git_info && \
     echo "GIT_COMMIT_DATE=${GIT_COMMIT_DATE}" >> /app/.git_info && \
     echo "GIT_DIRTY=${GIT_DIRTY}" >> /app/.git_info
-
-# Activate virtual environment
-ENV PATH="/opt/venv/bin:$PATH"
 
 # Add /app to PYTHONPATH so imports work
 ENV PYTHONPATH=/app
