@@ -516,11 +516,9 @@ class TestAppSettings:
         # Mock settings sources to avoid loading from ~/.fs_config
         def mock_settings_customise_sources(
             cls: type[BaseSettings],
-            settings_cls: type[BaseSettings],
             init_settings: PydanticBaseSettingsSource,
-            env_settings: PydanticBaseSettingsSource,
-            dotenv_settings: PydanticBaseSettingsSource,
-            file_secret_settings: PydanticBaseSettingsSource,
+            *args: PydanticBaseSettingsSource,
+            **kwargs: PydanticBaseSettingsSource,
         ) -> tuple[PydanticBaseSettingsSource, ...]:
             # Only use init_settings (passed kwargs), ignore file and env
             return (init_settings,)
@@ -579,11 +577,10 @@ class TestAppSettings:
         # Mock settings sources to use env but not file
         def mock_settings_customise_sources(
             cls: type[BaseSettings],
-            settings_cls: type[BaseSettings],
             init_settings: PydanticBaseSettingsSource,
             env_settings: PydanticBaseSettingsSource,
-            dotenv_settings: PydanticBaseSettingsSource,
-            file_secret_settings: PydanticBaseSettingsSource,
+            *args: PydanticBaseSettingsSource,
+            **kwargs: PydanticBaseSettingsSource,
         ) -> tuple[PydanticBaseSettingsSource, ...]:
             # Use env_settings and init_settings, but not file
             return (init_settings, env_settings)
