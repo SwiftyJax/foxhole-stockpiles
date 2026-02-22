@@ -67,6 +67,7 @@ class CatalogItem(BaseModel):
 
         Items with ItemProfileData use bIsCratable field.
         Vehicles/Structures use MassProductionFactory in ProductionCategories.
+        Shippable items (e.g., aircraft) use bAllowPackagingToCrate in ShippableInfo.
 
         Args:
             item (dict[str, Any]): Item definition from catalog.
@@ -84,9 +85,9 @@ class CatalogItem(BaseModel):
         if "MassProductionFactory" in prod_cats:
             return True
 
-        # HARDCODED: Aircraft are cratable but game data doesn't have bIsCratable flag
-        # Identified by ArmourType::Tier1Aircraft (excludes aircraft parts and ammo)
-        if item.get("ArmourType") == "EArmourType::Tier1Aircraft":
+        # Shippable items: check bAllowPackagingToCrate in ShippableInfo
+        shippable = item.get("ShippableInfo")
+        if isinstance(shippable, dict) and shippable.get("bAllowPackagingToCrate", False):
             return True
 
         return False
