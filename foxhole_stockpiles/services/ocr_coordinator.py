@@ -334,8 +334,8 @@ class OCRCoordinator:
     ) -> NDArray[np.uint8]:
         """Apply preprocessing to the image for better text detection.
 
-        Calculates region-specific threshold from pixel distribution for optimal OCR accuracy.
-        Each region (name, shard, type) gets its own threshold based on its characteristics.
+        Uses Otsu's thresholding to automatically determine optimal threshold based on
+        the image histogram, providing robust detection across different image conditions.
 
         Args:
             image (NDArray[np.uint8]): Image region to preprocess
@@ -352,20 +352,12 @@ class OCRCoordinator:
             gray, None, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_CUBIC
         )
 
-        # Calculate threshold from this region's pixel distribution
-        unique_values, counts = np.unique(upscaled, return_counts=True)
-        most_common_value = unique_values[np.argmax(counts)]
-        threshold_value = most_common_value + 120 * (1 - most_common_value / 255)
-
         if use_inv:
-            threshold_mode = cv2.THRESH_BINARY_INV
+            threshold_mode = cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU
         else:
-            threshold_mode = cv2.THRESH_BINARY
-            threshold_value -= 30
+            threshold_mode = cv2.THRESH_BINARY + cv2.THRESH_OTSU
 
-        upscaled[upscaled < threshold_value] = 0
-
-        _, binary = cv2.threshold(upscaled, self.TESSERACT_BINARY_THRESHOLD, 255, threshold_mode)
+        _, binary = cv2.threshold(upscaled, 0, 255, threshold_mode)
 
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         binary = cv2.dilate(binary, kernel, iterations=1)
