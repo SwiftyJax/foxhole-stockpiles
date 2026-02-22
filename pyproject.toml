@@ -25,23 +25,23 @@ requires-python = ">=3.12"
 dependencies = [
     # Core image processing libraries
     "httpx>=0.28.1",
-    "numpy>=2.4.1",
+    "numpy>=2.4.2",
     "opencv-python-headless>=4.13.0.90",
-    "pillow>=12.1.0",
+    "pillow>=12.1.1",
     "pydantic>=2.12.3",
-    "pydantic_settings>=2.11.0",
+    "pydantic_settings>=2.13.1",
     "pytesseract>=0.3.13",
     # HDF5 for database storage
     "h5py>=3.11.0",
     # Notifications
     "discord-webhook>=1.3.1",
     # FastAPI and web server
-    "fastapi>=0.128.0",
-    "uvicorn[standard]>=0.40.0",
-    "python-multipart>=0.0.21",
+    "fastapi>=0.129.2",
+    "uvicorn[standard]>=0.41.0",
+    "python-multipart>=0.0.22",
     "jinja2>=3.1.0",
     # Memory profiling
-    "psutil>=7.2.1",
+    "psutil>=7.2.2",
     "memory-profiler>=0.61.0",
     # PyQt6 for GUI
     "PyQt6>=6.10.2",
@@ -57,7 +57,7 @@ dev = [
 
     # Code Quality & Formatting (dev-only)
     "mypy>=1.19.1",
-    "ruff>=0.14.14",
+    "ruff>=0.15.2",
     "pre-commit>=4.5.1",
     "types-requests",
     "types-psutil",
