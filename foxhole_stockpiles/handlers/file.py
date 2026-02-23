@@ -94,7 +94,7 @@ class FileOutputHandler(BaseOutputDestinationHandler):
 
         await asyncio.to_thread(write_file)
 
-        self.logger.info("Output saved to: %s", output_path)
+        self.logger.debug("Output saved to: %s", output_path)
 
     def _format_output(self, stockpile: Stockpile) -> str:
         """Format stockpile data based on format settings.
