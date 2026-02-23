@@ -1,5 +1,7 @@
 """Stockpile type enum."""
 
+from __future__ import annotations
+
 from enum import StrEnum
 
 
@@ -24,3 +26,18 @@ class StockpileType(StrEnum):
     AIRCRAFT_DEPOT = "Aircraft Depot"
 
     UNDEFINED = "Undefined"
+
+    def has_custom_name(self) -> bool:
+        """Check if this stockpile type supports custom player-given names.
+
+        Only player-built structures (Storage Depot, Seaport, Aircraft Depot)
+        can have custom names. Base types use their type as the display name.
+
+        Returns:
+            bool: True if this stockpile type can have a custom name.
+        """
+        return self in (
+            StockpileType.STORAGE_DEPOT,
+            StockpileType.SEAPORT,
+            StockpileType.AIRCRAFT_DEPOT,
+        )

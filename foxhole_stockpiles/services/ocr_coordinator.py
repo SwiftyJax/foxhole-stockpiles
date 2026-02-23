@@ -471,9 +471,26 @@ class OCRCoordinator:
             stockpile=stockpile, stockpile_images=stockpile_images, faction=faction
         )
 
-        # detect the stockpile metadata from the other regions
+        # Detect the stockpile metadata from the other regions
+        # First detect the stockpile type to determine if name extraction is needed
+        type_image = stockpile_images.stockpile_type
+        if type_image is not None:
+            source_image = self._prepare_image_for_detection(
+                image=type_image,
+                scale_factor=scale_factor,
+            )
+            if self.config.debug_mode:
+                cv2.imwrite("stockpile_type_region.png", source_image)
+
+            text = await self._text_extractor.extract_raw_text(
+                image=source_image, numbers_only=False, language=language
+            )
+            stockpile.type = self._stockpile_type_classifier.classify_from_text(text)
+
+        # Only extract stockpile name for types that support custom names
+        # (Storage Depot, Seaport, Aircraft Depot). Base types don't have names.
         name_image = stockpile_images.stockpile_name
-        if name_image is not None:
+        if name_image is not None and stockpile.type and stockpile.type.has_custom_name():
             source_image = self._prepare_image_for_detection(
                 image=name_image,
                 scale_factor=scale_factor,
@@ -503,20 +520,6 @@ class OCRCoordinator:
             lines = text.splitlines()
             stockpile.ingame_timestamp = extract_day_and_hour(lines[0])
             stockpile.shard = lines[1]
-
-        type_image = stockpile_images.stockpile_type
-        if type_image is not None:
-            source_image = self._prepare_image_for_detection(
-                image=type_image,
-                scale_factor=scale_factor,
-            )
-            if self.config.debug_mode:
-                cv2.imwrite("stockpile_type_region.png", source_image)
-
-            text = await self._text_extractor.extract_raw_text(
-                image=source_image, numbers_only=False, language=language
-            )
-            stockpile.type = self._stockpile_type_classifier.classify_from_text(text)
 
         return stockpile
 
