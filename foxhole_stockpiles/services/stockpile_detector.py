@@ -549,7 +549,7 @@ class StockpileDetector:
         self._logger.debug("Color legend: Red=Quantity boxes, Blue=Type region, Green=Name region")
 
     def _build_quantity_composite_image(self) -> None:
-        """Create a composite image with all the quantitites."""
+        """Create a composite image with all the quantities, preprocessed for OCR."""
         quantities = [
             self.img[y : y + self.box_height, x : x + self.box_width] for x, y in self.quantities
         ]
@@ -559,30 +559,38 @@ class StockpileDetector:
             else self.quantities[0]
         )
 
-        # Build the composite image for the quantities in the same location they where detected
-        quantities_relative_to_stockpile = [
-            (x - min_coords_x, y - min_coords_y) for x, y in self.quantities
-        ]
-
-        # use max width for the stockpile
         composite_width = self.title_min_width * 2 + self.box_width
-        composite_height = quantities_relative_to_stockpile[-1][1] + self.box_height * 2
+        last_y = self.quantities[-1][1] - min_coords_y
+        composite_height = last_y + self.box_height * 2
 
-        # Black background image with the grey quantities on top. Later it will be normalized
+        # Black background image with the grey quantities on top
         composite = np.full((composite_height, composite_width, 3), 0, dtype=np.uint8)
-        for index, (x, y) in enumerate(quantities_relative_to_stockpile):
-            composite[y : y + self.box_height, x : x + self.box_width] = quantities[index]
+        for index, (x, y) in enumerate(self.quantities):
+            rel_x, rel_y = x - min_coords_x, y - min_coords_y
+            composite[rel_y : rel_y + self.box_height, rel_x : rel_x + self.box_width] = quantities[
+                index
+            ]
 
         # Apply upscaling adjusted by the current scale factor
         upscale_factor = 2 / self.scale_factor
         upscaled = cv2.resize(
             composite, None, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_CUBIC
         )
+
+        # Convert to binary and apply morphological operations
         gray = cv2.cvtColor(upscaled, cv2.COLOR_RGB2GRAY)
         _, binary = cv2.threshold(gray, 120, 255, cv2.THRESH_BINARY_INV)
         kernel = np.ones((2, 2), np.uint8)
         cleaned = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
-        post_cleaned = cv2.cvtColor(cleaned, cv2.COLOR_GRAY2RGB)
+
+        # Invert to black text on white, apply erosion to thin text, invert back
+        # This improves OCR accuracy for certain number combinations (e.g., "57")
+        inverted = cv2.bitwise_not(cleaned)
+        eroded = cv2.erode(inverted, kernel, iterations=1)
+        final = cv2.bitwise_not(eroded)
+
+        # Convert back to RGB
+        post_cleaned = cv2.cvtColor(final, cv2.COLOR_GRAY2RGB)
 
         self.composite_image = np.asarray(post_cleaned, dtype=np.uint8)
 

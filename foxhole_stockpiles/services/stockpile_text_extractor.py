@@ -4,7 +4,6 @@ import asyncio
 import logging
 import os
 
-import cv2
 import numpy as np
 import pytesseract
 from numpy.typing import NDArray
@@ -62,94 +61,21 @@ class StockpileTextExtractor:
 
         return detected
 
-    async def extract_quantities(self, composite_image: NDArray[np.uint8]) -> list[list[int]]:
+    async def extract_quantities(
+        self,
+        composite_image: NDArray[np.uint8],
+    ) -> list[list[int]]:
         """Extract all quantities from a composite image maintaining row/column structure.
-
-        Uses custom model first, then tries with an eroded image to handle cases where the
-        custom model has blind spots for certain number combinations (e.g., "57"). Erosion
-        makes text slightly thinner which can help OCR distinguish certain characters.
 
         Args:
             composite_image (NDArray[np.uint8]): Processed composite image (black text on white
-                background)
+                background, with erosion already applied)
 
         Returns:
             list[list[int]]: List of quantities detected by row
         """
-        # Extract text with custom trained model
         raw_text = await self.extract_raw_text(composite_image)
-        primary_result = self.parse_text_to_lists(raw_text)
-
-        # If using a custom model, also try with eroded image for missed detections
-        if self.custom_model:
-            eroded_image = self._apply_erosion(composite_image)
-            fallback_text = await self.extract_raw_text(eroded_image)
-            fallback_result = self.parse_text_to_lists(fallback_text)
-
-            # Merge results: use eroded result line when it detected more numbers
-            primary_result = self._merge_ocr_results(primary=primary_result, eroded=fallback_result)
-
-        return primary_result
-
-    def _apply_erosion(self, image: NDArray[np.uint8]) -> NDArray[np.uint8]:
-        """Apply erosion to make text slightly thinner for better OCR recognition.
-
-        This helps handle cases where the custom model fails to recognize certain number
-        combinations due to font rendering characteristics.
-
-        Args:
-            image (NDArray[np.uint8]): Input image (RGB format, black text on white background)
-
-        Returns:
-            NDArray[np.uint8]: Eroded image in RGB format
-        """
-        gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-        # Invert so text is white (for erosion to thin it)
-        _, binary = cv2.threshold(gray, 128, 255, cv2.THRESH_BINARY_INV)
-        # Erode with 2x2 kernel to thin the text
-        kernel = np.ones((2, 2), np.uint8)
-        eroded = cv2.erode(binary, kernel, iterations=1)
-        # Invert back to black text on white background
-        eroded_inv = cv2.bitwise_not(eroded)
-        # Convert back to RGB
-        return np.asarray(cv2.cvtColor(eroded_inv, cv2.COLOR_GRAY2RGB), dtype=np.uint8)
-
-    def _merge_ocr_results(
-        self, primary: list[list[int]], eroded: list[list[int]]
-    ) -> list[list[int]]:
-        """Merge OCR results from primary and eroded image passes.
-
-        For each line, use the result that detected more numbers. This handles cases where
-        the custom model misses certain number combinations (e.g., "57") on the original
-        image but detects them correctly on the eroded version.
-
-        Args:
-            primary (list[list[int]]): Results from the original image
-            eroded (list[list[int]]): Results from the eroded image
-
-        Returns:
-            list[list[int]]: Merged results with best detection per line
-        """
-        merged: list[list[int]] = []
-        max_lines = max(len(primary), len(eroded))
-
-        for i in range(max_lines):
-            primary_line = primary[i] if i < len(primary) else []
-            eroded_line = eroded[i] if i < len(eroded) else []
-
-            # Use the line that detected more numbers
-            if len(eroded_line) > len(primary_line):
-                self._logger.debug(
-                    "Line %d: using eroded (%d numbers) over primary (%d numbers)",
-                    i,
-                    len(eroded_line),
-                    len(primary_line),
-                )
-                merged.append(eroded_line)
-            else:
-                merged.append(primary_line)
-
-        return merged
+        return self.parse_text_to_lists(raw_text)
 
     def parse_text_to_lists(self, text: str) -> list[list[int]]:
         r"""Parse text containing space-separated numbers into list of lists of integers.
@@ -169,7 +95,8 @@ class StockpileTextExtractor:
 
         for line_idx, line in enumerate(lines):
             if not line.strip():
-                result.append([])
+                # Skip empty lines - don't add empty lists as they cause
+                # misalignment when merging primary and eroded OCR results
                 continue
 
             numbers: list[int] = []

@@ -193,8 +193,8 @@ class TestParseTextToLists:
 
         result = extractor.parse_text_to_lists(text)
 
-        # Empty lines create empty lists
-        assert result == [[100, 200], [], [300, 400]]
+        # Empty lines are skipped to avoid misalignment during OCR merge
+        assert result == [[100, 200], [300, 400]]
 
     def test_parse_invalid_tokens(self) -> None:
         """Test parsing text with invalid tokens."""
@@ -232,8 +232,8 @@ class TestParseTextToLists:
 
         result = extractor.parse_text_to_lists(text)
 
-        # Empty string creates a list with one empty list
-        assert result == [[]]
+        # Empty string returns empty list (empty lines are skipped)
+        assert result == []
 
     def test_parse_only_whitespace(self) -> None:
         """Test parsing string with only whitespace."""
@@ -242,8 +242,8 @@ class TestParseTextToLists:
 
         result = extractor.parse_text_to_lists(text)
 
-        # Whitespace-only creates a list with one empty list
-        assert result == [[]]
+        # Whitespace-only returns empty list (empty lines are skipped)
+        assert result == []
 
     def test_parse_single_number(self) -> None:
         """Test parsing single number."""
