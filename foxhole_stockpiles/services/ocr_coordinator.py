@@ -296,7 +296,11 @@ class OCRCoordinator:
         return stockpile_images
 
     async def _extract_quantities(self, stockpile_images: StockpileImageRegions) -> list[int]:
-        """Extract quantities from the composite quantities image.
+        """Extract quantities from the composite quantities image with validation.
+
+        Uses group structure to validate quantities per row and applies descending
+        order rule within groups to detect and correct OCR errors. Errors in one
+        row don't propagate to other rows.
 
         Args:
             stockpile_images (StockpileImageRegions): Image regions containing quantity data
@@ -308,23 +312,443 @@ class OCRCoordinator:
             stockpile_images.composite_quantities_image
         )
 
-        flat_quantities = [item for sublist in quantities_nested for item in sublist]
-        quantities_count = len(flat_quantities)
+        # Compute expected items per row based on groups structure
+        expected_per_row = self._compute_expected_row_counts(stockpile_images.groups)
+
+        # Validate and correct quantities row by row
+        corrected_quantities = await self._validate_and_correct_quantities(
+            ocr_rows=quantities_nested,
+            expected_per_row=expected_per_row,
+            quantity_images=stockpile_images.quantities,
+            groups=stockpile_images.groups,
+        )
+
+        # Handle any remaining mismatch (shouldn't happen after correction, but safety check)
         icons_count = len(stockpile_images.icons)
-
-        # Handle mismatch between quantities and icons
-        missing_count = icons_count - quantities_count
-        if missing_count > 0:
+        if len(corrected_quantities) < icons_count:
+            missing = icons_count - len(corrected_quantities)
             self.logger.warning(
-                "Quantities detected (%d) don't match the number of icons (%d). "
-                "Adding %d placeholder values.",
-                quantities_count,
-                icons_count,
-                missing_count,
+                "After correction, still missing %d quantities. Adding placeholders.", missing
             )
-            flat_quantities.extend([-1] * missing_count)
+            corrected_quantities.extend([-1] * missing)
+        elif len(corrected_quantities) > icons_count:
+            self.logger.warning(
+                "After correction, have %d extra quantities. Truncating.",
+                len(corrected_quantities) - icons_count,
+            )
+            corrected_quantities = corrected_quantities[:icons_count]
 
-        return flat_quantities
+        return corrected_quantities
+
+    def _compute_expected_row_counts(
+        self, groups: list[tuple[int, int]]
+    ) -> list[tuple[int, int, int]]:
+        """Compute expected items per visual row from groups structure.
+
+        Each group fills rows with max 6 items per row.
+
+        Args:
+            groups (list[tuple[int, int]]): List of (size, start_index) tuples
+
+        Returns:
+            list[tuple[int, int, int]]: List of (expected_count, start_index, group_index) per row
+        """
+        expected_rows: list[tuple[int, int, int]] = []
+        current_index = 0
+
+        for group_index, (size, _start_index) in enumerate(groups):
+            remaining = size
+            while remaining > 0:
+                items_in_row = min(remaining, 6)
+                expected_rows.append((items_in_row, current_index, group_index))
+                current_index += items_in_row
+                remaining -= items_in_row
+
+        return expected_rows
+
+    async def _validate_and_correct_quantities(
+        self,
+        ocr_rows: list[list[int]],
+        expected_per_row: list[tuple[int, int, int]],
+        quantity_images: list[NDArray[np.uint8]],
+        groups: list[tuple[int, int]],
+    ) -> list[int]:
+        """Validate OCR quantities against expected structure and correct errors.
+
+        Uses descending order rule within groups to detect error positions.
+        Each row is validated independently to prevent error propagation.
+
+        Args:
+            ocr_rows (list[list[int]]): OCR results organized by visual row
+            expected_per_row (list[tuple[int, int, int]]): Expected (count, start_idx, group_idx)
+            quantity_images (list[NDArray[np.uint8]]): Individual quantity box images
+            groups (list[tuple[int, int]]): Group structure (size, start_index)
+
+        Returns:
+            list[int]: Corrected flat list of quantities
+        """
+        result: list[int] = []
+        ocr_row_idx = 0
+
+        for row_idx, (expected_count, start_index, group_index) in enumerate(expected_per_row):
+            # Get OCR results for this row (if available)
+            if ocr_row_idx < len(ocr_rows):
+                row_quantities = ocr_rows[ocr_row_idx]
+                ocr_row_idx += 1
+            else:
+                row_quantities = []
+
+            actual_count = len(row_quantities)
+
+            if actual_count == expected_count:
+                # Count matches - validate descending order within group context
+                if self._validate_descending_in_context(
+                    row_quantities, result, group_index, groups
+                ):
+                    result.extend(row_quantities)
+                    continue
+                else:
+                    self.logger.debug(
+                        "Row %d: count OK but descending order violated, attempting correction",
+                        row_idx,
+                    )
+
+            # Count mismatch or descending violation - attempt correction
+            self.logger.debug(
+                "Row %d: expected %d quantities, got %d. Attempting correction.",
+                row_idx,
+                expected_count,
+                actual_count,
+            )
+
+            corrected = await self._correct_row_quantities(
+                row_quantities=row_quantities,
+                expected_count=expected_count,
+                start_index=start_index,
+                quantity_images=quantity_images,
+                previous_quantities=result,
+                group_index=group_index,
+                groups=groups,
+            )
+
+            result.extend(corrected)
+
+        return result
+
+    def _validate_descending_in_context(
+        self,
+        row_quantities: list[int],
+        previous_quantities: list[int],
+        group_index: int,
+        groups: list[tuple[int, int]],
+    ) -> bool:
+        """Validate that quantities maintain descending order within group context.
+
+        Args:
+            row_quantities (list[int]): Quantities in current row
+            previous_quantities (list[int]): All quantities processed so far
+            group_index (int): Current group index
+            groups (list[tuple[int, int]]): Group structure
+
+        Returns:
+            bool: True if descending order is maintained
+        """
+        if not row_quantities:
+            return True
+
+        # Get the last quantity from the same group (if any)
+        group_start = groups[group_index][1]
+        quantities_in_group = [q for i, q in enumerate(previous_quantities) if i >= group_start]
+
+        # Check descending within the row itself
+        for i in range(1, len(row_quantities)):
+            if row_quantities[i] > row_quantities[i - 1]:
+                return False
+
+        # Check continuity with previous quantities in the same group
+        if quantities_in_group:
+            last_in_group = quantities_in_group[-1]
+            if row_quantities[0] > last_in_group:
+                return False
+
+        return True
+
+    async def _correct_row_quantities(
+        self,
+        row_quantities: list[int],
+        expected_count: int,
+        start_index: int,
+        quantity_images: list[NDArray[np.uint8]],
+        previous_quantities: list[int],
+        group_index: int,
+        groups: list[tuple[int, int]],
+    ) -> list[int]:
+        """Attempt to correct quantities for a single row.
+
+        Re-processes the row with alternative preprocessing or individual OCR.
+        No guessing or merging - only actual OCR results.
+
+        Args:
+            row_quantities (list[int]): OCR results for this row
+            expected_count (int): Expected number of quantities
+            start_index (int): Starting index in the flat quantity list
+            quantity_images (list[NDArray[np.uint8]]): Individual quantity images
+            previous_quantities (list[int]): Previously processed quantities
+            group_index (int): Current group index
+            groups (list[tuple[int, int]]): Group structure
+
+        Returns:
+            list[int]: Corrected quantities for this row (or -1 placeholders if unfixable)
+        """
+        # Get the individual images for this row
+        row_images = []
+        for i in range(expected_count):
+            img_index = start_index + i
+            if img_index < len(quantity_images):
+                row_images.append(quantity_images[img_index])
+
+        if len(row_images) != expected_count:
+            self.logger.warning(
+                "Row at index %d: expected %d images but got %d",
+                start_index,
+                expected_count,
+                len(row_images),
+            )
+            return [-1] * expected_count
+
+        # Strategy 1: Re-OCR the row as a composite with alternative preprocessing
+        self.logger.debug(
+            "Row correction: re-processing row at index %d with alternative preprocessing",
+            start_index,
+        )
+        row_composite = self._build_row_composite(row_images, use_alternative=True)
+        row_text = await self._text_extractor.extract_raw_text(row_composite, numbers_only=True)
+        alt_row_result = self._text_extractor.parse_text_to_lists(row_text)
+
+        if alt_row_result and len(alt_row_result) == 1:
+            alt_quantities = alt_row_result[0]
+            if len(alt_quantities) == expected_count and self._validate_descending_in_context(
+                alt_quantities, previous_quantities, group_index, groups
+            ):
+                self.logger.debug("Row re-OCR succeeded: %s -> %s", row_quantities, alt_quantities)
+                return alt_quantities
+
+        # Strategy 2: Re-OCR with different scale
+        self.logger.debug("Trying row re-OCR with different scale")
+        row_composite_scaled = self._build_row_composite(row_images, scale_factor=3)
+        row_text = await self._text_extractor.extract_raw_text(
+            row_composite_scaled, numbers_only=True
+        )
+        scaled_row_result = self._text_extractor.parse_text_to_lists(row_text)
+
+        if scaled_row_result and len(scaled_row_result) == 1:
+            scaled_quantities = scaled_row_result[0]
+            if len(scaled_quantities) == expected_count and self._validate_descending_in_context(
+                scaled_quantities, previous_quantities, group_index, groups
+            ):
+                self.logger.debug(
+                    "Row re-OCR with scale succeeded: %s -> %s", row_quantities, scaled_quantities
+                )
+                return scaled_quantities
+
+        # Strategy 3: OCR each quantity individually
+        self.logger.debug(
+            "Attempting individual OCR for indices %d to %d",
+            start_index,
+            start_index + expected_count - 1,
+        )
+
+        individual_results: list[int] = []
+        for img in row_images:
+            qty = await self._ocr_single_quantity(img)
+            individual_results.append(qty)
+
+        if self._validate_descending_in_context(
+            individual_results, previous_quantities, group_index, groups
+        ):
+            self.logger.debug("Individual OCR succeeded: %s", individual_results)
+            return individual_results
+
+        # Strategy 4: Individual OCR with alternative preprocessing
+        self.logger.debug("Trying individual OCR with alternative preprocessing")
+        alt_results: list[int] = []
+        for img in row_images:
+            qty = await self._ocr_single_quantity(img, use_alternative=True)
+            alt_results.append(qty)
+
+        if self._validate_descending_in_context(
+            alt_results, previous_quantities, group_index, groups
+        ):
+            self.logger.debug("Alternative individual OCR succeeded: %s", alt_results)
+            return alt_results
+
+        # Last resort: mark all as -1
+        self.logger.warning(
+            "Could not correct row at index %d. Marking %d quantities as unknown.",
+            start_index,
+            expected_count,
+        )
+        return [-1] * expected_count
+
+    def _build_row_composite(
+        self,
+        row_images: list[NDArray[np.uint8]],
+        use_alternative: bool = False,
+        scale_factor: int = 2,
+    ) -> NDArray[np.uint8]:
+        """Build a composite image from individual quantity images for a row.
+
+        Args:
+            row_images (list[NDArray[np.uint8]]): Individual quantity box images
+            use_alternative (bool): Use alternative preprocessing (Otsu threshold)
+            scale_factor (int): Scale factor for upscaling
+
+        Returns:
+            NDArray[np.uint8]: Composite row image ready for OCR
+        """
+        if not row_images:
+            return np.zeros((32, 64, 3), dtype=np.uint8)
+
+        # Get dimensions from first image
+        box_height, box_width = row_images[0].shape[:2]
+        gap = 10  # Gap between quantities for OCR separation
+
+        # Calculate composite dimensions
+        total_width = len(row_images) * box_width + (len(row_images) - 1) * gap
+        composite_height = box_height
+
+        # Create black background
+        composite = np.zeros((composite_height, total_width, 3), dtype=np.uint8)
+
+        # Place each quantity image
+        x_offset = 0
+        for img in row_images:
+            h, w = img.shape[:2]
+            composite[0:h, x_offset : x_offset + w] = img
+            x_offset += w + gap
+
+        # Upscale
+        upscaled = cv2.resize(
+            composite,
+            None,
+            fx=scale_factor,
+            fy=scale_factor,
+            interpolation=cv2.INTER_CUBIC,
+        )
+
+        # Convert to grayscale
+        gray = cv2.cvtColor(upscaled, cv2.COLOR_RGB2GRAY)
+
+        if use_alternative:
+            # Otsu thresholding
+            _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+            processed = cv2.dilate(binary, kernel, iterations=1)
+        else:
+            # Standard preprocessing
+            _, binary = cv2.threshold(gray, 120, 255, cv2.THRESH_BINARY_INV)
+            kernel = np.ones((2, 2), np.uint8)
+            cleaned = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+            inverted = cv2.bitwise_not(cleaned)
+            eroded = cv2.erode(inverted, kernel, iterations=1)
+            processed = cv2.bitwise_not(eroded)
+
+        # Convert back to RGB
+        result = cv2.cvtColor(processed, cv2.COLOR_GRAY2RGB)
+        return np.asarray(result, dtype=np.uint8)
+
+    async def _ocr_single_quantity(
+        self, quantity_image: NDArray[np.uint8], use_alternative: bool = False
+    ) -> int:
+        """OCR a single quantity image.
+
+        Args:
+            quantity_image (NDArray[np.uint8]): Single quantity box image
+            use_alternative (bool): Use alternative preprocessing
+
+        Returns:
+            int: Detected quantity or -1 if detection failed
+        """
+        # Preprocess the single quantity image
+        if use_alternative:
+            processed = self._preprocess_quantity_alternative(quantity_image)
+        else:
+            processed = self._preprocess_quantity_standard(quantity_image)
+
+        # Run OCR
+        text = await self._text_extractor.extract_raw_text(processed, numbers_only=True)
+        text = text.strip()
+
+        if not text:
+            return -1
+
+        # Parse the result
+        try:
+            if text.endswith("k+"):
+                return int(text[:-2]) * 1000
+            return int(text)
+        except ValueError:
+            self.logger.debug("Failed to parse single quantity OCR result: '%s'", text)
+            return -1
+
+    def _preprocess_quantity_standard(self, quantity_image: NDArray[np.uint8]) -> NDArray[np.uint8]:
+        """Standard preprocessing for single quantity image.
+
+        Matches the preprocessing used in _build_quantity_composite_image.
+
+        Args:
+            quantity_image (NDArray[np.uint8]): Raw quantity box image
+
+        Returns:
+            NDArray[np.uint8]: Preprocessed image ready for OCR
+        """
+        # Upscale
+        upscaled = cv2.resize(quantity_image, None, fx=2, fy=2, interpolation=cv2.INTER_CUBIC)
+
+        # Convert to binary
+        gray = cv2.cvtColor(upscaled, cv2.COLOR_RGB2GRAY)
+        _, binary = cv2.threshold(gray, 120, 255, cv2.THRESH_BINARY_INV)
+
+        # Morphological close
+        kernel = np.ones((2, 2), np.uint8)
+        cleaned = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel)
+
+        # Erosion (as in composite processing)
+        inverted = cv2.bitwise_not(cleaned)
+        eroded = cv2.erode(inverted, kernel, iterations=1)
+        final = cv2.bitwise_not(eroded)
+
+        # Convert back to RGB
+        result = cv2.cvtColor(final, cv2.COLOR_GRAY2RGB)
+        return np.asarray(result, dtype=np.uint8)
+
+    def _preprocess_quantity_alternative(
+        self, quantity_image: NDArray[np.uint8]
+    ) -> NDArray[np.uint8]:
+        """Alternative preprocessing for single quantity image.
+
+        Uses Otsu thresholding and dilation instead of fixed threshold and erosion.
+
+        Args:
+            quantity_image (NDArray[np.uint8]): Raw quantity box image
+
+        Returns:
+            NDArray[np.uint8]: Preprocessed image ready for OCR
+        """
+        # Upscale more aggressively
+        upscaled = cv2.resize(quantity_image, None, fx=3, fy=3, interpolation=cv2.INTER_CUBIC)
+
+        # Convert to grayscale and apply Otsu thresholding
+        gray = cv2.cvtColor(upscaled, cv2.COLOR_RGB2GRAY)
+        _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+        # Dilation instead of erosion
+        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (2, 2))
+        dilated = cv2.dilate(binary, kernel, iterations=1)
+
+        # Convert back to RGB
+        result = cv2.cvtColor(dilated, cv2.COLOR_GRAY2RGB)
+        return np.asarray(result, dtype=np.uint8)
 
     def _prepare_image_for_detection(
         self,

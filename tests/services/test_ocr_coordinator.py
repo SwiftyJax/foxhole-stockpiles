@@ -604,17 +604,25 @@ class TestExtractQuantities:
             np.zeros((64, 64, 3), dtype=np.uint8),
             np.zeros((64, 64, 3), dtype=np.uint8),
         ]
+        # Groups: first group with 2 items starting at index 0
+        mock_stockpile_images.groups = [(2, 0)]
+        # Individual quantity images for fallback OCR
+        mock_stockpile_images.quantities = [
+            np.zeros((32, 64, 3), dtype=np.uint8),
+            np.zeros((32, 64, 3), dtype=np.uint8),
+        ]
 
         with patch.object(
             coordinator._text_extractor,
             "extract_quantities",
             new_callable=AsyncMock,
         ) as mock_extract:
-            mock_extract.return_value = [[100, 200]]
+            # Values must be descending within a group
+            mock_extract.return_value = [[200, 100]]
 
             result = await coordinator._extract_quantities(mock_stockpile_images)
 
-            assert result == [100, 200]
+            assert result == [200, 100]
 
     async def test_extract_quantities_mismatch(self, tmp_path: Path) -> None:
         """Test quantity extraction when counts don't match icons.
@@ -635,21 +643,260 @@ class TestExtractQuantities:
             np.zeros((64, 64, 3), dtype=np.uint8),
             np.zeros((64, 64, 3), dtype=np.uint8),
         ]
+        # Groups: first group with 2 items, second group with 1 item
+        mock_stockpile_images.groups = [(2, 0), (1, 2)]
+        # Individual quantity images for fallback OCR
+        mock_stockpile_images.quantities = [
+            np.zeros((32, 64, 3), dtype=np.uint8),
+            np.zeros((32, 64, 3), dtype=np.uint8),
+            np.zeros((32, 64, 3), dtype=np.uint8),
+        ]
 
-        with patch.object(
-            coordinator._text_extractor,
-            "extract_quantities",
-            new_callable=AsyncMock,
-        ) as mock_extract:
+        with (
+            patch.object(
+                coordinator._text_extractor,
+                "extract_quantities",
+                new_callable=AsyncMock,
+            ) as mock_extract,
+            patch.object(
+                coordinator._text_extractor,
+                "extract_raw_text",
+                new_callable=AsyncMock,
+            ) as mock_raw,
+        ):
+            # OCR returns only 1 quantity when we expect 3 (2 in group 1, 1 in group 2)
             mock_extract.return_value = [[100]]
+            # Individual OCR fallback returns empty (simulating failed detection)
+            mock_raw.return_value = ""
 
             result = await coordinator._extract_quantities(mock_stockpile_images)
 
-            # Should have placeholders for missing quantities
+            # Should have placeholders for quantities that couldn't be detected
             assert len(result) == 3
-            assert result[0] == 100
+            # First group expected 2, got 1, individual OCR failed -> all -1
+            assert result[0] == -1
             assert result[1] == -1
+            # Second group expected 1, got none (no row), individual OCR failed -> -1
             assert result[2] == -1
+
+
+class TestQuantityValidation:
+    """Test suite for OCRCoordinator quantity validation and correction logic.
+
+    Tests the descending order validation and error correction mechanisms.
+    """
+
+    def test_compute_expected_row_counts_single_group(self, tmp_path: Path) -> None:
+        """Test expected row computation for a single group with <= 6 items.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        # Group with 4 items starting at index 0
+        groups = [(4, 0)]
+        result = coordinator._compute_expected_row_counts(groups)
+
+        # Should be one row with 4 items
+        assert len(result) == 1
+        assert result[0] == (4, 0, 0)  # (count, start_index, group_index)
+
+    def test_compute_expected_row_counts_multi_row_group(self, tmp_path: Path) -> None:
+        """Test expected row computation for a group spanning multiple rows.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        # Group with 8 items starting at index 0 (should span 2 rows: 6 + 2)
+        groups = [(8, 0)]
+        result = coordinator._compute_expected_row_counts(groups)
+
+        assert len(result) == 2
+        assert result[0] == (6, 0, 0)  # First row: 6 items
+        assert result[1] == (2, 6, 0)  # Second row: 2 items, starting at index 6
+
+    def test_compute_expected_row_counts_multiple_groups(self, tmp_path: Path) -> None:
+        """Test expected row computation for multiple groups.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        # First group: 2 items, second group: 7 items
+        groups = [(2, 0), (7, 2)]
+        result = coordinator._compute_expected_row_counts(groups)
+
+        assert len(result) == 3
+        assert result[0] == (2, 0, 0)  # Group 0: 2 items
+        assert result[1] == (6, 2, 1)  # Group 1, row 1: 6 items
+        assert result[2] == (1, 8, 1)  # Group 1, row 2: 1 item
+
+    def test_validate_descending_in_context_valid(self, tmp_path: Path) -> None:
+        """Test descending validation with valid descending values.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        groups = [(6, 0)]
+        previous: list[int] = []  # First row, no previous quantities
+        row = [100, 88, 77, 50, 30, 10]
+
+        result = coordinator._validate_descending_in_context(row, previous, 0, groups)
+        assert result is True
+
+    def test_validate_descending_in_context_invalid_within_row(self, tmp_path: Path) -> None:
+        """Test descending validation with invalid ascending value within row.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        groups = [(6, 0)]
+        previous: list[int] = []
+        # 50 > 30 is fine, but 77 > 50 going backwards is what we're testing
+        # Actually: 100 > 88 > 77 > 90 - 90 > 77 breaks descending
+        row = [100, 88, 77, 90, 30, 10]
+
+        result = coordinator._validate_descending_in_context(row, previous, 0, groups)
+        assert result is False
+
+    def test_validate_descending_in_context_invalid_with_previous(self, tmp_path: Path) -> None:
+        """Test descending validation when new row has higher value than previous.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        groups = [(8, 0)]  # 8 items = 2 rows of 6 + 2
+        previous = [100, 88, 77, 50, 30, 10]  # First row ends with 10
+        row = [15, 5]  # Second row starts with 15, which is > 10
+
+        result = coordinator._validate_descending_in_context(row, previous, 0, groups)
+        assert result is False
+
+    async def test_extract_quantities_corrects_via_reocr(self, tmp_path: Path) -> None:
+        """Test that misread quantities trigger re-OCR with alternative preprocessing.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
+        mock_stockpile_images.composite_quantities_image = np.zeros((100, 100, 3), dtype=np.uint8)
+        # 6 icons in one group
+        mock_stockpile_images.icons = [np.zeros((64, 64, 3), dtype=np.uint8) for _ in range(6)]
+        mock_stockpile_images.groups = [(6, 0)]
+        mock_stockpile_images.quantities = [np.zeros((32, 64, 3), dtype=np.uint8) for _ in range(6)]
+
+        with (
+            patch.object(
+                coordinator._text_extractor,
+                "extract_quantities",
+                new_callable=AsyncMock,
+            ) as mock_extract,
+            patch.object(
+                coordinator._text_extractor,
+                "extract_raw_text",
+                new_callable=AsyncMock,
+            ) as mock_raw,
+        ):
+            # Initial OCR misreads (7 values instead of 6)
+            mock_extract.return_value = [[88, 1, 1, 7, 5, 3, 2]]
+            # Re-OCR with alternative preprocessing returns correct values
+            mock_raw.return_value = "88 11 7 5 3 2"
+
+            result = await coordinator._extract_quantities(mock_stockpile_images)
+
+            # Should be corrected via re-OCR
+            assert len(result) == 6
+            assert result == [88, 11, 7, 5, 3, 2]
+
+    async def test_extract_quantities_isolates_row_errors(self, tmp_path: Path) -> None:
+        """Test that errors in one row don't affect other rows.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        mock_stockpile_images = MagicMock(spec=StockpileImageRegions)
+        mock_stockpile_images.composite_quantities_image = np.zeros((100, 100, 3), dtype=np.uint8)
+        # 2 groups: first with 2 items, second with 6 items
+        mock_stockpile_images.icons = [np.zeros((64, 64, 3), dtype=np.uint8) for _ in range(8)]
+        mock_stockpile_images.groups = [(2, 0), (6, 2)]
+        mock_stockpile_images.quantities = [np.zeros((32, 64, 3), dtype=np.uint8) for _ in range(8)]
+
+        with (
+            patch.object(
+                coordinator._text_extractor,
+                "extract_quantities",
+                new_callable=AsyncMock,
+            ) as mock_extract,
+            patch.object(
+                coordinator._text_extractor,
+                "extract_raw_text",
+                new_callable=AsyncMock,
+            ) as mock_raw,
+        ):
+            # First row OK (descending: 100, 50)
+            # Second row has error: detected 7 values instead of 6, can't merge properly
+            mock_extract.return_value = [
+                [100, 50],  # Group 1: correct
+                [99, 88, 77, 66, 55, 44, 33],  # Group 2: 7 values instead of 6, no good merge
+            ]
+            # Individual OCR fails
+            mock_raw.return_value = ""
+
+            result = await coordinator._extract_quantities(mock_stockpile_images)
+
+            # First row should be preserved correctly
+            assert len(result) == 8
+            assert result[0] == 100
+            assert result[1] == 50
+            # Second row should be marked as -1 (unfixable)
+            # (The merge [99, 88, 77, 66, 55, 44, 33] -> trying to get 6 values
+            # would produce values that may not satisfy descending order)
 
 
 class TestPrepareImageForDetection:
