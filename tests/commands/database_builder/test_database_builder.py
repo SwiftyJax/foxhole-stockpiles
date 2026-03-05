@@ -1236,7 +1236,10 @@ class TestDatabaseBuilderMerge:
     async def test_build_all_databases_with_overwrite_true(
         self, builder: DatabaseBuilder, tmp_path: Path
     ) -> None:
-        """Test build_all_databases with overwrite=True replaces database.
+        """Test build_all_databases with overwrite=True replaces matching templates.
+
+        When overwrite=True, templates with matching (code, crated, mod) are replaced,
+        while non-matching templates are preserved.
 
         Args:
             builder (DatabaseBuilder): DatabaseBuilder instance
@@ -1244,9 +1247,10 @@ class TestDatabaseBuilderMerge:
         """
         output_path = tmp_path / "database.h5"
 
-        # Create initial database
+        # Create initial database with two templates
         existing_db = TemplateDatabase(SupportedResolution.R_1080)
-        existing_db.add_template(self._create_template("Rifle"))
+        existing_db.add_template(self._create_template("Rifle"))  # Will be replaced
+        existing_db.add_template(self._create_template("Pistol"))  # Will be kept
         existing_databases = {SupportedResolution.R_1080: existing_db}
 
         from foxhole_stockpiles.services.template_manager import TemplateManager
@@ -1255,24 +1259,28 @@ class TestDatabaseBuilderMerge:
             databases=existing_databases, output_path=output_path
         )
 
-        # Mock _build_resolution_database to return new template
+        # Mock _build_resolution_database to return new templates
+        # One matching existing (Rifle) and one new (Grenade)
         async def mock_build_db(resolution: SupportedResolution) -> TemplateDatabase:
             db = TemplateDatabase(resolution)
-            db.add_template(self._create_template("Grenade", resolution=resolution))
+            db.add_template(self._create_template("Rifle", resolution=resolution))  # Replaces
+            db.add_template(self._create_template("Grenade", resolution=resolution))  # New
             return db
 
         with patch.object(builder, "_build_resolution_database", side_effect=mock_build_db):
-            # Build with overwrite=True (should replace)
+            # Build with overwrite=True (should replace matching templates)
             await builder.build_all_databases(
                 output_path=output_path,
                 target_resolutions=[SupportedResolution.R_1080],
-                overwrite=True,  # Default, but explicit for clarity
+                overwrite=True,
             )
 
         # Load and verify database
         temp_manager = TemplateManager(database_path=output_path)
         loaded = await temp_manager.load_all_resolutions()
 
-        # Should have only new template (old one replaced)
-        assert len(loaded[SupportedResolution.R_1080].templates) == 1
-        assert loaded[SupportedResolution.R_1080].templates[0].code == "Grenade"
+        # Should have 3 templates: Pistol (kept), Rifle (replaced), Grenade (new)
+        templates = loaded[SupportedResolution.R_1080].templates
+        assert len(templates) == 3
+        codes = {t.code for t in templates}
+        assert codes == {"Rifle", "Pistol", "Grenade"}

@@ -88,11 +88,11 @@ class DatabaseBuilder:
         if not databases:
             raise ValueError("No templates found for any resolution! Check your icon files.")
 
-        # Merge with existing database if not overwriting
-        has_changes = True  # Default to True for overwrite or new database
-        if not overwrite and output_path.exists():
+        # Merge with existing database (if it exists)
+        has_changes = True  # Default to True for new database
+        if output_path.exists():
             databases, has_changes = await self._merge_with_existing(
-                new_databases=databases, output_path=output_path
+                new_databases=databases, output_path=output_path, overwrite=overwrite
             )
 
         # Save combined database only if there are changes
@@ -339,13 +339,17 @@ class DatabaseBuilder:
         return found_paths
 
     async def _merge_with_existing(
-        self, new_databases: dict[SupportedResolution, TemplateDatabase], output_path: Path
+        self,
+        new_databases: dict[SupportedResolution, TemplateDatabase],
+        output_path: Path,
+        overwrite: bool = False,
     ) -> tuple[dict[SupportedResolution, TemplateDatabase], bool]:
         """Merge new databases with existing database file.
 
         Args:
             new_databases (dict[SupportedResolution, TemplateDatabase]): Newly built databases
             output_path (Path): Path to existing database file
+            overwrite (bool): If True, replace matching templates. If False, skip duplicates.
 
         Returns:
             tuple: (merged_databases, has_changes) - Merged databases and whether changes were made
@@ -355,21 +359,37 @@ class DatabaseBuilder:
             self._logger.info("No existing database at %s, using new databases", output_path)
             return new_databases, True
 
-        self._logger.info("Merging with existing database: %s", output_path)
+        self._logger.info(
+            "Merging with existing database: %s (overwrite=%s)", output_path, overwrite
+        )
 
         # Load existing databases
         temp_manager = TemplateManager(database_path=output_path)
         existing_databases = await temp_manager.load_all_resolutions()
 
         merged_databases: dict[SupportedResolution, TemplateDatabase] = {}
-        stats = {"resolutions": 0, "new_templates": 0, "existing_templates": 0, "skipped": 0}
+        stats = {
+            "resolutions": 0,
+            "new_templates": 0,
+            "existing_templates": 0,
+            "skipped": 0,
+            "replaced": 0,
+        }
+
+        # Build set of new template keys for quick lookup when overwriting
+        # Key format: (code, crated, mod)
+        new_keys_by_resolution: dict[SupportedResolution, set[tuple[str, bool, str]]] = {}
+        for resolution, new_db in new_databases.items():
+            new_keys_by_resolution[resolution] = {
+                (t.code, t.crated, t.mod) for t in new_db.templates
+            }
 
         # Merge each resolution
         for resolution in set(list(existing_databases.keys()) + list(new_databases.keys())):
-            existing_db = existing_databases.get(resolution)
-            new_db = new_databases.get(resolution)
+            existing_db: TemplateDatabase | None = existing_databases.get(resolution)
+            new_db_for_res: TemplateDatabase | None = new_databases.get(resolution)
 
-            if new_db is None:
+            if new_db_for_res is None:
                 # No new templates for this resolution, keep existing
                 if existing_db:
                     merged_databases[resolution] = existing_db
@@ -378,8 +398,8 @@ class DatabaseBuilder:
 
             if existing_db is None:
                 # No existing templates for this resolution, use new
-                merged_databases[resolution] = new_db
-                stats["new_templates"] += len(new_db.templates)
+                merged_databases[resolution] = new_db_for_res
+                stats["new_templates"] += len(new_db_for_res.templates)
                 stats["resolutions"] += 1
                 continue
 
@@ -388,24 +408,36 @@ class DatabaseBuilder:
                 "Merging resolution %s: existing=%d, new=%d",
                 resolution,
                 len(existing_db.templates),
-                len(new_db.templates),
+                len(new_db_for_res.templates),
             )
 
             merged_db = TemplateDatabase(resolution=resolution)
+            new_keys = new_keys_by_resolution.get(resolution, set())
 
-            # Create set of existing template keys for quick lookup
-            # Key format: (code, crated, mod)
-            existing_keys = {(t.code, t.crated, t.mod) for t in existing_db.templates}
-
-            # Add all existing templates
+            # Add existing templates (skip those being replaced if overwrite=True)
             for template in existing_db.templates:
-                merged_db.add_template(template)
-                stats["existing_templates"] += 1
-
-            # Add only new templates that don't already exist
-            for template in new_db.templates:
                 key = (template.code, template.crated, template.mod)
-                if key in existing_keys:
+                if overwrite and key in new_keys:
+                    # Skip this template - it will be replaced by the new one
+                    stats["replaced"] += 1
+                    self._logger.debug(
+                        "Replacing template: %s (crated=%s, mod=%s)",
+                        template.code,
+                        template.crated,
+                        template.mod,
+                    )
+                else:
+                    merged_db.add_template(template)
+                    stats["existing_templates"] += 1
+
+            # Create set of keys now in merged_db for duplicate detection
+            merged_keys = {(t.code, t.crated, t.mod) for t in merged_db.templates}
+
+            # Add new templates
+            for template in new_db_for_res.templates:
+                key = (template.code, template.crated, template.mod)
+                if key in merged_keys:
+                    # Duplicate (only happens when overwrite=False)
                     self._logger.debug(
                         "Skipping duplicate template: %s (crated=%s, mod=%s)",
                         template.code,
@@ -422,21 +454,22 @@ class DatabaseBuilder:
                     )
                     merged_db.add_template(template)
                     stats["new_templates"] += 1
-                    existing_keys.add(key)
+                    merged_keys.add(key)
 
             merged_databases[resolution] = merged_db
 
         self._logger.info(
             "Merge complete: %d resolutions, %d new templates added, "
-            "%d existing templates preserved, %d duplicates skipped",
+            "%d existing templates preserved, %d duplicates skipped, %d replaced",
             len(merged_databases),
             stats["new_templates"],
             stats["existing_templates"],
             stats["skipped"],
+            stats["replaced"],
         )
 
-        # Return databases and whether any new templates were added
-        has_changes = stats["new_templates"] > 0
+        # Return databases and whether any changes were made
+        has_changes = stats["new_templates"] > 0 or stats["replaced"] > 0
         return merged_databases, has_changes
 
     async def _save_databases(
