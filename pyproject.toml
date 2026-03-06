@@ -53,6 +53,7 @@ dev = [
     "pytest>=9.0.2",
     "pytest-asyncio>=1.2.0",
     "pytest-cov>=7.0.0",
+    "pytest-xdist>=3.5.0",
     "pytest-qt>=4.5.0",
 
     # Code Quality & Formatting (dev-only)
@@ -124,9 +125,26 @@ python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
+# Use loadfile distribution for better coverage combining
+addopts = "-n auto --dist=loadfile --cov=foxhole_stockpiles --cov-report=term-missing"
 filterwarnings = [
     "ignore::RuntimeWarning",
 ]
+
+[tool.coverage.run]
+source = ["foxhole_stockpiles"]
+parallel = true
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]
+
+[tool.coverage.html]
+directory = "htmlcov"
 
 [project.scripts]
 fs = "foxhole_stockpiles.commands.fs.fs:main"
