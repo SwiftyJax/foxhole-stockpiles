@@ -138,6 +138,26 @@ class TestClassifyFromText:
 
             assert result == StockpileType.SEAPORT
 
+    def test_classify_with_ocr_quote_artifacts(self) -> None:
+        """Test that leading/trailing quote characters from OCR are stripped."""
+        mock_settings = MagicMock(spec=AppSettings)
+        mock_settings.stockpile_types = StockpileTypesSettings()
+
+        with patch(
+            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            return_value=mock_settings,
+        ):
+            classifier = StockpileTypeClassifier()
+
+            # Single quote prefix (common OCR artifact)
+            assert classifier.classify_from_text("'Aircraft Depot") == StockpileType.AIRCRAFT_DEPOT
+            # Double quote prefix
+            assert classifier.classify_from_text('"Storage Depot') == StockpileType.STORAGE_DEPOT
+            # Trailing quote
+            assert classifier.classify_from_text("Seaport'") == StockpileType.SEAPORT
+            # Both leading and trailing
+            assert classifier.classify_from_text("'Encampment'") == StockpileType.ENCAMPMENT
+
     def test_classify_no_match(self) -> None:
         """Test classifying unrecognized text returns UNDEFINED."""
         mock_settings = MagicMock(spec=AppSettings)
