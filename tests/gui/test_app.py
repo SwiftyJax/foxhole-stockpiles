@@ -2,7 +2,7 @@
 
 from unittest.mock import MagicMock, patch
 
-from foxhole_stockpiles.gui.app import launch_gui
+from foxhole_stockpiles.gui.app import _load_language_from_settings, launch_gui
 
 
 def test_launch_gui_creates_application() -> None:
@@ -175,3 +175,25 @@ def test_launch_gui_window_shown_before_exec() -> None:
 
                 # Window should be shown before exec
                 assert call_order == ["show", "exec"]
+
+
+def test_load_language_from_settings_default() -> None:
+    """Test _load_language_from_settings returns configured language."""
+    with patch("foxhole_stockpiles.gui.app.AppSettings") as mock_settings_class:
+        mock_settings = MagicMock()
+        mock_settings.gui.language = "fr"
+        mock_settings_class.return_value = mock_settings
+
+        result = _load_language_from_settings()
+
+        assert result == "fr"
+
+
+def test_load_language_from_settings_error_fallback() -> None:
+    """Test _load_language_from_settings falls back to 'en' on error."""
+    with patch("foxhole_stockpiles.gui.app.AppSettings") as mock_settings_class:
+        mock_settings_class.side_effect = Exception("Config error")
+
+        result = _load_language_from_settings()
+
+        assert result == "en"

@@ -12,7 +12,10 @@ import h5py
 import numpy as np
 import pytest
 
+from foxhole_stockpiles.enums.item_category import ItemCategory
+from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
+from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.services.template_database import DATABASE_VERSION, TemplateDatabase
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
@@ -89,7 +92,7 @@ class TestLoadDatabase:
         # Create a real database file
         real_db = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: real_db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
 
@@ -112,7 +115,7 @@ class TestLoadDatabase:
 
         # Create database file
         databases = {SupportedResolution.R_1080: real_db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
 
@@ -136,7 +139,7 @@ class TestLoadDatabase:
         # Create database with only one resolution
         real_db = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: real_db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
 
@@ -216,7 +219,7 @@ class TestSetActiveResolution:
         # Create a real database
         real_db = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: real_db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
 
@@ -242,7 +245,7 @@ class TestSetActiveResolution:
             SupportedResolution.R_1080: db_1080,
             SupportedResolution.R_720: db_720,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
 
@@ -266,7 +269,7 @@ class TestSetActiveResolution:
         # Create a real database
         real_db = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: real_db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
 
@@ -366,10 +369,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        from foxhole_stockpiles.enums.item_category import ItemCategory
-        from foxhole_stockpiles.enums.item_faction import ItemFaction
-        from foxhole_stockpiles.models.icon_template import IconTemplate
-
         db_path = tmp_path / "test.h5"
 
         # Create database with a template
@@ -387,7 +386,7 @@ class TestMatchIcon:
         db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -405,10 +404,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        from foxhole_stockpiles.enums.item_category import ItemCategory
-        from foxhole_stockpiles.enums.item_faction import ItemFaction
-        from foxhole_stockpiles.models.icon_template import IconTemplate
-
         db_path = tmp_path / "test.h5"
 
         # Create test image
@@ -429,7 +424,7 @@ class TestMatchIcon:
         db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -448,10 +443,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        from foxhole_stockpiles.enums.item_category import ItemCategory
-        from foxhole_stockpiles.enums.item_faction import ItemFaction
-        from foxhole_stockpiles.models.icon_template import IconTemplate
-
         db_path = tmp_path / "test.h5"
 
         # Create database with multiple templates
@@ -484,7 +475,7 @@ class TestMatchIcon:
         db.add_template(template2)
 
         databases = {SupportedResolution.R_1080: db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -503,10 +494,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        from foxhole_stockpiles.enums.item_category import ItemCategory
-        from foxhole_stockpiles.enums.item_faction import ItemFaction
-        from foxhole_stockpiles.models.icon_template import IconTemplate
-
         db_path = tmp_path / "test.h5"
 
         # Create database with many templates (>25 to trigger pHash filtering)
@@ -526,7 +513,7 @@ class TestMatchIcon:
             db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -545,10 +532,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        from foxhole_stockpiles.enums.item_category import ItemCategory
-        from foxhole_stockpiles.enums.item_faction import ItemFaction
-        from foxhole_stockpiles.models.icon_template import IconTemplate
-
         db_path = tmp_path / "test.h5"
 
         # Create test image
@@ -585,7 +568,7 @@ class TestMatchIcon:
             db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -606,10 +589,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        from foxhole_stockpiles.enums.item_category import ItemCategory
-        from foxhole_stockpiles.enums.item_faction import ItemFaction
-        from foxhole_stockpiles.models.icon_template import IconTemplate
-
         db_path = tmp_path / "test.h5"
 
         # Create test image with distinct pattern
@@ -692,7 +671,7 @@ class TestMatchIcon:
         db.add_template(template5)
 
         databases = {SupportedResolution.R_1080: db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -727,10 +706,6 @@ class TestMatchIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        from foxhole_stockpiles.enums.item_category import ItemCategory
-        from foxhole_stockpiles.enums.item_faction import ItemFaction
-        from foxhole_stockpiles.models.icon_template import IconTemplate
-
         db_path = tmp_path / "test.h5"
 
         # Create test image
@@ -751,7 +726,7 @@ class TestMatchIcon:
         db.add_template(template)
 
         databases = {SupportedResolution.R_1080: db}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         await manager.set_active_resolution(1080)
@@ -808,7 +783,7 @@ class TestLRUCache:
             SupportedResolution.R_1080: db_1080,
             SupportedResolution.R_1440: db_1440,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         # Create manager with cache_size=0
         manager = TemplateManager(db_path, cache_size=0)
@@ -844,7 +819,7 @@ class TestLRUCache:
             SupportedResolution.R_1440: db_1440,
             SupportedResolution.R_2160: db_2160,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         # Create manager with cache_size=1
         manager = TemplateManager(db_path, cache_size=1)
@@ -883,7 +858,7 @@ class TestLRUCache:
             SupportedResolution.R_1440: db_1440,
             SupportedResolution.R_2160: db_2160,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         # Create manager with cache_size=2
         manager = TemplateManager(db_path, cache_size=2)
@@ -930,7 +905,7 @@ class TestLRUCache:
             SupportedResolution.R_2160: db_2160,
             SupportedResolution.R_1536: db_1536,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         # Create manager with default cache_size (16)
         manager = TemplateManager(db_path)
@@ -965,7 +940,7 @@ class TestLRUCache:
             SupportedResolution.R_1440: db_1440,
             SupportedResolution.R_2160: db_2160,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         # Create manager with cache_size=2
         manager = TemplateManager(db_path, cache_size=2)
@@ -1002,7 +977,7 @@ class TestGetAvailableResolutions:
         # Create database with one resolution
         db_1080 = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: db_1080}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         resolutions = manager.get_available_resolutions()
@@ -1027,7 +1002,7 @@ class TestGetAvailableResolutions:
             SupportedResolution.R_1440: db_1440,
             SupportedResolution.R_720: db_720,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         resolutions = manager.get_available_resolutions()
@@ -1054,7 +1029,7 @@ class TestGetAvailableResolutions:
             SupportedResolution.R_720: db_720,
             SupportedResolution.R_1440: db_1440,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         resolutions = manager.get_available_resolutions()
@@ -1132,7 +1107,7 @@ class TestLoadAllResolutions:
         # Create database with one resolution
         db_1080 = TemplateDatabase(SupportedResolution.R_1080)
         databases = {SupportedResolution.R_1080: db_1080}
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         all_dbs = await manager.load_all_resolutions()
@@ -1158,7 +1133,7 @@ class TestLoadAllResolutions:
             SupportedResolution.R_1440: db_1440,
             SupportedResolution.R_720: db_720,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         all_dbs = await manager.load_all_resolutions()
@@ -1188,7 +1163,7 @@ class TestLoadAllResolutions:
             SupportedResolution.R_1440: db_1440,
             SupportedResolution.R_720: db_720,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         # Create manager with small cache size
         manager = TemplateManager(db_path, cache_size=1)
@@ -1217,7 +1192,7 @@ class TestLoadAllResolutions:
             SupportedResolution.R_1440: db_1440,
             SupportedResolution.R_720: db_720,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         # Create manager with cache size larger than number of resolutions
         manager = TemplateManager(db_path, cache_size=10)
@@ -1246,7 +1221,7 @@ class TestLoadAllResolutions:
             SupportedResolution.R_1440: db_1440,
             SupportedResolution.R_720: db_720,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         await manager.load_all_resolutions()
@@ -1263,10 +1238,6 @@ class TestLoadAllResolutions:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        from foxhole_stockpiles.enums.item_category import ItemCategory
-        from foxhole_stockpiles.enums.item_faction import ItemFaction
-        from foxhole_stockpiles.models.icon_template import IconTemplate
-
         db_path = tmp_path / "test.h5"
 
         # Create databases with templates
@@ -1300,7 +1271,7 @@ class TestLoadAllResolutions:
             SupportedResolution.R_1080: db_1080,
             SupportedResolution.R_720: db_720,
         }
-        create_hdf5_database(db_path, databases)
+        create_hdf5_database(db_path=db_path, databases=databases)
 
         manager = TemplateManager(db_path)
         all_dbs = await manager.load_all_resolutions()
@@ -1414,7 +1385,7 @@ class TestMigrateDatabase:
 
         # Create a database at current version
         real_db = TemplateDatabase(SupportedResolution.R_1080)
-        create_hdf5_database(db_path, {SupportedResolution.R_1080: real_db})
+        create_hdf5_database(db_path=db_path, databases={SupportedResolution.R_1080: real_db})
 
         manager = TemplateManager(db_path)
 
@@ -1562,3 +1533,242 @@ class TestTemplateManagerEdgeCases:
 
         # Should return False for non-existent file
         assert manager.needs_migration() is False
+
+
+class TestSaveSingleResolution:
+    """Test suite for TemplateManager.save_single_resolution static method."""
+
+    def test_save_single_resolution_success(self, tmp_path: Path) -> None:
+        """Test saving a single resolution to existing HDF5 file.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create initial database with one resolution
+        db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        template = IconTemplate(
+            code="TestItem",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=np.zeros((32, 32, 3), dtype=np.uint8),
+            phash=0,
+        )
+        db_1080.add_template(template)
+        databases = {SupportedResolution.R_1080: db_1080}
+        create_hdf5_database(db_path=db_path, databases=databases)
+
+        # Create a new database for 720p
+        db_720 = TemplateDatabase(SupportedResolution.R_720)
+        template_720 = IconTemplate(
+            code="TestItem720",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_720,
+            image=np.zeros((24, 24, 3), dtype=np.uint8),
+            phash=1,
+        )
+        db_720.add_template(template_720)
+
+        # Save single resolution
+        TemplateManager.save_single_resolution(
+            database=db_720,
+            resolution=SupportedResolution.R_720,
+            output_path=db_path,
+        )
+
+        # Verify both resolutions exist
+        manager = TemplateManager(db_path)
+        resolutions = manager.get_available_resolutions()
+        assert SupportedResolution.R_1080 in resolutions
+        assert SupportedResolution.R_720 in resolutions
+
+    def test_save_single_resolution_overwrites_existing(self, tmp_path: Path) -> None:
+        """Test saving a resolution that already exists overwrites it.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create initial database
+        db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        template1 = IconTemplate(
+            code="OriginalItem",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=np.zeros((32, 32, 3), dtype=np.uint8),
+            phash=0,
+        )
+        db_1080.add_template(template1)
+        databases = {SupportedResolution.R_1080: db_1080}
+        create_hdf5_database(db_path=db_path, databases=databases)
+
+        # Create new database with different template
+        db_1080_new = TemplateDatabase(SupportedResolution.R_1080)
+        template2 = IconTemplate(
+            code="NewItem",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=np.ones((32, 32, 3), dtype=np.uint8) * 128,
+            phash=1,
+        )
+        db_1080_new.add_template(template2)
+
+        # Save single resolution (overwrite)
+        TemplateManager.save_single_resolution(
+            database=db_1080_new,
+            resolution=SupportedResolution.R_1080,
+            output_path=db_path,
+        )
+
+        # Verify the new template is there
+        with h5py.File(str(db_path), "r") as f:
+            group = f["1080"]
+            codes = group["codes"][:]  # type: ignore[index]
+            assert b"NewItem" in codes  # type: ignore[operator]
+            assert b"OriginalItem" not in codes  # type: ignore[operator]
+
+    def test_save_single_resolution_missing_file_raises(self, tmp_path: Path) -> None:
+        """Test saving to non-existent file raises FileNotFoundError.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "nonexistent.h5"
+        db = TemplateDatabase(SupportedResolution.R_1080)
+
+        with pytest.raises(FileNotFoundError):
+            TemplateManager.save_single_resolution(
+                database=db,
+                resolution=SupportedResolution.R_1080,
+                output_path=db_path,
+            )
+
+    @pytest.fixture(autouse=True)
+    def clear_cache(self) -> None:
+        """Clear the shared cache before each test."""
+        TemplateManager._shared_databases.clear()
+
+    def test_save_single_resolution_invalidates_cache(self, tmp_path: Path) -> None:
+        """Test that saving invalidates the cache for that resolution.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create initial database
+        db_1080 = TemplateDatabase(SupportedResolution.R_1080)
+        template = IconTemplate(
+            code="TestItem",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=np.zeros((32, 32, 3), dtype=np.uint8),
+            phash=0,
+        )
+        db_1080.add_template(template)
+        databases = {SupportedResolution.R_1080: db_1080}
+        create_hdf5_database(db_path=db_path, databases=databases)
+
+        # Load into cache (instantiate to trigger cache population)
+        _ = TemplateManager(db_path)
+        cache_key = (db_path, SupportedResolution.R_1080)
+
+        # Manually add to cache to simulate it being loaded
+        TemplateManager._shared_databases[cache_key] = db_1080
+
+        assert cache_key in TemplateManager._shared_databases
+
+        # Save single resolution - should invalidate cache
+        db_1080_new = TemplateDatabase(SupportedResolution.R_1080)
+        TemplateManager.save_single_resolution(
+            database=db_1080_new,
+            resolution=SupportedResolution.R_1080,
+            output_path=db_path,
+        )
+
+        # Cache should be invalidated
+        assert cache_key not in TemplateManager._shared_databases
+
+
+class TestPhashFiltering:
+    """Test suite for pHash filtering in match_icon."""
+
+    @pytest.fixture(autouse=True)
+    def clear_cache(self) -> None:
+        """Clear the shared cache before each test."""
+        TemplateManager._shared_databases.clear()
+
+    async def test_phash_filtering_excludes_distant_hashes(self, tmp_path: Path) -> None:
+        """Test that pHash filtering excludes templates with distant hashes.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create database with many templates with varying pHash distances
+        db = TemplateDatabase(SupportedResolution.R_1080)
+
+        # Create a test image and compute its pHash-like value
+        test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
+
+        # Add templates with close pHash (should be included)
+        for i in range(15):
+            template = IconTemplate(
+                code=f"CloseItem{i}",
+                faction=ItemFaction.NEUTRAL,
+                category=ItemCategory.Item,
+                crated=False,
+                mod="vanilla",
+                resolution=SupportedResolution.R_1080,
+                image=test_image.copy(),
+                phash=i,  # Low pHash values - close to 0
+            )
+            db.add_template(template)
+
+        # Add templates with distant pHash (should be filtered out)
+        for i in range(15):
+            template = IconTemplate(
+                code=f"DistantItem{i}",
+                faction=ItemFaction.NEUTRAL,
+                category=ItemCategory.Item,
+                crated=False,
+                mod="vanilla",
+                resolution=SupportedResolution.R_1080,
+                image=np.zeros((32, 32, 3), dtype=np.uint8),
+                phash=0xFFFFFFFFFFFFFFFF,  # Max distance pHash
+            )
+            db.add_template(template)
+
+        databases = {SupportedResolution.R_1080: db}
+        create_hdf5_database(db_path=db_path, databases=databases)
+
+        manager = TemplateManager(db_path)
+        await manager.set_active_resolution(1080)
+
+        # Match with small max_ncc_candidates to force pHash filtering
+        result = manager.match_icon(
+            icon_image=test_image,
+            max_ncc_candidates=10,
+            phash_threshold=20,
+        )
+
+        # Should have used pHash filtering
+        assert result.tested_candidates <= 10

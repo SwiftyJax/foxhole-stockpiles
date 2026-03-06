@@ -231,3 +231,38 @@ def test_config_manager_import_config_nonexistent_file() -> None:
     assert success is False
     assert "failed" in message.lower()
     assert settings is None
+
+
+def test_config_manager_import_config_validation_fails(tmp_path: Path) -> None:
+    """Test importing config where validation fails.
+
+    Args:
+        tmp_path (Path): Temporary directory path
+    """
+    import_path = tmp_path / "invalid_settings.json"
+    # Write valid JSON but with invalid settings values
+    import_path.write_text('{"scanner": {"database_path": 123}}')
+
+    manager = ConfigManager()
+    success, message, settings = manager.import_config(import_path)
+
+    assert success is False
+    assert settings is None
+
+
+def test_config_manager_validate_config_unexpected_error() -> None:
+    """Test validate_config handles unexpected errors gracefully."""
+    config_dict = {"test": "data"}
+
+    with patch(
+        "foxhole_stockpiles.gui.utils.config_manager.AppSettings"
+    ) as mock_app_settings_class:
+        # Make AppSettings raise an unexpected error (not ValidationError)
+        mock_app_settings_class.side_effect = RuntimeError("Unexpected error")
+
+        manager = ConfigManager()
+        valid, message, settings = manager.validate_config(config_dict)
+
+        assert valid is False
+        assert settings is None
+        assert "unexpected" in message.lower()

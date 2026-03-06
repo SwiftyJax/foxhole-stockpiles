@@ -38,7 +38,7 @@ class TestScannerSettingsInitialization:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_file = tmp_path / "custom.pkl"
+        db_file = tmp_path / "custom.h5"
 
         config = ScannerSettings(
             database_path=db_file,
@@ -73,7 +73,7 @@ class TestDatabasePath:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_file = tmp_path / "valid.pkl"
+        db_file = tmp_path / "valid.h5"
 
         config = ScannerSettings(database_path=db_file)
 

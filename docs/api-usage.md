@@ -175,7 +175,7 @@ The API server uses the application configuration. See [Configuration Guide](con
 
 **Database Path:**
 ```bash
-export FS_SCANNER__DATABASE_PATH=/path/to/templates.pkl
+export FS_SCANNER__DATABASE_PATH=/path/to/templates.h5
 ```
 
 **API Authentication:**

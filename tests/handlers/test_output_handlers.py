@@ -72,6 +72,52 @@ class TestConsoleOutputHandler:
             mock_logger.assert_any_call("Type: %s", "Seaport")
             mock_logger.assert_any_call("Shard: %s", "TEST")
 
+    @pytest.mark.asyncio
+    async def test_console_output_with_crated_items(self) -> None:
+        """Test console output with crated items appends _crated suffix."""
+        items = [
+            StockpileItem(
+                quantity=100,
+                code="BasicMaterialsIcon",
+                confidence=0.95,
+                crated=True,
+            ),
+            StockpileItem(
+                quantity=50,
+                code="PetrolIcon",
+                confidence=0.87,
+                crated=False,
+            ),
+        ]
+
+        stockpile = Stockpile(
+            name="Test Stockpile",
+            type=StockpileType.SEAPORT,
+            items=items,
+            shard="TEST",
+            resolution="1920x1080",
+        )
+
+        handler = ConsoleOutputHandler()
+
+        with patch.object(handler.logger, "info") as mock_logger:
+            await handler.handle(stockpile)
+
+            # Verify crated item has _crated suffix
+            mock_logger.assert_any_call(
+                "* code: %-35s quantity: %-3d, confidence: %.3f",
+                "BasicMaterialsIcon_crated",
+                100,
+                0.95,
+            )
+            # Verify non-crated item doesn't have suffix
+            mock_logger.assert_any_call(
+                "* code: %-35s quantity: %-3d, confidence: %.3f",
+                "PetrolIcon",
+                50,
+                0.87,
+            )
+
 
 class TestReturnOutputHandler:
     """Test cases for ReturnOutputHandler."""
@@ -371,6 +417,22 @@ class TestFileOutputHandler:
         handler = FileOutputHandler(format_settings=json_settings)
         assert handler._fix_extension("output") == "output.json"
 
+    def test_fix_extension_replaces_unknown_extension(self) -> None:
+        """Test that _fix_extension replaces unknown extensions."""
+        # Unknown extensions (not .json, .csv, .tsv) should also be replaced
+        csv_settings = CsvFormatSettings(type=OutputFormat.CSV)
+        handler = FileOutputHandler(format_settings=csv_settings)
+        assert handler._fix_extension("output.txt") == "output.csv"
+        assert handler._fix_extension("data.xml") == "data.csv"
+
+        tsv_settings = CsvFormatSettings(type=OutputFormat.TSV)
+        handler = FileOutputHandler(format_settings=tsv_settings)
+        assert handler._fix_extension("output.txt") == "output.tsv"
+
+        json_settings = JsonFormatSettings()
+        handler = FileOutputHandler(format_settings=json_settings)
+        assert handler._fix_extension("output.dat") == "output.json"
+
 
 class TestWebhookOutputHandler:
     """Test cases for WebhookOutputHandler."""
@@ -419,3 +481,18 @@ class TestWebhookOutputHandler:
             mock_connector.send_stockpile.assert_called_once_with(
                 payload=sample_stockpile.model_dump(mode="json"), token=custom_token
             )
+
+    @pytest.mark.asyncio
+    async def test_webhook_output_no_url(self, sample_stockpile: Stockpile) -> None:
+        """Test webhook output when URL is not configured.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        webhook_settings = WebhookHandlerSettings(url="")
+
+        with patch("foxhole_stockpiles.handlers.webhook.WebhookConnector"):
+            handler = WebhookOutputHandler(webhook_settings=webhook_settings)
+            result = await handler.handle(sample_stockpile)
+
+            assert result == {"message": "URL not configured"}

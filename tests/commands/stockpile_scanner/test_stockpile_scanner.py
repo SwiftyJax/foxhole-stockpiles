@@ -99,7 +99,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         # Mock image loading
@@ -166,7 +166,7 @@ class TestMainFunction:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
         image_path = tmp_path / "nonexistent.png"
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -224,7 +224,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -294,7 +294,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -365,7 +365,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -433,7 +433,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -488,7 +488,7 @@ class TestMainFunction:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
         image_path = tmp_path / "nonexistent.png"  # Doesn't exist
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         # imread succeeds but Path.exists() returns False
@@ -543,7 +543,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -606,7 +606,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -674,7 +674,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -732,7 +732,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         # Test with invalid language argument - argparse will handle the validation
@@ -816,7 +816,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "nonexistent.pkl"  # Doesn't exist
+        database_path = tmp_path / "nonexistent.h5"  # Doesn't exist
 
         mock_args.return_value = argparse.Namespace(
             image=str(image_path),
@@ -913,7 +913,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
@@ -984,7 +984,7 @@ class TestMainFunction:
         image_path = tmp_path / "test_screenshot.png"
         image_path.touch()
 
-        database_path = tmp_path / "test.pkl"
+        database_path = tmp_path / "test.h5"
         database_path.touch()
 
         output_file = tmp_path / "output.json"
@@ -1067,3 +1067,152 @@ if __name__ == '__main__':
         mock_asyncio.run.assert_called_once()
         mock_print.assert_called_once_with("stockpile_result")
         mock_exit.assert_called_once_with(0)
+
+
+class TestOutputDestinationHandling:
+    """Test cases for different output destination configurations."""
+
+    @pytest.fixture
+    def mock_stockpile(self) -> MagicMock:
+        """Create a mock stockpile for testing.
+
+        Returns:
+            MagicMock: Configured mock Stockpile instance.
+        """
+        stockpile = MagicMock()
+        stockpile.items = []
+        stockpile.resolution = "1080"
+        stockpile.faction = ItemFaction.NEUTRAL
+        return stockpile
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
+    async def test_main_with_console_destination(
+        self,
+        mock_setup_logging: Mock,
+        mock_output_coordinator_class: Mock,
+        mock_coordinator_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+        mock_stockpile: Any,
+    ) -> None:
+        """Test main function with console output destination.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_output_coordinator_class (Mock): Mocked OutputCoordinator class.
+            mock_coordinator_class (Mock): Mocked OCRCoordinator class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked argument parser.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            mock_stockpile (Any): Mock stockpile fixture.
+        """
+        image_path = tmp_path / "test.png"
+        image_path.touch()
+        database_path = tmp_path / "test.db"
+        database_path.touch()
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            language=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            output_destination="console",
+            output_file=None,
+            config=None,
+            token=None,
+        )
+
+        mock_imread.return_value = np.zeros((100, 100, 3), dtype=np.uint8)
+
+        mock_coordinator = MagicMock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=mock_stockpile)
+        mock_coordinator_class.return_value = mock_coordinator
+
+        mock_handler = MagicMock()
+        mock_handler.handle_output = AsyncMock(return_value=None)
+        mock_output_coordinator_class.return_value = mock_handler
+
+        await main()
+
+        # Verify output coordinator was created with console handler
+        mock_output_coordinator_class.assert_called_once()
+        call_kwargs = mock_output_coordinator_class.call_args
+        # The output settings should have a handler configured
+        assert call_kwargs is not None
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.cv2.imread")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OCRCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.OutputCoordinator")
+    @patch("foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner.setup_logging")
+    async def test_main_with_file_destination_and_output_destination_arg(
+        self,
+        mock_setup_logging: Mock,
+        mock_output_coordinator_class: Mock,
+        mock_coordinator_class: Mock,
+        mock_imread: Mock,
+        mock_args: Mock,
+        tmp_path: Path,
+        mock_stockpile: Any,
+    ) -> None:
+        """Test main function with explicit file output destination.
+
+        Args:
+            mock_setup_logging (Mock): Mocked setup_logging function.
+            mock_output_coordinator_class (Mock): Mocked OutputCoordinator class.
+            mock_coordinator_class (Mock): Mocked OCRCoordinator class.
+            mock_imread (Mock): Mocked cv2.imread function.
+            mock_args (Mock): Mocked argument parser.
+            tmp_path (Path): Temporary directory path from pytest fixture.
+            mock_stockpile (Any): Mock stockpile fixture.
+        """
+        image_path = tmp_path / "test.png"
+        image_path.touch()
+        database_path = tmp_path / "test.db"
+        database_path.touch()
+        output_file = tmp_path / "output.json"
+
+        mock_args.return_value = argparse.Namespace(
+            image=str(image_path),
+            database=database_path,
+            confidence=None,
+            early_exit=0.95,
+            faction=None,
+            language=None,
+            debug_image=False,
+            log_file=None,
+            verbose=False,
+            quiet=False,
+            output_format=None,
+            output_destination="file",
+            output_file=str(output_file),
+            config=None,
+            token=None,
+        )
+
+        mock_imread.return_value = np.zeros((100, 100, 3), dtype=np.uint8)
+
+        mock_coordinator = MagicMock()
+        mock_coordinator.analyze_stockpile = AsyncMock(return_value=mock_stockpile)
+        mock_coordinator_class.return_value = mock_coordinator
+
+        mock_handler = MagicMock()
+        mock_handler.handle_output = AsyncMock(return_value=None)
+        mock_output_coordinator_class.return_value = mock_handler
+
+        await main()
+
+        # Verify output coordinator was created
+        mock_output_coordinator_class.assert_called_once()

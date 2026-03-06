@@ -97,7 +97,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -154,7 +154,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         icon_path = tmp_path / "icon.png"
@@ -242,7 +242,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -290,7 +290,7 @@ class TestCandidateInspectorMain:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "nonexistent.pkl"
+        db_path = tmp_path / "nonexistent.h5"
 
         mock_args.return_value = argparse.Namespace(
             database=db_path,
@@ -343,7 +343,7 @@ class TestCandidateInspectorMain:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -392,7 +392,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -442,7 +442,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -492,7 +492,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -542,7 +542,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -591,7 +591,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -642,7 +642,7 @@ class TestCandidateInspectorMain:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         icon_path = tmp_path / "missing.png"  # File doesn't exist
@@ -707,7 +707,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -755,7 +755,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -803,7 +803,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -851,7 +851,7 @@ class TestCandidateInspectorMain:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -923,7 +923,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         icon_path = tmp_path / "icon.png"
@@ -983,7 +983,7 @@ class TestCandidateInspectorMain:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -1064,7 +1064,7 @@ class TestCandidateInspectorMain:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         icon_path = tmp_path / "icon.png"
@@ -1128,7 +1128,7 @@ class TestCandidateInspectorMain:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -1195,7 +1195,7 @@ class TestCandidateInspectorMain:
             mock_template_manager (MagicMock): Mock template manager from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         icon_path = tmp_path / "icon.png"
@@ -1375,7 +1375,7 @@ class TestCandidateInspectorMain:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         mock_args.return_value = argparse.Namespace(
@@ -1432,7 +1432,7 @@ class TestCandidateInspectorMain:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         icon_path = tmp_path / "corrupted.png"

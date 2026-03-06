@@ -1044,3 +1044,57 @@ class TestMemoryMonitoringEndpoints:
 
         finally:
             app.dependency_overrides.clear()
+
+
+class TestLifespanErrorHandling:
+    """Test cases for error handling during lifespan events."""
+
+    @patch("foxhole_stockpiles.api.server.setup_logging")
+    @patch("foxhole_stockpiles.api.server.TemplateManager")
+    def test_startup_handles_database_read_error(
+        self,
+        mock_template_manager: Mock,
+        mock_setup_logging: Mock,
+    ) -> None:
+        """Test that startup handles database read errors gracefully.
+
+        Args:
+            mock_template_manager (Mock): Mocked TemplateManager class.
+            mock_setup_logging (Mock): Mocked setup_logging function.
+        """
+        # Make get_database_statistics raise an exception
+        mock_manager = Mock()
+        mock_manager.get_database_statistics.side_effect = Exception("Database error")
+        mock_template_manager.return_value = mock_manager
+
+        # App should still start despite the error
+        with TestClient(app):
+            pass  # Just verify app starts without crashing
+
+    @patch("foxhole_stockpiles.api.server.setup_logging")
+    @patch("foxhole_stockpiles.api.server.get_notification_service")
+    @patch("foxhole_stockpiles.api.server.app_settings")
+    def test_shutdown_handles_notification_error(
+        self,
+        mock_app_settings: Mock,
+        mock_get_notification_service: Mock,
+        mock_setup_logging: Mock,
+    ) -> None:
+        """Test that shutdown handles notification send errors gracefully.
+
+        Args:
+            mock_app_settings (Mock): Mocked application settings.
+            mock_get_notification_service (Mock): Mocked notification service getter.
+            mock_setup_logging (Mock): Mocked setup_logging function.
+        """
+        # Enable notifications
+        mock_app_settings.notifications.enabled = True
+
+        # Make notification service raise an exception on shutdown
+        mock_notification_service = AsyncMock()
+        mock_notification_service.send_notification.side_effect = Exception("Notification error")
+        mock_get_notification_service.return_value = mock_notification_service
+
+        # App should shut down gracefully despite the error
+        with TestClient(app):
+            pass  # Exit triggers shutdown

@@ -1423,7 +1423,7 @@ class TestDatabaseVisualizerWindowDeleteIcon:
         mock_template.code = "TestItem"
         visualizer_window.selected_template = (0, mock_template)
         visualizer_window.current_resolution = SupportedResolution.R_1080
-        visualizer_window.database_path = "/tmp/test.pkl"
+        visualizer_window.database_path = "/tmp/test.h5"
 
         with patch(
             "foxhole_stockpiles.gui.windows.database_visualizer_window.QMessageBox.question",
@@ -1445,7 +1445,7 @@ class TestDatabaseVisualizerWindowDeleteIcon:
         mock_template.code = "TestItem"
         visualizer_window.selected_template = (0, mock_template)
         visualizer_window.current_resolution = SupportedResolution.R_1080
-        visualizer_window.database_path = "/tmp/test.pkl"
+        visualizer_window.database_path = "/tmp/test.h5"
         mock_database = MagicMock()
         mock_database.templates = []
         visualizer_window.all_databases = {SupportedResolution.R_1080: mock_database}
@@ -1489,7 +1489,7 @@ class TestDatabaseVisualizerWindowDeleteIcon:
         mock_template.code = "TestItem"
         visualizer_window.selected_template = (0, mock_template)
         visualizer_window.current_resolution = SupportedResolution.R_1080
-        visualizer_window.database_path = "/tmp/test.pkl"
+        visualizer_window.database_path = "/tmp/test.h5"
         visualizer_window.all_databases = {SupportedResolution.R_1080: MagicMock()}
 
         # Mock get_settings to return proper OCR settings
@@ -1616,7 +1616,7 @@ class TestDatabaseVisualizerWindowFilterPreservation:
         Args:
             visualizer_window: Window fixture.
         """
-        visualizer_window.database_path = "/tmp/test.pkl"
+        visualizer_window.database_path = "/tmp/test.h5"
         visualizer_window.selected_template = (0, MagicMock())
         visualizer_window.save_button.setEnabled(True)
         visualizer_window.replace_button.setEnabled(True)

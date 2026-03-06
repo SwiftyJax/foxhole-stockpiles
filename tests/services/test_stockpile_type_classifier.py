@@ -340,3 +340,26 @@ class TestRealWorldScenarios:
             # Original texts should still work
             assert classifier.classify_from_text("Seaport") == StockpileType.SEAPORT
             assert classifier.classify_from_text("Storage Depot") == StockpileType.STORAGE_DEPOT
+
+    def test_classify_with_builtin_fuzzy_matching(self) -> None:
+        """Test classification using built-in fuzzy matching for common OCR errors."""
+        classifier = StockpileTypeClassifier()
+
+        # Test common OCR errors that are handled by _fuzzy_match_type
+        # "I" -> "l" variation (uppercase I instead of lowercase l in "Relic")
+        assert classifier.classify_from_text("ReIic Base") == StockpileType.RELIC_BASE
+
+        # "5" -> "S" variation (five instead of S in "Storage")
+        assert classifier.classify_from_text("5torage Depot") == StockpileType.STORAGE_DEPOT
+
+        # "5" -> "S" variation (five instead of S in "Seaport")
+        assert classifier.classify_from_text("5eaport") == StockpileType.SEAPORT
+
+        # "8" -> "B" variation (eight instead of B in "Border")
+        assert classifier.classify_from_text("8order Base") == StockpileType.BORDER_BASE
+
+        # "8" -> "B" variation (eight instead of B in "Bunker" and "Base")
+        assert classifier.classify_from_text("8unker Base") == StockpileType.BUNKER_BASE
+
+        # "8" -> "B" variation (eight instead of B in "Base" only)
+        assert classifier.classify_from_text("Town 8ase") == StockpileType.TOWN_BASE

@@ -272,7 +272,7 @@ class TestDatabaseBuilderMethods:
             builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        output_path = tmp_path / "output.pkl"
+        output_path = tmp_path / "output.h5"
 
         # Mock _build_resolution_database to return databases with templates
         async def mock_build_db(resolution: SupportedResolution) -> Any:
@@ -315,7 +315,7 @@ class TestDatabaseBuilderMethods:
             builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
             tmp_path (Path): Temporary directory path from fixture.
         """
-        output_path = tmp_path / "output.pkl"
+        output_path = tmp_path / "output.h5"
 
         # Mock _build_resolution_database to return empty databases
         async def mock_build_db(resolution: SupportedResolution) -> Any:
@@ -336,7 +336,7 @@ class TestDatabaseBuilderMethods:
             builder (DatabaseBuilder): DatabaseBuilder instance from fixture.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        output_path = tmp_path / "subdir" / "output.pkl"
+        output_path = tmp_path / "subdir" / "output.h5"
 
         # Create a database with a template
         db = TemplateDatabase(SupportedResolution.R_1080)
@@ -637,7 +637,7 @@ class TestMainFunction:
         templates_path = tmp_path / "templates"
         templates_path.mkdir()
 
-        database_path = tmp_path / "database.pkl"
+        database_path = tmp_path / "database.h5"
 
         # Mock settings
         mock_settings = MagicMock()
@@ -698,7 +698,7 @@ class TestMainFunction:
         templates_path = tmp_path / "templates"
         templates_path.mkdir()
 
-        database_path = tmp_path / "database.pkl"
+        database_path = tmp_path / "database.h5"
 
         mock_args.return_value = argparse.Namespace(
             catalog=catalog_path,
@@ -748,7 +748,7 @@ class TestMainFunction:
         templates_path = tmp_path / "templates"
         templates_path.mkdir()
 
-        database_path = tmp_path / "database.pkl"
+        database_path = tmp_path / "database.h5"
 
         mock_args.return_value = argparse.Namespace(
             catalog=catalog_path,
@@ -795,7 +795,7 @@ class TestMainFunction:
         templates_path = tmp_path / "templates"
         templates_path.mkdir()
 
-        database_path = tmp_path / "database.pkl"
+        database_path = tmp_path / "database.h5"
 
         mock_args.return_value = argparse.Namespace(
             catalog=catalog_path,
@@ -846,7 +846,7 @@ class TestMainFunction:
         templates_path = tmp_path / "templates"
         templates_path.mkdir()
 
-        database_path = tmp_path / "database.pkl"
+        database_path = tmp_path / "database.h5"
 
         # Mock settings with values
         mock_settings = MagicMock()

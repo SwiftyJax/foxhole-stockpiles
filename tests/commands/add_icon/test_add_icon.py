@@ -1015,7 +1015,7 @@ class TestMainFunction:
         icon_path = tmp_path / "icon.png"
         icon_path.touch()
 
-        database_path = tmp_path / "nonexistent.pkl"  # Doesn't exist
+        database_path = tmp_path / "nonexistent.h5"  # Doesn't exist
 
         mock_args.return_value = argparse.Namespace(
             database=database_path,
@@ -1148,7 +1148,7 @@ class TestMainFunction:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         icon_path = tmp_path / "icon.png"
@@ -1188,7 +1188,7 @@ class TestMainFunction:
             mock_args (Mock): Mocked ArgumentParser.parse_args method.
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         icon_path = tmp_path / "icon.png"

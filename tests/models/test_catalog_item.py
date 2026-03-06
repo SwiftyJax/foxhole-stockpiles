@@ -249,3 +249,32 @@ class TestCanBeCrated:
         item2 = CatalogItem.from_catalog(catalog_data_not_cratable)
         assert item2 is not None
         assert item2.cratable is False
+
+    def test_shippable_with_packaging_allowed(self) -> None:
+        """Test shippable with bAllowPackagingToCrate=True is cratable."""
+        item_data = {
+            "ShippableInfo": {"bAllowPackagingToCrate": True},
+        }
+        assert CatalogItem._can_be_crated(item_data) is True
+
+    def test_shippable_with_packaging_not_allowed(self) -> None:
+        """Test shippable with bAllowPackagingToCrate=False is not cratable."""
+        item_data = {
+            "ShippableInfo": {"bAllowPackagingToCrate": False},
+        }
+        assert CatalogItem._can_be_crated(item_data) is False
+
+
+class TestFromCatalogExceptionHandling:
+    """Test suite for exception handling in from_catalog method."""
+
+    def test_from_catalog_returns_none_on_validation_error(self) -> None:
+        """Test that from_catalog returns None on Pydantic validation failure."""
+        # Passing an int for CodeName triggers TypeError during validation
+        catalog_data = {
+            "CodeName": 123,  # int instead of str
+            "ItemCategory": "Weapon",
+        }
+        item = CatalogItem.from_catalog(catalog_data)
+        # This returns None because the exception is caught
+        assert item is None

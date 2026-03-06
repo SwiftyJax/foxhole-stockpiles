@@ -571,6 +571,82 @@ class TestDatabaseUtilities:
         assert "mods=2" in repr_str
 
 
+class TestGetAvailableMods:
+    """Test suite for get_available_mods method."""
+
+    def test_get_available_mods_empty_database(self) -> None:
+        """Test getting mods from empty database returns empty set."""
+        db = TemplateDatabase(SupportedResolution.R_1080)
+
+        mods = db.get_available_mods()
+
+        assert mods == set()
+
+    def test_get_available_mods_single_mod(self) -> None:
+        """Test getting mods with single mod in database."""
+        db = TemplateDatabase(SupportedResolution.R_1080)
+
+        image = np.zeros((64, 64, 3), dtype=np.uint8)
+        db.add_template(
+            IconTemplate(
+                image=image,
+                code="Item",
+                crated=False,
+                category=ItemCategory.Item,
+                faction=ItemFaction.NEUTRAL,
+                mod="vanilla",
+                resolution=SupportedResolution.R_1080,
+            ),
+        )
+
+        mods = db.get_available_mods()
+
+        assert mods == {"vanilla"}
+
+    def test_get_available_mods_multiple_mods(self) -> None:
+        """Test getting mods with multiple mods in database."""
+        db = TemplateDatabase(SupportedResolution.R_1080)
+
+        image = np.zeros((64, 64, 3), dtype=np.uint8)
+        db.add_template(
+            IconTemplate(
+                image=image,
+                code="VanillaItem",
+                crated=False,
+                category=ItemCategory.Item,
+                faction=ItemFaction.NEUTRAL,
+                mod="vanilla",
+                resolution=SupportedResolution.R_1080,
+            ),
+        )
+        db.add_template(
+            IconTemplate(
+                image=image,
+                code="ModItem",
+                crated=False,
+                category=ItemCategory.Item,
+                faction=ItemFaction.NEUTRAL,
+                mod="custom_mod",
+                resolution=SupportedResolution.R_1080,
+            ),
+        )
+        db.add_template(
+            IconTemplate(
+                image=image,
+                code="AnotherItem",
+                crated=False,
+                category=ItemCategory.Item,
+                faction=ItemFaction.NEUTRAL,
+                mod="airborne",
+                resolution=SupportedResolution.R_1080,
+            ),
+        )
+
+        mods = db.get_available_mods()
+
+        assert mods == {"vanilla", "custom_mod", "airborne"}
+
+
 class TestEdgeCases:
     """Test suite for edge cases and boundary conditions.
 

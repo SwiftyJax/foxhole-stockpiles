@@ -173,3 +173,33 @@ def test_handler_warning_log_color(qtbot: Any, handler: QtLogHandler) -> None:
 
     assert len(received_data) == 1
     assert received_data[0]["color"] == "#FFA500"  # Orange
+
+
+def test_handler_closed_does_not_emit(qtbot: Any, handler: QtLogHandler) -> None:
+    """Test QtLogHandler does not emit after close.
+
+    Args:
+        qtbot: PyQt test fixture
+        handler (QtLogHandler): Handler instance
+    """
+    received_data: list[dict[str, Any]] = []
+    handler.log_message.connect(lambda data: received_data.append(data))
+
+    # Close the handler
+    handler.close()
+
+    # Try to emit a record
+    record = logging.LogRecord(
+        name="test.module",
+        level=logging.INFO,
+        pathname="test.py",
+        lineno=1,
+        msg="Should not be emitted",
+        args=(),
+        exc_info=None,
+    )
+
+    handler.emit(record)
+
+    # Should not have received any data
+    assert len(received_data) == 0

@@ -69,7 +69,7 @@ class TestOCRCoordinatorInitialization:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(
@@ -90,7 +90,7 @@ class TestOCRCoordinatorInitialization:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(
@@ -113,7 +113,7 @@ class TestExtractIconToFolder:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path, extract_icons=True)
@@ -147,7 +147,7 @@ class TestExtractIconToFolder:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path, extract_icons=True)
@@ -187,7 +187,7 @@ class TestExtractIconToFolder:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path, extract_icons=True)
@@ -221,7 +221,7 @@ class TestExtractIconToFolder:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path, extract_icons=True)
@@ -246,7 +246,7 @@ class TestExtractIconToFolder:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path, extract_icons=True)
@@ -271,7 +271,7 @@ class TestSaveScreenshot:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path, screenshots_folder="")
@@ -291,7 +291,7 @@ class TestSaveScreenshot:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         screenshots_folder = tmp_path / "screenshots"
@@ -350,7 +350,7 @@ class TestAnalyzeStockpile:
         Returns:
             ScannerSettings: Mock configuration.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         return ScannerSettings(
@@ -534,7 +534,7 @@ class TestDetectRegions:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -560,7 +560,7 @@ class TestDetectRegions:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path, debug_mode=True)
@@ -592,7 +592,7 @@ class TestExtractQuantities:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -630,7 +630,7 @@ class TestExtractQuantities:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -692,7 +692,7 @@ class TestQuantityValidation:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -712,7 +712,7 @@ class TestQuantityValidation:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -732,7 +732,7 @@ class TestQuantityValidation:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -753,7 +753,7 @@ class TestQuantityValidation:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -775,7 +775,7 @@ class TestQuantityValidation:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -795,7 +795,7 @@ class TestQuantityValidation:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -816,7 +816,7 @@ class TestQuantityValidation:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -838,7 +838,7 @@ class TestQuantityValidation:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -880,7 +880,7 @@ class TestQuantityValidation:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -937,7 +937,7 @@ class TestPrepareImageForDetection:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -958,7 +958,7 @@ class TestPrepareImageForDetection:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -989,7 +989,7 @@ class TestProcessSingleIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -1039,7 +1039,7 @@ class TestProcessSingleIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -1083,7 +1083,7 @@ class TestProcessSingleIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(
@@ -1135,7 +1135,7 @@ class TestProcessSingleIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -1182,7 +1182,7 @@ class TestProcessSingleIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(
@@ -1234,7 +1234,7 @@ class TestProcessSingleIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(
@@ -1288,7 +1288,7 @@ class TestProcessSingleIcon:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -1345,7 +1345,7 @@ class TestMatchIconsAndBuildResult:
         Returns:
             OCRCoordinator: Coordinator instance for testing.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
         config = ScannerSettings(database_path=db_path)
         return OCRCoordinator(config)
@@ -1668,7 +1668,7 @@ class TestCheckForDuplicates:
         Returns:
             OCRCoordinator: Coordinator instance for testing.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
         config = ScannerSettings(database_path=db_path)
         return OCRCoordinator(config)
@@ -2117,7 +2117,7 @@ class TestDetectRegionsCriticalException:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         config = ScannerSettings(database_path=db_path)
@@ -2144,7 +2144,7 @@ class TestDetectRegionsCriticalException:
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
-        db_path = tmp_path / "test.pkl"
+        db_path = tmp_path / "test.h5"
         db_path.touch()
 
         # Set a screenshots folder
@@ -2302,3 +2302,122 @@ class TestOCRCoordinatorIntegration:
 
         # May or may not have name/info/type depending on the screenshot
         # but the code paths should have been exercised
+
+
+class TestExtractQuantitiesEdgeCases:
+    """Test edge cases in _extract_quantities method."""
+
+    async def test_extract_quantities_adds_placeholders_when_missing(self, tmp_path: Path) -> None:
+        """Test that missing quantities are filled with -1 placeholders.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        # Create mock stockpile_images with 5 icons
+        mock_images = MagicMock(spec=StockpileImageRegions)
+        mock_images.icons = [MagicMock() for _ in range(5)]
+        mock_images.groups = [(5, 0)]
+        mock_images.quantities = [MagicMock() for _ in range(5)]
+        mock_images.composite_quantities_image = MagicMock()
+
+        # Mock _validate_and_correct_quantities to return fewer quantities than icons
+        with (
+            patch.object(
+                coordinator._text_extractor,
+                "extract_quantities",
+                new_callable=AsyncMock,
+                return_value=[[100, 50, 25]],
+            ),
+            patch.object(
+                coordinator,
+                "_validate_and_correct_quantities",
+                new_callable=AsyncMock,
+                return_value=[100, 50, 25],  # Only 3 quantities for 5 icons
+            ),
+        ):
+            result = await coordinator._extract_quantities(mock_images)
+
+        # Should have 5 quantities with 2 placeholders
+        assert len(result) == 5
+        assert result[:3] == [100, 50, 25]
+        assert result[3:] == [-1, -1]
+
+    async def test_extract_quantities_truncates_when_extra(self, tmp_path: Path) -> None:
+        """Test that extra quantities are truncated.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        # Create mock stockpile_images with 3 icons
+        mock_images = MagicMock(spec=StockpileImageRegions)
+        mock_images.icons = [MagicMock() for _ in range(3)]
+        mock_images.groups = [(3, 0)]
+        mock_images.quantities = [MagicMock() for _ in range(3)]
+        mock_images.composite_quantities_image = MagicMock()
+
+        # Mock _validate_and_correct_quantities to return more quantities than icons
+        with (
+            patch.object(
+                coordinator._text_extractor,
+                "extract_quantities",
+                new_callable=AsyncMock,
+                return_value=[[100, 50, 25, 10, 5]],
+            ),
+            patch.object(
+                coordinator,
+                "_validate_and_correct_quantities",
+                new_callable=AsyncMock,
+                return_value=[100, 50, 25, 10, 5],  # 5 quantities for 3 icons
+            ),
+        ):
+            result = await coordinator._extract_quantities(mock_images)
+
+        # Should be truncated to 3 quantities
+        assert len(result) == 3
+        assert result == [100, 50, 25]
+
+
+class TestFrozenBundlePath:
+    """Test PyInstaller frozen bundle path resolution."""
+
+    def test_init_resolves_tessdata_path_when_frozen(self, tmp_path: Path) -> None:
+        """Test that tessdata path is resolved for PyInstaller bundles.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+        db_path.touch()
+
+        config = ScannerSettings(
+            database_path=db_path,
+            tessdata_path="tessdata",
+        )
+
+        # Mock is_frozen to return True
+        with (
+            patch(
+                "foxhole_stockpiles.services.ocr_coordinator.is_frozen",
+                return_value=True,
+            ),
+            patch(
+                "foxhole_stockpiles.services.ocr_coordinator.get_bundled_resource_path",
+                return_value=Path("/bundled/tessdata"),
+            ),
+        ):
+            coordinator = OCRCoordinator(config)
+
+        # The text extractor should have been initialized with the bundled path
+        assert coordinator._text_extractor is not None
