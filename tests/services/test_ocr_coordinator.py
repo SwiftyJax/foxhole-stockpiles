@@ -766,6 +766,29 @@ class TestQuantityValidation:
         result = coordinator._validate_descending_in_context(row, previous, 0, groups)
         assert result is True
 
+    def test_validate_descending_in_context_group_zero_exempt(self, tmp_path: Path) -> None:
+        """Test that group 0 is exempt from descending order validation.
+
+        Group 0 contains items that are always present in every capture and can
+        have any order (ascending or descending).
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.pkl"
+        db_path.touch()
+
+        config = ScannerSettings(database_path=db_path)
+        coordinator = OCRCoordinator(config)
+
+        groups = [(2, 0)]
+        previous: list[int] = []
+        # Ascending order (5 < 31) - would fail for other groups, but group 0 is exempt
+        row = [5, 31]
+
+        result = coordinator._validate_descending_in_context(row, previous, 0, groups)
+        assert result is True
+
     def test_validate_descending_in_context_invalid_within_row(self, tmp_path: Path) -> None:
         """Test descending validation with invalid ascending value within row.
 
@@ -778,13 +801,13 @@ class TestQuantityValidation:
         config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
 
-        groups = [(6, 0)]
-        previous: list[int] = []
-        # 50 > 30 is fine, but 77 > 50 going backwards is what we're testing
-        # Actually: 100 > 88 > 77 > 90 - 90 > 77 breaks descending
+        # Use group_index=1 since group 0 is exempt from descending validation
+        groups = [(2, 0), (6, 2)]  # Group 0 has 2 items, group 1 starts at index 2
+        previous = [5, 31]  # Group 0 items (exempt from validation)
+        # 100 > 88 > 77 > 90 - 90 > 77 breaks descending
         row = [100, 88, 77, 90, 30, 10]
 
-        result = coordinator._validate_descending_in_context(row, previous, 0, groups)
+        result = coordinator._validate_descending_in_context(row, previous, 1, groups)
         assert result is False
 
     def test_validate_descending_in_context_invalid_with_previous(self, tmp_path: Path) -> None:
@@ -799,11 +822,14 @@ class TestQuantityValidation:
         config = ScannerSettings(database_path=db_path)
         coordinator = OCRCoordinator(config)
 
-        groups = [(8, 0)]  # 8 items = 2 rows of 6 + 2
-        previous = [100, 88, 77, 50, 30, 10]  # First row ends with 10
-        row = [15, 5]  # Second row starts with 15, which is > 10
+        # Use group_index=1 since group 0 is exempt from descending validation
+        # Group 1 has 8 items = 2 rows of 6 + 2
+        groups = [(2, 0), (8, 2)]
+        # First 2 items are group 0 (exempt), next 6 are group 1 first row
+        previous = [5, 31, 100, 88, 77, 50, 30, 10]  # First row of group 1 ends with 10
+        row = [15, 5]  # Second row of group 1 starts with 15, which is > 10
 
-        result = coordinator._validate_descending_in_context(row, previous, 0, groups)
+        result = coordinator._validate_descending_in_context(row, previous, 1, groups)
         assert result is False
 
     async def test_extract_quantities_corrects_via_reocr(self, tmp_path: Path) -> None:

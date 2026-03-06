@@ -444,6 +444,9 @@ class OCRCoordinator:
     ) -> bool:
         """Validate that quantities maintain descending order within group context.
 
+        The first group (index 0) is exempt from descending order validation as it
+        contains items that are always present in every capture and can have any order.
+
         Args:
             row_quantities (list[int]): Quantities in current row
             previous_quantities (list[int]): All quantities processed so far
@@ -451,9 +454,13 @@ class OCRCoordinator:
             groups (list[tuple[int, int]]): Group structure
 
         Returns:
-            bool: True if descending order is maintained
+            bool: True if descending order is maintained (or group 0)
         """
         if not row_quantities:
+            return True
+
+        # First group (index 0) can have any order - skip descending validation
+        if group_index == 0:
             return True
 
         # Get the last quantity from the same group (if any)
