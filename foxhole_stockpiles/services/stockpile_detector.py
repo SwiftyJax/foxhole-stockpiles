@@ -280,18 +280,16 @@ class StockpileDetector:
 
         # If we found at least 2 boxes, refine grey range based on measured values
         if len(background_greys) >= 2:
-            measured_min = min(background_greys)
-            measured_max = max(background_greys)
+            measured_median = int(np.median(background_greys))
 
-            # Adaptive range: measured values ± 5 margin (bounded by configured limits)
+            # Adaptive range: median ± 5 margin (bounded by configured limits)
             margin = 5
-            adaptive_lower = max(measured_min - margin, self._settings.gray_lower)
-            adaptive_upper = min(measured_max + margin, self._settings.gray_upper)
+            adaptive_lower = max(measured_median - margin, self._settings.gray_lower)
+            adaptive_upper = min(measured_median + margin, self._settings.gray_upper)
 
             self._logger.debug(
-                "Adaptive grey: measured [%d-%d] -> range [%d-%d] (configured: [%d-%d])",
-                measured_min,
-                measured_max,
+                "Adaptive grey: median=%d -> range [%d-%d] (configured: [%d-%d])",
+                measured_median,
                 adaptive_lower,
                 adaptive_upper,
                 self._settings.gray_lower,
