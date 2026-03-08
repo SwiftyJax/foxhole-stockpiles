@@ -66,6 +66,9 @@ class StockpileDetector:
         # Detected groups for icons
         self.groups: list[GroupResult] = []
 
+        # BMS Longhook has a single item in the first row
+        self.has_single_item_first_row: bool = False
+
         self.icon_to_quantity_offset: int = 0
 
         self.composite_image: NDArray[np.uint8] = np.empty((0, 0, 3), dtype=np.uint8)
@@ -199,7 +202,7 @@ class StockpileDetector:
         return (x, y)
 
     def _detect_first_group(self, contours: list[cv2.typing.Rect]) -> int:
-        """Detect the first group (exactly 2 boxes) and establish grid.
+        """Detect the first group (1 or 2 boxes) and establish grid.
 
         Args:
             contours (Rect): Detected points
@@ -217,6 +220,7 @@ class StockpileDetector:
 
             x1, y1 = coords1
 
+            # Look for second box in same row
             second_box_index = first_box_index + 1
             while second_box_index < len(contours):
                 coords2 = self._filter_contour_by_size(contours[second_box_index])
@@ -225,27 +229,39 @@ class StockpileDetector:
                     continue
 
                 x2, y2 = coords2
-
                 x_diff = abs(x2 - x1)
 
-                # Check if they form the first column pair
-                if self._in_valid_range(y1, y2) and self._in_valid_range(
-                    x_diff, self.column_offset
-                ):
-                    # Found first group - establish grid
-                    self.first_column_x = min(x1, x2)
+                # Check if in same row
+                if self._in_valid_range(y1, y2):
+                    if self._in_valid_range(x_diff, self.column_offset):
+                        # Found 2-box pair
+                        self.first_column_x = min(x1, x2)
+                        self.first_column_y = y1
+                        self.valid_x_positions = [
+                            self.first_column_x + offset
+                            for offset in self.valid_x_positions_offsets
+                        ]
+                        self.quantities = [(x1, y1), (x2, y2)]
+                        return second_box_index + 1
+                    second_box_index += 1
+                    continue
+
+                # Second box is in different row - first box is alone
+                # Check if second box could be start of a valid grid (BMS Longhook)
+                if self._in_valid_range(x1, x2):
+                    # Same column - this is a single-item first row
+                    self.first_column_x = x1
                     self.first_column_y = y1
                     self.valid_x_positions = [
                         self.first_column_x + offset for offset in self.valid_x_positions_offsets
                     ]
+                    self.quantities = [(x1, y1)]
+                    self.has_single_item_first_row = True
+                    return first_box_index + 1
 
-                    # Initialize results with first group
-                    self.quantities = [(x1, y1), (x2, y2)]
+                # Different column in different row - skip to next first_box candidate
+                break
 
-                    # Return index after the second box to continue processing
-                    return second_box_index + 1
-
-                second_box_index += 1
             first_box_index += 1
 
         return 0
@@ -360,12 +376,13 @@ class StockpileDetector:
             return
 
         # Initialize group tracking
-        current_group_count = 2  # First group has 2 boxes
+        first_group_size = len(self.quantities)  # 1 for BMS Longhook, 2 for standard
+        current_group_count = first_group_size
         current_group_start_idx = 0
         last_y = self.first_column_y
-        current_x_idx = 2  # After first group (boxes 1,2), next expected is column 2
+        current_x_idx = first_group_size
         current_group_idx = 0
-        self.max_detected_x = self.quantities[1][0]
+        self.max_detected_x = self.quantities[-1][0]
 
         # Process remaining boxes
         contour_index = start_index
