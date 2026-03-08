@@ -105,7 +105,7 @@ class CatalogItem(BaseModel):
         if item.get("VehicleProfileType"):
             return ItemCategory.Vehicle
 
-        if item.get("ShippableInfo"):
+        if item.get("ShippableInfo") or "Shippable" in item.get("ChassisName", ""):
             return ItemCategory.Shippable
 
         if item.get("ItemCategory"):
