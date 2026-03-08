@@ -38,6 +38,7 @@ class StockpileTextExtractor:
         image: NDArray[np.uint8],
         numbers_only: bool = True,
         language: SupportedLanguage | None = None,
+        single_line: bool = False,
     ) -> str:
         """Extract raw text using custom trained model.
 
@@ -46,12 +47,15 @@ class StockpileTextExtractor:
             numbers_only (bool): Limit caracter detection to quantities (True) or all chars (False)
             language (SupportedLanguage | None): Language for text detection. If None, uses all
                 supported languages. Only used when numbers_only=False.
+            single_line (bool): Use single line mode (PSM 7) instead of block mode (PSM 6).
 
         Returns:
             str: Raw OCR text output
         """
         # Use custom trained model for better Renner font recognition
-        config = self.get_tesseract_config(numbers_only=numbers_only, language=language)
+        config = self.get_tesseract_config(
+            numbers_only=numbers_only, language=language, single_line=single_line
+        )
         result = await asyncio.to_thread(pytesseract.image_to_string, image, config=config)
         if result is None:
             return ""
@@ -130,19 +134,24 @@ class StockpileTextExtractor:
         return result
 
     def get_tesseract_config(
-        self, numbers_only: bool = True, language: SupportedLanguage | None = None
+        self,
+        numbers_only: bool = True,
+        language: SupportedLanguage | None = None,
+        single_line: bool = False,
     ) -> str:
         """Get the Tesseract configuration string used.
 
         Args:
             numbers_only (bool): Detect quantities (numbers, k+)
             language (SupportedLanguage | None): Language for text detection
+            single_line (bool): Use single line mode (PSM 7) instead of block mode (PSM 6).
 
         Returns:
             str: Tesseract configuration string
         """
         numbers = ""
         tessdata_dir = ""
+        psm = "7" if single_line else "6"
 
         if numbers_only:
             # For numbers, always use custom model if specified (e.g., renner_numbers)
@@ -168,4 +177,4 @@ class StockpileTextExtractor:
                 # Default to all supported languages for text detection
                 model = f"-l {SupportedLanguage.get_all_languages_string()}"
 
-        return f"--psm 6 {model} {tessdata_dir} {numbers} --oem 3".strip()
+        return f"--psm {psm} {model} {tessdata_dir} {numbers} --oem 3".strip()

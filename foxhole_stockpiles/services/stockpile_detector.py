@@ -460,10 +460,10 @@ class StockpileDetector:
         name_x = title_max_x - self.stockpile_name_width - self.box_width
 
         self.stockpile_type = (
-            title_min_x + self.title_margin // 2,
-            title_y,
+            title_min_x + self.title_margin * 3 // 4,
+            title_y + self.title_height // 8,
             self.stockpile_type_width,
-            self.title_height,
+            self.title_height * 3 // 4,
         )
         self.stockpile_name = (name_x, title_y, self.stockpile_name_width, self.title_height)
 

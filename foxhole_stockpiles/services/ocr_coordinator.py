@@ -914,7 +914,7 @@ class OCRCoordinator:
                 cv2.imwrite("stockpile_type_region.png", source_image)
 
             text = await self._text_extractor.extract_raw_text(
-                image=source_image, numbers_only=False, language=language
+                image=source_image, numbers_only=False, language=language, single_line=True
             )
             stockpile.type = self._stockpile_type_classifier.classify_from_text(text)
 
