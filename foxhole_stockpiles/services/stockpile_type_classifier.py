@@ -38,6 +38,7 @@ class StockpileTypeClassifier:
             "bunker_base": StockpileType.BUNKER_BASE,
             "border_base": StockpileType.BORDER_BASE,
             "town_base": StockpileType.TOWN_BASE,
+            "underground_fortress": StockpileType.UNDERGROUND_FORTRESS,
             "bms_longhook": StockpileType.BMS_LONGHOOK,
             "storage_depot": StockpileType.STORAGE_DEPOT,
             "seaport": StockpileType.SEAPORT,

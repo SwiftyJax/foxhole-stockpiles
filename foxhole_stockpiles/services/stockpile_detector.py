@@ -118,7 +118,7 @@ class StockpileDetector:
         self.title_margin = int(self._settings.title_margin * self.scale_factor)
         self.title_min_width = int(self._settings.title_min_width * self.scale_factor)
         self.title_height = int(self._settings.title_height * self.scale_factor)
-        self.stockpile_type_width = int(3 * self.box_width)
+        self.stockpile_type_width = int(4 * self.box_width)
         self.stockpile_name_width = int(2.5 * self.box_width)
 
         # Shard and ingame timestamp regions
@@ -259,8 +259,8 @@ class StockpileDetector:
                     self.has_single_item_first_row = True
                     return first_box_index + 1
 
-                # Different column in different row - skip to next first_box candidate
-                break
+                # Different column in different row - skip this second box and keep looking
+                second_box_index += 1
 
             first_box_index += 1
 

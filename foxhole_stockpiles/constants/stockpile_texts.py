@@ -74,6 +74,7 @@ STOCKPILE_TYPE_TEXTS: dict[StockpileType, list[str]] = {
         "Untergrundfestung",
         "Forteresse Souterraine",
         "Bunker Subterrâneo",
+        "Подземная Крепость",
         "地下要塞",
     ],
     StockpileType.BMS_LONGHOOK: [
