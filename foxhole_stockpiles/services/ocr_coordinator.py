@@ -1,5 +1,6 @@
 """OCR Coordinator service for orchestrating stockpile detection."""
 
+import asyncio
 import logging
 import time
 from datetime import datetime
@@ -170,7 +171,13 @@ class OCRCoordinator:
             detector = self._detect_regions(image)
             scale_factor = detector.scale_factor
             stockpile_images = self._extract_stockpile_images(detector)
-            quantities = await self._extract_quantities(stockpile_images)
+
+            quantities, metadata = await self._extract_all_ocr_parallel(
+                stockpile_images=stockpile_images,
+                scale_factor=scale_factor,
+                language=language,
+            )
+
             await self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
             scanned_stockpile = await self._match_icons_and_build_result(
                 stockpile_images=stockpile_images,
@@ -179,6 +186,15 @@ class OCRCoordinator:
                 language=language,
                 faction=faction,
             )
+
+            if metadata["type"] is not None:
+                scanned_stockpile.type = metadata["type"]
+            if metadata["name"] is not None:
+                scanned_stockpile.name = metadata["name"]
+            if metadata["shard"] is not None:
+                scanned_stockpile.shard = metadata["shard"]
+            if metadata["ingame_timestamp"] is not None:
+                scanned_stockpile.ingame_timestamp = metadata["ingame_timestamp"]
         except Exception as e:
             elapsed_time = time.perf_counter() - start_time
             # Emit scan failed event
@@ -339,6 +355,113 @@ class OCRCoordinator:
             corrected_quantities = corrected_quantities[:icons_count]
 
         return corrected_quantities
+
+    async def _extract_all_ocr_parallel(
+        self,
+        stockpile_images: StockpileImageRegions,
+        scale_factor: float,
+        language: SupportedLanguage | None,
+    ) -> tuple[list[int], dict[str, Any]]:
+        """Extract all OCR data in parallel: quantities + type + shard + name.
+
+        Args:
+            stockpile_images (StockpileImageRegions): Image regions to process
+            scale_factor (float): Scale factor for image preprocessing
+            language (SupportedLanguage | None): Language for text detection
+
+        Returns:
+            tuple[list[int], dict[str, Any]]: (quantities, metadata_dict)
+                metadata_dict contains: type, name, shard, ingame_timestamp
+        """
+        # Prepare all images for OCR
+        type_source = None
+        shard_source = None
+        name_source = None
+
+        if stockpile_images.stockpile_type is not None:
+            type_source = self._prepare_image_for_detection(
+                image=stockpile_images.stockpile_type,
+                scale_factor=scale_factor,
+            )
+            if self.config.debug_mode:
+                cv2.imwrite("stockpile_type_region.png", type_source)
+
+        if stockpile_images.shard is not None:
+            shard_source = self._prepare_image_for_detection(
+                image=stockpile_images.shard,
+                scale_factor=scale_factor,
+                use_inv=False,
+            )
+            if self.config.debug_mode:
+                cv2.imwrite("stockpile_shard.png", shard_source)
+
+        if stockpile_images.stockpile_name is not None:
+            name_source = self._prepare_image_for_detection(
+                image=stockpile_images.stockpile_name,
+                scale_factor=scale_factor,
+            )
+            if self.config.debug_mode:
+                cv2.imwrite("stockpile_name_region.png", name_source)
+
+        # Define async OCR tasks
+        async def extract_quantities_task() -> list[int]:
+            return await self._extract_quantities(stockpile_images)
+
+        async def extract_type_task() -> str | None:
+            if type_source is None:
+                return None
+            return await self._text_extractor.extract_raw_text(
+                image=type_source, numbers_only=False, language=language, single_line=True
+            )
+
+        async def extract_shard_task() -> str | None:
+            if shard_source is None:
+                return None
+            return await self._text_extractor.extract_raw_text(
+                image=shard_source, numbers_only=False, language=language
+            )
+
+        async def extract_name_task() -> str | None:
+            if name_source is None:
+                return None
+            return await self._text_extractor.extract_raw_text(
+                image=name_source, numbers_only=False, language=language
+            )
+
+        # Run all OCR in parallel
+        quantities, type_text, shard_text, name_text = await asyncio.gather(
+            extract_quantities_task(),
+            extract_type_task(),
+            extract_shard_task(),
+            extract_name_task(),
+        )
+
+        # Process results into metadata dict
+        metadata: dict[str, Any] = {
+            "type": None,
+            "name": None,
+            "shard": None,
+            "ingame_timestamp": None,
+        }
+
+        # Process type
+        if type_text is not None:
+            metadata["type"] = self._stockpile_type_classifier.classify_from_text(type_text)
+
+        # Process shard + timestamp
+        if shard_text is not None:
+            shard_text = shard_text.strip() + "\n\n"
+            lines = shard_text.splitlines()
+            metadata["ingame_timestamp"] = extract_day_and_hour(lines[0])
+            if len(lines) > 1:
+                metadata["shard"] = lines[1]
+
+        # Process name (only if type supports custom names)
+        stockpile_type = metadata["type"]
+        if name_text is not None and stockpile_type and stockpile_type.has_custom_name():
+            metadata["name"] = name_text.strip()
+
+        return quantities, metadata
 
     def _compute_expected_row_counts(
         self, groups: list[tuple[int, int]]
@@ -901,56 +1024,6 @@ class OCRCoordinator:
         self._check_for_duplicates(
             stockpile=stockpile, stockpile_images=stockpile_images, faction=faction
         )
-
-        # Detect the stockpile metadata from the other regions
-        # First detect the stockpile type to determine if name extraction is needed
-        type_image = stockpile_images.stockpile_type
-        if type_image is not None:
-            source_image = self._prepare_image_for_detection(
-                image=type_image,
-                scale_factor=scale_factor,
-            )
-            if self.config.debug_mode:
-                cv2.imwrite("stockpile_type_region.png", source_image)
-
-            text = await self._text_extractor.extract_raw_text(
-                image=source_image, numbers_only=False, language=language, single_line=True
-            )
-            stockpile.type = self._stockpile_type_classifier.classify_from_text(text)
-
-        # Only extract stockpile name for types that support custom names
-        # (Storage Depot, Seaport, Aircraft Depot). Base types don't have names.
-        name_image = stockpile_images.stockpile_name
-        if name_image is not None and stockpile.type and stockpile.type.has_custom_name():
-            source_image = self._prepare_image_for_detection(
-                image=name_image,
-                scale_factor=scale_factor,
-            )
-            if self.config.debug_mode:
-                cv2.imwrite("stockpile_name_region.png", source_image)
-
-            text = await self._text_extractor.extract_raw_text(
-                image=source_image, numbers_only=False, language=language
-            )
-            stockpile.name = text.strip()
-
-        shard_image = stockpile_images.shard
-        if shard_image is not None:
-            source_image = self._prepare_image_for_detection(
-                image=shard_image,
-                scale_factor=scale_factor,
-                use_inv=False,
-            )
-            if self.config.debug_mode:
-                cv2.imwrite("stockpile_shard.png", source_image)
-
-            text = await self._text_extractor.extract_raw_text(
-                image=source_image, numbers_only=False, language=language
-            )
-            text = text.strip() + "\n\n"
-            lines = text.splitlines()
-            stockpile.ingame_timestamp = extract_day_and_hour(lines[0])
-            stockpile.shard = lines[1]
 
         return stockpile
 
