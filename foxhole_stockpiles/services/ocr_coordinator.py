@@ -681,17 +681,16 @@ class OCRCoordinator:
                 )
                 return scaled_quantities
 
-        # Strategy 3: OCR each quantity individually
+        # Strategy 3: OCR each quantity individually (parallel)
         self.logger.debug(
             "Attempting individual OCR for indices %d to %d",
             start_index,
             start_index + expected_count - 1,
         )
 
-        individual_results: list[int] = []
-        for img in row_images:
-            qty = await self._ocr_single_quantity(img)
-            individual_results.append(qty)
+        individual_results = list(
+            await asyncio.gather(*[self._ocr_single_quantity(img) for img in row_images])
+        )
 
         if self._validate_descending_in_context(
             individual_results, previous_quantities, group_index, groups
@@ -699,12 +698,13 @@ class OCRCoordinator:
             self.logger.debug("Individual OCR succeeded: %s", individual_results)
             return individual_results
 
-        # Strategy 4: Individual OCR with alternative preprocessing
+        # Strategy 4: Individual OCR with alternative preprocessing (parallel)
         self.logger.debug("Trying individual OCR with alternative preprocessing")
-        alt_results: list[int] = []
-        for img in row_images:
-            qty = await self._ocr_single_quantity(img, use_alternative=True)
-            alt_results.append(qty)
+        alt_results = list(
+            await asyncio.gather(
+                *[self._ocr_single_quantity(img, use_alternative=True) for img in row_images]
+            )
+        )
 
         if self._validate_descending_in_context(
             alt_results, previous_quantities, group_index, groups
