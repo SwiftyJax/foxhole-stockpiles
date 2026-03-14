@@ -34,10 +34,10 @@ class TemplateDatabase:
         self.resolution = resolution
         self.templates: list[IconTemplate] = []
 
-        # Basic lookup tables for faction, mod, and category filtering
-        self.faction_lookup: dict[str, list[int]] = {}
-        self.mod_lookup: dict[str, list[int]] = {}
-        self.category_lookup: dict[str, list[int]] = {}
+        # Basic lookup tables for faction, mod, and category filtering (sets for fast intersection)
+        self.faction_lookup: dict[str, set[int]] = {}
+        self.mod_lookup: dict[str, set[int]] = {}
+        self.category_lookup: dict[str, set[int]] = {}
 
         # Vectorized phash array for fast distance computation
         self._phash_array: np.ndarray | None = None
@@ -53,18 +53,18 @@ class TemplateDatabase:
 
         # Update faction lookup
         if template.faction.value not in self.faction_lookup:
-            self.faction_lookup[template.faction.value] = []
-        self.faction_lookup[template.faction.value].append(idx)
+            self.faction_lookup[template.faction.value] = set()
+        self.faction_lookup[template.faction.value].add(idx)
 
         # Update mod lookup
         if template.mod not in self.mod_lookup:
-            self.mod_lookup[template.mod] = []
-        self.mod_lookup[template.mod].append(idx)
+            self.mod_lookup[template.mod] = set()
+        self.mod_lookup[template.mod].add(idx)
 
         # Update category lookup
         if template.category.value not in self.category_lookup:
-            self.category_lookup[template.category.value] = []
-        self.category_lookup[template.category.value].append(idx)
+            self.category_lookup[template.category.value] = set()
+        self.category_lookup[template.category.value].add(idx)
 
     def get_candidates(
         self,
@@ -97,21 +97,20 @@ class TemplateDatabase:
 
         # Apply category filter if specified
         if category and category != ItemCategory.Invalid:
-            category_candidates = self.category_lookup.get(category.value, [])
-            candidates = candidates & set(category_candidates)
+            category_candidates = self.category_lookup.get(category.value, set())
+            candidates = candidates & category_candidates
 
         # Apply mod filter if specified
         if mod:
-            mod_candidates = self.mod_lookup.get(mod, [])
-            candidates = candidates & set(mod_candidates)
+            mod_candidates = self.mod_lookup.get(mod, set())
+            candidates = candidates & mod_candidates
 
         # Apply faction filter if specified
         if faction and faction != ItemFaction.NEUTRAL:
-            faction_candidates = self.faction_lookup.get(faction.value, [])
+            faction_candidates = self.faction_lookup.get(faction.value, set())
             # Also include neutral items
-            neutral_candidates = self.faction_lookup.get(ItemFaction.NEUTRAL.value, [])
-            valid_faction_candidates = set(faction_candidates + neutral_candidates)
-            candidates = candidates & valid_faction_candidates
+            neutral_candidates = self.faction_lookup.get(ItemFaction.NEUTRAL.value, set())
+            candidates = candidates & (faction_candidates | neutral_candidates)
 
         # Apply crated filter if specified
         if crated is not None:

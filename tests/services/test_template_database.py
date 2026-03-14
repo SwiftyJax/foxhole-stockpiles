@@ -91,7 +91,7 @@ class TestAddTemplate:
         db.add_template(sample_template)
 
         assert "neutral" in db.faction_lookup
-        assert db.faction_lookup["neutral"] == [0]
+        assert db.faction_lookup["neutral"] == {0}
 
     def test_add_template_updates_mod_lookup(self, sample_template: IconTemplate) -> None:
         """Test that adding template updates mod lookup.
@@ -104,7 +104,7 @@ class TestAddTemplate:
         db.add_template(sample_template)
 
         assert "vanilla" in db.mod_lookup
-        assert db.mod_lookup["vanilla"] == [0]
+        assert db.mod_lookup["vanilla"] == {0}
 
     def test_add_template_updates_category_lookup(self, sample_template: IconTemplate) -> None:
         """Test that adding template updates category lookup.
@@ -117,7 +117,7 @@ class TestAddTemplate:
         db.add_template(sample_template)
 
         assert "item" in db.category_lookup
-        assert db.category_lookup["item"] == [0]
+        assert db.category_lookup["item"] == {0}
 
     def test_add_multiple_templates_same_faction(self) -> None:
         """Test adding multiple templates with same faction."""
@@ -146,7 +146,7 @@ class TestAddTemplate:
         db.add_template(template1)
         db.add_template(template2)
 
-        assert db.faction_lookup["Colonials"] == [0, 1]
+        assert db.faction_lookup["Colonials"] == {0, 1}
 
     def test_add_templates_different_factions(self) -> None:
         """Test adding templates with different factions."""
@@ -177,8 +177,8 @@ class TestAddTemplate:
 
         assert "Colonials" in db.faction_lookup
         assert "Wardens" in db.faction_lookup
-        assert db.faction_lookup["Colonials"] == [0]
-        assert db.faction_lookup["Wardens"] == [1]
+        assert db.faction_lookup["Colonials"] == {0}
+        assert db.faction_lookup["Wardens"] == {1}
 
 
 class TestGetCandidates:

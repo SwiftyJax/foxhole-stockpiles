@@ -363,15 +363,15 @@ class IconManager:
         for idx, template in enumerate(database.templates):
             # Update faction lookup
             if template.faction.value not in database.faction_lookup:
-                database.faction_lookup[template.faction.value] = []
-            database.faction_lookup[template.faction.value].append(idx)
+                database.faction_lookup[template.faction.value] = set()
+            database.faction_lookup[template.faction.value].add(idx)
 
             # Update mod lookup
             if template.mod not in database.mod_lookup:
-                database.mod_lookup[template.mod] = []
-            database.mod_lookup[template.mod].append(idx)
+                database.mod_lookup[template.mod] = set()
+            database.mod_lookup[template.mod].add(idx)
 
             # Update category lookup
             if template.category.value not in database.category_lookup:
-                database.category_lookup[template.category.value] = []
-            database.category_lookup[template.category.value].append(idx)
+                database.category_lookup[template.category.value] = set()
+            database.category_lookup[template.category.value].add(idx)
