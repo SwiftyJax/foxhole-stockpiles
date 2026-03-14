@@ -70,9 +70,9 @@ class StockpileTypeClassifier:
 
         # Clean the text for better matching - strip whitespace and common OCR artifacts
         cleaned_text = text.strip()
-        # Remove leading/trailing quote characters that OCR may incorrectly add
-        quote_chars = "'\"`´''«»"
-        cleaned_text = cleaned_text.lstrip(quote_chars).rstrip(quote_chars)
+        # Remove leading/trailing quote and pipe characters that OCR may incorrectly add
+        artifact_chars = "'\"`´''«»|"
+        cleaned_text = cleaned_text.lstrip(artifact_chars).rstrip(artifact_chars).strip()
 
         # Search through all type translations
         matching_type = self._find_matching_type(cleaned_text)
