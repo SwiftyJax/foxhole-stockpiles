@@ -107,7 +107,7 @@ class FileOutputHandler(BaseOutputDestinationHandler):
         """
         if isinstance(self.format_settings, CsvFormatSettings):
             return self._format_csv(stockpile)
-        return stockpile.model_dump_json()
+        return stockpile.model_dump_json(indent=2)
 
     def _format_csv(self, stockpile: Stockpile) -> str:
         """Format stockpile data as CSV/TSV.
