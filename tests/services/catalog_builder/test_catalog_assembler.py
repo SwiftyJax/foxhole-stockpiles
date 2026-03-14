@@ -223,6 +223,7 @@ class TestCatalogAssemblerFilterBlueprintByContent:
         data = {
             "CodeName": "TestItem",
             "DisplayName": "Test Item",
+            "Description": "Test description",
             "Icon": "icon.png",
             "ItemCategory": "EItemCategory::Weapon",
         }
@@ -238,6 +239,7 @@ class TestCatalogAssemblerFilterBlueprintByContent:
         data = {
             "CodeName": "TestVehicle",
             "DisplayName": "Test Vehicle",
+            "Description": "Test description",
             "Icon": "icon.png",
             "VehicleProfileType": "EVehicleProfileType::Tank",
         }
@@ -253,6 +255,7 @@ class TestCatalogAssemblerFilterBlueprintByContent:
         data = {
             "CodeName": "TestItem",
             "DisplayName": "Test Item",
+            "Description": "Test description",
             "Icon": "icon.png",
             "bIsStockpilable": True,
         }
@@ -268,6 +271,7 @@ class TestCatalogAssemblerFilterBlueprintByContent:
         data = {
             "CodeName": "TestItem",
             "DisplayName": "Test Item",
+            "Description": "Test description",
             "Icon": "icon.png",
             "bIsReserveStockpiled": True,
         }
@@ -299,6 +303,7 @@ class TestCatalogAssemblerFilterBlueprintByContent:
         data = {
             "CodeName": "SuperTank",
             "DisplayName": "Super Tank",
+            "Description": "Test description",
             "Icon": "icon.png",
             "VehicleProfileType": "EVehicleProfileType::SuperTank",
             "bIsStockpilable": False,
@@ -525,9 +530,27 @@ class TestCatalogAssemblerBuildCatalog:
 
         # Setup mock to return entries
         bp.extract_catalog_data.side_effect = [
-            {"CodeName": "Zebra", "DisplayName": "Z", "Icon": "z.png", "ItemCategory": "Cat"},
-            {"CodeName": "Alpha", "DisplayName": "A", "Icon": "a.png", "ItemCategory": "Cat"},
-            {"CodeName": "Beta", "DisplayName": "B", "Icon": "b.png", "ItemCategory": "Cat"},
+            {
+                "CodeName": "Zebra",
+                "DisplayName": "Z",
+                "Description": "D",
+                "Icon": "z.png",
+                "ItemCategory": "Cat",
+            },
+            {
+                "CodeName": "Alpha",
+                "DisplayName": "A",
+                "Description": "D",
+                "Icon": "a.png",
+                "ItemCategory": "Cat",
+            },
+            {
+                "CodeName": "Beta",
+                "DisplayName": "B",
+                "Description": "D",
+                "Icon": "b.png",
+                "ItemCategory": "Cat",
+            },
         ]
         ds.get_production_categories.return_value = None
         ds.get_ammo_dynamic_data.return_value = None
@@ -562,9 +585,19 @@ class TestCatalogAssemblerBuildCatalog:
         bp, ds, loc = mock_services
 
         bp.extract_catalog_data.side_effect = [
-            {"CodeName": "Item1", "DisplayName": "I1", "Icon": "i.png", "ItemCategory": "C"},
+            {
+                "CodeName": "Item1",
+                "DisplayName": "I1",
+                "Description": "D",
+                "Icon": "i.png",
+                "ItemCategory": "C",
+            },
             None,  # Second file fails
-            {"CodeName": "Item3", "DisplayName": "I3", "Icon": "i.png"},  # Missing category
+            {
+                "CodeName": "Item3",
+                "DisplayName": "I3",
+                "Icon": "i.png",
+            },  # Missing category/description
         ]
         ds.get_production_categories.return_value = None
         ds.get_ammo_dynamic_data.return_value = None
@@ -1525,8 +1558,8 @@ class TestCatalogAssemblerAmmoDynamicData:
                 "CompatibleAmmoCodeName": "RifleAmmo",
             },
         }
-        ds.get_ammo_dynamic_data.side_effect = (
-            lambda code: {
+        ds.get_ammo_dynamic_data.side_effect = lambda code: (
+            {
                 "Damage": 100,
                 "Suppression": 50,
             }
@@ -1626,6 +1659,7 @@ class TestCatalogAssemblerBuildCatalogErrorHandling:
             return {
                 "CodeName": "ValidItem",
                 "DisplayName": "Valid",
+                "Description": "Valid description",
                 "Icon": "icon.png",
                 "ItemCategory": "EItemCategory::Weapon",
             }

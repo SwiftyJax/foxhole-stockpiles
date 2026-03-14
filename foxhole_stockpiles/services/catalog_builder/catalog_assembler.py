@@ -183,7 +183,7 @@ class CatalogAssembler:
             bool: True if the item should be included in the catalog.
         """
         # Must have required fields
-        required_fields = ["CodeName", "DisplayName", "Icon"]
+        required_fields = ["CodeName", "DisplayName", "Icon", "Description"]
         if not all(data.get(field) for field in required_fields):
             return False
 
