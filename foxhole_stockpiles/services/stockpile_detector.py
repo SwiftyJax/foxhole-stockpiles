@@ -349,17 +349,13 @@ class StockpileDetector:
         contours.sort(key=lambda box: box[1])
 
         # Group contours into rows based on y-coordinate tolerance
+        # Since contours are sorted by y, we only need to check the last row
         rows: list[list[cv2.typing.Rect]] = []
         for contour in contours:
-            x, y, _, _ = contour
-            # Find if this contour belongs to an existing row
-            placed = False
-            for row in rows:
-                if abs(row[0][1] - y) < tolerance:
-                    row.append(contour)
-                    placed = True
-                    break
-            if not placed:
+            _, y, _, _ = contour
+            if rows and abs(rows[-1][0][1] - y) < tolerance:
+                rows[-1].append(contour)
+            else:
                 rows.append([contour])
 
         # Sort each row by x, then flatten back to single list
