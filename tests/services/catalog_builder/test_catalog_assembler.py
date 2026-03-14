@@ -1771,6 +1771,49 @@ class TestCatalogAssemblerMassProductionInference:
         prod_cats = result.get("ProductionCategories", {})
         assert prod_cats.get("MassProductionFactory") == "EFactoryQueueType::Structures"
 
+    def test_infers_mass_production_for_large_shippable(
+        self, mock_services: tuple[MagicMock, MagicMock, MagicMock]
+    ) -> None:
+        """Test MassProductionFactory is inferred for ShippableInfo::Large vehicles.
+
+        Large shippable vehicles like landing crafts may not have VehicleBuildType
+        but are still mass-produced in factories.
+
+        Args:
+            mock_services (tuple[MagicMock, MagicMock, MagicMock]): Mock services fixture.
+        """
+        bp, ds, loc = mock_services
+        bp.extract_catalog_data.return_value = {
+            "CodeName": "LandingCraftW",
+            "DisplayName": "Mulloy LPC",
+            "Description": "D",
+            "Icon": "icon.png",
+            "ShippableInfo": "EShippableType::Large",
+            # No VehicleBuildType or BuildLocationType
+        }
+        ds.get_ammo_dynamic_data.return_value = None
+        ds.get.return_value = None
+        ds.get_profile.return_value = None
+        ds.get_production_categories.return_value = None  # No existing categories
+        loc.is_guid.return_value = False
+        loc.get_all_languages.return_value = None
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            vehicles_dir = Path(tmpdir) / "Vehicles"
+            vehicles_dir.mkdir(parents=True)
+            test_file = vehicles_dir / "LandingCraft.json"
+            test_file.touch()
+
+            # Set blueprints_dir to the temp directory
+            bp.blueprints_dir = Path(tmpdir)
+            assembler = CatalogAssembler(bp, ds, loc)
+
+            result = assembler._parse_blueprint(test_file)
+
+        assert result is not None
+        prod_cats = result.get("ProductionCategories", {})
+        assert prod_cats.get("MassProductionFactory") == "EFactoryQueueType::Vehicles"
+
 
 class TestCatalogAssemblerIsEmptyResourceAmountsEdgeCases:
     """Tests for _is_empty_resource_amounts method edge cases.

@@ -312,6 +312,7 @@ class CatalogAssembler:
         if not prod_cats or "MassProductionFactory" not in prod_cats:
             vehicle_build_type = data.get("VehicleBuildType")
             build_location_type = data.get("BuildLocationType")
+            shippable_info = data.get("ShippableInfo", "")
 
             if vehicle_build_type and vehicle_build_type != "EVehicleBuildType::NotBuildable":
                 if "ProductionCategories" not in data:
@@ -327,6 +328,13 @@ class CatalogAssembler:
                     data["ProductionCategories"] = {}
                 data["ProductionCategories"]["MassProductionFactory"] = (
                     "EFactoryQueueType::Structures"
+                )
+            elif "Large" in shippable_info:
+                # Large shippable vehicles (e.g., landing crafts) are mass-produced
+                if "ProductionCategories" not in data:
+                    data["ProductionCategories"] = {}
+                data["ProductionCategories"]["MassProductionFactory"] = (
+                    "EFactoryQueueType::Vehicles"
                 )
 
         return data
