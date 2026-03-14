@@ -399,6 +399,7 @@ class OCRCoordinator:
             name_source = self._prepare_image_for_detection(
                 image=stockpile_images.stockpile_name,
                 scale_factor=scale_factor,
+                extra_upscale=True,
             )
             if self.config.debug_mode:
                 cv2.imwrite("stockpile_name_region.png", name_source)
@@ -885,6 +886,7 @@ class OCRCoordinator:
         image: NDArray[np.uint8],
         scale_factor: float,
         use_inv: bool = True,
+        extra_upscale: bool = False,
     ) -> NDArray[np.uint8]:
         """Apply preprocessing to the image for better text detection.
 
@@ -895,12 +897,16 @@ class OCRCoordinator:
             image (NDArray[np.uint8]): Image region to preprocess
             scale_factor (float): Resolution scale factor from detector
             use_inv (bool): Whether to use inverted thresholding
+            extra_upscale (bool): Apply additional 2x upscale for better OCR accuracy.
+                Useful for alphanumeric text where "1" can be confused with "]".
 
         Returns:
             NDArray[np.uint8]: Processed image ready for OCR
         """
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         upscale_factor = 2 / scale_factor
+        if extra_upscale:
+            upscale_factor *= 2
 
         upscaled = cv2.resize(
             gray, None, fx=upscale_factor, fy=upscale_factor, interpolation=cv2.INTER_CUBIC
