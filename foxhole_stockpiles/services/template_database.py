@@ -39,6 +39,9 @@ class TemplateDatabase:
         self.mod_lookup: dict[str, list[int]] = {}
         self.category_lookup: dict[str, list[int]] = {}
 
+        # Vectorized phash array for fast distance computation
+        self._phash_array: np.ndarray | None = None
+
     def add_template(self, template: IconTemplate) -> None:
         """Add template and update lookup tables.
 
@@ -296,6 +299,9 @@ class TemplateDatabase:
 
             db.add_template(template)
 
+        # Store phash array for vectorized distance computation
+        db._phash_array = phashes.astype(np.uint64)
+
         logger.debug("Loaded %d templates from HDF5 group %s", n_templates, group.name)
         return db
 
@@ -311,3 +317,36 @@ class TemplateDatabase:
             f"factions={len(self.faction_lookup)}, "
             f"mods={len(self.mod_lookup)})"
         )
+
+    def get_phash_distances(
+        self,
+        icon_phash: int,
+        candidate_indices: list[int],
+    ) -> np.ndarray:
+        """Compute hamming distances between icon phash and candidate templates.
+
+        Uses vectorized NumPy operations for fast computation.
+
+        Args:
+            icon_phash (int): Perceptual hash of the icon to match.
+            candidate_indices (list[int]): Indices of candidate templates to compare.
+
+        Returns:
+            np.ndarray: Array of hamming distances for each candidate.
+        """
+        if self._phash_array is None:
+            # Fallback: build array from templates (shouldn't happen normally)
+            self._phash_array = np.array([t.phash for t in self.templates], dtype=np.uint64)
+
+        # Get phashes for candidates only
+        candidate_phashes = self._phash_array[candidate_indices]
+
+        # Vectorized XOR
+        xor_result = np.bitwise_xor(candidate_phashes, np.uint64(icon_phash))
+
+        # Vectorized popcount using unpackbits
+        # Convert uint64 to bytes, unpack bits, sum
+        xor_bytes = xor_result.view(np.uint8).reshape(-1, 8)
+        bit_counts: np.ndarray = np.unpackbits(xor_bytes, axis=1).sum(axis=1)
+
+        return bit_counts

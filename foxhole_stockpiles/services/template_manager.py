@@ -16,7 +16,7 @@ import h5py
 import numpy as np
 from numpy.typing import NDArray
 
-from foxhole_stockpiles.core.utils import compute_icon_phash, hamming_distance
+from foxhole_stockpiles.core.utils import compute_icon_phash
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
@@ -623,19 +623,20 @@ class TemplateManager:
             phash_start = time.perf_counter()
             icon_phash = compute_icon_phash(icon_image)
 
-            phash_filtered = []
-            item_codes_included = set()
+            # Vectorized phash distance computation
+            distances = self.active_database.get_phash_distances(icon_phash, candidates)
 
-            for candidate_idx in candidates:
-                template = self.active_database.templates[candidate_idx]
-                distance = hamming_distance(icon_phash, template.phash)
-                if distance <= phash_threshold:
-                    phash_filtered.append((candidate_idx, distance))
-                    item_codes_included.add(template.code)
+            # Filter candidates within threshold
+            mask = distances <= phash_threshold
+            filtered_indices = np.where(mask)[0]
 
-            # Sort by pHash similarity and take top candidates
-            phash_filtered.sort(key=lambda x: x[1])
-            final_candidates = [idx for idx, _ in phash_filtered[:max_ncc_candidates]]
+            # Get candidate indices and distances for filtered items
+            filtered_candidates = [candidates[i] for i in filtered_indices]
+            filtered_distances = distances[filtered_indices]
+
+            # Sort by distance and take top candidates
+            sort_order = np.argsort(filtered_distances)
+            final_candidates = [filtered_candidates[i] for i in sort_order[:max_ncc_candidates]]
 
             phash_time_ms = (time.perf_counter() - phash_start) * 1000
 
