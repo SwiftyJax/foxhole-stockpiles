@@ -1095,6 +1095,7 @@ class OCRCoordinator:
             # Re-match using _process_single_icon with exclusion
 
             quantity = duplicate_item.quantity
+            original_crated = duplicate_item.crated
             rematched_item, rematch_result = self._process_single_icon(
                 stockpile_images=stockpile_images,
                 icon_index=duplicate_index,
@@ -1107,13 +1108,16 @@ class OCRCoordinator:
             )
 
             if rematched_item is not None:
+                # Overwrite crated status to match the group
+                rematched_item.crated = original_crated
                 stockpile.items[duplicate_index] = rematched_item
                 self.logger.debug(
-                    "Re-matched index %d: %s -> %s (confidence: %.3f)",
+                    "Re-matched index %d: %s -> %s (confidence: %.3f, crated: %s)",
                     duplicate_index,
                     conflicting_code,
                     rematched_item.code,
                     rematched_item.confidence or 0.0,
+                    original_crated,
                 )
             else:
                 # No alternative found, mark as Unknown
