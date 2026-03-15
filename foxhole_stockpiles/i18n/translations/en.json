@@ -33,6 +33,7 @@
       "build": "&Build...",
       "information": "&Information...",
       "visualizer": "&Visualizer...",
+      "debug_viewer": "&Debug Image Viewer...",
       "about": "&About"
     },
     "tray": {
@@ -558,6 +559,18 @@
   "catalog_builder_settings": {
     "title": "Catalog Builder Settings",
     "info": "Configure the tools required for building the item catalog from PAK files."
+  },
+
+  "debug_viewer": {
+    "title": "Debug Image Viewer",
+    "select_screenshot": "Select a screenshot to analyze",
+    "detected_items": "Detected Items",
+    "screenshot": "Screenshot",
+    "icon_comparison": "Icon Comparison",
+    "detected": "Detected",
+    "scaled": "(scaled)",
+    "scan_error_title": "Scan Error",
+    "database_error_title": "Database Error"
   },
 
   "database_builder_tab": {

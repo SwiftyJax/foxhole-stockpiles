@@ -21,6 +21,7 @@ from foxhole_stockpiles.gui.windows.catalog_builder_window import CatalogBuilder
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
 from foxhole_stockpiles.gui.windows.database_info_window import DatabaseInfoWindow
 from foxhole_stockpiles.gui.windows.database_visualizer_window import DatabaseVisualizerWindow
+from foxhole_stockpiles.gui.windows.debug_image_window import DebugImageWindow
 from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
 from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
@@ -117,6 +118,11 @@ class MainWindow(QMainWindow):
         self.visualizer_action = self.database_menu.addAction("")  # type: ignore[union-attr]
         self.visualizer_action.triggered.connect(self.show_database_visualizer)  # type: ignore[union-attr]
         self._advanced_menu_actions.append(self.visualizer_action)  # type: ignore[arg-type]
+
+        # Debug Image Viewer - hidden at Basic config level
+        self.debug_viewer_action = self.database_menu.addAction("")  # type: ignore[union-attr]
+        self.debug_viewer_action.triggered.connect(self.show_debug_viewer)  # type: ignore[union-attr]
+        self._advanced_menu_actions.append(self.debug_viewer_action)  # type: ignore[arg-type]
 
         # Help menu
         self.help_menu = menu_bar.addMenu("")  # type: ignore[union-attr]
@@ -337,6 +343,37 @@ class MainWindow(QMainWindow):
         visualizer_window.move(center_x, center_y)
         visualizer_window.exec()
 
+    def show_debug_viewer(self) -> None:
+        """Show debug image viewer window."""
+        # Try to get configured database path
+        database_path = None
+        try:
+            settings = AppSettings()
+            if settings.scanner.database_path:
+                database_path = str(settings.scanner.database_path)
+        except Exception:
+            pass  # No config or error loading
+
+        if not database_path:
+            QMessageBox.warning(
+                self,
+                t("main_window.dialogs.no_database_title"),
+                t("main_window.dialogs.no_database_message"),
+            )
+            return
+
+        debug_window = DebugImageWindow(self, database_path=database_path)
+
+        # Center the debug window on the main window
+        main_geometry = self.geometry()
+        debug_geometry = debug_window.geometry()
+
+        center_x = main_geometry.x() + (main_geometry.width() - debug_geometry.width()) // 2
+        center_y = main_geometry.y() + (main_geometry.height() - debug_geometry.height()) // 2
+
+        debug_window.move(center_x, center_y)
+        debug_window.exec()
+
     def show_about(self) -> None:
         """Show about dialog."""
         QMessageBox.about(
@@ -434,6 +471,7 @@ class MainWindow(QMainWindow):
         self.build_database_action.setText(t("main_window.menu.build"))  # type: ignore[union-attr]
         self.info_database_action.setText(t("main_window.menu.information"))  # type: ignore[union-attr]
         self.visualizer_action.setText(t("main_window.menu.visualizer"))  # type: ignore[union-attr]
+        self.debug_viewer_action.setText(t("main_window.menu.debug_viewer"))  # type: ignore[union-attr]
 
         # Help menu
         self.help_menu.setTitle(t("main_window.menu.help"))  # type: ignore[union-attr]
