@@ -689,24 +689,41 @@ class CatalogAssembler:
                         k: v for k, v in proj_data.items() if k != "ObjectPath"
                     }
 
+    # Subtype icons base path
+    SUBTYPE_ICONS_BASE = "War/Content/Textures/UI/ItemIcons/"
+
     def _add_subtype_icon(self, data: dict[str, Any]) -> None:
         """Add SubTypeIcon from AmmoDynamicData.DamageType.Icon (in-place).
 
-        SubTypeIcon is only added when the item "is" its own ammo type:
-        1. Item's CodeName has its own AmmoDynamicData entry, OR
-        2. Item has ProjectileClass.ExplosiveCodeName (single-use/rocket weapons), OR
-        3. Item has DeployCodeName (deployable tripod weapons)
+        Most items with SubTypeIcon have it defined directly in the blueprint
+        (uniforms, wrecked parts, facility materials, etc.). This method only
+        handles items where SubTypeIcon comes from DamageType.Icon:
+        - Item's CodeName has its own AmmoDynamicData entry, OR
+        - Item has ProjectileClass.ExplosiveCodeName (single-use/rocket), OR
+        - Item has DeployCodeName (deployable tripod weapons)
 
-        NOT added when AmmoDynamicData comes from MultiAmmo or CompatibleAmmoCodeName
-        for regular handheld weapons (rifles, pistols, etc.).
+        NOT added when:
+        - SubTypeIcon already exists in the blueprint
+        - AmmoDynamicData comes from MultiAmmo or CompatibleAmmoCodeName for weapons
+        - Item is a Mine (mines have damage data but don't render subicons)
 
         Args:
-            data: Catalog entry data containing AmmoDynamicData.
+            data: Catalog entry data.
         """
+        # Skip if SubTypeIcon already exists in the blueprint
+        if data.get("SubTypeIcon"):
+            return
+
+        code_name = data.get("CodeName", "")
+
+        # DamageType.Icon from AmmoDynamicData
         ds = self.data_service
 
         ammo_data = data.get("AmmoDynamicData")
         if not isinstance(ammo_data, dict):
+            # HARDCODED: ISGTC has no ammo info in blueprints
+            if code_name == "ISGTC":
+                data["SubTypeIcon"] = f"{self.SUBTYPE_ICONS_BASE}SubtypeSEIcon.0"
             return
 
         damage_type = ammo_data.get("DamageType")
@@ -717,32 +734,47 @@ class CatalogAssembler:
         if not icon:
             return
 
-        # Check if SubTypeIcon should be added
-        code_name = data.get("CodeName")
+        # Get ItemComponentClass for mine detection and other checks
+        item_comp = data.get("ItemComponentClass")
 
-        # Case 1: Item's own CodeName has AmmoDynamicData entry
+        # Exclude mines - they have damage data but don't render subicons in-game
+        # Mine detection requires ItemProfileType::Tool AND one of:
+        # - bAutoActivate=True (land mines), OR
+        # - no DeployCodeName AND no ExplosiveClass AND no ProjectileClass (water mines)
+        profile_type = data.get("ItemProfileType", "")
+        is_tool = "Tool" in str(profile_type)
+
+        if is_tool and isinstance(item_comp, dict):
+            is_auto_activate = item_comp.get("bAutoActivate") is True
+            has_deploy_code = bool(item_comp.get("DeployCodeName"))
+            has_explosive_class = bool(item_comp.get("ExplosiveClass"))
+            has_projectile_class = bool(item_comp.get("ProjectileClass"))
+            is_mine = is_auto_activate or (
+                not has_deploy_code and not has_explosive_class and not has_projectile_class
+            )
+            if is_mine:
+                return
+
+        # Check if SubTypeIcon should be added from DamageType
+
+        # Case 3a: Item's own CodeName has AmmoDynamicData entry
         if code_name and ds.get_ammo_dynamic_data(code_name):
             data["SubTypeIcon"] = icon
             return
 
-        item_comp = data.get("ItemComponentClass")
         if isinstance(item_comp, dict):
-            # Case 2: Item has ProjectileClass.ExplosiveCodeName (single-use/rocket)
+            # Case 3b: Item has ProjectileClass.ExplosiveCodeName (single-use/rocket)
             proj_class = item_comp.get("ProjectileClass")
             if isinstance(proj_class, dict) and proj_class.get("ExplosiveCodeName"):
                 data["SubTypeIcon"] = icon
                 return
 
-            # Case 3: Item has DeployCodeName (deployable tripod weapons)
+            # Case 3c: Item has DeployCodeName (deployable tripod weapons)
             if item_comp.get("DeployCodeName"):
                 data["SubTypeIcon"] = icon
                 return
 
         # Otherwise: ammo comes from MultiAmmo/CompatibleAmmoCodeName - no SubTypeIcon
-
-        # HARDCODED: ISGTC has no ammo info in blueprints
-        if code_name == "ISGTC" and "SubTypeIcon" not in data:
-            data["SubTypeIcon"] = "War/Content/Textures/UI/ItemIcons/SubtypeSEIcon.0"
 
     def _is_empty_resource_amounts(self, value: Any) -> bool:
         """Check if a ResourceAmounts value is empty/default.

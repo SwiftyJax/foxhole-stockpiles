@@ -947,24 +947,19 @@ class TestCatalogAssemblerAddSubtypeIcon:
     ) -> None:
         """Test hardcoded SubTypeIcon for ISGTC.
 
-        ISGTC gets AmmoDynamicData from expand_data (with valid Icon), but:
-        - ds.get_ammo_dynamic_data("ISGTC") returns None (no own entry)
-        - No ProjectileClass.ExplosiveCodeName
-        - No DeployCodeName
-        So it falls through to the hardcoded ISGTC case at the end.
+        ISGTC has no AmmoDynamicData in the blueprint, so it gets the
+        hardcoded SE icon.
         """
         bp, ds, loc = mock_services
-        ds.get_ammo_dynamic_data.return_value = None
 
         assembler = CatalogAssembler(bp, ds, loc)
-        # ISGTC has AmmoDynamicData with valid Icon (from expand), but no own entry
+        # ISGTC has no AmmoDynamicData
         data: dict[str, Any] = {
             "CodeName": "ISGTC",
-            "AmmoDynamicData": {"DamageType": {"Icon": "SomeIcon.0"}},
         }
         assembler._add_subtype_icon(data)
 
-        # Hardcode overrides to the correct SE icon
+        # Hardcoded to the SE icon
         assert data.get("SubTypeIcon") == "War/Content/Textures/UI/ItemIcons/SubtypeSEIcon.0"
 
     def test_add_subtype_icon_no_ammo_data(
