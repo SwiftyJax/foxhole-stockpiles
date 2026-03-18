@@ -485,6 +485,13 @@ class ModImporter:
     async def _extract_assets(self, output_dir: Path, existing_codes: set[str]) -> None:
         """Extract assets from PAK files.
 
+        Extraction order:
+        1. Vanilla subicons and crate icon (as fallback base)
+        2. Mod assets (overwrite vanilla if mod has its own subicons)
+
+        This ensures mods that intentionally modify/remove subicons (like clean-icons)
+        have their subicons used instead of vanilla fallback.
+
         Args:
             output_dir: Directory to extract assets to
             existing_codes: Set of item codes that already exist (to skip)
@@ -492,6 +499,31 @@ class ModImporter:
         logger.info("Using extractor tool: %s", self.config.extractor_tool)
         logger.info("Using converter tool: %s", self.config.converter_tool)
 
+        # Step 1: Extract vanilla subicons and crate icon first (as fallback base)
+        if self.config.vanilla_pak_file:
+            logger.info("Extracting vanilla subicons and crate icon as fallback base...")
+
+            def vanilla_filter(file_path: str) -> bool:
+                # Extract subicons (files with "Subtype" in filename) and crate icon
+                filename = file_path.split("/")[-1] if "/" in file_path else file_path
+                return "Subtype" in filename or "IconFilterCrates" in file_path
+
+            vanilla_extractor = PakExtractor(
+                catalog_file=str(self.config.catalog_path),
+                pak_files=[self.config.vanilla_pak_file],
+                extractor_tool=str(self.config.extractor_tool),
+                converter_tool=str(self.config.converter_tool),
+                output_dir=str(output_dir),
+                filter_assets=vanilla_filter,
+            )
+
+            vanilla_success = await vanilla_extractor.process_files()
+            if not vanilla_success:
+                logger.warning("Vanilla PAK extraction had some failures.")
+            else:
+                logger.info("Vanilla fallback assets extracted successfully")
+
+        # Step 2: Extract mod assets (will overwrite vanilla subicons if mod has its own)
         # Create filter based on existing item codes (if overwrite is False)
         filter_assets = None
         if not self.config.overwrite and existing_codes:
@@ -514,6 +546,7 @@ class ModImporter:
                 "Filtering out %d existing item code(s) from extraction", len(existing_codes)
             )
 
+        logger.info("Extracting mod assets...")
         extractor = PakExtractor(
             catalog_file=str(self.config.catalog_path),
             pak_files=self.config.mod_pak_files,
@@ -532,37 +565,6 @@ class ModImporter:
             )
         else:
             logger.info("Mod asset extraction completed successfully")
-
-        # Extract vanilla dependencies if mod extraction succeeded
-        extracted_count = 0
-        if output_dir.exists():
-            extracted_count = len(list(output_dir.rglob("*.png")))
-
-        if extracted_count > 0 and self.config.vanilla_pak_file:
-            logger.info(
-                "Extracted %d assets from mod PAK. Extracting dependencies from vanilla PAK...",
-                extracted_count,
-            )
-
-            def vanilla_filter(file_path: str) -> bool:
-                # Extract subicons (files with "Subtype" in filename) and crate icon
-                filename = file_path.split("/")[-1] if "/" in file_path else file_path
-                return "Subtype" in filename or "IconFilterCrates" in file_path
-
-            vanilla_extractor = PakExtractor(
-                catalog_file=str(self.config.catalog_path),
-                pak_files=[self.config.vanilla_pak_file],
-                extractor_tool=str(self.config.extractor_tool),
-                converter_tool=str(self.config.converter_tool),
-                output_dir=str(output_dir),
-                filter_assets=vanilla_filter,
-            )
-
-            vanilla_success = await vanilla_extractor.process_files()
-            if not vanilla_success:
-                logger.warning("Vanilla PAK extraction had some failures.")
-            else:
-                logger.info("Vanilla dependencies extracted successfully")
 
     async def _generate_templates(self, assets_dir: Path, output_dir: Path) -> None:
         """Generate templates from extracted assets.

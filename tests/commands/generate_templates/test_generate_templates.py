@@ -508,7 +508,7 @@ class TestTemplateGeneratorMethods:
                 return mock_cm
             raise FileNotFoundError("Not found")
 
-        mock_rgba_array = np.ones((32, 32, 4), dtype=np.uint8)
+        mock_rgba_array = np.ones((32, 32, 4), dtype=np.uint8) * 255  # Full alpha
         mock_open = MagicMock(side_effect=image_open_side_effect)
         with patch("PIL.Image.open", mock_open):
             with patch("numpy.array", return_value=mock_rgba_array):
@@ -516,7 +516,7 @@ class TestTemplateGeneratorMethods:
                     subicon_path=subicon_path, mod_name="mod1"
                 )
 
-        # Should fallback to vanilla
+        # Should fallback to vanilla (non-blank subicon)
         assert result is not None
         # Cache should have entries for both mod1 (pointing to vanilla result) and vanilla
         assert "mod1:War/Content/test_subicon" in generator.subicon_cache
@@ -541,6 +541,67 @@ class TestTemplateGeneratorMethods:
         assert result is None
         # Should cache None result
         assert generator.subicon_cache["vanilla:War/Content/nonexistent"] is None
+
+    def test_is_blank_subicon_fully_transparent(self, generator: TemplateGenerator) -> None:
+        """Test blank subicon detection with fully transparent image."""
+        # All pixels have alpha = 0 (fully transparent)
+        blank_image = np.zeros((32, 32, 4), dtype=np.uint8)
+        assert generator._is_blank_subicon(blank_image)
+
+    def test_is_blank_subicon_low_alpha(self, generator: TemplateGenerator) -> None:
+        """Test blank subicon detection with low alpha values."""
+        # All pixels have alpha = 5 (below threshold of 10)
+        low_alpha_image = np.ones((32, 32, 4), dtype=np.uint8) * 5
+        assert generator._is_blank_subicon(low_alpha_image)
+
+    def test_is_blank_subicon_valid_image(self, generator: TemplateGenerator) -> None:
+        """Test blank subicon detection with valid visible image."""
+        # Create image with variation (like a real subicon)
+        visible_image = np.zeros((32, 32, 4), dtype=np.uint8)
+        visible_image[:, :, 3] = 255  # Full alpha
+        # Add some bright varied colors (not solid)
+        visible_image[:16, :, 0] = 200  # Blue in top half
+        visible_image[16:, :, 1] = 180  # Green in bottom half
+        visible_image[:, :16, 2] = 220  # Red in left half
+        assert not generator._is_blank_subicon(visible_image)
+
+    def test_is_blank_subicon_partial_transparency(self, generator: TemplateGenerator) -> None:
+        """Test blank subicon detection with partial transparency and varied colors."""
+        # 50% of pixels have alpha > 10, with varied bright colors
+        partial_image = np.zeros((32, 32, 4), dtype=np.uint8)
+        partial_image[:16, :, 3] = 255  # Top half is visible
+        # Add varied bright colors to visible area
+        partial_image[:16, :16, 0] = 200
+        partial_image[:16, 16:, 1] = 180
+        partial_image[:8, :, 2] = 220
+        assert not generator._is_blank_subicon(partial_image)
+
+    def test_is_blank_subicon_solid_gray(self, generator: TemplateGenerator) -> None:
+        """Test blank subicon detection with solid gray (clean-icons style)."""
+        # Solid dark gray with full alpha - should be detected as blank
+        gray_image = np.ones((32, 32, 4), dtype=np.uint8) * 60
+        gray_image[:, :, 3] = 255  # Full alpha
+        assert generator._is_blank_subicon(gray_image)
+
+    def test_is_blank_subicon_solid_bright(self, generator: TemplateGenerator) -> None:
+        """Test that solid bright colors are NOT detected as blank."""
+        # Solid white - should NOT be blank (bright color)
+        white_image = np.ones((32, 32, 4), dtype=np.uint8) * 255
+        assert not generator._is_blank_subicon(white_image)
+
+    def test_is_blank_subicon_edge_case_threshold(self, generator: TemplateGenerator) -> None:
+        """Test blank subicon detection at threshold boundary."""
+        # Just under 5% of pixels visible (should be blank due to low visibility)
+        edge_image = np.zeros((100, 100, 4), dtype=np.uint8)
+        edge_image[:4, :, 3] = 255  # 4% visible
+        edge_image[:4, :, :3] = 200  # Give it bright colors
+        assert generator._is_blank_subicon(edge_image)
+
+        # Just over 5% of pixels visible with varied colors (should be valid)
+        edge_image[:6, :, 3] = 255  # 6% visible
+        edge_image[:3, :, 0] = 200
+        edge_image[3:6, :, 1] = 180
+        assert not generator._is_blank_subicon(edge_image)
 
     async def test_add_subicon_bottom_right(
         self, generator: TemplateGenerator, tmp_path: Path

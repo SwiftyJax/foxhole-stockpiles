@@ -1586,13 +1586,12 @@ class TestExtractAssetsFilters:
             "foxhole_stockpiles.services.mod_importer.PakExtractor",
             MockExtractor,
         ):
-            # Create a PNG file to trigger vanilla extraction
-            (output_dir / "icon.png").touch()
             await importer._extract_assets(output_dir, set())
 
-        # Second filter should be the vanilla filter
+        # First filter should be the vanilla filter (extracted first as fallback base)
+        # Second filter is the mod filter (None when no existing codes)
         assert len(captured_filters) == 2
-        vanilla_filter = captured_filters[1]
+        vanilla_filter = captured_filters[0]
         assert vanilla_filter is not None
 
         # Test vanilla filter logic - subicons have "Subtype" in filename
@@ -1620,8 +1619,8 @@ class TestExtractAssetsFilters:
 
             async def process_files(self) -> bool:
                 call_count[0] += 1
-                # First call (mod) succeeds, second call (vanilla) fails
-                return call_count[0] == 1
+                # First call (vanilla) fails, second call (mod) succeeds
+                return call_count[0] == 2
 
         importer = ModImporter(config=mock_config)
 
@@ -1629,9 +1628,7 @@ class TestExtractAssetsFilters:
             "foxhole_stockpiles.services.mod_importer.PakExtractor",
             MockExtractor,
         ):
-            # Create a PNG file to trigger vanilla extraction
-            (output_dir / "icon.png").touch()
-            # Should not raise, just log warning
+            # Should not raise, just log warning for vanilla failure
             await importer._extract_assets(output_dir, set())
 
         assert call_count[0] == 2

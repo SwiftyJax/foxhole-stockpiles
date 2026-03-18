@@ -33,6 +33,8 @@ class TemplateGenerator:
     SUBICON_ASPECT_RATIO: float = 7 / 16
     SUBICON_ALPHA: float = 0.75
     VANILLA_MOD_NAME: str = "vanilla"
+    # Minimum percentage of non-transparent pixels for a subicon to be considered valid
+    BLANK_SUBICON_THRESHOLD: float = 0.05
 
     def __init__(
         self,
@@ -174,6 +176,63 @@ class TemplateGenerator:
             logger.error("Error loading icon %s from %s: %s", full_path, mod_name, e)
             return None
 
+    def _is_blank_subicon(self, subicon: NDArray[np.uint8]) -> bool:
+        """Check if a subicon is blank or a solid color placeholder.
+
+        Some mods (like clean-icons, improved-icons) provide blank or solid gray
+        subicons to remove them. These should be detected and skipped.
+
+        Detection methods:
+        1. Mostly transparent (alpha < 10 for most pixels)
+        2. Solid color with low variance (solid gray squares)
+
+        Args:
+            subicon (np.ndarray): Subicon image as BGRA array
+
+        Returns:
+            bool: True if subicon is blank/placeholder (should be skipped), False otherwise
+        """
+        if subicon is None or subicon.size == 0:
+            return True
+
+        # Method 1: Check alpha channel - count pixels with significant alpha
+        alpha_channel = subicon[:, :, 3]
+        total_pixels = alpha_channel.size
+        visible_pixels = np.sum(alpha_channel > 10)
+        visible_ratio = visible_pixels / total_pixels
+
+        if visible_ratio < self.BLANK_SUBICON_THRESHOLD:
+            logger.debug(
+                "Detected blank subicon (transparent): %.1f%% visible",
+                visible_ratio * 100,
+            )
+            return True
+
+        # Method 2: Check if it's a solid color (low variance in RGB)
+        # Only check pixels with significant alpha
+        alpha_mask = alpha_channel > 10
+        if np.sum(alpha_mask) > 0:
+            # Get RGB values for visible pixels
+            rgb_values = subicon[:, :, :3][alpha_mask]
+
+            # Calculate standard deviation across all RGB values
+            rgb_std = np.std(rgb_values)
+
+            # If std is very low, it's essentially a solid color
+            # Normal subicons have std > 30, solid colors have std < 10
+            if rgb_std < 15:
+                # Also check if it's a dark/gray color (not a valid icon color)
+                rgb_mean = np.mean(rgb_values)
+                if rgb_mean < 150:  # Dark gray threshold
+                    logger.debug(
+                        "Detected solid color subicon: std=%.1f, mean=%.1f",
+                        rgb_std,
+                        rgb_mean,
+                    )
+                    return True
+
+        return False
+
     async def _load_subicon_cached(
         self, subicon_path: str, mod_name: str
     ) -> NDArray[np.uint8] | None:
@@ -184,7 +243,7 @@ class TemplateGenerator:
             mod_name (str): Name of the mod folder
 
         Returns:
-            np.ndarray | None: Loaded subicon as BGRA array, or None if not found
+            np.ndarray | None: Loaded subicon as BGRA array, or None if not found or blank
         """
         cache_key = f"{mod_name}:{subicon_path}"
 
@@ -192,9 +251,21 @@ class TemplateGenerator:
         if cache_key in self.subicon_cache:
             return self.subicon_cache[cache_key]
 
-        # Try to load and cache the subicon
+        # Try to load the subicon from this mod
         subicon = await self._load_icon_image(icon_path=subicon_path, mod_name=mod_name)
+
         if subicon is not None:
+            # Check if subicon is blank (some mods like clean-icons provide blank subicons)
+            if self._is_blank_subicon(subicon):
+                logger.debug(
+                    "Skipping blank subicon from %s: %s",
+                    mod_name,
+                    subicon_path,
+                )
+                # Cache as None so we don't re-check this file
+                self.subicon_cache[cache_key] = None
+                return None
+
             self.subicon_cache[cache_key] = subicon
             logger.debug("Cached subicon from %s: %s", mod_name, subicon_path)
             return subicon
