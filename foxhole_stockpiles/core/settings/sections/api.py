@@ -11,8 +11,11 @@ class APIServerSettings(BaseModel):
     """Settings for API server."""
 
     cors_allow_origins: list[str] = Field(
-        description="List of allowed CORS origins. Use ['*'] to allow all origins.",
-        default=["*"],
+        description=(
+            "List of allowed CORS origins. "
+            "Use ['*'] to allow all origins (not recommended for production)."
+        ),
+        default_factory=list,
     )
     host: str = Field(
         description="Server bind host",
