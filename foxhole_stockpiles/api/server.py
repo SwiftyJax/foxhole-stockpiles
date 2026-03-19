@@ -11,6 +11,10 @@ import numpy as np
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, UploadFile, status
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from slowapi import Limiter
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
+from starlette.responses import Response
 
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.auth import create_auth_dependency
@@ -38,6 +42,9 @@ from foxhole_stockpiles.services.template_manager import TemplateManager
 
 # Maximum file upload size (10MB) - sufficient for high-resolution screenshots
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
+
+# Rate limiter for API endpoints
+limiter = Limiter(key_func=get_remote_address)
 
 
 class HealthResponse(BaseModel):
@@ -150,6 +157,29 @@ if app_settings.api_server.enable_memory_monitoring or app_settings.api_server.a
         enable_monitoring=app_settings.api_server.enable_memory_monitoring,
     )
 
+# Configure rate limiting
+app.state.limiter = limiter
+
+
+def rate_limit_exceeded_handler(request: Request, exc: Exception) -> Response:
+    """Handle rate limit exceeded exceptions.
+
+    Args:
+        request (Request): The request that triggered the rate limit.
+        exc (Exception): The RateLimitExceeded exception.
+
+    Returns:
+        Response: JSON response with 429 status code.
+    """
+    return Response(
+        content='{"detail": "Rate limit exceeded"}',
+        status_code=429,
+        media_type="application/json",
+    )
+
+
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
+
 # Create authentication dependency
 auth_dependency = create_auth_dependency(app_settings.api_auth)
 
@@ -171,9 +201,10 @@ async def health_check() -> HealthResponse:
 
 
 @app.post("/ocr/scan_image", dependencies=[Depends(auth_dependency)])
+@limiter.limit("30/minute")
 async def scan_stockpile(
-    image: UploadFile,
     request: Request,
+    image: UploadFile,
     coordinator: Annotated[OCRCoordinator, Depends(get_ocr_coordinator)],
     output_coordinator: Annotated[OutputCoordinator, Depends(get_output_coordinator)],
     faction: Annotated[
