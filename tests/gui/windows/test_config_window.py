@@ -652,3 +652,195 @@ class TestKeyPressEvent:
             event = QKeyEvent(QKeyEvent.Type.KeyPress, Qt.Key.Key_A, Qt.KeyboardModifier.NoModifier)
             # Should not raise and should call parent handler
             config_window.keyPressEvent(event)
+
+
+class TestSaveSettingsLanguageChange:
+    """Tests for language change handling in save_settings."""
+
+    @pytest.fixture
+    def mock_config_manager(self) -> Any:
+        """Create a mock ConfigManager.
+
+        Returns:
+            MagicMock: Mock ConfigManager
+        """
+        from foxhole_stockpiles.core.settings.sections.gui import GUISettings
+        from foxhole_stockpiles.enums.supported_language import SupportedLanguage
+
+        with patch("foxhole_stockpiles.gui.windows.config_window.ConfigManager") as mock_class:
+            mock_instance = MagicMock()
+            mock_class.return_value = mock_instance
+
+            settings = AppSettings()
+            settings.gui = GUISettings(
+                config_level=ConfigLevel.BASIC, language=SupportedLanguage.ENGLISH
+            )
+            mock_instance.load_config.return_value = settings
+            mock_instance.save_config.return_value = (True, "Success")
+            yield mock_instance
+
+    @pytest.fixture
+    def config_window(self, qtbot: Any, mock_config_manager: MagicMock) -> ConfigWindow:
+        """Create a ConfigWindow instance.
+
+        Args:
+            qtbot: PyQt test fixture
+            mock_config_manager: Mock ConfigManager
+
+        Returns:
+            ConfigWindow: Window instance
+        """
+        window = ConfigWindow()
+        qtbot.addWidget(window)
+        return window
+
+    def test_save_settings_language_change(
+        self, config_window: ConfigWindow, mock_config_manager: MagicMock
+    ) -> None:
+        """Test save_settings triggers language change when language is changed.
+
+        Args:
+            config_window: ConfigWindow instance
+            mock_config_manager: Mock ConfigManager
+        """
+        # Change language in GUI tab
+        config_window.gui_tab.language_input.setCurrentText("Espa\u00f1ol")
+
+        with patch("foxhole_stockpiles.gui.windows.config_window.set_language") as mock_set_lang:
+            config_window.save_settings()
+
+            # Should call set_language with new language
+            mock_set_lang.assert_called_once()
+
+
+class TestSaveSettingsConfigLevelChange:
+    """Tests for config level change handling in save_settings."""
+
+    @pytest.fixture
+    def mock_config_manager(self) -> Any:
+        """Create a mock ConfigManager.
+
+        Returns:
+            MagicMock: Mock ConfigManager
+        """
+        from foxhole_stockpiles.core.settings.sections.gui import GUISettings
+
+        with patch("foxhole_stockpiles.gui.windows.config_window.ConfigManager") as mock_class:
+            mock_instance = MagicMock()
+            mock_class.return_value = mock_instance
+
+            settings = AppSettings()
+            settings.gui = GUISettings(config_level=ConfigLevel.BASIC)
+            mock_instance.load_config.return_value = settings
+            mock_instance.save_config.return_value = (True, "Success")
+            yield mock_instance
+
+    @pytest.fixture
+    def config_window(self, qtbot: Any, mock_config_manager: MagicMock) -> ConfigWindow:
+        """Create a ConfigWindow instance.
+
+        Args:
+            qtbot: PyQt test fixture
+            mock_config_manager: Mock ConfigManager
+
+        Returns:
+            ConfigWindow: Window instance
+        """
+        window = ConfigWindow()
+        qtbot.addWidget(window)
+        return window
+
+    def test_save_settings_config_level_change(
+        self, config_window: ConfigWindow, mock_config_manager: MagicMock
+    ) -> None:
+        """Test save_settings rebuilds tabs when config level is changed.
+
+        Args:
+            config_window: ConfigWindow instance
+            mock_config_manager: Mock ConfigManager
+        """
+        # Initial tab count at BASIC level
+        initial_tab_count = config_window.tab_widget.count()
+        assert initial_tab_count == 5
+
+        # Change config level to ADVANCED
+        config_window.gui_tab.config_level_input.setCurrentText("Advanced")
+
+        config_window.save_settings()
+
+        # Tabs should be rebuilt with more tabs
+        assert config_window.tab_widget.count() == 9
+
+
+class TestRetranslate:
+    """Tests for ConfigWindow.retranslate method."""
+
+    @pytest.fixture
+    def mock_config_manager(self) -> Any:
+        """Create a mock ConfigManager.
+
+        Returns:
+            MagicMock: Mock ConfigManager
+        """
+        with patch("foxhole_stockpiles.gui.windows.config_window.ConfigManager") as mock_class:
+            mock_instance = MagicMock()
+            mock_class.return_value = mock_instance
+            mock_instance.load_config.return_value = AppSettings()
+            yield mock_instance
+
+    @pytest.fixture
+    def config_window(self, qtbot: Any, mock_config_manager: MagicMock) -> ConfigWindow:
+        """Create a ConfigWindow instance.
+
+        Args:
+            qtbot: PyQt test fixture
+            mock_config_manager: Mock ConfigManager
+
+        Returns:
+            ConfigWindow: Window instance
+        """
+        window = ConfigWindow()
+        qtbot.addWidget(window)
+        return window
+
+    def test_retranslate_updates_window_title(self, config_window: ConfigWindow) -> None:
+        """Test retranslate updates window title.
+
+        Args:
+            config_window: ConfigWindow instance
+        """
+        config_window.retranslate()
+
+        assert config_window.windowTitle() == t("config_window.title")
+
+    def test_retranslate_updates_buttons(self, config_window: ConfigWindow) -> None:
+        """Test retranslate updates button texts.
+
+        Args:
+            config_window: ConfigWindow instance
+        """
+        config_window.retranslate()
+
+        assert config_window.save_button.text() == t("common.save")
+        assert config_window.close_button.text() == t("common.close")
+
+    def test_retranslate_updates_hint_label(self, config_window: ConfigWindow) -> None:
+        """Test retranslate updates hint label.
+
+        Args:
+            config_window: ConfigWindow instance
+        """
+        config_window.retranslate()
+
+        assert config_window.hint_label.text() == t("config_window.tip_hover")
+
+    def test_retranslate_rebuilds_tabs(self, config_window: ConfigWindow) -> None:
+        """Test retranslate rebuilds tabs with translated names.
+
+        Args:
+            config_window: ConfigWindow instance
+        """
+        with patch.object(config_window, "_build_tabs") as mock_build:
+            config_window.retranslate()
+
+            mock_build.assert_called_once()

@@ -324,3 +324,227 @@ def test_panel_validation_valid_db(qtbot: Any, panel: ServerControlPanel) -> Non
         assert panel.start_stop_button.isEnabled()
         assert panel.db_info_text.isVisible()
         assert len(panel.db_info_text.text()) > 0
+
+
+def test_panel_on_language_changed(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test language change handler calls retranslate.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    with patch.object(panel, "retranslate") as mock_retranslate:
+        panel._on_language_changed("es")
+
+        mock_retranslate.assert_called_once()
+
+
+def test_panel_on_database_updated_same_db(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test on_database_updated when updated database matches configured database.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from pathlib import Path
+
+    from foxhole_stockpiles.gui.widgets import server_control_panel
+
+    test_db = Path("/tmp/test_db.h5")
+
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = str(test_db)
+
+        # Server not running - should just refresh
+        panel.server_running = False
+        with patch.object(panel, "_update_validation_state") as mock_update:
+            panel.on_database_updated(test_db)
+
+            mock_update.assert_called_once()
+
+
+def test_panel_on_database_updated_same_db_restarts_server(
+    qtbot: Any, panel: ServerControlPanel
+) -> None:
+    """Test on_database_updated restarts server when it's running.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from pathlib import Path
+
+    from foxhole_stockpiles.gui.widgets import server_control_panel
+
+    test_db = Path("/tmp/test_db.h5")
+
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = str(test_db)
+
+        # Server running - should restart
+        panel.server_running = True
+        with (
+            patch.object(panel, "_update_validation_state"),
+            patch.object(panel, "stop_server") as mock_stop,
+            patch.object(panel, "start_server") as mock_start,
+        ):
+            panel.on_database_updated(test_db)
+
+            mock_stop.assert_called_once()
+            mock_start.assert_called_once()
+
+
+def test_panel_on_database_updated_different_db(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test on_database_updated when updated database doesn't match configured.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from pathlib import Path
+
+    from foxhole_stockpiles.gui.widgets import server_control_panel
+
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = "/tmp/configured_db.h5"
+
+        with patch.object(panel, "_update_validation_state") as mock_update:
+            # Different path
+            panel.on_database_updated(Path("/tmp/other_db.h5"))
+
+            # Should not refresh because paths don't match
+            mock_update.assert_not_called()
+
+
+def test_panel_on_database_updated_no_configured_path(
+    qtbot: Any, panel: ServerControlPanel
+) -> None:
+    """Test on_database_updated when no database is configured.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from pathlib import Path
+
+    from foxhole_stockpiles.gui.widgets import server_control_panel
+
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = None
+
+        with patch.object(panel, "_update_validation_state") as mock_update:
+            panel.on_database_updated(Path("/tmp/test_db.h5"))
+
+            # Should not refresh because no path configured
+            mock_update.assert_not_called()
+
+
+def test_panel_on_database_updated_exception(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test on_database_updated handles exceptions gracefully.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from pathlib import Path
+
+    from foxhole_stockpiles.gui.widgets import server_control_panel
+
+    with patch.object(server_control_panel, "AppSettings", side_effect=Exception("Config error")):
+        # Should not raise
+        panel.on_database_updated(Path("/tmp/test_db.h5"))
+
+
+def test_panel_validation_db_load_exception(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test validation state when database loading raises exception.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from pathlib import Path
+
+    from PyQt6.QtWidgets import QApplication
+
+    from foxhole_stockpiles.gui.widgets import server_control_panel
+
+    test_db = Path(__file__).parent.parent.parent / "fixtures" / "test_db_v1.h5"
+
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = str(test_db)
+
+        # Mock TemplateManager to raise exception when loading database stats
+        with patch(
+            "foxhole_stockpiles.services.template_manager.TemplateManager.get_database_statistics",
+            side_effect=Exception("Database error"),
+        ):
+            panel._update_validation_state()
+            QApplication.processEvents()
+
+            # Should show error panel
+            assert panel.error_panel.isVisible()
+            assert t("server_panel.errors.database_error_title") in panel.error_panel.text()
+
+
+def test_panel_attach_log_handler_already_attached(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test _attach_log_handler doesn't duplicate handlers.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    import logging
+
+    from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
+
+    root_logger = logging.getLogger()
+
+    # Attach handler first time
+    panel._attach_log_handler()
+    after_first = len(root_logger.handlers)
+
+    # Attach handler second time - should not add another
+    panel._attach_log_handler()
+    after_second = len(root_logger.handlers)
+
+    assert after_second == after_first
+
+    # Clean up - remove the handler we added
+    for handler in root_logger.handlers[:]:
+        if isinstance(handler, QtLogHandler):
+            root_logger.removeHandler(handler)
+
+
+def test_panel_validation_relative_path(qtbot: Any, panel: ServerControlPanel) -> None:
+    """Test validation shows relative path when possible.
+
+    Args:
+        qtbot: PyQt test fixture
+        panel (ServerControlPanel): Panel instance
+    """
+    from pathlib import Path
+
+    from PyQt6.QtWidgets import QApplication
+
+    from foxhole_stockpiles.gui.widgets import server_control_panel
+
+    # Use a path outside cwd to trigger the ValueError case
+    test_db = Path(__file__).parent.parent.parent / "fixtures" / "test_db_v1.h5"
+
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = str(test_db)
+
+        panel._update_validation_state()
+        QApplication.processEvents()
+
+        # Should show just the filename since it's not relative to cwd
+        assert panel.db_info_text.isVisible()
+        # The db info should contain either the filename or a relative path
+        db_info_text = panel.db_info_text.text()
+        assert "test_db_v1.h5" in db_info_text or "Database:" in db_info_text

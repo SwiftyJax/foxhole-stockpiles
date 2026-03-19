@@ -234,3 +234,47 @@ def test_format_result_none(client: ScannerClient) -> None:
     formatted = client._format_result(None)
 
     assert "Scan Result" in formatted
+
+
+@patch("foxhole_stockpiles.gui.utils.scanner_client.requests.post")
+def test_scan_screenshot_generic_exception(
+    mock_post: MagicMock, client: ScannerClient, tmp_path: Path
+) -> None:
+    """Test scan_screenshot with generic exception.
+
+    Args:
+        mock_post (MagicMock): Mock requests.post
+        client (ScannerClient): Client instance
+        tmp_path (Path): Temporary directory path
+    """
+    test_file = tmp_path / "test.png"
+    test_file.write_bytes(b"fake image data")
+
+    mock_post.side_effect = Exception("Unexpected error")
+
+    success, message = client.scan_screenshot(str(test_file))
+
+    assert success is False
+    assert "Error scanning screenshot" in message
+    assert "Unexpected error" in message
+
+
+def test_format_result_empty_items(client: ScannerClient) -> None:
+    """Test _format_result with stockpile that has no items.
+
+    Args:
+        client (ScannerClient): Client instance
+    """
+    result = {
+        "stockpiles": [
+            {
+                "title": "Empty Stockpile",
+                "items": [],
+            }
+        ]
+    }
+
+    formatted = client._format_result(result)
+
+    assert "Empty Stockpile" in formatted
+    assert "No items detected" in formatted

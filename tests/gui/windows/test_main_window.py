@@ -526,3 +526,142 @@ def test_quit_application_hides_tray_icon(qtbot: Any) -> None:
                     window.quit_application()
 
                     mock_hide.assert_called_once()
+
+
+def test_window_show_catalog_builder(qtbot: Any, window: MainWindow) -> None:
+    """Test showing catalog builder window.
+
+    Args:
+        qtbot: PyQt test fixture
+        window (MainWindow): Window instance
+    """
+    with patch(
+        "foxhole_stockpiles.gui.windows.main_window.CatalogBuilderWindow"
+    ) as mock_catalog_class:
+        mock_catalog = mock_catalog_class.return_value
+
+        window.show_catalog_builder()
+
+        mock_catalog_class.assert_called_once_with(window)
+        mock_catalog.setWindowModality.assert_called_once()
+        mock_catalog.show.assert_called_once()
+
+
+def test_window_show_database_visualizer_with_config(qtbot: Any, window: MainWindow) -> None:
+    """Test showing database visualizer with configured database.
+
+    Args:
+        qtbot: PyQt test fixture
+        window (MainWindow): Window instance
+    """
+    with patch("foxhole_stockpiles.gui.windows.main_window.AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = "/path/to/db.h5"
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.main_window.DatabaseVisualizerWindow"
+        ) as mock_visualizer_class:
+            mock_visualizer = mock_visualizer_class.return_value
+
+            window.show_database_visualizer()
+
+            mock_visualizer_class.assert_called_once_with(window, database_path="/path/to/db.h5")
+            mock_visualizer.exec.assert_called_once()
+
+
+def test_window_show_database_visualizer_no_database(qtbot: Any, window: MainWindow) -> None:
+    """Test showing database visualizer without configured database shows warning.
+
+    Args:
+        qtbot: PyQt test fixture
+        window (MainWindow): Window instance
+    """
+    with patch("foxhole_stockpiles.gui.windows.main_window.AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = None
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
+        ) as mock_warning:
+            window.show_database_visualizer()
+
+            mock_warning.assert_called_once()
+
+
+def test_window_show_database_visualizer_config_error(qtbot: Any, window: MainWindow) -> None:
+    """Test showing database visualizer with config error shows warning.
+
+    Args:
+        qtbot: PyQt test fixture
+        window (MainWindow): Window instance
+    """
+    with patch(
+        "foxhole_stockpiles.gui.windows.main_window.AppSettings",
+        side_effect=Exception("Config error"),
+    ):
+        with patch(
+            "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
+        ) as mock_warning:
+            window.show_database_visualizer()
+
+            mock_warning.assert_called_once()
+
+
+def test_window_show_debug_viewer_with_config(qtbot: Any, window: MainWindow) -> None:
+    """Test showing debug viewer with configured database.
+
+    Args:
+        qtbot: PyQt test fixture
+        window (MainWindow): Window instance
+    """
+    with patch("foxhole_stockpiles.gui.windows.main_window.AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = "/path/to/db.h5"
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.main_window.DebugImageWindow"
+        ) as mock_debug_class:
+            mock_debug = mock_debug_class.return_value
+
+            window.show_debug_viewer()
+
+            mock_debug_class.assert_called_once_with(window, database_path="/path/to/db.h5")
+            mock_debug.exec.assert_called_once()
+
+
+def test_window_show_debug_viewer_no_database(qtbot: Any, window: MainWindow) -> None:
+    """Test showing debug viewer without configured database shows warning.
+
+    Args:
+        qtbot: PyQt test fixture
+        window (MainWindow): Window instance
+    """
+    with patch("foxhole_stockpiles.gui.windows.main_window.AppSettings") as mock_settings_class:
+        mock_settings = mock_settings_class.return_value
+        mock_settings.scanner.database_path = None
+
+        with patch(
+            "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
+        ) as mock_warning:
+            window.show_debug_viewer()
+
+            mock_warning.assert_called_once()
+
+
+def test_window_show_debug_viewer_config_error(qtbot: Any, window: MainWindow) -> None:
+    """Test showing debug viewer with config error shows warning.
+
+    Args:
+        qtbot: PyQt test fixture
+        window (MainWindow): Window instance
+    """
+    with patch(
+        "foxhole_stockpiles.gui.windows.main_window.AppSettings",
+        side_effect=Exception("Config error"),
+    ):
+        with patch(
+            "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
+        ) as mock_warning:
+            window.show_debug_viewer()
+
+            mock_warning.assert_called_once()

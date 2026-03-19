@@ -99,3 +99,27 @@ def test_scan_worker_thread_safety(qtbot: Any, mock_scanner_client: MagicMock) -
     # Verify it ran in a different thread
     assert worker_thread_id is not None
     assert worker_thread_id != main_thread_id
+
+
+def test_scan_worker_run_directly(qtbot: Any, mock_scanner_client: MagicMock) -> None:
+    """Test ScanWorker run method directly (for coverage).
+
+    Args:
+        qtbot: PyQt test fixture
+        mock_scanner_client (MagicMock): Mock scanner client
+    """
+    filepath = "/test/screenshot.png"
+    worker = ScanWorker(mock_scanner_client, filepath)
+
+    # Track signal emission
+    signals_received: list[bool] = []
+    worker.finished.connect(lambda: signals_received.append(True))
+
+    # Call run() directly instead of start() to ensure coverage
+    worker.run()
+
+    # Verify scan_screenshot was called
+    mock_scanner_client.scan_screenshot.assert_called_once_with(filepath)
+
+    # Verify finished signal was emitted
+    assert len(signals_received) == 1

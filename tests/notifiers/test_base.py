@@ -153,3 +153,19 @@ class TestAbstractMethods:
         # Should not be able to instantiate without implementing send()
         with pytest.raises(TypeError):
             IncompleteNotifier("test")  # type: ignore[abstract]
+
+    @pytest.mark.asyncio
+    async def test_base_send_raises_not_implemented(self) -> None:
+        """Test that calling base send() raises NotImplementedError."""
+
+        class NotifierThatCallsSuper(BaseNotifier):
+            """Notifier that calls super().send()."""
+
+            async def send(self, event_type: str, data: dict[str, Any]) -> None:
+                """Call parent send to trigger NotImplementedError."""
+                await super().send(event_type, data)  # type: ignore[safe-super]
+
+        notifier = NotifierThatCallsSuper("test")
+
+        with pytest.raises(NotImplementedError):
+            await notifier.send("test_event", {})
