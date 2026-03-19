@@ -2207,21 +2207,18 @@ class TestOCRCoordinatorIntegration:
         return db_path
 
     @pytest.mark.asyncio
-    async def test_analyze_with_high_confidence_triggers_unknown_items(
+    async def test_analyze_with_high_early_exit_threshold(
         self, real_screenshot: NDArray[np.uint8], real_database: Path
     ) -> None:
-        """Test that high confidence threshold triggers Unknown item creation.
+        """Test analysis with high early exit threshold.
 
-        This test uses a real screenshot with an artificially high confidence
-        threshold (0.99) to force some items to fail matching, triggering the
-        Unknown item creation code path at line 297-329 in ocr_coordinator.py.
+        This test uses a real screenshot with a high early exit threshold
+        to verify matching behavior. Items should match to the best template found.
 
         Args:
             real_screenshot (NDArray[np.uint8]): Real screenshot fixture.
             real_database (Path): Path to template database.
         """
-        # Note: since confidence_threshold is removed, this test may need to be adjusted
-        # to trigger Unknown items through other means if needed
         config = ScannerSettings(
             database_path=real_database,
             early_exit_threshold=0.995,
@@ -2230,11 +2227,8 @@ class TestOCRCoordinatorIntegration:
         coordinator = OCRCoordinator(config)
         result = await coordinator.analyze_stockpile(real_screenshot)
 
-        # Should have some items
+        # Should have some items matched to best templates
         assert len(result.items) > 0
-
-        # Note: Without confidence_threshold filtering, this test behavior has changed
-        # Items should now always match to the best template found
 
     @pytest.mark.asyncio
     async def test_analyze_with_debug_mode_saves_images(

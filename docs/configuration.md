@@ -15,7 +15,7 @@ export FS_API_AUTH__AUTH_TOKEN=your-secret-token
 
 # Scanner settings
 export FS_SCANNER__DATABASE_PATH=/path/to/database.h5
-export FS_SCANNER__FACTION_FILTER=colonials
+export FS_SCANNER__PHASH_THRESHOLD=12
 
 # Output handlers (JSON array)
 export FS_OUTPUT__HANDLERS='[{"name":"API Response","format":{"type":"json"},"handler":{"type":"return"}}]'
@@ -45,7 +45,6 @@ Create a file at `~/.fs_config` with JSON configuration:
   },
   "scanner": {
     "database_path": "/path/to/database.h5",
-    "faction_filter": null,
     "screenshots_folder": ""
   },
   "output": {
@@ -107,6 +106,7 @@ Settings for the API server.
 | `log_level` | string | `"info"` | Server log level (`"debug"`, `"info"`, `"warning"`, `"error"`) |
 | `enable_memory_monitoring` | boolean | `false` | Enable memory monitoring to track memory usage per request and expose `/memory/*` endpoints |
 | `auto_trim_memory` | boolean | `true` | Automatically call `malloc_trim()` after scan requests to release freed memory back to OS |
+| `web_icon_mod` | string | `"vanilla"` | Mod to use for icons in the web interface. Falls back to 'vanilla' if not found |
 
 **Examples:**
 ```bash
@@ -141,13 +141,14 @@ Settings for the stockpile scanner.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `database_path` | string | `"database.h5"` | Path to the template database file |
+| `database_path` | string | `null` | Path to the template database file |
+| `template_cache_size` | integer | `16` | Max resolution databases to cache in memory (0=no cache, 16=all resolutions) |
 | `early_exit_threshold` | float | `0.0` | Early exit threshold for icon matching (0.0-1.0). Set to 0.0 to disable early exit |
 | `confidence_gap` | float | `0.0` | Confidence gap for returning alternative candidates (0.0-1.0). Returns candidates within `(best_confidence - confidence_gap)` range that have the same category, crated status, and mod. Set to 0.0 to disable |
-| `faction_filter` | string\|null | `null` | Filter items by faction. Valid values: `"neutral"`, `"Colonials"`, `"Wardens"`, or `null` for all |
 | `custom_model` | string | `"renner_numbers"` | Tesseract custom OCR model name |
 | `tessdata_path` | string | `"./tessdata"` | Path to Tesseract data directory |
 | `debug_mode` | boolean | `false` | Enable debug mode to save debug images |
+| `extract_icons` | boolean | `false` | Extract detected icons to 'icons' folder for debugging |
 | `screenshots_folder` | string | `""` | Folder to save screenshots before processing. Empty string disables saving. Screenshots are saved in daily subfolders with format: `Date_HourWithSeconds_StorageType_Name_Resolution.png` |
 | `max_ncc_candidates` | integer | `25` | Maximum number of NCC candidates to consider for matching |
 | `phash_threshold` | integer | `12` | Maximum Hamming distance for pHash filtering |
@@ -290,27 +291,24 @@ Fine-tune OCR detection parameters (advanced users only).
 
 ### Stockpile Types (`stockpile_types`)
 
-Configure localized stockpile type names for different languages.
+Configure additional aliases for stockpile type recognition. The standard translations (English, French, German, Portuguese, Russian, Chinese) are hardcoded in the classifier. These settings allow adding **extra aliases** for OCR misreads or variations.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `encampment` | array[string] | `["Encampment", "Campement", ...]` | Localized names for Encampment stockpile type |
-| `keep` | array[string] | `["Keep", "Place Forte", ...]` | Localized names for Keep stockpile type |
-| `safe_house` | array[string] | `["Safe House", "Planque", ...]` | Localized names for Safe House stockpile type |
-| `relic_base` | array[string] | `["Relic Base", "Base Relique", ...]` | Localized names for Relic Base stockpile type |
-| `bunker_base` | array[string] | `["Bunker Base", "Base Bunker", ...]` | Localized names for Bunker Base stockpile type |
-| `border_base` | array[string] | `["Border Base", "Base Frontalière", ...]` | Localized names for Border Base stockpile type |
-| `town_base` | array[string] | `["Town Base", "Quartier Général", ...]` | Localized names for Town Base stockpile type |
-| `bms_longhook` | array[string] | `["BMS - Longhook"]` | Localized names for BMS - Longhook stockpile type |
-| `storage_depot` | array[string] | `["Storage Depot", "Dépôt", ...]` | Localized names for Storage Depot stockpile type |
-| `seaport` | array[string] | `["Seaport", "Port", ...]` | Localized names for Seaport stockpile type |
-| `undefined` | array[string] | `["Undefined"]` | Localized names for Undefined stockpile type |
+| `encampment` | array[string] | `[]` | Additional aliases for Encampment |
+| `keep` | array[string] | `[]` | Additional aliases for Keep |
+| `safe_house` | array[string] | `[]` | Additional aliases for Safe House |
+| `relic_base` | array[string] | `[]` | Additional aliases for Relic Base |
+| `bunker_base` | array[string] | `[]` | Additional aliases for Bunker Base |
+| `border_base` | array[string] | `[]` | Additional aliases for Border Base |
+| `town_base` | array[string] | `[]` | Additional aliases for Town Base |
+| `underground_fortress` | array[string] | `[]` | Additional aliases for Underground Fortress |
+| `bms_longhook` | array[string] | `[]` | Additional aliases for BMS - Longhook |
+| `storage_depot` | array[string] | `[]` | Additional aliases for Storage Depot |
+| `seaport` | array[string] | `[]` | Additional aliases for Seaport |
+| `aircraft_depot` | array[string] | `[]` | Additional aliases for Aircraft Depot |
 
-**Note:** These settings define how stockpile types are recognized. The defaults include translations for different game languages (English, French, German, Portuguese, Russian, Chinese). You may need to modify these if:
-- Tesseract OCR misreads stockpile names (e.g., "Bumker base" instead of "Bunker base")
-- You want to add support for additional languages
-
-When adding OCR misreads, include all default values plus the misread variation (e.g., for bunker_base, add "Bumker base" to the existing array).
+**Note:** Use these settings to handle OCR misreads. For example, if OCR detects "Seaport" as "seapon", add `["seapon"]` to the `seaport` setting.
 
 ### Templates (`templates`)
 
@@ -326,6 +324,113 @@ Configure crate color tint overlay generation.
 | `crate_red_offset` | int | `89` | Red channel offset (0-255) |
 
 These settings control how crate overlays are applied during template generation.
+
+### External Tools (`external_tools`)
+
+Paths to external tools used by database and catalog builders.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `repak` | string\|null | `null` | Path to repak executable for extracting PAK files |
+| `umodel` | string\|null | `null` | Path to umodel executable for converting UAsset files to PNG |
+| `uassetgui` | string\|null | `null` | Path to UAssetGUI executable for converting UAsset files to JSON |
+
+**Example:**
+```bash
+export FS_EXTERNAL_TOOLS__REPAK=/path/to/repak
+export FS_EXTERNAL_TOOLS__UMODEL=/path/to/umodel.exe
+export FS_EXTERNAL_TOOLS__UASSETGUI=/path/to/UAssetGUI.exe
+```
+
+### Database Builder (`database_builder`)
+
+Settings for building the template database.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `catalog_file` | string\|null | `null` | Path to catalog.json file for building the database |
+| `target_resolutions` | array[string]\|null | `null` | Resolutions to generate (null = all supported) |
+| `workers` | integer\|null | `null` | Worker processes for building (null = auto-detect CPU count) |
+
+**Example:**
+```bash
+export FS_DATABASE_BUILDER__CATALOG_FILE=/path/to/catalog.json
+export FS_DATABASE_BUILDER__TARGET_RESOLUTIONS='["1080", "1440", "2160"]'
+export FS_DATABASE_BUILDER__WORKERS=4
+```
+
+### Notifications (`notifications`)
+
+Settings for the notifications system (e.g., Discord webhooks).
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable or disable notifications |
+| `notifiers` | array | `[]` | List of notifier configurations |
+
+#### Discord Notifier Configuration (`notifications.notifiers[]`)
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `type` | string | `"discord"` | Notifier type (currently only `"discord"` supported) |
+| `name` | string | `"Discord"` | Human-readable name for this notifier |
+| `webhook_url` | string | Required | Discord webhook URL |
+| `username` | string\|null | `"Foxhole Stockpiles"` | Custom username for webhook messages |
+| `events` | array[string] | `["stockpile.scanned", "stockpile.scan_failed"]` | Event types to send |
+| `message_templates` | object | `{}` | Custom message templates per event type |
+
+**Available events:**
+- `stockpile.scanned` - Stockpile scan completed successfully
+- `stockpile.scan_failed` - Stockpile scan failed
+- `stockpile.scan_started` - Stockpile scan started
+- `server.started` - API server started
+- `server.stopped` - API server stopped
+
+**Message template placeholders:**
+`STOCKPILE_NAME`, `STOCKPILE_TYPE`, `SHARD`, `TIME`, `ITEM_COUNT`, `MATCHED_ITEMS`, `UNMATCHED_ITEMS`, `AVG_CONFIDENCE`, `DURATION`, `RESOLUTION`, `ERROR`
+
+**Example:**
+```json
+{
+  "notifications": {
+    "enabled": true,
+    "notifiers": [
+      {
+        "type": "discord",
+        "name": "Main Server",
+        "webhook_url": "https://discord.com/api/webhooks/123/abc",
+        "username": "Stockpile Bot",
+        "events": ["stockpile.scanned", "stockpile.scan_failed"],
+        "message_templates": {
+          "stockpile.scanned": "📦 STOCKPILE_NAME - ITEM_COUNT items (DURATION)"
+        }
+      }
+    ]
+  }
+}
+```
+
+### GUI (`gui`)
+
+Settings for the graphical user interface.
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `config_level` | string | `"basic"` | Configuration level: `"basic"`, `"advanced"`, or `"developer"` |
+| `minimize_to_tray` | boolean | `false` | Minimize to system tray instead of quitting |
+| `language` | string | `"en"` | Language code for the GUI (e.g., `"en"`, `"es"`, `"de"`) |
+
+**Configuration levels:**
+- `basic` - Essential settings only (recommended for most users)
+- `advanced` - Additional tuning options for power users
+- `developer` - Full access including OCR/Template settings (may break scanning)
+
+**Example:**
+```bash
+export FS_GUI__CONFIG_LEVEL=advanced
+export FS_GUI__MINIMIZE_TO_TRAY=true
+export FS_GUI__LANGUAGE=es
+```
 
 ## Common Configurations
 
@@ -445,8 +550,14 @@ This example shows all available settings with their default values:
   "config_version": 5,
   "api_server": {
     "cors_allow_origins": [],
+    "host": "127.0.0.1",
+    "port": 8000,
+    "workers": 1,
+    "reload": false,
+    "log_level": "info",
     "enable_memory_monitoring": false,
-    "auto_trim_memory": true
+    "auto_trim_memory": true,
+    "web_icon_mod": "vanilla"
   },
   "api_auth": {
     "auth_type": null,
@@ -485,29 +596,31 @@ This example shows all available settings with their default values:
     ]
   },
   "scanner": {
-    "database_path": "database.h5",
+    "database_path": null,
+    "template_cache_size": 16,
     "early_exit_threshold": 0.0,
     "confidence_gap": 0.0,
-    "faction_filter": null,
     "custom_model": "renner_numbers",
     "tessdata_path": "./tessdata",
     "debug_mode": false,
+    "extract_icons": false,
     "screenshots_folder": "",
     "max_ncc_candidates": 25,
     "phash_threshold": 12
   },
   "stockpile_types": {
-    "encampment": ["Encampment", "Campement", "Feldlager", "Acampamento", "Лагерь", "营地"],
-    "keep": ["Keep", "Place Forte", "Wehrturm", "Torreão", "Крепость", "要塞"],
-    "safe_house": ["Safe House", "Planque", "Unterschlupf", "Casa Fortificada", "Yбeжищe", "安全屋"],
-    "relic_base": ["Relic Base", "Base Relique", "Reliktbasis", "Base Relíquia", "Peликтoвая база", "遗迹基地"],
-    "bunker_base": ["Bunker Base", "Base Bunker", "Bunkerbasis", "Centro do Bunker", "Base de Bunker", "Base de Casamata", "Бункерная база", "Бункерная База", "地堡基地"],
-    "border_base": ["Border Base", "Base Frontalière", "Grenzbasis", "Base Fronteiriça", "Пограничная База", "边境基地"],
-    "town_base": ["Town Base", "Quartier Général", "Stadtkernbasis", "Base de Cidade", "Ратуша", "城镇基地"],
-    "bms_longhook": ["BMS - Longhook"],
-    "storage_depot": ["Storage Depot", "Dépôt", "Lagerdepot", "Depósito", "Складское Помещение", "仓库"],
-    "seaport": ["Seaport", "Port", "Seehafen", "Porto", "Морской порт", "海港"],
-    "undefined": ["Undefined"]
+    "encampment": [],
+    "keep": [],
+    "safe_house": [],
+    "relic_base": [],
+    "bunker_base": [],
+    "border_base": [],
+    "town_base": [],
+    "underground_fortress": [],
+    "bms_longhook": [],
+    "storage_depot": [],
+    "seaport": [],
+    "aircraft_depot": []
   },
   "templates": {
     "crate_blue_multiplier": 145,
@@ -516,6 +629,25 @@ This example shows all available settings with their default values:
     "crate_green_offset": 87,
     "crate_red_multiplier": 154,
     "crate_red_offset": 89
+  },
+  "external_tools": {
+    "repak": null,
+    "umodel": null,
+    "uassetgui": null
+  },
+  "database_builder": {
+    "catalog_file": null,
+    "target_resolutions": null,
+    "workers": null
+  },
+  "notifications": {
+    "enabled": false,
+    "notifiers": []
+  },
+  "gui": {
+    "config_level": "basic",
+    "minimize_to_tray": false,
+    "language": "en"
   }
 }
 ```
@@ -535,6 +667,7 @@ This table lists all available environment variables with their default values:
 | `FS_API_SERVER__LOG_LEVEL` | string | `"info"` | Server log level (`"debug"`, `"info"`, `"warning"`, `"error"`) |
 | `FS_API_SERVER__ENABLE_MEMORY_MONITORING` | boolean | `false` | Enable memory monitoring and `/memory/*` endpoints |
 | `FS_API_SERVER__AUTO_TRIM_MEMORY` | boolean | `true` | Auto-trim memory after scans to prevent fragmentation |
+| `FS_API_SERVER__WEB_ICON_MOD` | string | `"vanilla"` | Mod for web interface icons |
 | **API Authentication** | | | |
 | `FS_API_AUTH__AUTH_TYPE` | string\|null | `null` | API auth type (`"basic"`, `"bearer"`, or `null`) |
 | `FS_API_AUTH__AUTH_TOKEN` | string\|null | `null` | API authentication token |
@@ -563,13 +696,14 @@ This table lists all available environment variables with their default values:
 | **Output** | | | |
 | `FS_OUTPUT__HANDLERS` | JSON array | `[]` | List of output handler configurations (see examples below) |
 | **Scanner** | | | |
-| `FS_SCANNER__DATABASE_PATH` | string | `"database.h5"` | Template database path |
+| `FS_SCANNER__DATABASE_PATH` | string | `null` | Template database path |
+| `FS_SCANNER__TEMPLATE_CACHE_SIZE` | integer | `16` | Max resolution databases to cache (0-16) |
 | `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.0` | Early exit threshold |
 | `FS_SCANNER__CONFIDENCE_GAP` | float | `0.0` | Confidence gap for alternative candidates |
-| `FS_SCANNER__FACTION_FILTER` | string\|null | `null` | Faction filter (`"neutral"`, `"Colonials"`, `"Wardens"`, or `null`) |
 | `FS_SCANNER__CUSTOM_MODEL` | string | `"renner_numbers"` | Tesseract custom model name |
 | `FS_SCANNER__TESSDATA_PATH` | string | `"./tessdata"` | Tesseract data directory |
 | `FS_SCANNER__DEBUG_MODE` | boolean | `false` | Enable debug image output |
+| `FS_SCANNER__EXTRACT_ICONS` | boolean | `false` | Extract icons to folder for debugging |
 | `FS_SCANNER__SCREENSHOTS_FOLDER` | string | `""` | Folder to save screenshots (empty to disable) |
 | `FS_SCANNER__MAX_NCC_CANDIDATES` | integer | `25` | Max NCC candidates |
 | `FS_SCANNER__PHASH_THRESHOLD` | integer | `12` | pHash Hamming distance threshold |
@@ -580,6 +714,21 @@ This table lists all available environment variables with their default values:
 | `FS_TEMPLATES__CRATE_GREEN_OFFSET` | integer | `87` | Crate green channel offset |
 | `FS_TEMPLATES__CRATE_RED_MULTIPLIER` | integer | `154` | Crate red channel multiplier |
 | `FS_TEMPLATES__CRATE_RED_OFFSET` | integer | `89` | Crate red channel offset |
+| **External Tools** | | | |
+| `FS_EXTERNAL_TOOLS__REPAK` | string\|null | `null` | Path to repak executable |
+| `FS_EXTERNAL_TOOLS__UMODEL` | string\|null | `null` | Path to umodel executable |
+| `FS_EXTERNAL_TOOLS__UASSETGUI` | string\|null | `null` | Path to UAssetGUI executable |
+| **Database Builder** | | | |
+| `FS_DATABASE_BUILDER__CATALOG_FILE` | string\|null | `null` | Path to catalog.json |
+| `FS_DATABASE_BUILDER__TARGET_RESOLUTIONS` | JSON array\|null | `null` | Resolutions to generate |
+| `FS_DATABASE_BUILDER__WORKERS` | integer\|null | `null` | Worker processes (null = auto) |
+| **Notifications** | | | |
+| `FS_NOTIFICATIONS__ENABLED` | boolean | `false` | Enable notifications |
+| `FS_NOTIFICATIONS__NOTIFIERS` | JSON array | `[]` | List of notifier configs |
+| **GUI** | | | |
+| `FS_GUI__CONFIG_LEVEL` | string | `"basic"` | Config level (basic/advanced/developer) |
+| `FS_GUI__MINIMIZE_TO_TRAY` | boolean | `false` | Minimize to tray on close |
+| `FS_GUI__LANGUAGE` | string | `"en"` | GUI language code |
 
 **Note:** For JSON values (arrays/objects), use proper JSON syntax in the environment variable:
 ```bash

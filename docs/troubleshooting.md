@@ -107,7 +107,7 @@ Scanner completes but finds 0 items in the screenshot.
 
 1. **Wrong resolution database**
    - Verify your screenshot resolution matches the database
-   - Check database resolutions: `fs inspect --database templates.h5`
+   - Check database resolutions: `fs inspect --database templates.h5 --resolution 1080`
    - Rebuild database with correct resolution
 
 2. **Screenshot quality**
@@ -120,19 +120,14 @@ Scanner completes but finds 0 items in the screenshot.
    - Screenshot must show the stockpile grid with items
    - Title bar must be visible
 
-4. **Confidence threshold too high**
-   - The default confidence threshold (0.85) may be too strict for some images
-   - Try lowering it to detect more items:
+4. **pHash threshold too strict**
+   - The default pHash threshold (12) may filter out valid matches
+   - Try increasing it to allow more candidates:
      ```bash
-     export FS_SCANNER__CONFIDENCE_THRESHOLD=0.75
+     export FS_SCANNER__PHASH_THRESHOLD=15
      fs scanner --database templates.h5 --image screenshot.png
      ```
-   - Or set resolution-specific thresholds:
-     ```bash
-     export FS_SCANNER__CONFIDENCE_BY_RESOLUTION__1080=0.75
-     export FS_SCANNER__CONFIDENCE_BY_RESOLUTION__2160=0.80
-     ```
-   - **Note:** Lower thresholds may increase false positives
+   - **Note:** Higher thresholds may slightly slow down matching
 
 5. **Debug the detection**
    ```bash
@@ -150,21 +145,18 @@ Scanner detects most items but misses some specific ones.
 **Solution:**
 
 1. **Check confidence scores in output**
-   - Items below the confidence threshold are filtered out
    - Look for warnings in debug logs about low-confidence detections
+   - Check the `errors` field in the output for "No match found" messages
 
-2. **Lower the confidence threshold**
+2. **Increase pHash threshold**
    ```bash
-   # Global threshold
-   export FS_SCANNER__CONFIDENCE_THRESHOLD=0.75
-
-   # Or resolution-specific
-   export FS_SCANNER__CONFIDENCE_BY_RESOLUTION__1080=0.75
+   export FS_SCANNER__PHASH_THRESHOLD=15
    ```
+   This allows more candidates to pass pre-filtering.
 
 3. **Verify the item exists in database**
    ```bash
-   fs inspect --database templates.h5 --code ItemCode
+   fs inspect --database templates.h5 --resolution 1080 --code ItemCode --print
    ```
 
 4. **Screenshot quality issues**
@@ -177,43 +169,130 @@ Scanner detects most items but misses some specific ones.
    - Supported resolutions: 720p, 1080p, 1440p, 2160p
    - Check what resolutions are in your database:
      ```bash
-     fs inspect --database templates.h5
+     # List database info with any valid resolution
+     fs inspect --database templates.h5 --resolution 1080
      ```
 
-**Finding the right threshold:**
-1. Start with default (0.85)
-2. If items are missing, reduce by 0.05 increments (0.80, 0.75, 0.70)
+**Finding the right pHash threshold:**
+1. Start with default (12)
+2. If items are missing, increase by 2-3 increments (14, 16, 18)
 3. Monitor for false positives
-4. Set resolution-specific thresholds if needed (higher resolution can use higher thresholds)
+4. Values above 20 may significantly slow down matching
 
-See [Configuration Guide](configuration.md) for details on setting confidence thresholds.
+See [Configuration Guide](configuration.md) for details on scanner settings.
+
+### Diagnosing Unknown Items
+
+**Problem:**
+Some items in the scan result show as `"code": "Unknown"` with `"confidence": 0.0`.
+
+**Understanding the Matching Pipeline:**
+
+The scanner uses a two-phase matching process:
+1. **pHash pre-filtering** - Fast perceptual hash comparison filters candidates by Hamming distance (default threshold: 12)
+2. **NCC matching** - Normalized Cross-Correlation on remaining candidates finds the best match
+
+An item becomes "Unknown" when:
+- No candidates pass the pHash filter, OR
+- The item doesn't exist in the database for the detected category/crated status
+
+**Step-by-Step Diagnosis:**
+
+1. **Check the errors field in the output**
+   ```bash
+   fs scanner --image screenshot.png --output-destination return 2>&1 | grep -A5 '"errors"'
+   ```
+
+   Look for messages like:
+   ```
+   "Group 1, index 64: No match found. Quantity: 21, crated: True. Best match: MGTW (crated) (confidence: 0.620)"
+   ```
+
+   This tells you:
+   - The icon position (group 1, index 64)
+   - The quantity detected (21)
+   - Whether it's crated (True)
+   - The best candidate found and its confidence score
+
+2. **Enable icon extraction for debugging**
+   ```bash
+   export FS_SCANNER__EXTRACT_ICONS=true
+   fs scanner --image screenshot.png
+   ```
+
+   This saves detected icons to an `icons/` folder as `<index>_<code>.png` so you can visually inspect what was detected.
+
+3. **Use the candidate inspector**
+   ```bash
+   fs inspect --database templates.h5 --resolution 1080 --icon icons/64_Unknown.png --top 10
+   ```
+
+   This shows the top matching candidates with their confidence scores. Replace `1080` with your screenshot's vertical resolution.
+
+4. **Check if the item exists in the database**
+   ```bash
+   fs inspect --database templates.h5 --resolution 1080 --code MGTW --print
+   ```
+
+   Verify the item exists with the correct crated status and mod.
+
+**Common Causes and Solutions:**
+
+| Cause | Symptom | Solution |
+|-------|---------|----------|
+| pHash threshold too strict | Best match has confidence > 0.5 but pHash distance > 12 | Increase `FS_SCANNER__PHASH_THRESHOLD` to 15-18 |
+| Mod version mismatch | Item exists but pixels differ | Rebuild database with current mod version |
+| Item not in database | No best match found | Add the item using `fs add-icon` or rebuild database |
+| Wrong category detected | Match found but wrong category | Check if screenshot has UI artifacts |
+| Compression artifacts | Low confidence across all candidates | Use uncompressed PNG screenshots |
+
+**Example: Fixing pHash Threshold Issue**
+
+If the error shows a best match with decent confidence (e.g., 0.62) but the item is still Unknown:
+
+```bash
+# Check matching candidates (use your screenshot's resolution)
+fs inspect --database templates.h5 --resolution 1080 --icon icons/64_Unknown.png --top 5
+
+# If the correct item appears with low confidence, increase pHash threshold
+export FS_SCANNER__PHASH_THRESHOLD=15
+fs scanner --image screenshot.png
+```
+
+**Example: Mod Version Mismatch**
+
+If you're using a mod (e.g., clean-icons) and items show as Unknown:
+
+```bash
+# Verify mod templates exist
+fs inspect --database templates.h5 --resolution 1080 --code MGTW --mod clean-icons --print
+
+# If templates exist but don't match, rebuild with current mod files
+./build_database.sh
+```
 
 ### Low Confidence Scores
 
 **Problem:**
-Items detected but with low confidence scores (below 0.85).
+Items detected but with low confidence scores.
 
 **This is normal in some cases:**
-- Different screenshot resolutions may require different thresholds
-- Some items naturally have lower match confidence
+- Some items naturally have lower match confidence due to similar icons
 - Lighting/gamma variations in screenshots
+- Mod version mismatch between screenshot and database
 
 **Solution:**
 1. Check if items are correctly identified despite low confidence
-   - If correct, you can lower the threshold
+   - Low confidence doesn't mean incorrect — verify the match is right
 
 2. Verify screenshot quality (resolution, compression)
 
-3. Set resolution-specific thresholds:
+3. Check template quality:
    ```bash
-   export FS_SCANNER__CONFIDENCE_BY_RESOLUTION__1080=0.75
-   export FS_SCANNER__CONFIDENCE_BY_RESOLUTION__2160=0.85
+   fs inspect --database templates.h5 --resolution 1080 --code ItemCode --print
    ```
 
-4. Check template quality:
-   ```bash
-   fs inspect --database templates.h5 --code ItemCode
-   ```
+4. Rebuild database if using different mod versions
 
 ### Incorrect Quantities Detected
 
