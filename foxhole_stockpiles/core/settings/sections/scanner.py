@@ -76,7 +76,7 @@ class ScannerSettings(BaseModel):
             "Helps distinguish visually similar items (e.g., Assembly Materials V vs VIII). "
             "Set to 0.0 to disable tiebreaker."
         ),
-        default=0.002,
+        default=0.0015,
         ge=0.0,
         le=0.1,
     )
@@ -98,7 +98,7 @@ class ScannerSettings(BaseModel):
                 "screenshots_folder": "screenshots",
                 "max_ncc_candidates": 25,
                 "phash_threshold": 12,
-                "ncc_tiebreaker_threshold": 0.002,
+                "ncc_tiebreaker_threshold": 0.0015,
             }
         },
     )

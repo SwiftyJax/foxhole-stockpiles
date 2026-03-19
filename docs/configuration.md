@@ -152,7 +152,7 @@ Settings for the stockpile scanner.
 | `screenshots_folder` | string | `""` | Folder to save screenshots before processing. Empty string disables saving. Screenshots are saved in daily subfolders with format: `Date_HourWithSeconds_StorageType_Name_Resolution.png` |
 | `max_ncc_candidates` | integer | `25` | Maximum number of NCC candidates to consider for matching |
 | `phash_threshold` | integer | `12` | Maximum Hamming distance for pHash filtering |
-| `ncc_tiebreaker_threshold` | float | `0.002` | When top NCC matches are within this confidence threshold, use mean pixel difference as tiebreaker. Helps distinguish visually similar items. Set to 0.0 to disable |
+| `ncc_tiebreaker_threshold` | float | `0.0015` | When top NCC matches are within this confidence threshold, use mean pixel difference as tiebreaker. Helps distinguish visually similar items. Set to 0.0 to disable |
 
 ### Output (`output`)
 
@@ -608,7 +608,7 @@ This example shows all available settings with their default values:
     "screenshots_folder": "",
     "max_ncc_candidates": 25,
     "phash_threshold": 12,
-    "ncc_tiebreaker_threshold": 0.002
+    "ncc_tiebreaker_threshold": 0.0015
   },
   "stockpile_types": {
     "encampment": [],

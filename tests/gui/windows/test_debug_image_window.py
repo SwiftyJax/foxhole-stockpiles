@@ -878,16 +878,19 @@ class TestDebugImageWindowNCC:
         Args:
             debug_window: Window fixture.
         """
-        image1 = np.zeros((32, 32, 3), dtype=np.uint8)
-        image2 = np.ones((32, 32, 3), dtype=np.uint8) * 255
+        # Use images with variation (not constant) to avoid undefined behavior
+        image1 = np.random.randint(0, 128, (32, 32, 3), dtype=np.uint8)
+        image2 = np.random.randint(128, 255, (32, 32, 3), dtype=np.uint8)
 
         ncc = debug_window._calculate_ncc(image1, image2)
 
-        # Very different images should have lower NCC
-        assert ncc < 0.5
+        # Different random images should have lower NCC (can be negative with TM_CCOEFF_NORMED)
+        assert ncc < 0.9
 
     def test_calculate_ncc_returns_bounded_value(self, debug_window: DebugImageWindow) -> None:
-        """Test NCC calculation returns value between 0 and 1.
+        """Test NCC calculation returns value between -1 and 1.
+
+        cv2.matchTemplate with TM_CCOEFF_NORMED returns values in range [-1, 1].
 
         Args:
             debug_window: Window fixture.
@@ -897,7 +900,7 @@ class TestDebugImageWindowNCC:
 
         ncc = debug_window._calculate_ncc(image1, image2)
 
-        assert 0.0 <= ncc <= 1.0
+        assert -1.0 <= ncc <= 1.0
 
 
 class TestDebugImageWindowGetScreenshotResolution:

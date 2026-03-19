@@ -366,7 +366,7 @@ class ScannerSettings(BaseSettings):
     confidence_gap: float = 0.0
     max_ncc_candidates: int = 25
     phash_threshold: int = 12
-    ncc_tiebreaker_threshold: float = 0.002  # Pixel diff tiebreaker
+    ncc_tiebreaker_threshold: float = 0.0015  # Pixel diff tiebreaker
     debug_mode: bool = False
     extract_icons: bool = False
 ```

@@ -31,7 +31,7 @@ class TestScannerSettingsInitialization:
         assert config.screenshots_folder == ""
         assert config.max_ncc_candidates == 25
         assert config.phash_threshold == 12
-        assert config.ncc_tiebreaker_threshold == 0.002
+        assert config.ncc_tiebreaker_threshold == 0.0015
 
     def test_initialization_with_custom_values(self, tmp_path: Path) -> None:
         """Test initialization with custom values.

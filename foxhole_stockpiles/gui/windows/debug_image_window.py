@@ -466,8 +466,44 @@ class DebugImageWindow(QDialog):
         candidates = candidates[:max_ncc_candidates]
         candidates.sort(key=lambda x: x[0], reverse=True)  # Sort by NCC (highest first)
 
-        # Determine matched code
-        matched_code = candidates[0][2].code if candidates else "Unknown"
+        # Apply tiebreaker (same logic as scanner)
+        ncc_tiebreaker_threshold = scanner_settings.ncc_tiebreaker_threshold
+        matched_code = "Unknown"
+        if candidates:
+            best_ncc = candidates[0][0]
+            best_template = candidates[0][2]
+
+            # Find close matches within tiebreaker threshold
+            close_matches = [
+                (ncc, phash, template)
+                for ncc, phash, template in candidates
+                if best_ncc - ncc <= ncc_tiebreaker_threshold
+            ]
+
+            if len(close_matches) > 1:
+                # Compute pixel diff for close matches and select best
+                scored: list[tuple[float, float, IconTemplate]] = []
+                for ncc, _phash, template in close_matches:
+                    detected_scaled = cv2.resize(
+                        icon_info.icon_image,
+                        (template.image.shape[1], template.image.shape[0]),
+                        interpolation=cv2.INTER_AREA,
+                    )
+                    pixel_diff = float(
+                        np.mean(
+                            np.abs(
+                                detected_scaled.astype(np.float32)
+                                - template.image.astype(np.float32)
+                            )
+                        )
+                    )
+                    scored.append((pixel_diff, ncc, template))
+
+                # Sort by pixel diff (lower = better)
+                scored.sort(key=lambda x: x[0])
+                matched_code = scored[0][2].code
+            else:
+                matched_code = best_template.code
 
         # Display detected icon with matched code
         detected_widget = self._create_icon_display(
@@ -487,11 +523,11 @@ class DebugImageWindow(QDialog):
         self._add_separator()
 
         # Display all matching templates sorted by NCC score
-        for ncc_score, phash_dist, template in candidates:
+        for ncc_score, _phash_dist, template in candidates:
             template_widget = self._create_icon_display(
                 image=template.image,
                 label=template.mod,
-                sublabel=f"pHash dist: {phash_dist}",
+                sublabel=template.code,
                 ncc_score=ncc_score,
                 target_size=target_size,
             )
@@ -698,24 +734,18 @@ class DebugImageWindow(QDialog):
     def _calculate_ncc(self, image1: np.ndarray, image2: np.ndarray) -> float:
         """Calculate Normalized Cross-Correlation between two images.
 
+        Uses cv2.matchTemplate with TM_CCOEFF_NORMED to match the scanner's algorithm.
+
         Args:
-            image1 (np.ndarray): First image (BGR format).
-            image2 (np.ndarray): Second image (BGR format).
+            image1 (np.ndarray): First image (BGR format) - the detected icon.
+            image2 (np.ndarray): Second image (BGR format) - the template.
 
         Returns:
-            float: NCC score between 0 and 1.
+            float: NCC score between -1 and 1.
         """
-        # Convert to grayscale
-        gray1 = cv2.cvtColor(image1, cv2.COLOR_BGR2GRAY).astype(np.float32)
-        gray2 = cv2.cvtColor(image2, cv2.COLOR_BGR2GRAY).astype(np.float32)
-
-        # Normalize
-        gray1 = (gray1 - gray1.mean()) / (gray1.std() + 1e-8)
-        gray2 = (gray2 - gray2.mean()) / (gray2.std() + 1e-8)
-
-        # Calculate NCC
-        ncc = np.sum(gray1 * gray2) / gray1.size
-        return float(max(0.0, min(1.0, ncc)))
+        result = cv2.matchTemplate(image1, image2, cv2.TM_CCOEFF_NORMED)
+        _, confidence, _, _ = cv2.minMaxLoc(result)
+        return float(confidence)
 
     def _clear_comparison(self) -> None:
         """Clear the comparison panel."""

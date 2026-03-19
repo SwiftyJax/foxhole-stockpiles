@@ -94,7 +94,7 @@ matches = [
 matches.sort(key=lambda m: m.ncc_score, reverse=True)
 
 # Phase 3 (optional): NCC Tiebreaker
-# When top matches are within ncc_tiebreaker_threshold (default 0.002),
+# When top matches are within ncc_tiebreaker_threshold (default 0.0015),
 # use mean pixel difference to distinguish similar items
 # (e.g., Assembly Materials V vs VIII)
 ```
