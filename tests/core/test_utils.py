@@ -17,7 +17,6 @@ from foxhole_stockpiles.core.utils import (
     extract_day_and_hour,
     force_memory_release,
     get_subprocess_kwargs,
-    hamming_distance,
     load_catalog,
     malloc_trim,
     most_frequent,
@@ -255,74 +254,6 @@ class TestMostFrequent:
         assert result is None
 
 
-class TestHammingDistance:
-    """Test suite for the hamming_distance function.
-
-    This class contains tests for the Hamming distance calculation between
-    integer hash values, used for measuring similarity between perceptual hashes.
-    """
-
-    def test_identical_hashes(self) -> None:
-        """Test distance between identical hashes.
-
-        Validates that identical hash values have zero Hamming distance.
-        """
-        hash1 = 0b1010101010
-        hash2 = 0b1010101010
-        distance = hamming_distance(hash1, hash2)
-        assert distance == 0
-
-    def test_completely_different_hashes(self) -> None:
-        """Test distance between completely different hashes.
-
-        Validates distance calculation when all bits are different.
-        """
-        hash1 = 0b1111111111
-        hash2 = 0b0000000000
-        distance = hamming_distance(hash1, hash2)
-        assert distance == 10
-
-    def test_one_bit_difference(self) -> None:
-        """Test distance with single bit difference.
-
-        Validates that a single bit difference results in distance of 1.
-        """
-        hash1 = 0b1010101010
-        hash2 = 0b1010101011
-        distance = hamming_distance(hash1, hash2)
-        assert distance == 1
-
-    def test_half_different_bits(self) -> None:
-        """Test distance with half the bits different.
-
-        Validates distance calculation when exactly half the bits differ.
-        """
-        hash1 = 0b11110000
-        hash2 = 0b11000011
-        distance = hamming_distance(hash1, hash2)
-        assert distance == 4
-
-    def test_zero_hashes(self) -> None:
-        """Test with zero values.
-
-        Validates that zero hash values have zero distance.
-        """
-        hash1 = 0
-        hash2 = 0
-        distance = hamming_distance(hash1, hash2)
-        assert distance == 0
-
-    def test_large_hashes(self) -> None:
-        """Test with large hash values (64-bit).
-
-        Validates distance calculation with maximum-sized hash values.
-        """
-        hash1 = 0xFFFFFFFFFFFFFFFF
-        hash2 = 0x0000000000000000
-        distance = hamming_distance(hash1, hash2)
-        assert distance == 64
-
-
 class TestComputeIconPhash:
     """Test suite for the compute_icon_phash function.
 
@@ -418,7 +349,7 @@ class TestComputeIconPhash:
         phash2 = compute_icon_phash(image2)
 
         # Hashes should be similar (small hamming distance)
-        distance = hamming_distance(phash1, phash2)
+        distance = bin(phash1 ^ phash2).count("1")
         assert distance < 20  # Threshold for similarity
 
 

@@ -47,27 +47,3 @@ class ItemFaction(StrEnum):
             "Valid inputs: 'c', 'colonials' for Colonials; 'w', 'wardens' for Wardens. "
             "When specified, includes faction-specific items PLUS items available to both factions."
         )
-
-    @staticmethod
-    def validate_cli_faction(faction_input: str | None) -> "ItemFaction":
-        """Validate CLI faction input and return faction or exit on error.
-
-        Args:
-            faction_input (str | None): User input from command line
-
-        Returns:
-            Faction: Validated faction (COLONIALS or WARDENS)
-
-        Raises:
-            SystemExit: If faction is invalid (including NEUTRAL)
-        """
-        faction = ItemFaction.from_string(value=faction_input)
-
-        if faction == ItemFaction.NEUTRAL:
-            # Invalid input resulted in NEUTRAL
-            print(f"❌ Error: Invalid faction '{faction_input}'.")
-            print(f"Valid options: {ItemFaction.get_cli_help_text()}")
-            print("Only 'colonials' or 'wardens' are allowed for faction filtering.")
-            exit(1)
-
-        return faction

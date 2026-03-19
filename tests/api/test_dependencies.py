@@ -6,7 +6,6 @@ import pytest
 
 from foxhole_stockpiles.api.dependencies import (
     clear_dependency_caches,
-    get_event_bus_dependency,
     get_notification_service,
     get_ocr_coordinator,
     get_output_coordinator,
@@ -56,21 +55,6 @@ class TestGetNotificationService:
                     assert result is mock_service
 
         get_notification_service.cache_clear()
-
-
-class TestGetEventBusDependency:
-    """Test suite for get_event_bus_dependency."""
-
-    def test_get_event_bus_dependency_returns_event_bus(self) -> None:
-        """Test that get_event_bus_dependency returns the global event bus."""
-        with patch("foxhole_stockpiles.api.dependencies.get_event_bus") as mock_get:
-            mock_bus = EventBus()
-            mock_get.return_value = mock_bus
-
-            result = get_event_bus_dependency()
-
-            assert result is mock_bus
-            mock_get.assert_called_once()
 
 
 class TestGetOCRCoordinator:

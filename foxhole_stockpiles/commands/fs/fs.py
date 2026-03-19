@@ -164,14 +164,6 @@ class CLIDispatcher:
             return None
         return self._commands[canonical_command]
 
-    def list_commands(self) -> dict[str, CommandInfo]:
-        """Get all available commands.
-
-        Returns:
-            dict[str, CommandInfo]: Dictionary of command names to CommandInfo objects
-        """
-        return self._commands.copy()
-
     def get_help(self) -> str:
         """Return comprehensive help information for the unified tool as a string.
 

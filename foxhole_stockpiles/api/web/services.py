@@ -141,8 +141,3 @@ class IconService:
             logger.error("Error retrieving icon for code=%s: %s", code, e)
             self._icon_cache[cache_key] = None
             return None
-
-    def clear_cache(self) -> None:
-        """Clear the icon cache."""
-        self._icon_cache.clear()
-        self._largest_resolution = None

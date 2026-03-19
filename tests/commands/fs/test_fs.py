@@ -37,14 +37,13 @@ class TestCLIDispatcherInitialization:
     async def test_available_commands(self) -> None:
         """Test that all expected commands are available."""
         dispatcher = CLIDispatcher()
-        commands = dispatcher.list_commands()
 
         # Verify core commands exist
-        assert "scanner" in commands
-        assert "database-builder" in commands
-        assert "generate-templates" in commands
-        assert "extract-assets" in commands
-        assert "inspect" in commands
+        assert "scanner" in dispatcher._commands
+        assert "database-builder" in dispatcher._commands
+        assert "generate-templates" in dispatcher._commands
+        assert "extract-assets" in dispatcher._commands
+        assert "inspect" in dispatcher._commands
 
 
 class TestCLIDispatcherAliases:

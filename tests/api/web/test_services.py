@@ -208,17 +208,6 @@ class TestIconService:
         # Verify other_mod was used instead of default
         mock_database.get_candidates.assert_called_with(mod="other_mod", crated=False)
 
-    def test_clear_cache(self, mock_template_manager: Mock) -> None:
-        """Test cache clearing."""
-        service = IconService(template_manager=mock_template_manager)
-        service._icon_cache[("test", False, "vanilla")] = b"test_data"
-        service._largest_resolution = SupportedResolution.R_1080
-
-        service.clear_cache()
-
-        assert service._icon_cache == {}
-        assert service._largest_resolution is None
-
     @pytest.mark.asyncio
     async def test_get_icon_png_encode_failure(self, mock_template_manager: Mock) -> None:
         """Test handling of PNG encoding failure."""

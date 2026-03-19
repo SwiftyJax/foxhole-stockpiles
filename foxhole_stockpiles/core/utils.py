@@ -188,20 +188,6 @@ def most_frequent[T](items: list[T]) -> T | None:
     return None if items_with_max_count > 1 else max(unique_items, key=items.count)
 
 
-def hamming_distance(hash1: int, hash2: int) -> int:
-    """Calculate Hamming distance between two perceptual hashes.
-
-    Args:
-        hash1 (int): First hash as integer
-        hash2 (int): Second hash as integer
-
-    Returns:
-        int: Number of differing bits
-    """
-    xor = hash1 ^ hash2
-    return bin(xor).count("1")
-
-
 def compute_icon_phash(icon_image: NDArray[np.uint8]) -> int:
     """Compute perceptual hash for an icon image.
 
