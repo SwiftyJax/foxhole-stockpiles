@@ -298,8 +298,16 @@ async def scan_stockpile(
     except Exception as e:
         logger = logging.getLogger(__name__)
         logger.exception("Unexpected error during processing")
+
+        # In development mode (reload=True), show detailed errors for debugging
+        # In production, use generic message to avoid leaking internal details
+        if app_settings.api_server.reload:
+            detail = f"Unexpected error: {str(e)}"
+        else:
+            detail = "An internal error occurred while processing the request"
+
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Unexpected error: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail
         ) from None
 
 
