@@ -19,7 +19,11 @@ from pathlib import Path
 
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import get_settings
-from foxhole_stockpiles.core.utils import get_subprocess_kwargs, load_catalog
+from foxhole_stockpiles.core.utils import (
+    get_subprocess_kwargs,
+    load_catalog,
+    validate_tool_path,
+)
 from foxhole_stockpiles.models.catalog_item import CatalogItem
 from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
 
@@ -96,11 +100,9 @@ class PakExtractor:
         if not self.catalog_file.exists():
             raise FileNotFoundError(f"Catalog file not found: {self.catalog_file}")
 
-        if not self.extractor_tool.exists():
-            raise FileNotFoundError(f"Extractor tool not found: {self.extractor_tool}")
-
-        if not self.converter_tool.exists():
-            raise FileNotFoundError(f"Converter tool not found: {self.converter_tool}")
+        # Validate tool paths for security (prevents command injection)
+        validate_tool_path(self.extractor_tool)
+        validate_tool_path(self.converter_tool)
 
         if isinstance(pak_files, str):
             self.pak_files = [Path(pak_files).resolve()]
@@ -154,8 +156,10 @@ class PakExtractor:
             return result
 
         extractor_path = Path(extractor_tool)
-        if not extractor_path.exists():
-            result.error_message = f"Extractor tool not found: {extractor_tool}"
+        try:
+            validate_tool_path(extractor_path)
+        except (FileNotFoundError, ValueError) as e:
+            result.error_message = str(e)
             return result
 
         # Collect all files from all PAK files

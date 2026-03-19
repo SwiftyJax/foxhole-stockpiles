@@ -10,6 +10,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
+import pytest
 
 from foxhole_stockpiles.core.utils import (
     compute_icon_phash,
@@ -20,6 +21,7 @@ from foxhole_stockpiles.core.utils import (
     load_catalog,
     malloc_trim,
     most_frequent,
+    validate_tool_path,
 )
 
 
@@ -632,3 +634,87 @@ class TestGetSubprocessKwargs:
         with patch("foxhole_stockpiles.core.utils.sys.platform", "darwin"):
             result = get_subprocess_kwargs()
             assert result == {}
+
+
+class TestValidateToolPath:
+    """Test suite for the validate_tool_path function."""
+
+    def test_valid_tool_path(self, tmp_path: Path) -> None:
+        """Test validation passes for a valid tool path.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        tool = tmp_path / "tool.exe"
+        tool.touch()
+
+        # Should not raise
+        validate_tool_path(tool)
+
+    def test_nonexistent_tool_raises_file_not_found(self, tmp_path: Path) -> None:
+        """Test validation raises FileNotFoundError for nonexistent tool.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        tool = tmp_path / "nonexistent.exe"
+
+        with pytest.raises(FileNotFoundError, match="Tool not found"):
+            validate_tool_path(tool)
+
+    def test_directory_raises_value_error(self, tmp_path: Path) -> None:
+        """Test validation raises ValueError for directory path.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        with pytest.raises(ValueError, match="not a file"):
+            validate_tool_path(tmp_path)
+
+    def test_dangerous_chars_raise_value_error(self, tmp_path: Path) -> None:
+        """Test validation raises ValueError for paths with dangerous characters.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        # Test each dangerous character
+        dangerous_chars = [";", "|", "&", "`", "$"]
+
+        for char in dangerous_chars:
+            # Create a path with the dangerous character
+            # Note: Some characters may not be valid in filenames on all systems
+            with (
+                patch("pathlib.Path.exists", return_value=True),
+                patch("pathlib.Path.is_file", return_value=True),
+                patch("pathlib.Path.resolve", return_value=Path(f"/path/to/tool{char}bad")),
+            ):
+                with pytest.raises(ValueError, match="Invalid character"):
+                    validate_tool_path(tmp_path / "tool")
+
+    def test_windows_invalid_extension_raises_value_error(self, tmp_path: Path) -> None:
+        """Test validation raises ValueError for invalid extensions on Windows.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        tool = tmp_path / "tool.txt"
+        tool.touch()
+
+        with patch("foxhole_stockpiles.core.utils.sys.platform", "win32"):
+            with pytest.raises(ValueError, match="Invalid executable extension"):
+                validate_tool_path(tool)
+
+    def test_windows_valid_extensions(self, tmp_path: Path) -> None:
+        """Test validation passes for valid Windows executable extensions.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        valid_extensions = [".exe", ".bat", ".cmd", ".com"]
+
+        with patch("foxhole_stockpiles.core.utils.sys.platform", "win32"):
+            for ext in valid_extensions:
+                tool = tmp_path / f"tool{ext}"
+                tool.touch()
+                # Should not raise
+                validate_tool_path(tool)

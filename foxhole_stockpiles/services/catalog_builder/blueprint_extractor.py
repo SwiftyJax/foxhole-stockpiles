@@ -12,7 +12,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from foxhole_stockpiles.core.utils import get_subprocess_kwargs
+from foxhole_stockpiles.core.utils import get_subprocess_kwargs, validate_tool_path
 
 
 class BlueprintExtractor:
@@ -93,10 +93,10 @@ class BlueprintExtractor:
         # Validate paths
         if not self.pak_file.exists():
             raise FileNotFoundError(f"PAK file not found: {self.pak_file}")
-        if not self.extractor_tool.exists():
-            raise FileNotFoundError(f"Extractor tool not found: {self.extractor_tool}")
-        if not self.converter_tool.exists():
-            raise FileNotFoundError(f"Converter tool not found: {self.converter_tool}")
+
+        # Validate tool paths for security (prevents command injection)
+        validate_tool_path(self.extractor_tool)
+        validate_tool_path(self.converter_tool)
 
         self.temp_dir: Path | None = None
         self.stats = {

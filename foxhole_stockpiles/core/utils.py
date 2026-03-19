@@ -31,6 +31,43 @@ def get_subprocess_kwargs() -> dict[str, Any]:
     return {}
 
 
+def validate_tool_path(path: Path) -> None:
+    """Validate an external tool path for safe subprocess execution.
+
+    Checks that the path:
+    - Exists and is a file
+    - Does not contain command injection characters
+    - Has valid executable extension on Windows
+
+    Args:
+        path (Path): Path to the external tool
+
+    Raises:
+        ValueError: If the path is invalid or contains suspicious characters
+        FileNotFoundError: If the tool does not exist
+    """
+    if not path.exists():
+        raise FileNotFoundError(f"Tool not found: {path}")
+
+    if not path.is_file():
+        raise ValueError(f"Tool path is not a file: {path}")
+
+    # Check for command injection characters in the resolved path
+    path_str = str(path.resolve())
+    dangerous_chars = [";", "|", "&", "\n", "\r", "`", "$", "(", ")", "{", "}"]
+    for char in dangerous_chars:
+        if char in path_str:
+            raise ValueError(f"Invalid character '{char}' in tool path: {path}")
+
+    # On Windows, verify executable extension
+    if sys.platform == "win32":
+        valid_extensions = {".exe", ".bat", ".cmd", ".com"}
+        if path.suffix.lower() not in valid_extensions:
+            raise ValueError(
+                f"Invalid executable extension '{path.suffix}' for Windows tool: {path}"
+            )
+
+
 def get_tesseract_version() -> str | None:
     """Get Tesseract version without showing console window on Windows.
 

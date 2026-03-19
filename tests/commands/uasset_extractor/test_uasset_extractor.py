@@ -35,7 +35,10 @@ class TestPakExtractorInitialization:
         Validates that the PakExtractor initializes correctly with
         default parameter values.
         """
-        with patch("pathlib.Path.exists", return_value=True):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.is_file", return_value=True),
+        ):
             extractor = PakExtractor()
 
             assert str(extractor.catalog_file).endswith("catalog.json")
@@ -88,7 +91,10 @@ class TestPakExtractorInitialization:
         """
         pak_files = ["pak1.pak", "pak2.pak", "pak3.pak"]
 
-        with patch("pathlib.Path.exists", return_value=True):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.is_file", return_value=True),
+        ):
             extractor = PakExtractor(pak_files=pak_files)
 
             assert extractor.pak_files == [Path(p).resolve() for p in pak_files]
@@ -254,7 +260,7 @@ class TestPakExtractorValidation:
         catalog.write_text("[]")
         nonexistent_tool = tmp_path / "nonexistent.exe"
 
-        with pytest.raises(FileNotFoundError, match="Extractor tool not found"):
+        with pytest.raises(FileNotFoundError, match="Tool not found"):
             PakExtractor(catalog_file=str(catalog), extractor_tool=str(nonexistent_tool))
 
     def test_init_nonexistent_converter_tool(self, tmp_path: Path) -> None:
@@ -269,7 +275,7 @@ class TestPakExtractorValidation:
         extractor_tool.touch()
         nonexistent_converter = tmp_path / "nonexistent.exe"
 
-        with pytest.raises(FileNotFoundError, match="Converter tool not found"):
+        with pytest.raises(FileNotFoundError, match="Tool not found"):
             PakExtractor(
                 catalog_file=str(catalog),
                 extractor_tool=str(extractor_tool),
@@ -1565,7 +1571,10 @@ class TestWSLPathConversion:
         catalog_file = tmp_path / "catalog.json"
         catalog_file.write_text("[]")
 
-        with patch("pathlib.Path.exists", return_value=True):
+        with (
+            patch("pathlib.Path.exists", return_value=True),
+            patch("pathlib.Path.is_file", return_value=True),
+        ):
             extractor = PakExtractor(
                 catalog_file=str(catalog_file),
                 extractor_tool="/mnt/c/tools/repak.exe",
@@ -1985,7 +1994,7 @@ class TestPakValidation:
         )
 
         assert result.is_valid is False
-        assert "Extractor tool not found" in result.error_message
+        assert "Tool not found" in result.error_message
 
     @pytest.mark.asyncio
     async def test_validate_required_assets_success(self, tmp_path: Path) -> None:
