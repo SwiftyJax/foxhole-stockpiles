@@ -6,6 +6,7 @@ and error handling scenarios.
 """
 
 import argparse
+import subprocess
 from pathlib import Path
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
@@ -1636,7 +1637,7 @@ class TestWSLPathConversion:
         mock_open.return_value = mock_file
 
         # Mock subprocess raising exception
-        mock_run.side_effect = Exception("Command failed")
+        mock_run.side_effect = subprocess.SubprocessError("Command failed")
 
         result = PakExtractor._get_wsl_temp_dir()
         assert result is None

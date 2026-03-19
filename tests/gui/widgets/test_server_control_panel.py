@@ -26,7 +26,7 @@ def panel(qtbot: Any) -> ServerControlPanel:
 
     with (
         patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"),
-        patch.object(server_control_panel, "AppSettings", side_effect=Exception("No config")),
+        patch.object(server_control_panel, "AppSettings", side_effect=OSError("No config")),
     ):
         panel_instance = ServerControlPanel()
         qtbot.addWidget(panel_instance)
@@ -235,7 +235,7 @@ def test_panel_validation_no_config(qtbot: Any, panel: ServerControlPanel) -> No
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
-    with patch.object(server_control_panel, "AppSettings", side_effect=Exception("No config")):
+    with patch.object(server_control_panel, "AppSettings", side_effect=OSError("No config")):
         panel._update_validation_state()
         QApplication.processEvents()
 
@@ -454,7 +454,7 @@ def test_panel_on_database_updated_exception(qtbot: Any, panel: ServerControlPan
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
-    with patch.object(server_control_panel, "AppSettings", side_effect=Exception("Config error")):
+    with patch.object(server_control_panel, "AppSettings", side_effect=OSError("Config error")):
         # Should not raise
         panel.on_database_updated(Path("/tmp/test_db.h5"))
 
@@ -481,7 +481,7 @@ def test_panel_validation_db_load_exception(qtbot: Any, panel: ServerControlPane
         # Mock TemplateManager to raise exception when loading database stats
         with patch(
             "foxhole_stockpiles.services.template_manager.TemplateManager.get_database_statistics",
-            side_effect=Exception("Database error"),
+            side_effect=OSError("Database error"),
         ):
             panel._update_validation_state()
             QApplication.processEvents()

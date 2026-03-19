@@ -226,7 +226,7 @@ def test_handler_emit_exception_calls_handle_error(qtbot: Any, handler: QtLogHan
 
     # Mock log_message.emit to raise an exception
     with patch.object(handler, "log_message") as mock_signal:
-        mock_signal.emit.side_effect = Exception("Signal emission failed")
+        mock_signal.emit.side_effect = RuntimeError("Signal emission failed")
 
         with patch.object(handler, "handleError") as mock_handle_error:
             handler.emit(record)

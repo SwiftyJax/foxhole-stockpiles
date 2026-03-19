@@ -168,7 +168,7 @@ def test_window_show_database_info_no_config(qtbot: Any, window: MainWindow) -> 
         window (MainWindow): Window instance
     """
     with patch(
-        "foxhole_stockpiles.gui.windows.main_window.AppSettings", side_effect=Exception("No config")
+        "foxhole_stockpiles.gui.windows.main_window.AppSettings", side_effect=OSError("No config")
     ):
         with patch(
             "foxhole_stockpiles.gui.windows.main_window.DatabaseInfoWindow"
@@ -328,7 +328,7 @@ def test_load_minimize_to_tray_default_on_error(qtbot: Any) -> None:
     with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
         with patch(
             "foxhole_stockpiles.gui.windows.main_window.AppSettings",
-            side_effect=Exception("Config error"),
+            side_effect=OSError("Config error"),
         ):
             window = MainWindow()
             qtbot.addWidget(window)
@@ -597,7 +597,7 @@ def test_window_show_database_visualizer_config_error(qtbot: Any, window: MainWi
     """
     with patch(
         "foxhole_stockpiles.gui.windows.main_window.AppSettings",
-        side_effect=Exception("Config error"),
+        side_effect=OSError("Config error"),
     ):
         with patch(
             "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
@@ -657,7 +657,7 @@ def test_window_show_debug_viewer_config_error(qtbot: Any, window: MainWindow) -
     """
     with patch(
         "foxhole_stockpiles.gui.windows.main_window.AppSettings",
-        side_effect=Exception("Config error"),
+        side_effect=OSError("Config error"),
     ):
         with patch(
             "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
