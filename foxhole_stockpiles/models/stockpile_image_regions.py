@@ -17,6 +17,9 @@ class StockpileImageRegions(BaseModel):
     stockpile_name: NDArray[np.uint8] | None = Field(
         description="Detected stockpile name region", default=None
     )
+    stockpile_name_tab: NDArray[np.uint8] | None = Field(
+        description="Region to the right of stockpile name to detect 'Tab' indicator", default=None
+    )
     shard: NDArray[np.uint8] | None = Field(description="Detected shard", default=None)
     vertical_resolution: int = Field(description="Vertical resolution of the screenshot", ge=0)
     resolution: str = Field(

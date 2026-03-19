@@ -61,6 +61,7 @@ class StockpileDetector:
 
         # Detected stockpile name and type  locations
         self.stockpile_name: BoundingBox | None = None
+        self.stockpile_name_tab: BoundingBox | None = None
         self.stockpile_type: BoundingBox | None = None
 
         # Detected groups for icons
@@ -480,6 +481,10 @@ class StockpileDetector:
         )
         self.stockpile_name = (name_x, title_y, self.stockpile_name_width, self.title_height)
 
+        # Tab region: right of name area, used to detect if stockpile has a custom name
+        tab_x = name_x + self.stockpile_name_width
+        self.stockpile_name_tab = (tab_x, title_y, self.box_width, self.title_height)
+
     def analize(self) -> None:
         """Detect quantity boxes, stockpile type regions, and stockpile name regions."""
         self.detect_quantity_boxes()
@@ -643,6 +648,17 @@ class StockpileDetector:
             else None
         )
 
+        stockpile_name_tab = (
+            self.img[
+                self.stockpile_name_tab[1] : self.stockpile_name_tab[1]
+                + self.stockpile_name_tab[3],
+                self.stockpile_name_tab[0] : self.stockpile_name_tab[0]
+                + self.stockpile_name_tab[2],
+            ]
+            if self.stockpile_name_tab
+            else None
+        )
+
         # Ingame shard and timestamp
         shard = (
             self.img[
@@ -659,6 +675,7 @@ class StockpileDetector:
             icons=icons,
             stockpile_type=stockpile_type,
             stockpile_name=stockpile_name,
+            stockpile_name_tab=stockpile_name_tab,
             shard=shard,
             resolution=f"{self.width}x{self.height}",
             vertical_resolution=self.height,

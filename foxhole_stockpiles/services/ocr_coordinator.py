@@ -404,6 +404,16 @@ class OCRCoordinator:
             if self.config.debug_mode:
                 cv2.imwrite("stockpile_name_region.png", name_source)
 
+        # Detect Tab button presence using contrast analysis instead of OCR
+        # Tab button has high contrast (std > 30), empty area has low contrast (std < 15)
+        has_tab_button = False
+        if stockpile_images.stockpile_name_tab is not None:
+            tab_gray = cv2.cvtColor(stockpile_images.stockpile_name_tab, cv2.COLOR_BGR2GRAY)
+            tab_std = float(np.std(tab_gray))
+            has_tab_button = tab_std > 30
+            if self.config.debug_mode:
+                self.logger.debug("Tab region std: %.1f, has_tab: %s", tab_std, has_tab_button)
+
         # Define async OCR tasks
         async def extract_quantities_task() -> list[int]:
             return await self._extract_quantities(stockpile_images)
@@ -457,9 +467,15 @@ class OCRCoordinator:
             if len(lines) > 1:
                 metadata["shard"] = lines[1]
 
-        # Process name (only if type supports custom names)
+        # Process name (only if type supports custom names and Tab button is detected)
+        # The Tab button appears to the right of the name when a custom name exists
         stockpile_type = metadata["type"]
-        if name_text is not None and stockpile_type and stockpile_type.has_custom_name():
+        if (
+            name_text is not None
+            and stockpile_type
+            and stockpile_type.has_custom_name()
+            and has_tab_button
+        ):
             metadata["name"] = name_text.strip()
 
         return quantities, metadata

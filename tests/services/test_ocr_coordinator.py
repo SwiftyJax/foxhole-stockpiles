@@ -387,6 +387,7 @@ class TestAnalyzeStockpile:
         ]
         mock_stockpile_images.groups = [(2, 0)]
         mock_stockpile_images.stockpile_name = None
+        mock_stockpile_images.stockpile_name_tab = None
         mock_stockpile_images.shard = None
         mock_stockpile_images.stockpile_type = None
 
