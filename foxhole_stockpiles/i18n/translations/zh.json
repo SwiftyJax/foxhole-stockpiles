@@ -33,6 +33,7 @@
       "build": "构建(&B)...",
       "information": "信息(&I)...",
       "visualizer": "可视化器(&V)...",
+      "debug_viewer": "调试图像查看器(&D)...",
       "about": "关于(&A)"
     },
     "tray": {
@@ -550,6 +551,24 @@
     "description": "为仓库类型名称添加自定义别名以处理 OCR 错误。\n输入逗号分隔的值（例如 'seapon, Seapont, 5eaport'）。\n默认翻译已内置，无需在此添加。",
     "aliases_group": "附加别名",
     "alias_placeholder": "输入逗号分隔的别名..."
+  },
+
+  "debug_viewer": {
+    "title": "调试图像查看器",
+    "select_screenshot": "选择要分析的截图",
+    "detected_items": "检测到的物品",
+    "screenshot": "截图",
+    "icon_comparison": "图标对比",
+    "icon_comparison_tooltip": "显示检测到的图标和所有通过pHash阈值的数据库候选项，按NCC分数排序",
+    "detected": "检测到",
+    "scaled": "（缩放）",
+    "scan_error_title": "扫描错误",
+    "database_error_title": "数据库错误",
+    "unknown": "未知",
+    "summary_type": "类型",
+    "summary_name": "名称",
+    "summary_shard": "分片",
+    "summary_time": "时间"
   },
 
   "database_builder_settings": {

@@ -1140,6 +1140,296 @@ class TestDebugImageWindowAddSeparator:
         assert debug_window.comparison_layout.count() == initial_count + 1
 
 
+class TestDebugImageWindowSummary:
+    """Tests for summary label functionality."""
+
+    def test_summary_label_exists(self, debug_window: DebugImageWindow) -> None:
+        """Test that summary label is created.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        assert debug_window.summary_label is not None
+
+    def test_summary_label_single_line(self, debug_window: DebugImageWindow) -> None:
+        """Test that summary label is configured for single line.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        assert debug_window.summary_label.wordWrap() is False
+
+    def test_update_summary_with_full_data(
+        self,
+        debug_window: DebugImageWindow,
+    ) -> None:
+        """Test summary update with all fields populated.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        stockpile = Stockpile(
+            name="Test Stockpile",
+            type=StockpileType.SEAPORT,
+            resolution="1920x1080",
+            shard="ABLE",
+            ingame_timestamp="Day 100, 1200 Hours",
+            items=[],
+        )
+        scan_result = ScanResult(
+            stockpile=stockpile,
+            detected_icons=[],
+            original_image=np.zeros((1080, 1920, 3), dtype=np.uint8),
+        )
+
+        debug_window._update_summary(scan_result)
+
+        text = debug_window.summary_label.text()
+        # Labels are now bold with HTML tags
+        assert f"<b>{t('debug_viewer.summary_type')}:</b>" in text
+        assert f"<b>{t('debug_viewer.summary_name')}:</b>" in text
+        assert "Test Stockpile" in text
+        assert f"<b>{t('debug_viewer.summary_shard')}:</b>" in text
+        assert "ABLE" in text
+        assert f"<b>{t('debug_viewer.summary_time')}:</b>" in text
+        assert "Day 100" in text
+
+    def test_update_summary_without_name(
+        self,
+        debug_window: DebugImageWindow,
+    ) -> None:
+        """Test summary update without stockpile name.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        stockpile = Stockpile(
+            name="",
+            type=StockpileType.STORAGE_DEPOT,
+            resolution="1920x1080",
+            shard="BAKER",
+            items=[],
+        )
+        scan_result = ScanResult(
+            stockpile=stockpile,
+            detected_icons=[],
+            original_image=np.zeros((1080, 1920, 3), dtype=np.uint8),
+        )
+
+        debug_window._update_summary(scan_result)
+
+        text = debug_window.summary_label.text()
+        assert f"<b>{t('debug_viewer.summary_type')}:</b>" in text
+        assert f"<b>{t('debug_viewer.summary_name')}:</b>" not in text
+
+    def test_on_scan_finished_updates_summary(
+        self,
+        debug_window: DebugImageWindow,
+        mock_scan_result: ScanResult,
+    ) -> None:
+        """Test that scan finished updates summary label.
+
+        Args:
+            debug_window: Window fixture.
+            mock_scan_result: Mock scan result.
+        """
+        with patch.object(debug_window, "_display_screenshot"):
+            debug_window._on_scan_finished(mock_scan_result)
+
+            # Summary should have been updated with stockpile type (bold)
+            text = debug_window.summary_label.text()
+            assert f"<b>{t('debug_viewer.summary_type')}:</b>" in text
+
+
+class TestDebugImageWindowSettings:
+    """Tests for settings spinbox functionality."""
+
+    def test_settings_spinboxes_initialized_none(self, debug_window: DebugImageWindow) -> None:
+        """Test that settings spinboxes are initially None.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        assert debug_window.phash_spinbox is None
+        assert debug_window.ncc_spinbox is None
+
+    def test_create_settings_widget_creates_spinboxes(
+        self,
+        debug_window: DebugImageWindow,
+    ) -> None:
+        """Test that create_settings_widget creates spinboxes.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        widget = debug_window._create_settings_widget()
+        # Keep widget reference to prevent Qt from deleting it
+        debug_window.comparison_layout.addWidget(widget)
+
+        assert widget is not None
+        assert debug_window.phash_spinbox is not None
+        assert debug_window.ncc_spinbox is not None
+
+    def test_create_settings_widget_default_values(
+        self,
+        debug_window: DebugImageWindow,
+    ) -> None:
+        """Test that settings widget uses app settings defaults.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        from foxhole_stockpiles.core.settings import get_settings
+
+        scanner_settings = get_settings().scanner
+
+        widget = debug_window._create_settings_widget()
+        # Keep widget reference to prevent Qt from deleting it
+        debug_window.comparison_layout.addWidget(widget)
+
+        assert debug_window.phash_spinbox is not None
+        assert debug_window.ncc_spinbox is not None
+        assert debug_window.phash_spinbox.value() == scanner_settings.phash_threshold
+        assert debug_window.ncc_spinbox.value() == scanner_settings.max_ncc_candidates
+
+    def test_create_settings_widget_custom_values(
+        self,
+        debug_window: DebugImageWindow,
+    ) -> None:
+        """Test that settings widget accepts custom values.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        widget = debug_window._create_settings_widget(phash_value=20, ncc_value=50)
+        # Keep widget reference to prevent Qt from deleting it
+        debug_window.comparison_layout.addWidget(widget)
+
+        assert debug_window.phash_spinbox is not None
+        assert debug_window.ncc_spinbox is not None
+        assert debug_window.phash_spinbox.value() == 20
+        assert debug_window.ncc_spinbox.value() == 50
+
+    def test_on_settings_changed_triggers_update(
+        self,
+        debug_window: DebugImageWindow,
+        mock_scan_result: ScanResult,
+        mock_detected_icon: DetectedIconInfo,
+    ) -> None:
+        """Test that settings change triggers comparison update.
+
+        Args:
+            debug_window: Window fixture.
+            mock_scan_result: Mock scan result.
+            mock_detected_icon: Mock detected icon.
+        """
+        debug_window.scan_result = mock_scan_result
+        debug_window.selected_icon = mock_detected_icon
+
+        with patch.object(debug_window, "_update_comparison") as mock_update:
+            debug_window._on_settings_changed()
+
+            mock_update.assert_called_once_with(mock_detected_icon)
+
+    def test_on_settings_changed_no_selected_icon(
+        self,
+        debug_window: DebugImageWindow,
+    ) -> None:
+        """Test that settings change does nothing without selected icon.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        debug_window.selected_icon = None
+
+        with patch.object(debug_window, "_update_comparison") as mock_update:
+            debug_window._on_settings_changed()
+
+            mock_update.assert_not_called()
+
+
+class TestDebugImageWindowResize:
+    """Tests for resize event handling."""
+
+    def test_resize_event_updates_screenshot(
+        self,
+        debug_window: DebugImageWindow,
+        mock_scan_result: ScanResult,
+        mock_detected_icon: DetectedIconInfo,
+    ) -> None:
+        """Test that resize event re-displays screenshot.
+
+        Args:
+            debug_window: Window fixture.
+            mock_scan_result: Mock scan result.
+            mock_detected_icon: Mock detected icon.
+        """
+        from PyQt6.QtCore import QSize
+        from PyQt6.QtGui import QResizeEvent
+
+        debug_window.scan_result = mock_scan_result
+        debug_window.selected_icon = mock_detected_icon
+
+        with patch.object(debug_window, "_display_screenshot") as mock_display:
+            event = QResizeEvent(QSize(800, 600), QSize(640, 480))
+            debug_window.resizeEvent(event)
+
+            mock_display.assert_called_once_with(
+                mock_scan_result.original_image, mock_detected_icon
+            )
+
+    def test_resize_event_no_scan_result(
+        self,
+        debug_window: DebugImageWindow,
+    ) -> None:
+        """Test that resize event does nothing without scan result.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        from PyQt6.QtCore import QSize
+        from PyQt6.QtGui import QResizeEvent
+
+        debug_window.scan_result = None
+
+        with patch.object(debug_window, "_display_screenshot") as mock_display:
+            event = QResizeEvent(QSize(800, 600), QSize(640, 480))
+            debug_window.resizeEvent(event)
+
+            mock_display.assert_not_called()
+
+
+class TestDebugImageWindowHammingDistance:
+    """Tests for Hamming distance calculation."""
+
+    def test_hamming_distance_identical(self, debug_window: DebugImageWindow) -> None:
+        """Test Hamming distance with identical hashes.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        result = debug_window._hamming_distance(0xABCD1234, 0xABCD1234)
+        assert result == 0
+
+    def test_hamming_distance_one_bit(self, debug_window: DebugImageWindow) -> None:
+        """Test Hamming distance with one bit difference.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        result = debug_window._hamming_distance(0b0001, 0b0000)
+        assert result == 1
+
+    def test_hamming_distance_multiple_bits(self, debug_window: DebugImageWindow) -> None:
+        """Test Hamming distance with multiple bit differences.
+
+        Args:
+            debug_window: Window fixture.
+        """
+        result = debug_window._hamming_distance(0b1111, 0b0000)
+        assert result == 4
+
+
 class TestDebugImageWindowCreateIconDisplay:
     """Tests for icon display widget creation."""
 

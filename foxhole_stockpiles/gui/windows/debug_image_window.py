@@ -20,14 +20,18 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSpinBox,
     QVBoxLayout,
     QWidget,
 )
 
+from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.core.utils import compute_icon_phash
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.gui.utils.image_scan_worker import ImageScanWorker
 from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 from foxhole_stockpiles.models.detected_icon_info import DetectedIconInfo
+from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.scan_result import ScanResult
 from foxhole_stockpiles.services.template_database import TemplateDatabase
 from foxhole_stockpiles.services.template_manager import TemplateManager
@@ -114,6 +118,7 @@ class DebugImageWindow(QDialog):
         self.items_group.setTitle(t("debug_viewer.detected_items"))
         self.screenshot_group.setTitle(t("debug_viewer.screenshot"))
         self.comparison_group.setTitle(t("debug_viewer.icon_comparison"))
+        self.comparison_group.setToolTip(t("debug_viewer.icon_comparison_tooltip"))
 
     def init_ui(self) -> None:
         """Initialize the user interface."""
@@ -135,18 +140,22 @@ class DebugImageWindow(QDialog):
 
         main_layout.addLayout(top_bar)
 
-        # Main content: list on left (fixed width), screenshot and comparison on right
-        content_layout = QHBoxLayout()
+        # Top content: items list (left) + screenshot (right)
+        top_content = QHBoxLayout()
 
         # Left panel: Detected items list (fixed width)
         left_panel = self._create_left_panel()
-        content_layout.addWidget(left_panel)
+        top_content.addWidget(left_panel)
 
-        # Right panel: Screenshot display and comparison (expandable)
-        right_panel = self._create_right_panel()
-        content_layout.addWidget(right_panel, stretch=1)
+        # Screenshot panel (expandable)
+        screenshot_panel = self._create_screenshot_panel()
+        top_content.addWidget(screenshot_panel, stretch=1)
 
-        main_layout.addLayout(content_layout)
+        main_layout.addLayout(top_content, stretch=1)
+
+        # Bottom: Icon comparison (full width)
+        comparison_panel = self._create_comparison_panel()
+        main_layout.addWidget(comparison_panel)
 
         # Apply translations
         self.retranslate()
@@ -172,19 +181,21 @@ class DebugImageWindow(QDialog):
         layout.addWidget(self.items_group)
         return panel
 
-    def _create_right_panel(self) -> QWidget:
-        """Create the right panel with screenshot and comparison displays.
+    def _create_screenshot_panel(self) -> QWidget:
+        """Create the screenshot display panel.
 
         Returns:
-            QWidget: The right panel widget.
+            QWidget: The screenshot panel widget.
         """
-        panel = QWidget()
-        layout = QVBoxLayout(panel)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        # Screenshot display (expandable)
         self.screenshot_group = QGroupBox()
         screenshot_layout = QVBoxLayout(self.screenshot_group)
+
+        # Summary line (stockpile type, name, shard, time) - single line only
+        self.summary_label = QLabel()
+        self.summary_label.setWordWrap(False)
+        self.summary_label.setFixedHeight(20)
+        self.summary_label.setStyleSheet("QLabel { color: palette(text); padding: 2px; }")
+        screenshot_layout.addWidget(self.summary_label)
 
         screenshot_scroll = QScrollArea()
         screenshot_scroll.setWidgetResizable(True)
@@ -194,11 +205,16 @@ class DebugImageWindow(QDialog):
         screenshot_scroll.setWidget(self.screenshot_label)
         screenshot_layout.addWidget(screenshot_scroll)
 
-        layout.addWidget(self.screenshot_group, stretch=1)
+        return self.screenshot_group
 
-        # Icon comparison panel (fixed height)
+    def _create_comparison_panel(self) -> QWidget:
+        """Create the icon comparison panel (full width at bottom).
+
+        Returns:
+            QWidget: The comparison panel widget.
+        """
         self.comparison_group = QGroupBox()
-        self.comparison_group.setFixedHeight(400)
+        self.comparison_group.setFixedHeight(305)
         comparison_layout = QVBoxLayout(self.comparison_group)
 
         comparison_scroll = QScrollArea()
@@ -209,9 +225,11 @@ class DebugImageWindow(QDialog):
         comparison_scroll.setWidget(self.comparison_widget)
         comparison_layout.addWidget(comparison_scroll)
 
-        layout.addWidget(self.comparison_group)
+        # Settings spinboxes (will be added to comparison layout dynamically)
+        self.phash_spinbox: QSpinBox | None = None
+        self.ncc_spinbox: QSpinBox | None = None
 
-        return panel
+        return self.comparison_group
 
     def _on_browse_screenshot(self) -> None:
         """Handle browse screenshot button click."""
@@ -260,6 +278,9 @@ class DebugImageWindow(QDialog):
         """
         self.scan_result = result
 
+        # Update summary line
+        self._update_summary(result)
+
         # Populate items list
         for icon_info in result.detected_icons:
             crated_str = " [Crated]" if icon_info.crated else ""
@@ -278,6 +299,38 @@ class DebugImageWindow(QDialog):
         if self.items_list.count() > 0:
             self.items_list.setCurrentRow(0)
             self.items_list.setFocus()
+
+    def _update_summary(self, result: ScanResult) -> None:
+        """Update the summary label with stockpile info.
+
+        Args:
+            result (ScanResult): The scan result containing stockpile data.
+        """
+        stockpile = result.stockpile
+        parts = []
+
+        # Stockpile type (may be enum or string depending on serialization)
+        if stockpile.type:
+            type_str = (
+                stockpile.type.value if hasattr(stockpile.type, "value") else str(stockpile.type)
+            )
+        else:
+            type_str = t("debug_viewer.unknown")
+        parts.append(f"<b>{t('debug_viewer.summary_type')}:</b> {type_str}")
+
+        # Stockpile name (if present)
+        if stockpile.name:
+            parts.append(f"<b>{t('debug_viewer.summary_name')}:</b> {stockpile.name}")
+
+        # Shard
+        if stockpile.shard:
+            parts.append(f"<b>{t('debug_viewer.summary_shard')}:</b> {stockpile.shard}")
+
+        # In-game time
+        if stockpile.ingame_timestamp:
+            parts.append(f"<b>{t('debug_viewer.summary_time')}:</b> {stockpile.ingame_timestamp}")
+
+        self.summary_label.setText("  |  ".join(parts))
 
     def _on_scan_error(self, error_msg: str) -> None:
         """Handle scan error.
@@ -364,83 +417,156 @@ class DebugImageWindow(QDialog):
     def _update_comparison(self, icon_info: DetectedIconInfo) -> None:
         """Update the comparison panel with detected icon and templates from database.
 
-        Shows: Detected icon | Screenshot resolution templates | Highest resolution templates
+        Shows: Detected icon | Settings | Separator | All DB templates sorted by NCC
 
         Args:
             icon_info (DetectedIconInfo): The selected icon information.
         """
+        # Preserve current settings before clearing (use app settings as defaults)
+        scanner_settings = get_settings().scanner
+        phash_threshold = (
+            self.phash_spinbox.value() if self.phash_spinbox else scanner_settings.phash_threshold
+        )
+        max_ncc_candidates = (
+            self.ncc_spinbox.value() if self.ncc_spinbox else scanner_settings.max_ncc_candidates
+        )
+
         self._clear_comparison()
 
         if not self.all_databases or not self.scan_result:
             return
 
-        # Get resolutions
+        # Get resolution and database
         screenshot_res = self._get_screenshot_resolution()
-        highest_res = max(self.all_databases.keys(), key=lambda x: int(x.value))
-        highest_db = self.all_databases[highest_res]
-        target_size = highest_db.templates[0].image.shape[0] if highest_db.templates else 64
+        if not screenshot_res or screenshot_res not in self.all_databases:
+            return
 
-        # Display detected icon (scaled to match DB template size)
-        detected_widget = self._create_icon_display(
-            image=icon_info.icon_image,
-            label=t("debug_viewer.detected"),
-            sublabel=t("debug_viewer.scaled"),
-            ncc_score=None,
-            target_size=target_size,
-        )
-        self.comparison_layout.addWidget(detected_widget)
+        screenshot_db = self.all_databases[screenshot_res]
+        target_size = screenshot_db.templates[0].image.shape[0] if screenshot_db.templates else 64
 
-        # Add separator
-        self._add_separator()
+        # Compute pHash for detected icon
+        icon_phash = compute_icon_phash(icon_info.icon_image)
 
-        # Display templates at screenshot resolution (scaled up)
-        if screenshot_res and screenshot_res in self.all_databases:
-            screenshot_db = self.all_databases[screenshot_res]
-            for template in screenshot_db.templates:
-                if template.code == icon_info.code and template.crated == icon_info.crated:
-                    # Scale detected icon to template size for NCC calculation
+        # Find all templates that pass pHash threshold (any code, matching crated state)
+        candidates: list[tuple[float, int, IconTemplate]] = []
+        for template in screenshot_db.templates:
+            if template.crated == icon_info.crated:
+                phash_dist = self._hamming_distance(icon_phash, template.phash)
+                if phash_dist <= phash_threshold:
                     detected_scaled = cv2.resize(
                         icon_info.icon_image,
                         (template.image.shape[1], template.image.shape[0]),
                         interpolation=cv2.INTER_AREA,
                     )
-
                     ncc_score = self._calculate_ncc(detected_scaled, template.image)
+                    candidates.append((ncc_score, phash_dist, template))
 
-                    template_widget = self._create_icon_display(
-                        image=template.image,
-                        label=template.mod,
-                        sublabel=f"({screenshot_res.value}p)",
-                        ncc_score=ncc_score,
-                        target_size=target_size,
-                    )
-                    self.comparison_layout.addWidget(template_widget)
+        # Sort by pHash distance first, take top max_ncc_candidates, then sort by NCC
+        candidates.sort(key=lambda x: x[1])  # Sort by pHash dist
+        candidates = candidates[:max_ncc_candidates]
+        candidates.sort(key=lambda x: x[0], reverse=True)  # Sort by NCC (highest first)
 
-            # Add separator before highest resolution
-            self._add_separator()
+        # Determine matched code
+        matched_code = candidates[0][2].code if candidates else "Unknown"
 
-        # Display templates at highest resolution
-        for template in highest_db.templates:
-            if template.code == icon_info.code and template.crated == icon_info.crated:
-                # Scale detected icon to template size for NCC calculation
-                detected_scaled = cv2.resize(
-                    icon_info.icon_image,
-                    (template.image.shape[1], template.image.shape[0]),
-                    interpolation=cv2.INTER_AREA,
-                )
+        # Display detected icon with matched code
+        detected_widget = self._create_icon_display(
+            image=icon_info.icon_image,
+            label=t("debug_viewer.detected"),
+            sublabel=matched_code,
+            ncc_score=None,
+            target_size=target_size,
+        )
+        self.comparison_layout.addWidget(detected_widget)
 
-                ncc_score = self._calculate_ncc(detected_scaled, template.image)
+        # Add settings widget (pHash threshold and max NCC candidates)
+        settings_widget = self._create_settings_widget(phash_threshold, max_ncc_candidates)
+        self.comparison_layout.addWidget(settings_widget)
 
-                template_widget = self._create_icon_display(
-                    image=template.image,
-                    label=template.mod,
-                    sublabel=f"({highest_res.value}p)",
-                    ncc_score=ncc_score,
-                    target_size=template.image.shape[0],
-                )
-                self.comparison_layout.addWidget(template_widget)
+        # Add separator
+        self._add_separator()
+
+        # Display all matching templates sorted by NCC score
+        for ncc_score, phash_dist, template in candidates:
+            template_widget = self._create_icon_display(
+                image=template.image,
+                label=template.mod,
+                sublabel=f"pHash dist: {phash_dist}",
+                ncc_score=ncc_score,
+                target_size=target_size,
+            )
+            self.comparison_layout.addWidget(template_widget)
 
         self.comparison_layout.addStretch()
+
+    def _create_settings_widget(
+        self, phash_value: int | None = None, ncc_value: int | None = None
+    ) -> QWidget:
+        """Create a widget with pHash and NCC settings spinboxes.
+
+        Args:
+            phash_value (int | None): Initial pHash threshold value. Uses app settings if None.
+            ncc_value (int | None): Initial max NCC candidates value. Uses app settings if None.
+
+        Returns:
+            QWidget: Widget containing the settings controls.
+        """
+        # Use app settings as defaults
+        scanner_settings = get_settings().scanner
+        if phash_value is None:
+            phash_value = scanner_settings.phash_threshold
+        if ncc_value is None:
+            ncc_value = scanner_settings.max_ncc_candidates
+        widget = QWidget()
+        layout = QVBoxLayout(widget)
+        layout.setContentsMargins(10, 5, 10, 5)
+        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        # pHash threshold
+        phash_label = QLabel("pHash threshold:")
+        phash_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(phash_label)
+
+        self.phash_spinbox = QSpinBox()
+        self.phash_spinbox.setRange(0, 64)
+        self.phash_spinbox.setValue(phash_value)
+        self.phash_spinbox.setFixedWidth(80)
+        self.phash_spinbox.valueChanged.connect(self._on_settings_changed)
+        layout.addWidget(self.phash_spinbox, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        # Max NCC candidates
+        ncc_label = QLabel("Max NCC candidates:")
+        ncc_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(ncc_label)
+
+        self.ncc_spinbox = QSpinBox()
+        self.ncc_spinbox.setRange(1, 100)
+        self.ncc_spinbox.setValue(ncc_value)
+        self.ncc_spinbox.setFixedWidth(80)
+        self.ncc_spinbox.valueChanged.connect(self._on_settings_changed)
+        layout.addWidget(self.ncc_spinbox, alignment=Qt.AlignmentFlag.AlignCenter)
+
+        return widget
+
+    def _on_settings_changed(self) -> None:
+        """Handle settings change - re-run matching with new thresholds."""
+        if not self.selected_icon or not self.scan_result:
+            return
+
+        # Re-run comparison with current settings
+        self._update_comparison(self.selected_icon)
+
+    def _hamming_distance(self, hash1: int, hash2: int) -> int:
+        """Calculate Hamming distance between two pHash values.
+
+        Args:
+            hash1 (int): First pHash value.
+            hash2 (int): Second pHash value.
+
+        Returns:
+            int: Hamming distance (number of differing bits).
+        """
+        return bin(hash1 ^ hash2).count("1")
 
     def _get_screenshot_resolution(self) -> SupportedResolution | None:
         """Get the SupportedResolution matching the screenshot.
@@ -485,7 +611,7 @@ class DebugImageWindow(QDialog):
         Args:
             image (np.ndarray): Image to display (BGR format).
             label (str): Label text (e.g., mod name or "Detected").
-            sublabel (str | None): Second line label text (e.g., "(scaled)").
+            sublabel (str | None): Second line label text (e.g., code name or pHash dist).
             ncc_score (float | None): NCC score to display, or None for detected icon.
             target_size (int): Target size for scaling.
 
@@ -537,23 +663,24 @@ class DebugImageWindow(QDialog):
         image_label.setStyleSheet("QLabel { border: 1px solid palette(mid); }")
         layout.addWidget(image_label)
 
-        # Label text
+        # Label text (line 1)
         text_label = QLabel(label)
         text_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         text_label.setFont(QFont("Arial", 10, QFont.Weight.Bold))
         layout.addWidget(text_label)
 
-        # Sublabel (if provided)
+        # Sublabel (line 2)
         if sublabel:
             sublabel_widget = QLabel(sublabel)
             sublabel_widget.setAlignment(Qt.AlignmentFlag.AlignCenter)
             sublabel_widget.setStyleSheet("QLabel { color: palette(mid); }")
             layout.addWidget(sublabel_widget)
 
-        # NCC score (if provided)
+        # NCC score (line 3) - add spacer if None to keep alignment
+        score_label = QLabel()
+        score_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         if ncc_score is not None:
-            score_label = QLabel(f"NCC: {ncc_score:.3f}")
-            score_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            score_label.setText(f"NCC: {ncc_score:.3f}")
             # Color based on score
             if ncc_score >= 0.95:
                 color = "#4caf50"  # Green
@@ -562,7 +689,9 @@ class DebugImageWindow(QDialog):
             else:
                 color = "#f44336"  # Red
             score_label.setStyleSheet(f"QLabel {{ color: {color}; }}")
-            layout.addWidget(score_label)
+        else:
+            score_label.setText(" ")  # Spacer for alignment
+        layout.addWidget(score_label)
 
         return widget
 
@@ -629,6 +758,18 @@ class DebugImageWindow(QDialog):
             t("debug_viewer.database_error_title"),
             error_msg,
         )
+
+    def resizeEvent(self, event: object) -> None:
+        """Handle window resize event to update screenshot display.
+
+        Args:
+            event (object): Resize event.
+        """
+        super().resizeEvent(event)  # type: ignore[arg-type]
+
+        # Re-display screenshot if we have one
+        if self.scan_result and self.scan_result.original_image is not None:
+            self._display_screenshot(self.scan_result.original_image, self.selected_icon)
 
     def closeEvent(self, event: object) -> None:
         """Handle window close event.

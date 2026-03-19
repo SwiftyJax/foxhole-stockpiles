@@ -569,10 +569,16 @@
     "detected_items": "Detected Items",
     "screenshot": "Screenshot",
     "icon_comparison": "Icon Comparison",
+    "icon_comparison_tooltip": "Shows detected icon and all DB candidates that pass pHash threshold, sorted by NCC score",
     "detected": "Detected",
     "scaled": "(scaled)",
     "scan_error_title": "Scan Error",
-    "database_error_title": "Database Error"
+    "database_error_title": "Database Error",
+    "unknown": "Unknown",
+    "summary_type": "Type",
+    "summary_name": "Name",
+    "summary_shard": "Shard",
+    "summary_time": "Time"
   },
 
   "database_builder_tab": {

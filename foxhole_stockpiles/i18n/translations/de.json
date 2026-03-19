@@ -33,6 +33,7 @@
       "build": "&Erstellen...",
       "information": "&Informationen...",
       "visualizer": "&Visualisierer...",
+      "debug_viewer": "&Debug-Bildanzeige...",
       "about": "&Über"
     },
     "tray": {
@@ -565,6 +566,24 @@
     "all_resolutions": "Alle Auflösungen",
     "status_note": "<b>Hinweis:</b> Die Katalogdatei und externe Werkzeuge (repak, umodel) müssen konfiguriert sein damit die 'Datenbank erstellen'-Funktion funktioniert.",
     "select_catalog": "Katalogdatei (catalog.json) auswählen"
+  },
+
+  "debug_viewer": {
+    "title": "Debug-Bildanzeige",
+    "select_screenshot": "Wählen Sie einen Screenshot zur Analyse",
+    "detected_items": "Erkannte Objekte",
+    "screenshot": "Screenshot",
+    "icon_comparison": "Icon-Vergleich",
+    "icon_comparison_tooltip": "Zeigt erkanntes Icon und alle DB-Kandidaten, die den pHash-Schwellwert überschreiten, sortiert nach NCC-Score",
+    "detected": "Erkannt",
+    "scaled": "(skaliert)",
+    "scan_error_title": "Scanfehler",
+    "database_error_title": "Datenbankfehler",
+    "unknown": "Unbekannt",
+    "summary_type": "Typ",
+    "summary_name": "Name",
+    "summary_shard": "Shard",
+    "summary_time": "Zeit"
   },
 
   "database_builder_settings": {

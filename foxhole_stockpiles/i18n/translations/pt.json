@@ -33,6 +33,7 @@
       "build": "&Construir...",
       "information": "&Informações...",
       "visualizer": "&Visualizador...",
+      "debug_viewer": "&Visualizador de imagem de depuração...",
       "about": "&Sobre"
     },
     "tray": {
@@ -565,6 +566,24 @@
     "all_resolutions": "Todas as resoluções",
     "status_note": "<b>Nota:</b> O ficheiro de catálogo e as ferramentas externas (repak, umodel) devem estar configurados para que a função 'Construir base de dados' funcione.",
     "select_catalog": "Selecionar ficheiro de catálogo (catalog.json)"
+  },
+
+  "debug_viewer": {
+    "title": "Visualizador de imagem de depuração",
+    "select_screenshot": "Selecione uma captura de ecrã para analisar",
+    "detected_items": "Objetos detetados",
+    "screenshot": "Captura de ecrã",
+    "icon_comparison": "Comparação de ícones",
+    "icon_comparison_tooltip": "Mostra o ícone detetado e todos os candidatos da BD que passam o limiar pHash, ordenados por pontuação NCC",
+    "detected": "Detetado",
+    "scaled": "(redimensionado)",
+    "scan_error_title": "Erro de digitalização",
+    "database_error_title": "Erro de base de dados",
+    "unknown": "Desconhecido",
+    "summary_type": "Tipo",
+    "summary_name": "Nome",
+    "summary_shard": "Shard",
+    "summary_time": "Hora"
   },
 
   "database_builder_settings": {
