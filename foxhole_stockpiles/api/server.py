@@ -36,6 +36,9 @@ from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
+# Maximum file upload size (10MB) - sufficient for high-resolution screenshots
+MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024
+
 
 class HealthResponse(BaseModel):
     """Health check response model."""
@@ -198,6 +201,17 @@ async def scan_stockpile(
     """
     if not image.content_type or not image.content_type.startswith("image/"):
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="File must be an image")
+
+    # Check file size before reading into memory
+    image.file.seek(0, 2)  # Seek to end
+    file_size = image.file.tell()
+    image.file.seek(0)  # Reset to beginning
+
+    if file_size > MAX_UPLOAD_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_CONTENT_TOO_LARGE,
+            detail=f"File too large. Maximum size: {MAX_UPLOAD_SIZE_BYTES // (1024 * 1024)}MB",
+        )
 
     try:
         content = await image.read()

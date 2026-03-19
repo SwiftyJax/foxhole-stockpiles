@@ -20,7 +20,7 @@ from foxhole_stockpiles.api.dependencies import (
     get_ocr_coordinator,
     get_output_coordinator,
 )
-from foxhole_stockpiles.api.server import app, auth_dependency
+from foxhole_stockpiles.api.server import MAX_UPLOAD_SIZE_BYTES, app, auth_dependency
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
 from foxhole_stockpiles.core.settings.sections.output import (
@@ -272,6 +272,21 @@ class TestScanStockpileEndpoint:
         assert response.status_code in [400, 500]
         detail = response.json().get("detail", "")
         assert "Invalid image format" in detail or "Unexpected error" in detail
+
+    def test_scan_stockpile_file_too_large(self, client: TestClient) -> None:
+        """Test scanning with a file that exceeds the maximum size limit.
+
+        Args:
+            client (TestClient): FastAPI test client from fixture.
+        """
+        # Create a file larger than the limit
+        oversized_data = b"x" * (MAX_UPLOAD_SIZE_BYTES + 1)
+        files = {"image": ("large.png", io.BytesIO(oversized_data), "image/png")}
+        response = client.post("/ocr/scan_image", files=files)
+
+        assert response.status_code == 413
+        assert "File too large" in response.json()["detail"]
+        assert "10MB" in response.json()["detail"]
 
     def test_scan_stockpile_success(self, client: TestClient) -> None:
         """Test successful stockpile scanning.
