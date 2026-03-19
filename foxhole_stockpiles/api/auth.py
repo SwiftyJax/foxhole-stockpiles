@@ -1,5 +1,6 @@
 """Authentication module for FastAPI endpoints."""
 
+import secrets
 from collections.abc import Callable, Coroutine
 from typing import Any
 
@@ -38,7 +39,8 @@ def verify_auth(auth_settings: APIAuthSettings, auth_header: str | None) -> None
 
     if auth_type == "basic":
         expected_header = f"Basic {expected_token}"
-        if auth_header != expected_header:
+        # Use constant-time comparison to prevent timing attacks
+        if not secrets.compare_digest(auth_header, expected_header):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials",
@@ -46,7 +48,8 @@ def verify_auth(auth_settings: APIAuthSettings, auth_header: str | None) -> None
             )
     elif auth_type == "bearer":
         expected_header = f"Bearer {expected_token}"
-        if auth_header != expected_header:
+        # Use constant-time comparison to prevent timing attacks
+        if not secrets.compare_digest(auth_header, expected_header):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid authentication credentials",
