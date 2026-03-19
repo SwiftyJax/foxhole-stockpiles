@@ -1,6 +1,7 @@
 """Web interface routes for the API server."""
 
 import base64
+import html
 import json
 import logging
 import time
@@ -313,7 +314,7 @@ def _render_stockpile_table(
         display_name = catalog_service.get_display_name(item.code)
 
         icon_html = (
-            f'<img src="{icon_url}" class="icon" alt="{item.code}">'
+            f'<img src="{html.escape(icon_url)}" class="icon" alt="{html.escape(item.code)}">'
             if icon_url
             else '<span class="icon-placeholder"></span>'
         )
@@ -324,14 +325,14 @@ def _render_stockpile_table(
         rows.append(f"""
             <tr>
                 <td class="icon-cell">{icon_html}</td>
-                <td>{display_name}{crated_badge}</td>
+                <td>{html.escape(display_name)}{crated_badge}</td>
                 <td class="quantity-cell">{quantity_str}</td>
             </tr>
         """)
 
     # Note: stockpile.type is a string due to use_enum_values=True in Stockpile model
-    stockpile_type = stockpile.type if stockpile.type else "Unknown"
-    stockpile_name = stockpile.name or "Unnamed"
+    stockpile_type = html.escape(stockpile.type) if stockpile.type else "Unknown"
+    stockpile_name = html.escape(stockpile.name) if stockpile.name else "Unnamed"
 
     return f"""
     <div class="card stockpile-section">
@@ -385,7 +386,7 @@ def _render_combined_table(
         display_name = catalog_service.get_display_name(code)
 
         icon_html = (
-            f'<img src="{icon_url}" class="icon" alt="{code}">'
+            f'<img src="{html.escape(icon_url)}" class="icon" alt="{html.escape(code)}">'
             if icon_url
             else '<span class="icon-placeholder"></span>'
         )
@@ -395,7 +396,7 @@ def _render_combined_table(
         rows.append(f"""
             <tr>
                 <td class="icon-cell">{icon_html}</td>
-                <td>{display_name}{crated_badge}</td>
+                <td>{html.escape(display_name)}{crated_badge}</td>
                 <td class="quantity-cell">{quantity:,}</td>
             </tr>
         """)
