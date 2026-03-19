@@ -43,6 +43,7 @@ def test_scanner_tab_initialization(scanner_tab: ScannerTab) -> None:
     assert scanner_tab.screenshots_folder_input is not None
     assert scanner_tab.max_ncc_input is not None
     assert scanner_tab.phash_threshold_input is not None
+    assert scanner_tab.tiebreaker_threshold_input is not None
 
 
 def test_scanner_tab_default_values(scanner_tab: ScannerTab) -> None:
@@ -56,6 +57,7 @@ def test_scanner_tab_default_values(scanner_tab: ScannerTab) -> None:
     assert scanner_tab.confidence_gap_input.value() == 0.0
     assert scanner_tab.max_ncc_input.value() == 25
     assert scanner_tab.phash_threshold_input.value() == 12
+    assert scanner_tab.tiebreaker_threshold_input.value() == 0.002
 
 
 def test_scanner_tab_cache_size_range(scanner_tab: ScannerTab) -> None:
@@ -108,6 +110,18 @@ def test_scanner_tab_phash_threshold_range(scanner_tab: ScannerTab) -> None:
     """
     assert scanner_tab.phash_threshold_input.minimum() == 0
     assert scanner_tab.phash_threshold_input.maximum() == 64
+
+
+def test_scanner_tab_tiebreaker_threshold_range(scanner_tab: ScannerTab) -> None:
+    """Test NCC tiebreaker threshold has correct range.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    assert scanner_tab.tiebreaker_threshold_input.minimum() == 0.0
+    assert scanner_tab.tiebreaker_threshold_input.maximum() == 0.1
+    assert scanner_tab.tiebreaker_threshold_input.decimals() == 3
+    assert scanner_tab.tiebreaker_threshold_input.singleStep() == 0.001
 
 
 def test_scanner_tab_browse_database(qtbot: Any, scanner_tab: ScannerTab) -> None:
@@ -276,6 +290,7 @@ def test_scanner_tab_set_values(scanner_tab: ScannerTab) -> None:
         screenshots_folder="/test/screenshots",
         max_ncc_candidates=50,
         phash_threshold=20,
+        ncc_tiebreaker_threshold=0.005,
     )
 
     scanner_tab.set_values(settings)
@@ -291,6 +306,7 @@ def test_scanner_tab_set_values(scanner_tab: ScannerTab) -> None:
     assert scanner_tab.screenshots_folder_input.text() == "/test/screenshots"
     assert scanner_tab.max_ncc_input.value() == 50
     assert scanner_tab.phash_threshold_input.value() == 20
+    assert scanner_tab.tiebreaker_threshold_input.value() == 0.005
 
 
 def test_scanner_tab_set_values_no_database_path(scanner_tab: ScannerTab) -> None:
@@ -336,6 +352,7 @@ def test_scanner_tab_get_values(scanner_tab: ScannerTab) -> None:
     scanner_tab.screenshots_folder_input.setText("/my/screenshots")
     scanner_tab.max_ncc_input.setValue(30)
     scanner_tab.phash_threshold_input.setValue(15)
+    scanner_tab.tiebreaker_threshold_input.setValue(0.008)
 
     settings = scanner_tab.get_values()
 
@@ -350,6 +367,7 @@ def test_scanner_tab_get_values(scanner_tab: ScannerTab) -> None:
     assert settings.screenshots_folder == "/my/screenshots"
     assert settings.max_ncc_candidates == 30
     assert settings.phash_threshold == 15
+    assert settings.ncc_tiebreaker_threshold == 0.008
 
 
 def test_scanner_tab_get_values_empty_database_path(scanner_tab: ScannerTab) -> None:
@@ -490,6 +508,8 @@ def test_scanner_tab_set_config_level_basic(scanner_tab: ScannerTab) -> None:
     assert scanner_tab.max_ncc_input.isHidden()
     assert scanner_tab._phash_label.isHidden()
     assert scanner_tab.phash_threshold_input.isHidden()
+    assert scanner_tab._tiebreaker_label.isHidden()
+    assert scanner_tab.tiebreaker_threshold_input.isHidden()
     assert scanner_tab._debug_label.isHidden()
     assert scanner_tab.debug_mode_input.isHidden()
     assert scanner_tab._extract_label.isHidden()
@@ -516,6 +536,8 @@ def test_scanner_tab_set_config_level_advanced(scanner_tab: ScannerTab) -> None:
     assert not scanner_tab.max_ncc_input.isHidden()
     assert not scanner_tab._phash_label.isHidden()
     assert not scanner_tab.phash_threshold_input.isHidden()
+    assert not scanner_tab._tiebreaker_label.isHidden()
+    assert not scanner_tab.tiebreaker_threshold_input.isHidden()
     assert not scanner_tab._debug_label.isHidden()
     assert not scanner_tab.debug_mode_input.isHidden()
     assert not scanner_tab._extract_label.isHidden()
@@ -542,6 +564,8 @@ def test_scanner_tab_set_config_level_developer(scanner_tab: ScannerTab) -> None
     assert not scanner_tab.max_ncc_input.isHidden()
     assert not scanner_tab._phash_label.isHidden()
     assert not scanner_tab.phash_threshold_input.isHidden()
+    assert not scanner_tab._tiebreaker_label.isHidden()
+    assert not scanner_tab.tiebreaker_threshold_input.isHidden()
     assert not scanner_tab._debug_label.isHidden()
     assert not scanner_tab.debug_mode_input.isHidden()
     assert not scanner_tab._extract_label.isHidden()
@@ -566,18 +590,35 @@ def test_scanner_tab_config_level_transition(scanner_tab: ScannerTab) -> None:
     scanner_tab.set_config_level(ConfigLevel.DEVELOPER)
     assert not scanner_tab._custom_model_label.isHidden()
     assert not scanner_tab._ncc_label.isHidden()
+    assert not scanner_tab._tiebreaker_label.isHidden()
 
     # Transition to advanced
     scanner_tab.set_config_level(ConfigLevel.ADVANCED)
     assert scanner_tab._custom_model_label.isHidden()
     assert not scanner_tab._ncc_label.isHidden()
+    assert not scanner_tab._tiebreaker_label.isHidden()
 
     # Transition to basic
     scanner_tab.set_config_level(ConfigLevel.BASIC)
     assert scanner_tab._custom_model_label.isHidden()
     assert scanner_tab._ncc_label.isHidden()
+    assert scanner_tab._tiebreaker_label.isHidden()
 
     # Back to developer
     scanner_tab.set_config_level(ConfigLevel.DEVELOPER)
     assert not scanner_tab._custom_model_label.isHidden()
     assert not scanner_tab._ncc_label.isHidden()
+    assert not scanner_tab._tiebreaker_label.isHidden()
+
+
+def test_scanner_tab_tiebreaker_threshold_precision(scanner_tab: ScannerTab) -> None:
+    """Test tiebreaker threshold precision.
+
+    Args:
+        scanner_tab: ScannerTab instance
+    """
+    scanner_tab.tiebreaker_threshold_input.setValue(0.003)
+
+    settings = scanner_tab.get_values()
+
+    assert settings.ncc_tiebreaker_threshold == 0.003

@@ -166,6 +166,8 @@
     "max_ncc_tooltip": "Nombre maximum de candidats de modèles à évaluer avec NCC (Corrélation Croisée Normalisée).\n\nAprès le pré-filtrage par hash perceptuel, ceci limite la correspondance détaillée.\nDes valeurs plus élevées sont plus précises mais plus lentes. Recommandé : 25.",
     "phash_threshold": "Seuil pHash :",
     "phash_tooltip": "Seuil de distance de hash perceptuel pour le pré-filtrage des modèles.\n\nDes valeurs plus basses (0-10) sont plus strictes, des valeurs plus hautes (10-20) sont plus permissives.\nTrop bas peut manquer des objets valides, trop haut ralentit la correspondance.\nRecommandé : 12 pour un équilibre entre vitesse et précision.",
+    "tiebreaker_threshold": "Seuil départage NCC :",
+    "tiebreaker_tooltip": "Lorsque les meilleures correspondances NCC sont dans ce seuil de confiance, utilise la différence moyenne de pixels comme départage.\n\nAide à distinguer les objets visuellement similaires (ex., Matériaux d'assemblage V vs VIII).\nDéfinir à 0.0 pour désactiver le départage.\nRecommandé : 0.002.",
     "debug_mode": "Mode débogage :",
     "debug_mode_checkbox": "Sauvegarder les images de débogage pendant le scan",
     "debug_mode_tooltip": "Sauvegarder les images de débogage montrant le processus de détection.\n\nSauvegarde dans le répertoire courant :\n- stockpile_detection_result.png - Image originale avec cadres de détection\n- stockpile_quantities_result.png - Image composite des quantités\n- stockpile_name_region.png - Région du nom extraite\n- stockpile_type_region.png - Région du type extraite\n- stockpile_shard.png - Région du shard extraite\n\nUtile pour résoudre les problèmes de détection.",

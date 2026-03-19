@@ -360,10 +360,15 @@ class AppSettings(BaseSettings):
 class ScannerSettings(BaseSettings):
     database_path: Path | None
     tessdata_path: str = "./tessdata"
-    custom_model: bool = True
-    template_cache_size: int = 1000
-    min_confidence: float = 0.75
-    max_phash_distance: int = 10
+    custom_model: str = "renner_numbers"
+    template_cache_size: int = 16
+    early_exit_threshold: float = 0.0
+    confidence_gap: float = 0.0
+    max_ncc_candidates: int = 25
+    phash_threshold: int = 12
+    ncc_tiebreaker_threshold: float = 0.002  # Pixel diff tiebreaker
+    debug_mode: bool = False
+    extract_icons: bool = False
 ```
 
 ### OutputSettings

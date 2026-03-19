@@ -166,6 +166,8 @@
     "max_ncc_tooltip": "使用 NCC（归一化互相关）评估的模板候选项最大数量。\n\n在感知哈希预过滤后，这限制了详细匹配。\n较高的值更准确但更慢。推荐：25。",
     "phash_threshold": "pHash 阈值：",
     "phash_tooltip": "用于模板预过滤的感知哈希距离阈值。\n\n较低的值（0-10）更严格，较高的值（10-20）更宽松。\n太低可能会遗漏有效物品，太高会减慢匹配速度。\n推荐：12 以平衡速度和准确性。",
+    "tiebreaker_threshold": "NCC 平局决胜阈值：",
+    "tiebreaker_tooltip": "当最佳 NCC 匹配在此置信度阈值内时，使用平均像素差异作为平局决胜。\n\n帮助区分视觉上相似的物品（例如，组装材料 V 与 VIII）。\n设置为 0.0 以禁用平局决胜。\n推荐：0.002。",
     "debug_mode": "调试模式：",
     "debug_mode_checkbox": "扫描时保存调试图像",
     "debug_mode_tooltip": "保存显示检测过程的调试图像。\n\n保存到当前目录：\n- stockpile_detection_result.png - 带检测框的原始图像\n- stockpile_quantities_result.png - 数量合成图像\n- stockpile_name_region.png - 提取的名称区域\n- stockpile_type_region.png - 提取的类型区域\n- stockpile_shard.png - 提取的分片区域\n\n对排除检测问题很有用。",

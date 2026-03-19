@@ -166,6 +166,8 @@
     "max_ncc_tooltip": "Número máximo de candidatos de modelos a avaliar com NCC (Correlação Cruzada Normalizada).\n\nApós a pré-filtragem por hash percetual, isto limita a correspondência detalhada.\nValores mais altos são mais precisos mas mais lentos. Recomendado: 25.",
     "phash_threshold": "Limiar pHash:",
     "phash_tooltip": "Limiar de distância de hash percetual para pré-filtragem de modelos.\n\nValores mais baixos (0-10) são mais rigorosos, valores mais altos (10-20) são mais permissivos.\nMuito baixo pode perder objetos válidos, muito alto abranda a correspondência.\nRecomendado: 12 para equilíbrio entre velocidade e precisão.",
+    "tiebreaker_threshold": "Limiar de desempate NCC:",
+    "tiebreaker_tooltip": "Quando as melhores correspondências NCC estão dentro deste limiar de confiança, usa a diferença média de píxeis como desempate.\n\nAjuda a distinguir objetos visualmente semelhantes (ex., Materiais de Montagem V vs VIII).\nDefina 0.0 para desativar o desempate.\nRecomendado: 0.002.",
     "debug_mode": "Modo de depuração:",
     "debug_mode_checkbox": "Guardar imagens de depuração durante digitalização",
     "debug_mode_tooltip": "Guardar imagens de depuração mostrando o processo de deteção.\n\nGuarda no diretório atual:\n- stockpile_detection_result.png - Imagem original com caixas de deteção\n- stockpile_quantities_result.png - Imagem composta de quantidades\n- stockpile_name_region.png - Região do nome extraída\n- stockpile_type_region.png - Região do tipo extraída\n- stockpile_shard.png - Região do shard extraída\n\nÚtil para resolver problemas de deteção.",

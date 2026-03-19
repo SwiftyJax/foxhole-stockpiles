@@ -562,6 +562,7 @@ class TemplateManager:
         max_ncc_candidates: int = 25,
         early_exit_threshold: float = 0.0,
         confidence_gap: float = 0.0,
+        ncc_tiebreaker_threshold: float = 0.0,
         top_n: int = 5,
     ) -> MatchResult:
         """Get candidates and optionally perform icon matching.
@@ -578,6 +579,8 @@ class TemplateManager:
             max_ncc_candidates (int): Maximum candidates for NCC optimization
             early_exit_threshold (float): Confidence threshold for immediate exit (0.0 = disabled)
             confidence_gap (float): Gap for returning alternative candidates (0.0 = disabled)
+            ncc_tiebreaker_threshold (float): When top matches are within this threshold,
+                use pixel difference as tiebreaker (0.0 = disabled)
             top_n (int): Number of top matches to return with confidence scores (default: 5)
 
         Returns:
@@ -666,6 +669,50 @@ class TemplateManager:
 
         # Sort all matches by confidence and get top N
         all_matches.sort(key=lambda x: x[0], reverse=True)
+
+        # Apply tiebreaker if enabled and top matches are very close
+        if (
+            ncc_tiebreaker_threshold > 0.0
+            and icon_image is not None
+            and len(all_matches) > 1
+            and best_match is not None
+        ):
+            # Find matches within tiebreaker threshold of best
+            close_matches = [
+                (conf, t)
+                for conf, t in all_matches
+                if best_confidence - conf <= ncc_tiebreaker_threshold
+            ]
+
+            if len(close_matches) > 1:
+                # Compute mean absolute pixel difference for close matches
+                scored: list[tuple[float, float, IconTemplate]] = []
+                for conf, template in close_matches:
+                    pixel_diff = float(
+                        np.mean(
+                            np.abs(
+                                icon_image.astype(np.float32) - template.image.astype(np.float32)
+                            )
+                        )
+                    )
+                    scored.append((pixel_diff, conf, template))
+
+                # Sort by pixel diff (lower = better match)
+                scored.sort(key=lambda x: x[0])
+
+                # Update best match if tiebreaker changed the winner
+                if scored[0][2].code != best_match.code:
+                    logger.debug(
+                        "Tiebreaker changed match from %s (%.4f) to %s (%.4f, pixel_diff=%.2f)",
+                        best_match.code,
+                        best_confidence,
+                        scored[0][2].code,
+                        scored[0][1],
+                        scored[0][0],
+                    )
+                    best_match = scored[0][2]
+                    best_confidence = scored[0][1]
+
         top_matches = [(template, conf) for conf, template in all_matches[:top_n]]
 
         # Calculate gap candidates if confidence_gap > 0

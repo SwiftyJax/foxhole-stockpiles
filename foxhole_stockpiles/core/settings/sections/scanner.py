@@ -69,6 +69,17 @@ class ScannerSettings(BaseModel):
         default=12,
         ge=0,
     )
+    ncc_tiebreaker_threshold: float = Field(
+        description=(
+            "When top NCC matches are within this confidence threshold, "
+            "use mean pixel difference as a tiebreaker to select the best match. "
+            "Helps distinguish visually similar items (e.g., Assembly Materials V vs VIII). "
+            "Set to 0.0 to disable tiebreaker."
+        ),
+        default=0.002,
+        ge=0.0,
+        le=0.1,
+    )
 
     model_config = ConfigDict(
         str_strip_whitespace=True,
@@ -87,6 +98,7 @@ class ScannerSettings(BaseModel):
                 "screenshots_folder": "screenshots",
                 "max_ncc_candidates": 25,
                 "phash_threshold": 12,
+                "ncc_tiebreaker_threshold": 0.002,
             }
         },
     )

@@ -166,6 +166,8 @@
     "max_ncc_tooltip": "Maximale Anzahl von Vorlagenkandidaten die mit NCC (Normalisierte Kreuzkorrelation) bewertet werden.\n\nNach der perzeptuellen Hash-Vorfilterung begrenzt dies den detaillierten Abgleich.\nHöhere Werte sind genauer aber langsamer. Empfohlen: 25.",
     "phash_threshold": "pHash-Schwellwert:",
     "phash_tooltip": "Perzeptueller Hash-Distanzschwellwert für Vorlagen-Vorfilterung.\n\nNiedrigere Werte (0-10) sind strenger, höhere Werte (10-20) sind nachsichtiger.\nZu niedrig kann gültige Objekte verpassen, zu hoch verlangsamt den Abgleich.\nEmpfohlen: 12 für ausgewogene Geschwindigkeit und Genauigkeit.",
+    "tiebreaker_threshold": "NCC-Stichentscheid-Schwellwert:",
+    "tiebreaker_tooltip": "Wenn die besten NCC-Übereinstimmungen innerhalb dieses Konfidenzschwellwerts liegen, wird die mittlere Pixeldifferenz als Stichentscheid verwendet.\n\nHilft bei der Unterscheidung visuell ähnlicher Objekte (z.B. Montagematerial V vs VIII).\nSetzen Sie 0.0 zum Deaktivieren des Stichentscheids.\nEmpfohlen: 0.002.",
     "debug_mode": "Debug-Modus:",
     "debug_mode_checkbox": "Debug-Bilder beim Scannen speichern",
     "debug_mode_tooltip": "Debug-Bilder speichern die den Erkennungsprozess zeigen.\n\nSpeichert im aktuellen Verzeichnis:\n- stockpile_detection_result.png - Originalbild mit Erkennungsrahmen\n- stockpile_quantities_result.png - Zusammengesetztes Mengenbild\n- stockpile_name_region.png - Extrahierte Namensregion\n- stockpile_type_region.png - Extrahierte Typregion\n- stockpile_shard.png - Extrahierte Shard-Region\n\nNützlich zur Fehlerbehebung bei Erkennungsproblemen.",

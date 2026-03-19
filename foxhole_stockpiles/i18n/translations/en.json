@@ -167,6 +167,8 @@
     "max_ncc_tooltip": "Maximum number of template candidates to evaluate with NCC (Normalized Cross-Correlation).\n\nAfter perceptual hash pre-filtering, this limits detailed matching.\nHigher values are more accurate but slower. Recommended: 25.",
     "phash_threshold": "pHash Threshold:",
     "phash_tooltip": "Perceptual hash distance threshold for template pre-filtering.\n\nLower values (0-10) are stricter, higher values (10-20) are more lenient.\nToo low may miss valid items, too high slows down matching.\nRecommended: 12 for balanced speed and accuracy.",
+    "tiebreaker_threshold": "NCC Tiebreaker Threshold:",
+    "tiebreaker_tooltip": "When top NCC matches are within this confidence threshold, use mean pixel difference as a tiebreaker.\n\nHelps distinguish visually similar items (e.g., Assembly Materials V vs VIII).\nSet to 0.0 to disable tiebreaker.\nRecommended: 0.002.",
     "debug_mode": "Debug Mode:",
     "debug_mode_checkbox": "Save debug images during scanning",
     "debug_mode_tooltip": "Save debug images showing the detection process.\n\nSaves to current directory:\n- stockpile_detection_result.png - Original image with detection boxes\n- stockpile_quantities_result.png - Composite quantities image\n- stockpile_name_region.png - Extracted name region\n- stockpile_type_region.png - Extracted type region\n- stockpile_shard.png - Extracted shard region\n\nUseful for troubleshooting detection issues.",

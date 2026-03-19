@@ -74,7 +74,7 @@ class StockpileDetector:
 
 **Responsibility:** Match detected icons to known templates
 
-**Two-Phase Matching:**
+**Two-Phase Matching + Tiebreaker:**
 ```python
 # Phase 1: Fast pHash filtering
 candidates = db.get_candidates(
@@ -92,6 +92,11 @@ matches = [
     if ncc_score > min_threshold
 ]
 matches.sort(key=lambda m: m.ncc_score, reverse=True)
+
+# Phase 3 (optional): NCC Tiebreaker
+# When top matches are within ncc_tiebreaker_threshold (default 0.002),
+# use mean pixel difference to distinguish similar items
+# (e.g., Assembly Materials V vs VIII)
 ```
 
 **Conflict Resolution:**
@@ -295,9 +300,10 @@ class ScanResult(BaseModel):
 
 ## Design Decisions
 
-### Why Two-Phase Template Matching?
+### Why Two-Phase Template Matching + Tiebreaker?
 - **Phase 1 (pHash):** Fast similarity filter, eliminates 95%+ of candidates
 - **Phase 2 (NCC):** Precise scoring, expensive computation on small subset
+- **Phase 3 (Tiebreaker):** When NCC scores are within threshold, use pixel diff
 - **Result:** Sub-second matching for 5000+ templates per resolution
 
 ### Why HDF5 over Pickle?

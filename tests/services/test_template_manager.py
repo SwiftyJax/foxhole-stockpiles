@@ -739,6 +739,169 @@ class TestMatchIcon:
         # Should have NO gap candidates
         assert len(result.gap_candidates) == 0
 
+    async def test_match_icon_tiebreaker_changes_winner(self, tmp_path: Path) -> None:
+        """Test that tiebreaker selects template with lower pixel difference.
+
+        When NCC scores are very close, the tiebreaker should select the template
+        with lower mean absolute pixel difference.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create test image
+        test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
+        test_image[8:24, 8:24] = [200, 200, 200]  # Center square
+
+        # Create database with two templates that will have very close NCC scores
+        db = TemplateDatabase(SupportedResolution.R_1080)
+
+        # Template 1: Slightly different but higher NCC due to normalization effects
+        template1_image = np.ones((32, 32, 3), dtype=np.uint8) * 130  # Slightly brighter
+        template1_image[8:24, 8:24] = [202, 202, 202]
+        template1 = IconTemplate(
+            code="ItemA",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=template1_image,
+            phash=0,
+        )
+        db.add_template(template1)
+
+        # Template 2: Exact match - lower pixel diff but potentially similar NCC
+        template2_image = test_image.copy()
+        template2 = IconTemplate(
+            code="ItemB",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=template2_image,
+            phash=1,
+        )
+        db.add_template(template2)
+
+        databases = {SupportedResolution.R_1080: db}
+        create_hdf5_database(db_path=db_path, databases=databases)
+
+        manager = TemplateManager(db_path)
+        await manager.set_active_resolution(1080)
+
+        # Match with tiebreaker enabled
+        result = manager.match_icon(
+            icon_image=test_image,
+            ncc_tiebreaker_threshold=0.1,  # Large threshold to ensure tiebreaker kicks in
+        )
+
+        # The exact match (ItemB) should win due to lower pixel difference
+        assert result.icon is not None
+        assert result.icon.code == "ItemB"
+
+    async def test_match_icon_tiebreaker_disabled(self, tmp_path: Path) -> None:
+        """Test that tiebreaker is disabled when threshold is 0.0.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create test image
+        test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
+
+        # Create database with single template
+        db = TemplateDatabase(SupportedResolution.R_1080)
+        template = IconTemplate(
+            code="Item",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=test_image.copy(),
+            phash=0,
+        )
+        db.add_template(template)
+
+        databases = {SupportedResolution.R_1080: db}
+        create_hdf5_database(db_path=db_path, databases=databases)
+
+        manager = TemplateManager(db_path)
+        await manager.set_active_resolution(1080)
+
+        # Match with tiebreaker disabled (default)
+        result = manager.match_icon(
+            icon_image=test_image,
+            ncc_tiebreaker_threshold=0.0,
+        )
+
+        # Should still find match
+        assert result.icon is not None
+        assert result.icon.code == "Item"
+
+    async def test_match_icon_tiebreaker_no_close_matches(self, tmp_path: Path) -> None:
+        """Test that tiebreaker has no effect when matches aren't close.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        db_path = tmp_path / "test.h5"
+
+        # Create test image
+        test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
+        test_image[8:24, 8:24] = [200, 200, 200]
+
+        # Create database with templates that will have very different NCC scores
+        db = TemplateDatabase(SupportedResolution.R_1080)
+
+        # Template 1: Good match
+        template1 = IconTemplate(
+            code="BestMatch",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=test_image.copy(),
+            phash=0,
+        )
+        db.add_template(template1)
+
+        # Template 2: Very different - should have much lower NCC
+        different_image = np.ones((32, 32, 3), dtype=np.uint8) * 50
+        different_image[0:16, 0:16] = [250, 250, 250]
+        template2 = IconTemplate(
+            code="PoorMatch",
+            faction=ItemFaction.NEUTRAL,
+            category=ItemCategory.Item,
+            crated=False,
+            mod="vanilla",
+            resolution=SupportedResolution.R_1080,
+            image=different_image,
+            phash=1,
+        )
+        db.add_template(template2)
+
+        databases = {SupportedResolution.R_1080: db}
+        create_hdf5_database(db_path=db_path, databases=databases)
+
+        manager = TemplateManager(db_path)
+        await manager.set_active_resolution(1080)
+
+        # Match with small tiebreaker threshold
+        result = manager.match_icon(
+            icon_image=test_image,
+            ncc_tiebreaker_threshold=0.002,
+        )
+
+        # Best match should still win - tiebreaker only activates for close matches
+        assert result.icon is not None
+        assert result.icon.code == "BestMatch"
+
 
 class TestTemplateManagerRepr:
     """Test suite for TemplateManager.__repr__ method."""

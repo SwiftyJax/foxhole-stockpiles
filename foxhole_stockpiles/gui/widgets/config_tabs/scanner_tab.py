@@ -116,6 +116,16 @@ class ScannerTab(QWidget):
         self._form_layout.addRow(self._phash_label, self.phash_threshold_input)
         self._advanced_widgets.extend([self._phash_label, self.phash_threshold_input])
 
+        # NCC Tiebreaker Threshold - ADVANCED
+        self._tiebreaker_label = QLabel()
+        self.tiebreaker_threshold_input = QDoubleSpinBox()
+        self.tiebreaker_threshold_input.setRange(0.0, 0.1)
+        self.tiebreaker_threshold_input.setSingleStep(0.001)
+        self.tiebreaker_threshold_input.setDecimals(3)
+        self.tiebreaker_threshold_input.setValue(0.002)
+        self._form_layout.addRow(self._tiebreaker_label, self.tiebreaker_threshold_input)
+        self._advanced_widgets.extend([self._tiebreaker_label, self.tiebreaker_threshold_input])
+
         # Debug Mode - ADVANCED
         self._debug_label = QLabel()
         self.debug_mode_input = QCheckBox()
@@ -210,6 +220,10 @@ class ScannerTab(QWidget):
         # Advanced: pHash Threshold
         self._phash_label.setText(t("scanner_tab.phash_threshold"))
         self._phash_label.setToolTip(t("scanner_tab.phash_tooltip"))
+
+        # Advanced: NCC Tiebreaker Threshold
+        self._tiebreaker_label.setText(t("scanner_tab.tiebreaker_threshold"))
+        self._tiebreaker_label.setToolTip(t("scanner_tab.tiebreaker_tooltip"))
 
         # Advanced: Debug Mode
         self._debug_label.setText(t("scanner_tab.debug_mode"))
@@ -306,6 +320,7 @@ class ScannerTab(QWidget):
         self.screenshots_folder_input.setText(settings.screenshots_folder or "")
         self.max_ncc_input.setValue(settings.max_ncc_candidates)
         self.phash_threshold_input.setValue(settings.phash_threshold)
+        self.tiebreaker_threshold_input.setValue(settings.ncc_tiebreaker_threshold)
 
     def get_values(self) -> ScannerSettings:
         """Get current values from widgets.
@@ -326,4 +341,5 @@ class ScannerTab(QWidget):
             screenshots_folder=self.screenshots_folder_input.text() or "",
             max_ncc_candidates=self.max_ncc_input.value(),
             phash_threshold=self.phash_threshold_input.value(),
+            ncc_tiebreaker_threshold=self.tiebreaker_threshold_input.value(),
         )

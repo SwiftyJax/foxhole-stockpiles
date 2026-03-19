@@ -1195,6 +1195,7 @@ class OCRCoordinator:
             confidence_gap=self.config.confidence_gap,
             max_ncc_candidates=self.config.max_ncc_candidates,
             phash_threshold=self.config.phash_threshold,
+            ncc_tiebreaker_threshold=self.config.ncc_tiebreaker_threshold,
             faction=faction,
             category=category,
             crated=crated,

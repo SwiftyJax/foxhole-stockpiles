@@ -31,6 +31,7 @@ class TestScannerSettingsInitialization:
         assert config.screenshots_folder == ""
         assert config.max_ncc_candidates == 25
         assert config.phash_threshold == 12
+        assert config.ncc_tiebreaker_threshold == 0.002
 
     def test_initialization_with_custom_values(self, tmp_path: Path) -> None:
         """Test initialization with custom values.
@@ -49,6 +50,7 @@ class TestScannerSettingsInitialization:
             screenshots_folder="screenshots",
             max_ncc_candidates=50,
             phash_threshold=15,
+            ncc_tiebreaker_threshold=0.005,
         )
 
         assert config.database_path == db_file
@@ -59,6 +61,7 @@ class TestScannerSettingsInitialization:
         assert config.screenshots_folder == "screenshots"
         assert config.max_ncc_candidates == 50
         assert config.phash_threshold == 15
+        assert config.ncc_tiebreaker_threshold == 0.005
 
 
 class TestDatabasePath:
@@ -152,6 +155,32 @@ class TestFieldConstraints:
 
         config_max = ScannerSettings(confidence_gap=1.0)
         assert config_max.confidence_gap == 1.0
+
+    def test_ncc_tiebreaker_threshold_below_minimum(self) -> None:
+        """Test ncc_tiebreaker_threshold validation fails below 0.0."""
+        with pytest.raises(ValidationError) as exc_info:
+            ScannerSettings(ncc_tiebreaker_threshold=-0.001)
+
+        assert "greater than or equal to 0" in str(exc_info.value)
+
+    def test_ncc_tiebreaker_threshold_above_maximum(self) -> None:
+        """Test ncc_tiebreaker_threshold validation fails above 0.1."""
+        with pytest.raises(ValidationError) as exc_info:
+            ScannerSettings(ncc_tiebreaker_threshold=0.15)
+
+        assert "less than or equal to 0.1" in str(exc_info.value)
+
+    def test_ncc_tiebreaker_threshold_valid_values(self) -> None:
+        """Test that valid ncc_tiebreaker_threshold values are accepted."""
+        # Test boundary values
+        config_min = ScannerSettings(ncc_tiebreaker_threshold=0.0)
+        assert config_min.ncc_tiebreaker_threshold == 0.0
+
+        config_default = ScannerSettings(ncc_tiebreaker_threshold=0.002)
+        assert config_default.ncc_tiebreaker_threshold == 0.002
+
+        config_max = ScannerSettings(ncc_tiebreaker_threshold=0.1)
+        assert config_max.ncc_tiebreaker_threshold == 0.1
 
 
 class TestModelConfigSettings:
