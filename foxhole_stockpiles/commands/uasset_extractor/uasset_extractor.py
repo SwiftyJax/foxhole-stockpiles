@@ -284,7 +284,8 @@ class PakExtractor:
                 version_info = f.read().lower()
                 if "microsoft" not in version_info:
                     return None
-        except Exception:
+        except OSError:
+            # File doesn't exist or can't be read - not running on Linux/WSL
             return None
 
         # Try to get Windows TEMP directory
@@ -315,7 +316,8 @@ class PakExtractor:
             # Verify it exists and is writable
             if os.path.exists(wsl_temp_path) and os.access(wsl_temp_path, os.W_OK):
                 return wsl_temp_path
-        except Exception:
+        except (subprocess.SubprocessError, subprocess.TimeoutExpired, OSError):
+            # Subprocess failed, timed out, or path operations failed
             pass
 
         return None
@@ -442,7 +444,8 @@ class PakExtractor:
                     try:
                         process.terminate()
                         await process.wait()
-                    except Exception:
+                    except (ProcessLookupError, OSError):
+                        # Process already terminated or cleanup failed
                         pass
 
         # If we get here, file wasn't found in any PAK
@@ -561,7 +564,8 @@ class PakExtractor:
                 try:
                     process.terminate()
                     await process.wait()
-                except Exception:
+                except (ProcessLookupError, OSError):
+                    # Process already terminated or cleanup failed
                     pass
 
     def get_files_to_extract(self) -> set[str]:

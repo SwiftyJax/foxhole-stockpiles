@@ -249,7 +249,8 @@ class TemplateManager:
                 with open(file_path, "rb") as f:
                     pickle.load(f)
                 return 1  # Pickle format is version 1
-            except Exception:
+            except (pickle.UnpicklingError, EOFError, ValueError, TypeError, AttributeError):
+                # Invalid pickle format or corrupted file
                 return 0  # Invalid or unknown format
 
     def get_database_statistics(self) -> DatabaseStatistics:

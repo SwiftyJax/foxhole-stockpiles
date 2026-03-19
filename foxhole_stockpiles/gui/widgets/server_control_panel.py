@@ -3,6 +3,7 @@
 import logging
 from pathlib import Path
 
+from pydantic import ValidationError
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor
 from PyQt6.QtWidgets import (
@@ -247,7 +248,10 @@ class ServerControlPanel(QWidget):
                     is_valid = True
                     db_info = f"Database: {display_path}  |  Mods: {mods_text}"
 
-                except Exception as e:
+                except (FileNotFoundError, ValueError, OSError) as e:
+                    # FileNotFoundError: database file missing
+                    # ValueError: invalid database format
+                    # OSError: database read error
                     logger.error(f"Failed to load database statistics: {e}")
                     error_message = (
                         f"<b>⚠️ {t('server_panel.errors.database_error_title')}</b><br><br>"
@@ -255,8 +259,10 @@ class ServerControlPanel(QWidget):
                         f"<small>{str(e)[:100]}</small>"
                     )
 
-        except Exception:
-            # No config file exists
+        except (ValidationError, OSError, ValueError):
+            # ValidationError: invalid config values
+            # OSError: config file read error
+            # ValueError: JSON decode error or invalid data
             error_message = (
                 f"<b>⚙️ {t('server_panel.errors.no_config_title')}</b><br><br>"
                 f"{t('server_panel.errors.no_config_message')}"

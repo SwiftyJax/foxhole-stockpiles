@@ -2,6 +2,7 @@
 
 import logging
 
+from pydantic import ValidationError
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction, QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
 from PyQt6.QtWidgets import (
@@ -297,8 +298,11 @@ class MainWindow(QMainWindow):
             settings = AppSettings()
             if settings.scanner.database_path:
                 initial_db_path = str(settings.scanner.database_path)
-        except Exception:
-            pass  # No config or error loading, will start with empty
+        except (ValidationError, OSError, ValueError):
+            # ValidationError: invalid config values
+            # OSError: config file read error
+            # ValueError: JSON decode error or invalid data
+            pass
 
         info_window = DatabaseInfoWindow(self, initial_db_path=initial_db_path)
 
@@ -320,8 +324,11 @@ class MainWindow(QMainWindow):
             settings = AppSettings()
             if settings.scanner.database_path:
                 database_path = str(settings.scanner.database_path)
-        except Exception:
-            pass  # No config or error loading
+        except (ValidationError, OSError, ValueError):
+            # ValidationError: invalid config values
+            # OSError: config file read error
+            # ValueError: JSON decode error or invalid data
+            pass
 
         if not database_path:
             QMessageBox.warning(
@@ -351,8 +358,11 @@ class MainWindow(QMainWindow):
             settings = AppSettings()
             if settings.scanner.database_path:
                 database_path = str(settings.scanner.database_path)
-        except Exception:
-            pass  # No config or error loading
+        except (ValidationError, OSError, ValueError):
+            # ValidationError: invalid config values
+            # OSError: config file read error
+            # ValueError: JSON decode error or invalid data
+            pass
 
         if not database_path:
             QMessageBox.warning(

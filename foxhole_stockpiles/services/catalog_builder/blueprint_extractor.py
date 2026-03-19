@@ -8,6 +8,7 @@ This module handles the infrastructure layer:
 
 import asyncio
 import logging
+import subprocess
 import tempfile
 from pathlib import Path
 
@@ -124,8 +125,11 @@ class BlueprintExtractor:
         self.logger.info("Stage 1: Extracting from PAK...")
         try:
             extract_dir = await self.extract_from_pak()
-        except Exception:
-            self.logger.error("Failed to extract PAK file")
+        except (OSError, RuntimeError, subprocess.SubprocessError) as e:
+            # OSError: file system errors
+            # RuntimeError: extraction logic errors
+            # SubprocessError: repak tool failures
+            self.logger.error("Failed to extract PAK file: %s", e)
             raise
 
         # Stage 2: Convert to JSON

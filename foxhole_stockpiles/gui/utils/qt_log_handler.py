@@ -56,7 +56,10 @@ class QtLogHandler(logging.Handler, QObject):
                 "color": color,
             }
             self.log_message.emit(log_data)
-        except Exception:
+        except (RuntimeError, ValueError, AttributeError):
+            # RuntimeError: Qt C++ object deleted
+            # ValueError: formatting error
+            # AttributeError: signal disconnected
             self.handleError(record)
 
     def __getattribute__(self, name: str) -> object:

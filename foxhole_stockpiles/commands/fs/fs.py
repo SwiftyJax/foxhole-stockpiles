@@ -51,8 +51,11 @@ def _attach_console() -> None:
             stderr_fd = msvcrt.open_osfhandle(stderr_handle, os.O_WRONLY | os.O_TEXT)
             sys.stderr = open(stderr_fd, "w", encoding="utf-8", buffering=1)
 
-    except Exception:
+    except (OSError, ValueError, AttributeError):
         # Silently ignore errors - output may not work but won't crash
+        # OSError: console/file descriptor issues
+        # ValueError: invalid file descriptor
+        # AttributeError: missing windll attributes on non-Windows
         pass
 
 
