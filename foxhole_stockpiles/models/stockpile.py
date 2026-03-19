@@ -14,7 +14,7 @@ class Stockpile(BaseModel):
 
     name: str = Field(description="Name of the stockpile", default="")
     type: StockpileType = Field(description="Type of stockpile", default=StockpileType.UNDEFINED)
-    items: list[StockpileItem] = Field(description="List of items", default=[])
+    items: list[StockpileItem] = Field(description="List of items", default_factory=list)
     timestamp: datetime = Field(description="last update datetime", default_factory=datetime.now)
     shard: str = Field(description="Shard name", default="")
     ingame_timestamp: str = Field(description="In game timestamp", default="")

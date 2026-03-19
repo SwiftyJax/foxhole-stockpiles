@@ -6,7 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 class LoggingSettings(BaseModel):
     """Settings for logging."""
 
-    loggers: dict[str, str] = Field(description="Loggers and their levels", default={})
+    loggers: dict[str, str] = Field(description="Loggers and their levels", default_factory=dict)
     log_level: str = Field(description="Logging level", default="INFO")
     log_format: str = Field(
         description="Logging format",
