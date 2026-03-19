@@ -1,5 +1,6 @@
 """Tests for ScannerClient."""
 
+import base64
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
@@ -57,7 +58,8 @@ def test_client_initialization_with_basic_auth(mock_settings: MagicMock) -> None
         mock_settings (MagicMock): Mock settings
     """
     mock_settings.api_auth.auth_type = "basic"
-    mock_settings.api_auth.auth_token = "user:pass"
+    # Token must be base64 encoded "username:password"
+    mock_settings.api_auth.auth_token = base64.b64encode(b"user:pass").decode("utf-8")
 
     with patch(
         "foxhole_stockpiles.gui.utils.scanner_client.get_settings", return_value=mock_settings

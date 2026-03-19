@@ -1,5 +1,6 @@
 """Client for calling the scanner API."""
 
+import base64
 import logging
 from pathlib import Path
 from typing import Any
@@ -22,9 +23,16 @@ class ScannerClient:
 
         # Setup auth if configured
         if settings.api_auth.auth_type == "basic" and settings.api_auth.auth_token:
-            if ":" in settings.api_auth.auth_token:
-                username, password = settings.api_auth.auth_token.split(":", 1)
-                self.auth = (username, password)
+            # Token must be base64 encoded "username:password" per settings documentation
+            try:
+                decoded = base64.b64decode(settings.api_auth.auth_token).decode("utf-8")
+                if ":" in decoded:
+                    username, password = decoded.split(":", 1)
+                    self.auth = (username, password)
+                else:
+                    logger.error("Invalid basic auth token: missing ':' separator")
+            except (ValueError, UnicodeDecodeError) as e:
+                logger.error("Invalid base64 auth token: %s", e)
 
     def scan_screenshot(self, filepath: str) -> tuple[bool, str]:
         """Scan a screenshot file.
