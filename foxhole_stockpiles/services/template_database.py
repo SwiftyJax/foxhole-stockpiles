@@ -255,7 +255,7 @@ class TemplateDatabase:
         if version != DATABASE_VERSION:
             raise ValueError(
                 f"HDF5 group {group.name} has version {version}, expected {DATABASE_VERSION}. "
-                f"Run 'fs update-db' to migrate your database."
+                f"Please regenerate your database using 'fs generate-templates'."
             )
 
         # Create database instance

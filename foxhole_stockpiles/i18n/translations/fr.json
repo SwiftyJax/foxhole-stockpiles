@@ -152,7 +152,7 @@
   "scanner_tab": {
     "database_path": "Chemin base de données :",
     "database_path_placeholder": "Chemin vers la base de données de modèles (fichier .h5)",
-    "database_path_tooltip": "Chemin vers le fichier de base de données de modèles contenant les icônes d'objets pour la reconnaissance.\n\nCeci est un fichier HDF5 (.h5) requis qui doit être généré avant le scan.\nUtilisez la commande 'update-db' pour créer ou mettre à jour ce fichier.",
+    "database_path_tooltip": "Chemin vers le fichier de base de données de modèles contenant les icônes d'objets pour la reconnaissance.\n\nCeci est un fichier HDF5 (.h5) requis qui doit être généré avant le scan.\nUtilisez la commande 'generate-templates' pour créer ce fichier.",
     "cache_size": "Taille cache modèles :",
     "cache_size_tooltip": "Nombre de résolutions de modèles à garder en mémoire pour une correspondance plus rapide.\n\nMaximum : 16 (nombre total de résolutions supportées).\nDéfinir plus de 16 n'a aucun effet.\nRecommandé : 0, 1, ou 2 pour les serveurs à faible mémoire.",
     "early_exit": "Seuil sortie anticipée :",

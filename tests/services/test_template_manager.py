@@ -1395,7 +1395,7 @@ class TestMigrateDatabase:
         assert f"already at version {DATABASE_VERSION}" in str(exc_info.value)
 
     def test_migrate_unknown_version(self, tmp_path: Path) -> None:
-        """Test migration handles unknown version with warning.
+        """Test migration raises error for unknown version.
 
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
@@ -1409,82 +1409,17 @@ class TestMigrateDatabase:
 
         manager = TemplateManager(db_path)
 
-        # Mock _check_database_version to return version -1:
+        # Mock _check_database_version to return version 1:
         # - Not 0 (passes corrupted check)
         # - Not DATABASE_VERSION (passes already current check)
         # - Less than DATABASE_VERSION (enters while loop)
-        # - Not 1 (hits case _: for warning)
-        # Also mock _migrate_v1_to_v2 since the loop will eventually hit case 1
-        with (
-            patch.object(manager, "_check_database_version", return_value=-1),
-            patch.object(manager, "_migrate_v1_to_v2"),
-            patch("foxhole_stockpiles.services.template_manager.logger") as mock_logger,
-        ):
-            manager.migrate_database()
+        # - Hits case _: which now raises ValueError
+        with patch.object(manager, "_check_database_version", return_value=1):
+            with pytest.raises(ValueError) as exc_info:
+                manager.migrate_database()
 
-            # Should log a warning about no migration path from version -1 to 0
-            mock_logger.warning.assert_called()
-            warning_call = str(mock_logger.warning.call_args)
-            assert "No migration path" in warning_call
-
-
-class TestMigrateV1ToV2:
-    """Test suite for TemplateManager._migrate_v1_to_v2 method."""
-
-    def test_migrate_v1_nonexistent_input(self, tmp_path: Path) -> None:
-        """Test migration fails when input file doesn't exist.
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        db_path = tmp_path / "db.h5"
-        manager = TemplateManager(db_path)
-
-        nonexistent_path = tmp_path / "nonexistent.pkl"
-
-        with pytest.raises(FileNotFoundError) as exc_info:
-            manager._migrate_v1_to_v2(nonexistent_path)
-
-        assert "Database file not found" in str(exc_info.value)
-
-    def test_migrate_v1_invalid_pickle(self, tmp_path: Path) -> None:
-        """Test migration fails when file is not a valid pickle.
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        db_path = tmp_path / "db.h5"
-        manager = TemplateManager(db_path)
-
-        # Create a file that's not a valid pickle
-        invalid_pickle = tmp_path / "invalid.pkl"
-        invalid_pickle.write_text("this is not a pickle file")
-
-        with pytest.raises(ValueError) as exc_info:
-            manager._migrate_v1_to_v2(invalid_pickle)
-
-        assert "Failed to load pickle database" in str(exc_info.value)
-
-    def test_migrate_v1_not_a_dict(self, tmp_path: Path) -> None:
-        """Test migration fails when pickle doesn't contain a dict.
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        import pickle
-
-        db_path = tmp_path / "db.h5"
-        manager = TemplateManager(db_path)
-
-        # Create a valid pickle file that contains a list instead of dict
-        not_dict_pickle = tmp_path / "not_dict.pkl"
-        with open(not_dict_pickle, "wb") as f:
-            pickle.dump(["this", "is", "a", "list"], f)
-
-        with pytest.raises(ValueError) as exc_info:
-            manager._migrate_v1_to_v2(not_dict_pickle)
-
-        assert "Expected dict of databases, got list" in str(exc_info.value)
+            assert "No migration path" in str(exc_info.value)
+            assert "regenerate the database" in str(exc_info.value)
 
 
 class TestTemplateManagerEdgeCases:

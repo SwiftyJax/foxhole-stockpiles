@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.3.0] - 2025-12-24
 
 ### Added
-- **HDF5 Database Format**: Migrated from pickle to HDF5 for 20-40% memory reduction and faster loading (use `fs update-db` to convert)
+- **HDF5 Database Format**: Migrated from pickle to HDF5 for 20-40% memory reduction and faster loading
 - **Memory Monitoring System**: Complete profiling with `/memory/stats` and `/memory/gc` API endpoints, automatic trimming after each scan
 - **Git Version Tracking**: Startup logs show commit hash, date, and dirty status (baked into Docker images at build time)
 - **Match Quality Statistics**: Scan logs include unique vs alternative matches to assess detection confidence
@@ -74,7 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Performance Documentation**: Detailed metrics in README (99.99% detection rate, 1-2s scan time)
 
 ### Changed
-- **BREAKING**: Database format from .pkl to .h5 - existing databases must be migrated with `fs update-db`
+- **BREAKING**: Database format from .pkl to .h5 - existing databases must be regenerated with `fs generate-templates`
 - **BREAKING**: Language, faction, and mod are now method parameters instead of global scanner settings
 - **Configuration**: Split into logical sections (api, scanner, notifications, output) with separate format/destination settings
 - **Architecture**: OCRCoordinator and OutputCoordinator are now stateless singletons for better memory efficiency

@@ -152,38 +152,6 @@ def reset_logging() -> Generator[None, None, None]:
 
 
 @pytest.fixture
-def mock_database_file(temp_dir: Path) -> Path:
-    """Create a mock database file for testing.
-
-    Args:
-        temp_dir (Path): Temporary directory path from the temp_dir fixture.
-
-    Returns:
-        Path: Path to the created mock database file containing template databases
-            for different resolutions (1080p and 1440p).
-    """
-    import pickle
-    from unittest.mock import MagicMock
-
-    from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
-    from foxhole_stockpiles.services.template_database import TemplateDatabase
-
-    db_path = temp_dir / "test_database.pkl"
-
-    # Create mock databases for different resolutions
-    databases = {}
-    for resolution in [SupportedResolution.R_1080, SupportedResolution.R_1440]:
-        mock_db = MagicMock(spec=TemplateDatabase)
-        mock_db.resolution = resolution
-        databases[resolution] = mock_db
-
-    with open(db_path, "wb") as f:
-        pickle.dump(databases, f)
-
-    return db_path
-
-
-@pytest.fixture
 def mock_pak_file(temp_dir: Path) -> Path:
     """Create a mock PAK file for testing.
 
@@ -218,22 +186,3 @@ def mock_catalog_file(temp_dir: Path, sample_catalog_data: list[dict[str, Any]])
         json.dump(sample_catalog_data, f)
 
     return catalog_path
-
-
-@pytest.fixture
-def test_db_v1_fixture() -> Path:
-    """Provide path to the v1 pickle test database fixture.
-
-    Returns:
-        Path: Path to the committed test database fixture (v1 pickle format).
-    """
-    fixtures_dir = Path(__file__).parent / "fixtures"
-    db_path = fixtures_dir / "test_db_v1.pkl"
-
-    if not db_path.exists():
-        raise FileNotFoundError(
-            f"Test database fixture not found: {db_path}\n"
-            f"Run: python tests/fixtures/create_test_db.py"
-        )
-
-    return db_path

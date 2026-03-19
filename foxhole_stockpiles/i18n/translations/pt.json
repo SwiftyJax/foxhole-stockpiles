@@ -152,7 +152,7 @@
   "scanner_tab": {
     "database_path": "Caminho da base de dados:",
     "database_path_placeholder": "Caminho para a base de dados de modelos (ficheiro .h5)",
-    "database_path_tooltip": "Caminho para o ficheiro de base de dados de modelos que contém ícones de objetos para reconhecimento.\n\nEste é um ficheiro HDF5 (.h5) obrigatório que deve ser gerado antes de digitalizar.\nUse o comando 'update-db' para criar ou atualizar este ficheiro.",
+    "database_path_tooltip": "Caminho para o ficheiro de base de dados de modelos que contém ícones de objetos para reconhecimento.\n\nEste é um ficheiro HDF5 (.h5) obrigatório que deve ser gerado antes de digitalizar.\nUse o comando 'generate-templates' para criar este ficheiro.",
     "cache_size": "Tamanho da cache de modelos:",
     "cache_size_tooltip": "Número de resoluções de modelos a manter em memória para correspondências mais rápidas.\n\nMáximo: 16 (número total de resoluções suportadas).\nDefinir mais de 16 não tem efeito.\nRecomendado: 0, 1, ou 2 para servidores com pouca memória.",
     "early_exit": "Limiar de saída antecipada:",

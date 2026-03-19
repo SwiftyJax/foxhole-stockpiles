@@ -3,7 +3,6 @@
 import asyncio
 import logging
 import os
-import pickle
 import time
 from collections import OrderedDict
 from multiprocessing import Pool
@@ -233,7 +232,7 @@ class TemplateManager:
             file_path (Path): Path to database file
 
         Returns:
-            int: Version number (0=invalid/unknown, 1=pickle, 2+=HDF5 with version)
+            int: Version number (0=invalid/unknown, 2+=HDF5 with version)
         """
         try:
             # Try to open as HDF5
@@ -243,15 +242,9 @@ class TemplateManager:
                     return int(f.attrs["version"])  # type: ignore[arg-type]
                 # Valid HDF5 but no version attribute (shouldn't happen, but treat as v2)
                 return 2
-        except (OSError, Exception):
-            # Not HDF5, check if it's pickle
-            try:
-                with open(file_path, "rb") as f:
-                    pickle.load(f)
-                return 1  # Pickle format is version 1
-            except (pickle.UnpicklingError, EOFError, ValueError, TypeError, AttributeError):
-                # Invalid pickle format or corrupted file
-                return 0  # Invalid or unknown format
+        except OSError:
+            # Not a valid HDF5 file
+            return 0
 
     def get_database_statistics(self) -> DatabaseStatistics:
         """Get database statistics without loading full template data.
@@ -328,9 +321,8 @@ class TemplateManager:
 
         if db_version != DATABASE_VERSION:
             raise ValueError(
-                f"Database version {db_version} does not match expected version {DATABASE_VERSION}."
-                f" Please migrate your database using: "
-                f"fs update-db --database-path {self.database_path}"
+                f"Database version {db_version} does not match expected version "
+                f"{DATABASE_VERSION}. Please regenerate using 'fs generate-templates'."
             )
 
         # Get available resolutions from HDF5 file
@@ -352,8 +344,7 @@ class TemplateManager:
     async def load_database(self, resolution: SupportedResolution) -> TemplateDatabase:
         """Load or get cached database for specific resolution.
 
-        Supports HDF5 format (version 2). Old pickle formats (version 1) must be migrated
-        using 'fs update-db' command.
+        Supports HDF5 format (version 2+).
 
         Uses LRU cache based on template_cache_size setting:
         - cache_size = 0: No caching, always load from disk
@@ -403,9 +394,8 @@ class TemplateManager:
 
         if db_version != DATABASE_VERSION:
             raise ValueError(
-                f"Database version {db_version} does not match expected version {DATABASE_VERSION}."
-                f"Please migrate your database using: "
-                f"fs update-db --database-path {self.database_path}"
+                f"Database version {db_version} does not match expected version "
+                f"{DATABASE_VERSION}. Please regenerate using 'fs generate-templates'."
             )
 
         # Load from HDF5 file
@@ -920,82 +910,15 @@ class TemplateManager:
             logger.info("Applying migration: v%d → v%d", current_version, next_version)
 
             match current_version:
-                case 1:
-                    self._migrate_v1_to_v2(
-                        input_path=self.database_path, output_path=output_path, workers=workers
-                    )
                 case _:
-                    logger.warning(
-                        f"No migration path from version {current_version} to {next_version}"
+                    raise ValueError(
+                        f"No migration path from version {current_version} to {next_version}. "
+                        "Please regenerate the database using 'fs generate-templates'."
                     )
 
             current_version = next_version
 
         logger.info("Migration complete: now at version %d", DATABASE_VERSION)
-
-    def _migrate_v1_to_v2(
-        self, input_path: Path, output_path: Path | None = None, workers: int | None = None
-    ) -> None:
-        """Migrate v1 (pickle) database to v2 (HDF5) format.
-
-        Args:
-            input_path (Path): Input pickle database path
-            output_path (Path | None): Output path for HDF5 file. If None, uses
-                input_path with .h5 extension
-            workers (int | None): Number of worker processes for parallel data preparation.
-                If None, uses os.cpu_count(). Set to 1 to disable multiprocessing.
-
-        Raises:
-            FileNotFoundError: If input_path doesn't exist
-            ValueError: If file is not a valid pickle database
-        """
-        if not input_path.exists():
-            raise FileNotFoundError(f"Database file not found: {input_path}")
-
-        # Determine output path
-        _output_path = output_path or input_path.with_suffix(".h5")
-
-        # Load pickle file
-        load_start = time.perf_counter()
-        with open(input_path, "rb") as f:
-            try:
-                all_databases = pickle.load(f)
-            except Exception as e:
-                raise ValueError(f"Failed to load pickle database: {e}") from e
-        load_time = time.perf_counter() - load_start
-        logger.info("Pickle load time: %.2f seconds", load_time)
-
-        if not isinstance(all_databases, dict):
-            raise ValueError(f"Expected dict of databases, got {type(all_databases).__name__}")
-
-        # Get pickle file size before conversion
-        pickle_size_mb = input_path.stat().st_size / (1024 * 1024)
-
-        # Convert to HDF5 using centralized method
-        logger.debug("Converting %d resolution(s)...", len(all_databases))
-        convert_start = time.perf_counter()
-        self.save_databases_to_hdf5(
-            databases=all_databases, output_path=_output_path, workers=workers
-        )
-        convert_time = time.perf_counter() - convert_start
-        logger.info("HDF5 conversion time: %.2f seconds", convert_time)
-
-        # Get HDF5 file size after conversion
-        hdf5_size_mb = _output_path.stat().st_size / (1024 * 1024)
-
-        logger.info(
-            "Migration complete: %d resolutions, %.1f MB -> %.1f MB (%.1f%% of original)",
-            len(all_databases),
-            pickle_size_mb,
-            hdf5_size_mb,
-            (hdf5_size_mb / pickle_size_mb * 100) if pickle_size_mb > 0 else 0,
-        )
-        logger.info(
-            "Total time: %.2f seconds (load: %.2f, convert: %.2f)",
-            load_time + convert_time,
-            load_time,
-            convert_time,
-        )
 
     def __repr__(self) -> str:
         """String representation of the template manager."""

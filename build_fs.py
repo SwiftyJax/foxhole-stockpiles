@@ -67,7 +67,6 @@ def get_hidden_imports() -> list[str]:
         "foxhole_stockpiles.commands.gui.gui",
         "foxhole_stockpiles.commands.add_icon.add_icon",
         "foxhole_stockpiles.commands.add_mod.add_mod",
-        "foxhole_stockpiles.commands.update_db.update_db",
         "foxhole_stockpiles.commands.update_config.update_config",
         # PyQt6 dependencies (for GUI)
         "PyQt6",

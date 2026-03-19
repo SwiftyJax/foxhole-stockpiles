@@ -153,7 +153,7 @@
   "scanner_tab": {
     "database_path": "Database Path:",
     "database_path_placeholder": "Path to template database (.h5 file)",
-    "database_path_tooltip": "Path to the template database file containing item icons for recognition.\n\nThis is a required HDF5 (.h5) file that must be generated before scanning.\nUse the 'update-db' command to create or update this file.",
+    "database_path_tooltip": "Path to the template database file containing item icons for recognition.\n\nThis is a required HDF5 (.h5) file that must be generated before scanning.\nUse the 'generate-templates' command to create this file.",
     "cache_size": "Template Cache Size:",
     "cache_size_tooltip": "Number of template resolutions to keep in memory for faster matching.\n\nMaximum: 16 (total number of supported resolutions).\nSetting higher than 16 has no effect.\nRecommended: 0, 1, or 2 for low-memory servers.",
     "early_exit": "Early Exit Threshold:",

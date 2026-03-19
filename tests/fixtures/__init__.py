@@ -1,1 +1,1 @@
-"""Test fixtures for update-db tests."""
+"""Test fixtures for database tests."""

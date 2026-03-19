@@ -100,9 +100,6 @@ Manually adds individual icons to existing template databases without rebuilding
 ### fs add-mod
 Adds all icons from a mod's PAK file(s) to the template database in one command. Runs the complete pipeline: extracting assets, generating templates, and merging into the database.
 
-### fs update-db
-Migrates template databases to the latest format version with automatic sequential migration (v1→v2→v3). Converts legacy pickle databases to HDF5 format for better memory efficiency and faster loading.
-
 ### fs update-config
 Updates `.fs_config` configuration files to the latest format version with automatic migration.
 
@@ -671,7 +668,6 @@ Each CLI tool has detailed documentation in its directory:
 - [API Server](foxhole_stockpiles/commands/api_server/README.md) - HTTP API server
 - [Add Icon](foxhole_stockpiles/commands/add_icon/README.md) - Add individual icons to databases
 - [Add Mod](foxhole_stockpiles/commands/add_mod/README.md) - Add mod icons to databases
-- [Update DB](foxhole_stockpiles/commands/update_db/README.md) - Migrate template databases
 - [Update Config](foxhole_stockpiles/commands/update_config/README.md) - Migrate configuration files
 - [GUI](foxhole_stockpiles/commands/gui/README.md) - Graphical user interface
 

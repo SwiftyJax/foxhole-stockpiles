@@ -152,7 +152,7 @@
   "scanner_tab": {
     "database_path": "数据库路径：",
     "database_path_placeholder": "模板数据库路径（.h5 文件）",
-    "database_path_tooltip": "包含用于识别的物品图标的模板数据库文件路径。\n\n这是一个必需的 HDF5（.h5）文件，必须在扫描前生成。\n使用 'update-db' 命令创建或更新此文件。",
+    "database_path_tooltip": "包含用于识别的物品图标的模板数据库文件路径。\n\n这是一个必需的 HDF5（.h5）文件，必须在扫描前生成。\n使用 'generate-templates' 命令创建此文件。",
     "cache_size": "模板缓存大小：",
     "cache_size_tooltip": "保留在内存中用于更快匹配的模板分辨率数量。\n\n最大：16（支持的分辨率总数）。\n设置高于 16 没有效果。\n推荐：内存较少的服务器使用 0、1 或 2。",
     "early_exit": "提前退出阈值：",

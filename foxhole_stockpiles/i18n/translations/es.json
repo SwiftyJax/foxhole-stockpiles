@@ -152,7 +152,7 @@
   "scanner_tab": {
     "database_path": "Ruta de base de datos:",
     "database_path_placeholder": "Ruta a la base de datos de plantillas (archivo .h5)",
-    "database_path_tooltip": "Ruta al archivo de base de datos de plantillas que contiene iconos de objetos para reconocimiento.\n\nEste es un archivo HDF5 (.h5) requerido que debe generarse antes de escanear.\nUse el comando 'update-db' para crear o actualizar este archivo.",
+    "database_path_tooltip": "Ruta al archivo de base de datos de plantillas que contiene iconos de objetos para reconocimiento.\n\nEste es un archivo HDF5 (.h5) requerido que debe generarse antes de escanear.\nUse el comando 'generate-templates' para crear este archivo.",
     "cache_size": "Tamaño de caché de plantillas:",
     "cache_size_tooltip": "Número de resoluciones de plantillas a mantener en memoria para coincidencias más rápidas.\n\nMáximo: 16 (número total de resoluciones soportadas).\nEstablecer más de 16 no tiene efecto.\nRecomendado: 0, 1, o 2 para servidores con poca memoria.",
     "early_exit": "Umbral de salida temprana:",

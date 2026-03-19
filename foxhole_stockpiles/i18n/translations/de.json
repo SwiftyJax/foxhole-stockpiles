@@ -152,7 +152,7 @@
   "scanner_tab": {
     "database_path": "Datenbankpfad:",
     "database_path_placeholder": "Pfad zur Vorlagen-Datenbank (.h5-Datei)",
-    "database_path_tooltip": "Pfad zur Vorlagen-Datenbankdatei mit Objektsymbolen für die Erkennung.\n\nDies ist eine erforderliche HDF5 (.h5) Datei, die vor dem Scannen erstellt werden muss.\nVerwenden Sie den 'update-db' Befehl um diese Datei zu erstellen oder zu aktualisieren.",
+    "database_path_tooltip": "Pfad zur Vorlagen-Datenbankdatei mit Objektsymbolen für die Erkennung.\n\nDies ist eine erforderliche HDF5 (.h5) Datei, die vor dem Scannen erstellt werden muss.\nVerwenden Sie den 'generate-templates' Befehl um diese Datei zu erstellen.",
     "cache_size": "Vorlagen-Cache-Größe:",
     "cache_size_tooltip": "Anzahl der Vorlagenauflösungen, die für schnelleres Matching im Speicher gehalten werden.\n\nMaximum: 16 (Gesamtzahl unterstützter Auflösungen).\nWerte über 16 haben keine Wirkung.\nEmpfohlen: 0, 1 oder 2 für Server mit wenig Speicher.",
     "early_exit": "Vorzeitiger Abbruchschwellwert:",
