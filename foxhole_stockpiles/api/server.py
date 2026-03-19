@@ -191,12 +191,12 @@ if app_settings.api_server.enable_memory_monitoring or app_settings.api_server.a
 app.state.limiter = limiter
 
 
-def rate_limit_exceeded_handler(request: Request, exc: Exception) -> Response:
+def rate_limit_exceeded_handler(request: Request, _exc: Exception) -> Response:
     """Handle rate limit exceeded exceptions.
 
     Args:
         request (Request): The request that triggered the rate limit.
-        exc (Exception): The RateLimitExceeded exception.
+        _exc (Exception): The RateLimitExceeded exception (unused).
 
     Returns:
         Response: JSON response with 429 status code.

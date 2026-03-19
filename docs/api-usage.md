@@ -284,13 +284,15 @@ The API returns standard HTTP status codes:
 | 401 | Unauthorized - authentication required or invalid |
 | 404 | Not Found - endpoint doesn't exist |
 | 405 | Method Not Allowed - wrong HTTP method |
+| 413 | Content Too Large - file exceeds 10MB limit |
+| 429 | Too Many Requests - rate limit exceeded |
 | 500 | Server Error - processing failed |
 
 Always check the `detail` field in error responses for specific error messages.
 
 ## CORS Configuration
 
-The API allows all origins by default (`["*"]`). For production, restrict origins using configuration:
+The API has CORS disabled by default (empty origin list `[]`). For cross-origin requests, configure allowed origins:
 
 **Environment variable:**
 ```bash
@@ -306,14 +308,28 @@ export FS_API_SERVER__CORS_ALLOW_ORIGINS='["https://yourdomain.com","https://app
 }
 ```
 
+**Note:** Same-origin requests (requests from the same host/port as the API) are not affected by CORS configuration.
+
 See [Configuration Guide](configuration.md) for more details.
 
 ## Rate Limiting
 
-The API currently has no built-in rate limiting. For production deployments, consider:
-- Using a reverse proxy (nginx, Caddy) with rate limiting
-- Implementing rate limiting middleware
-- Using a cloud API gateway
+The API includes built-in rate limiting to prevent abuse:
+
+| Endpoint | Rate Limit |
+|----------|------------|
+| `/ocr/scan_image` | 30 requests per minute |
+
+When rate limit is exceeded, the API returns HTTP 429 (Too Many Requests):
+```json
+{
+  "detail": "Rate limit exceeded"
+}
+```
+
+For higher throughput requirements, consider:
+- Running multiple API server instances behind a load balancer
+- Using a reverse proxy (nginx, Caddy) with custom rate limiting rules
 
 ## Authentication
 

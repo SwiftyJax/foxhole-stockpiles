@@ -29,7 +29,7 @@ class TestAPIServerMain:
         mock_get_settings.return_value = mock_settings
 
         # Mock sys.argv to simulate no arguments
-        with patch("sys.argv", ["fs-server"]):
+        with patch("sys.argv", ["fs server"]):
             result = main()
 
         # Verify uvicorn.run was called with settings defaults
@@ -65,7 +65,7 @@ class TestAPIServerMain:
         with patch(
             "sys.argv",
             [
-                "fs-server",
+                "fs server",
                 "--host",
                 "0.0.0.0",
                 "--port",
@@ -108,7 +108,7 @@ class TestAPIServerMain:
         mock_get_settings.return_value = mock_settings
 
         # Mock sys.argv with --reload flag
-        with patch("sys.argv", ["fs-server", "--reload"]):
+        with patch("sys.argv", ["fs server", "--reload"]):
             result = main()
 
         # Verify reload is True
@@ -140,7 +140,7 @@ class TestAPIServerMain:
         mock_uvicorn_run.side_effect = Exception("Port already in use")
 
         # Mock sys.argv
-        with patch("sys.argv", ["fs-server"]):
+        with patch("sys.argv", ["fs server"]):
             result = main()
 
         # Verify error handling
@@ -167,7 +167,7 @@ class TestAPIServerMain:
         mock_get_settings.return_value = mock_settings
 
         # Mock sys.argv with only port override
-        with patch("sys.argv", ["fs-server", "--port", "9000"]):
+        with patch("sys.argv", ["fs server", "--port", "9000"]):
             result = main()
 
         # Verify CLI port is used, but other settings come from config

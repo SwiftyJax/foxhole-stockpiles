@@ -91,7 +91,7 @@ class TestBlueprintExtractorInit:
         converter_tool = temp_dir / "UAssetGUI"
         converter_tool.touch()
 
-        with pytest.raises(FileNotFoundError, match="Extractor tool not found"):
+        with pytest.raises(FileNotFoundError, match="Tool not found"):
             BlueprintExtractor(pak_file, temp_dir / "missing", converter_tool)
 
     def test_init_raises_for_missing_converter(self, temp_dir: Path) -> None:
@@ -101,7 +101,7 @@ class TestBlueprintExtractorInit:
         extractor_tool = temp_dir / "repak"
         extractor_tool.touch()
 
-        with pytest.raises(FileNotFoundError, match="Converter tool not found"):
+        with pytest.raises(FileNotFoundError, match="Tool not found"):
             BlueprintExtractor(pak_file, extractor_tool, temp_dir / "missing")
 
     def test_init_creates_empty_stats(self, mock_files: tuple[Path, Path, Path]) -> None:

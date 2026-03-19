@@ -296,7 +296,7 @@ def main() -> None:
     original_argv = sys.argv.copy()
     canonical_command = dispatcher.resolve_command_alias(command)
     if canonical_command is not None:
-        sys.argv = [f"fs-{canonical_command}"] + sys.argv[2:]
+        sys.argv = [f"fs {canonical_command}"] + sys.argv[2:]
 
     try:
         # Attach to console for CLI commands (not GUI)

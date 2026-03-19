@@ -64,6 +64,8 @@ FS_API_AUTH__AUTH_TYPE=basic
 FS_API_AUTH__AUTH_TOKEN=dXNlcjpwYXNz  # base64("user:pass")
 ```
 
+**Important:** The `auth_token` MUST be base64-encoded in the format `username:password`. The token is validated at startup - invalid base64 or missing colon separator will be logged as an error.
+
 **Client Request:**
 ```bash
 curl -X POST http://localhost:8000/ocr/scan_image \

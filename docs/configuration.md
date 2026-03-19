@@ -35,7 +35,7 @@ Create a file at `~/.fs_config` with JSON configuration:
 {
   "config_version": 5,
   "api_server": {
-    "cors_allow_origins": ["*"],
+    "cors_allow_origins": [],
     "enable_memory_monitoring": false,
     "auto_trim_memory": true
   },
@@ -99,7 +99,7 @@ Settings for the API server.
 
 | Setting | Type | Default | Description |
 |---------|------|---------|-------------|
-| `cors_allow_origins` | array[string] | `["*"]` | List of allowed CORS origins. Use `["*"]` to allow all origins |
+| `cors_allow_origins` | array[string] | `[]` | List of allowed CORS origins. Empty list allows no cross-origin requests. Use `["*"]` to allow all origins (not recommended for production) |
 | `host` | string | `"127.0.0.1"` | Server bind host address |
 | `port` | integer | `8000` | Server bind port (1-65535) |
 | `workers` | integer | `1` | Number of worker processes |
@@ -444,7 +444,7 @@ This example shows all available settings with their default values:
 {
   "config_version": 5,
   "api_server": {
-    "cors_allow_origins": ["*"],
+    "cors_allow_origins": [],
     "enable_memory_monitoring": false,
     "auto_trim_memory": true
   },
@@ -527,7 +527,7 @@ This table lists all available environment variables with their default values:
 | Environment Variable | Type | Default Value | Description |
 |---------------------|------|---------------|-------------|
 | **API Server** | | | |
-| `FS_API_SERVER__CORS_ALLOW_ORIGINS` | JSON array | `["*"]` | CORS allowed origins |
+| `FS_API_SERVER__CORS_ALLOW_ORIGINS` | JSON array | `[]` | CORS allowed origins (empty by default) |
 | `FS_API_SERVER__HOST` | string | `"127.0.0.1"` | Server bind host |
 | `FS_API_SERVER__PORT` | integer | `8000` | Server bind port |
 | `FS_API_SERVER__WORKERS` | integer | `1` | Number of worker processes |

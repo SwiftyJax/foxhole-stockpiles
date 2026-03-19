@@ -46,10 +46,12 @@ This directory contains example configuration files for different deployment sce
 
 **Includes:**
 - ✅ Docker-friendly paths (`/app/data`, `/app/logs`, etc.)
-- ✅ CORS enabled for all origins (for development)
+- ✅ CORS enabled for all origins (`["*"]`) - for development only, restrict in production
 - ✅ Server binds to `0.0.0.0` (listens on all container interfaces - required for Docker networking)
 - ✅ Screenshot saving enabled
 - ✅ File logging to persistent volume
+
+**Security note:** The default CORS setting `["*"]` allows any origin. For production Docker deployments, use `fs_config.production` instead or update CORS to specific domains.
 
 **Paths:**
 - Database: `/app/data/foxhole_templates.h5`

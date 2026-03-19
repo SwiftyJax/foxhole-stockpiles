@@ -73,8 +73,8 @@ For technical details on the system design and implementation decisions, see the
 
 ## Available Command-Line Tools
 
-### fs catalog-builder
-Builds catalog.json from Foxhole PAK files by extracting game blueprints, converting them to JSON, and parsing item definitions. Generates the complete item catalog automatically without manual data entry.
+### fs catalog
+Builds catalog.json from Foxhole PAK files by extracting game blueprints, converting them to JSON, and parsing item definitions. Generates the complete item catalog automatically without manual data entry. (Alias: `fs catalog-builder`)
 
 ### fs extract-assets
 Extracts icon assets from Foxhole PAK files and converts them to PNG format.

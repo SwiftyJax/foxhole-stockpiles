@@ -97,13 +97,23 @@ Once the server is running, visit:
 
 See [API Usage Guide](../../../docs/api-usage.md) for detailed API documentation.
 
+## Rate Limiting
+
+The API includes built-in rate limiting to prevent abuse:
+
+| Endpoint | Rate Limit |
+|----------|------------|
+| `/ocr/scan_image` | 30 requests per minute |
+
+When rate limit is exceeded, the API returns HTTP 429 (Too Many Requests).
+
 ## Production Deployment
 
 For production deployments:
 
 1. Use multiple workers for better performance
 2. Configure authentication
-3. Set specific CORS origins (don't use `["*"]`)
+3. Set specific CORS origins (empty list `[]` by default, configure explicitly)
 4. Use a reverse proxy (nginx, caddy) for HTTPS
 5. Consider using a process manager (systemd, supervisor)
 

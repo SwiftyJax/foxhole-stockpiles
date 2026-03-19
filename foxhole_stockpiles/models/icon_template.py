@@ -41,14 +41,14 @@ class IconTemplate(BaseModel):
         },
     )
 
-    def model_post_init(self, __context: object) -> None:
+    def model_post_init(self, _context: object) -> None:
         """Automatically compute perceptual hash after model creation.
 
         The perceptual hash (pHash) is used to quickly filter out dissimilar templates
         before running the more expensive OpenCV template matching.
 
         Args:
-            __context (object): Pydantic context (unused)
+            _context (object): Pydantic context (unused).
         """
         # Convert to grayscale for hash computation
         img_gray = np.asarray(cv2.cvtColor(self.image, cv2.COLOR_BGR2GRAY), dtype=np.uint8)

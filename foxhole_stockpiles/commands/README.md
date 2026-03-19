@@ -129,6 +129,116 @@ python -m foxhole_stockpiles.commands.add_mod.add_mod
 
 [📖 Detailed Documentation](add_mod/README.md)
 
+---
+
+### 7. `fs server` - API Server
+**Purpose**: Start the FastAPI server for processing screenshots via HTTP API.
+
+**Usage**:
+```bash
+# Primary interface
+fs server
+fs api    # Short alias
+
+# With custom options
+fs server --host 0.0.0.0 --port 8080 --workers 4
+
+# Development interface
+python -m foxhole_stockpiles.commands.api_server
+```
+
+**Input**: Configuration settings (database path, auth, etc.)
+**Output**: Running HTTP server with `/ocr/scan_image` endpoint
+
+[📖 Detailed Documentation](api_server/README.md)
+
+---
+
+### 8. `fs add-icon` - Manual Icon Addition
+**Purpose**: Add individual icons to template databases without full pipeline rebuild.
+
+**Usage**:
+```bash
+# Primary interface
+fs add-icon --database db.h5 --icon rifle.png --code Rifle --faction c --category item --mod vanilla --resolution 1080
+fs add --database db.h5 --icon rifle.png --code Rifle --faction c --category item --mod vanilla --resolution 1080    # Short alias
+
+# Development interface
+python -m foxhole_stockpiles.commands.add_icon.add_icon
+```
+
+**Input**: Existing database, icon image file, item metadata
+**Output**: Updated database with new icon template
+
+[📖 Detailed Documentation](add_icon/README.md)
+
+---
+
+### 9. `fs update-config` - Configuration Migration
+**Purpose**: Update `.fs_config` files to the latest configuration format version.
+
+**Usage**:
+```bash
+# Primary interface
+fs update-config
+fs update    # Short alias
+
+# Preview changes without applying
+fs update-config --dry-run
+
+# Development interface
+python -m foxhole_stockpiles.commands.update_config.update_config
+```
+
+**Input**: Existing configuration file (`~/.fs_config`)
+**Output**: Migrated configuration file with backup
+
+[📖 Detailed Documentation](update_config/README.md)
+
+---
+
+### 10. `fs gui` - Graphical User Interface
+**Purpose**: Launch the PyQt6 graphical interface for configuration and scanning.
+
+**Usage**:
+```bash
+# Primary interface
+fs gui
+fs ui    # Short alias
+fs app   # Short alias
+
+# Direct GUI launcher (no console on Windows)
+fs-gui
+
+# Development interface
+python -m foxhole_stockpiles.commands.gui
+```
+
+**Input**: Configuration settings
+**Output**: GUI window for server control and scanning
+
+[📖 Detailed Documentation](gui/README.md)
+
+---
+
+### 11. `fs catalog` - Catalog Builder
+**Purpose**: Build catalog.json from Foxhole PAK files by extracting game blueprints.
+
+**Usage**:
+```bash
+# Primary interface
+fs catalog --pak /path/to/War-WindowsNoEditor.pak
+fs catalog-builder --pak /path/to/War-WindowsNoEditor.pak    # Long alias
+
+# Development interface
+python -m foxhole_stockpiles.commands.catalog_builder.catalog_builder
+```
+
+**Input**: Foxhole PAK file, external tools (repak.exe, UAssetGUI.exe)
+**Output**: catalog.json with item definitions
+
+[📖 Detailed Documentation](catalog_builder/README.md)
+
 ## Recommended Workflow
 
 ### Complete Pipeline (Production)
@@ -220,6 +330,12 @@ fs generate-templates --help
 fs database-builder --help
 fs inspect --help
 fs scanner --help
+fs server --help
+fs add-icon --help
+fs add-mod --help
+fs update-config --help
+fs catalog --help
+fs gui
 ```
 
 **Python Modules** (alternative):
@@ -229,6 +345,12 @@ python -m foxhole_stockpiles.commands.generate_templates --help
 python -m foxhole_stockpiles.commands.database_builder --help
 python -m foxhole_stockpiles.commands.candidate_inspector --help
 python -m foxhole_stockpiles.commands.stockpile_scanner --help
+python -m foxhole_stockpiles.commands.api_server --help
+python -m foxhole_stockpiles.commands.add_icon.add_icon --help
+python -m foxhole_stockpiles.commands.add_mod.add_mod --help
+python -m foxhole_stockpiles.commands.update_config.update_config --help
+python -m foxhole_stockpiles.commands.catalog_builder.catalog_builder --help
+python -m foxhole_stockpiles.commands.gui
 ```
 
 ## Key Dependencies
