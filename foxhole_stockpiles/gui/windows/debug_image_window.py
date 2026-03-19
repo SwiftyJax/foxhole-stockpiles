@@ -749,6 +749,10 @@ class DebugImageWindow(QDialog):
 
     def _clear_comparison(self) -> None:
         """Clear the comparison panel."""
+        # Reset spinbox references before deleting widgets
+        self.phash_spinbox = None
+        self.ncc_spinbox = None
+
         while self.comparison_layout.count():
             child = self.comparison_layout.takeAt(0)
             if child is not None:
