@@ -148,6 +148,36 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next: Any) -> Response:
+    """Add security headers to HTML responses.
+
+    Args:
+        request (Request): The incoming request.
+        call_next (Any): The next middleware/handler.
+
+    Returns:
+        Response: The response with security headers added.
+    """
+    response: Response = await call_next(request)
+
+    # Add security headers to HTML responses
+    content_type = response.headers.get("content-type", "")
+    if "text/html" in content_type:
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "img-src 'self' data:; "
+            "style-src 'self' 'unsafe-inline'; "
+            "script-src 'self' 'unsafe-inline'"
+        )
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+    return response
+
+
 # Add memory middleware if either monitoring or auto-trimming is enabled
 if app_settings.api_server.enable_memory_monitoring or app_settings.api_server.auto_trim_memory:
     app.add_middleware(
