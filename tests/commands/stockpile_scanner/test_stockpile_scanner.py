@@ -715,8 +715,8 @@ class TestMainFunction:
         call_kwargs = mock_coordinator.analyze_stockpile.call_args[1]
         from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 
-        assert call_kwargs.get("language") is not None
-        assert call_kwargs.get("language") == SupportedLanguage.FRENCH
+        assert call_kwargs.get("languages") is not None
+        assert call_kwargs.get("languages") == [SupportedLanguage.FRENCH]
 
     async def test_main_with_invalid_language(
         self,

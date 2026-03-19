@@ -142,15 +142,15 @@ class OCRCoordinator:
     async def analyze_stockpile(
         self,
         image: NDArray[np.uint8],
-        language: SupportedLanguage | None = None,
+        languages: list[SupportedLanguage] | None = None,
         faction: ItemFaction | None = None,
     ) -> Stockpile:
         """Analyze a stockpile image and return detected items with quantities.
 
         Args:
             image (NDArray[np.uint8]): Image data as numpy array (BGR format)
-            language (SupportedLanguage | None): Language for text detection (stockpile name,
-                type, hex_name). If None, uses all supported languages.
+            languages (list[SupportedLanguage] | None): Languages for text detection (stockpile
+                name, type, hex_name). If None, uses all supported languages.
             faction (ItemFaction | None): Faction filter for icon matching. If None, no faction
                 filtering is applied.
 
@@ -175,7 +175,7 @@ class OCRCoordinator:
             quantities, metadata = await self._extract_all_ocr_parallel(
                 stockpile_images=stockpile_images,
                 scale_factor=scale_factor,
-                language=language,
+                languages=languages,
             )
 
             await self._template_manager.set_active_resolution(stockpile_images.vertical_resolution)
@@ -183,7 +183,7 @@ class OCRCoordinator:
                 stockpile_images=stockpile_images,
                 quantities=quantities,
                 scale_factor=scale_factor,
-                language=language,
+                languages=languages,
                 faction=faction,
             )
 
@@ -360,14 +360,14 @@ class OCRCoordinator:
         self,
         stockpile_images: StockpileImageRegions,
         scale_factor: float,
-        language: SupportedLanguage | None,
+        languages: list[SupportedLanguage] | None,
     ) -> tuple[list[int], dict[str, Any]]:
         """Extract all OCR data in parallel: quantities + type + shard + name.
 
         Args:
             stockpile_images (StockpileImageRegions): Image regions to process
             scale_factor (float): Scale factor for image preprocessing
-            language (SupportedLanguage | None): Language for text detection
+            languages (list[SupportedLanguage] | None): Languages for text detection
 
         Returns:
             tuple[list[int], dict[str, Any]]: (quantities, metadata_dict)
@@ -422,21 +422,25 @@ class OCRCoordinator:
             if type_source is None:
                 return None
             return await self._text_extractor.extract_raw_text(
-                image=type_source, numbers_only=False, language=language, single_line=True
+                image=type_source, numbers_only=False, languages=languages, single_line=True
             )
 
         async def extract_shard_task() -> str | None:
             if shard_source is None:
                 return None
             return await self._text_extractor.extract_raw_text(
-                image=shard_source, numbers_only=False, language=language
+                image=shard_source, numbers_only=False, languages=languages
             )
 
         async def extract_name_task() -> str | None:
             if name_source is None:
                 return None
+            # Use limited language set for name detection to properly detect underscores
+            # Portuguese and other Latin languages cause underscores to be read as spaces
             return await self._text_extractor.extract_raw_text(
-                image=name_source, numbers_only=False, language=language
+                image=name_source,
+                numbers_only=False,
+                languages=SupportedLanguage.get_name_detection_languages(),
             )
 
         # Run all OCR in parallel
@@ -947,7 +951,7 @@ class OCRCoordinator:
         stockpile_images: StockpileImageRegions,
         quantities: list[int],
         scale_factor: float,
-        language: SupportedLanguage | None,
+        languages: list[SupportedLanguage] | None,
         faction: ItemFaction | None,
     ) -> Stockpile:
         """Match icons against templates and build the final result.
@@ -956,7 +960,7 @@ class OCRCoordinator:
             stockpile_images (StockpileImageRegions): Image regions containing icons
             quantities (list[int]): Extracted quantities for each icon
             scale_factor (float): Resolution scale factor for image preprocessing
-            language (SupportedLanguage | None): Language for text detection
+            languages (list[SupportedLanguage] | None): Languages for text detection
             faction (ItemFaction | None): Faction filter for icon matching
 
         Returns:

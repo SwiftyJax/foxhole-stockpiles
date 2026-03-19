@@ -37,7 +37,7 @@ class StockpileTextExtractor:
         self,
         image: NDArray[np.uint8],
         numbers_only: bool = True,
-        language: SupportedLanguage | None = None,
+        languages: list[SupportedLanguage] | None = None,
         single_line: bool = False,
     ) -> str:
         """Extract raw text using custom trained model.
@@ -45,8 +45,8 @@ class StockpileTextExtractor:
         Args:
             image (NDArray[np.uint8]): Processed image
             numbers_only (bool): Limit caracter detection to quantities (True) or all chars (False)
-            language (SupportedLanguage | None): Language for text detection. If None, uses all
-                supported languages. Only used when numbers_only=False.
+            languages (list[SupportedLanguage] | None): Languages for text detection. If None,
+                uses all supported languages. Only used when numbers_only=False.
             single_line (bool): Use single line mode (PSM 7) instead of block mode (PSM 6).
 
         Returns:
@@ -54,7 +54,9 @@ class StockpileTextExtractor:
         """
         # Use custom trained model for better Renner font recognition
         config = self.get_tesseract_config(
-            numbers_only=numbers_only, language=language, single_line=single_line
+            numbers_only=numbers_only,
+            languages=languages,
+            single_line=single_line,
         )
         result = await asyncio.to_thread(pytesseract.image_to_string, image, config=config)
         if result is None:
@@ -136,14 +138,15 @@ class StockpileTextExtractor:
     def get_tesseract_config(
         self,
         numbers_only: bool = True,
-        language: SupportedLanguage | None = None,
+        languages: list[SupportedLanguage] | None = None,
         single_line: bool = False,
     ) -> str:
         """Get the Tesseract configuration string used.
 
         Args:
             numbers_only (bool): Detect quantities (numbers, k+)
-            language (SupportedLanguage | None): Language for text detection
+            languages (list[SupportedLanguage] | None): Languages for text detection.
+                If None, uses all supported languages.
             single_line (bool): Use single line mode (PSM 7) instead of block mode (PSM 6).
 
         Returns:
@@ -160,7 +163,7 @@ class StockpileTextExtractor:
                 model = f"-l {self.custom_model}"
             else:
                 # Fallback to all languages if no custom model
-                model = f"-l {SupportedLanguage.get_all_languages_string()}"
+                model = f"-l {SupportedLanguage.to_tesseract_string(None)}"
 
             # Add tessdata directory if specified (per-call, not global)
             if self.tessdata_path:
@@ -169,12 +172,6 @@ class StockpileTextExtractor:
             numbers = "-c tessedit_char_whitelist=0123456789k+"
         else:
             # For text detection (stockpile name, type, hex_name)
-            if language:
-                # Use specified language for text detection
-                # Convert i18n code to Tesseract code
-                model = f"-l {language.get_tesseract_code()}"
-            else:
-                # Default to all supported languages for text detection
-                model = f"-l {SupportedLanguage.get_all_languages_string()}"
+            model = f"-l {SupportedLanguage.to_tesseract_string(languages)}"
 
         return f"--psm {psm} {model} {tessdata_dir} {numbers} --oem 3".strip()

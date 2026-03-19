@@ -291,8 +291,11 @@ async def scan_stockpile(
         # Treat NEUTRAL as None (no faction filter)
         faction_filter = faction if faction != ItemFaction.NEUTRAL else None
 
+        # Convert single language to list for API compatibility
+        languages = [language] if language else None
+
         stockpile = await coordinator.analyze_stockpile(
-            image=image_bgr, language=language, faction=faction_filter
+            image=image_bgr, languages=languages, faction=faction_filter
         )
 
         # Read the token from the specified header if any webhook handler uses forward auth

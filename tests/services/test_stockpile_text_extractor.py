@@ -314,12 +314,12 @@ class TestGetTesseractConfig:
         assert "-l eng+por+fra+deu+rus+chi_sim" in config
         assert "tessedit_char_whitelist=0123456789k+" in config
 
-    def test_get_config_with_specific_language(self) -> None:
-        """Test getting config with specific language for text detection."""
+    def test_get_config_with_specific_languages(self) -> None:
+        """Test getting config with specific languages for text detection."""
         extractor = StockpileTextExtractor()
 
         config = extractor.get_tesseract_config(
-            numbers_only=False, language=SupportedLanguage.FRENCH
+            numbers_only=False, languages=[SupportedLanguage.FRENCH]
         )
 
         assert "--psm 6" in config
@@ -327,38 +327,49 @@ class TestGetTesseractConfig:
         assert "tessedit_char_whitelist" not in config
         assert "--oem 3" in config
 
-    def test_get_config_with_language_but_numbers_only_uses_custom_model(self) -> None:
-        """Test that numbers_only mode uses custom model even when language is set."""
+    def test_get_config_with_multiple_languages(self) -> None:
+        """Test getting config with multiple languages for text detection."""
+        extractor = StockpileTextExtractor()
+
+        config = extractor.get_tesseract_config(
+            numbers_only=False,
+            languages=[SupportedLanguage.ENGLISH, SupportedLanguage.RUSSIAN],
+        )
+
+        assert "-l eng+rus" in config
+
+    def test_get_config_with_languages_but_numbers_only_uses_custom_model(self) -> None:
+        """Test that numbers_only mode uses custom model even when languages is set."""
         extractor = StockpileTextExtractor(custom_model="renner_numbers")
 
         config = extractor.get_tesseract_config(
-            numbers_only=True, language=SupportedLanguage.GERMAN
+            numbers_only=True, languages=[SupportedLanguage.GERMAN]
         )
 
         # For numbers, custom model takes precedence
         assert "-l renner_numbers" in config
         assert "tessedit_char_whitelist=0123456789k+" in config
 
-    def test_get_config_without_language_uses_all_languages(self) -> None:
-        """Test that not specifying language defaults to all supported languages."""
+    def test_get_config_without_languages_uses_all_languages(self) -> None:
+        """Test that not specifying languages defaults to all supported languages."""
         extractor = StockpileTextExtractor()
 
         config = extractor.get_tesseract_config(numbers_only=False)
 
         assert "-l eng+por+fra+deu+rus+chi_sim" in config
 
-    def test_get_config_with_language_for_text_only(self) -> None:
-        """Test that language is used for text but not for numbers."""
+    def test_get_config_with_languages_for_text_only(self) -> None:
+        """Test that languages is used for text but not for numbers."""
         extractor = StockpileTextExtractor(custom_model="renner_numbers")
 
-        # Text mode should use the language
+        # Text mode should use the languages
         text_config = extractor.get_tesseract_config(
-            numbers_only=False, language=SupportedLanguage.PORTUGUESE
+            numbers_only=False, languages=[SupportedLanguage.PORTUGUESE]
         )
         assert "-l por" in text_config
 
         # Numbers mode should use custom model
         numbers_config = extractor.get_tesseract_config(
-            numbers_only=True, language=SupportedLanguage.PORTUGUESE
+            numbers_only=True, languages=[SupportedLanguage.PORTUGUESE]
         )
         assert "-l renner_numbers" in numbers_config

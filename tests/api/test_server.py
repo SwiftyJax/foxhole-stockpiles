@@ -462,7 +462,7 @@ class TestScanStockpileEndpoint:
             # Verify analyze_stockpile was called with French language parameter
             mock_coordinator.analyze_stockpile.assert_called_once()
             call_kwargs = mock_coordinator.analyze_stockpile.call_args[1]
-            assert call_kwargs.get("language") == SupportedLanguage.FRENCH
+            assert call_kwargs.get("languages") == [SupportedLanguage.FRENCH]
         finally:
             app.dependency_overrides.clear()
 

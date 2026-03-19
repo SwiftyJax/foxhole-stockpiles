@@ -1404,7 +1404,7 @@ class TestMatchIconsAndBuildResult:
                 stockpile_images=mock_stockpile_images,
                 quantities=[100, 200],
                 scale_factor=1.0,
-                language=None,
+                languages=None,
                 faction=None,
             )
 
@@ -1481,7 +1481,7 @@ class TestMatchIconsAndBuildResult:
                 stockpile_images=mock_stockpile_images,
                 quantities=[100, 200, 300],
                 scale_factor=1.0,
-                language=None,
+                languages=None,
                 faction=None,
             )
 
@@ -1553,7 +1553,7 @@ class TestMatchIconsAndBuildResult:
                 stockpile_images=mock_stockpile_images,
                 quantities=[100, 200, 300],
                 scale_factor=1.0,
-                language=None,
+                languages=None,
                 faction=None,
             )
 
@@ -1595,7 +1595,7 @@ class TestMatchIconsAndBuildResult:
                 stockpile_images=mock_stockpile_images,
                 quantities=[100, 200],
                 scale_factor=1.0,
-                language=None,
+                languages=None,
                 faction=None,
             )
 
@@ -1645,7 +1645,7 @@ class TestMatchIconsAndBuildResult:
                 stockpile_images=mock_stockpile_images,
                 quantities=[100],
                 scale_factor=1.0,
-                language=None,
+                languages=None,
                 faction=None,
             )
 

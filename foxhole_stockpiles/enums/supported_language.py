@@ -35,10 +35,37 @@ class SupportedLanguage(StrEnum):
         return tesseract_mapping[self.value]
 
     @classmethod
-    def get_all_languages_string(cls) -> str:
-        """Get a string with all supported languages for Tesseract.
+    def get_all_languages(cls) -> list["SupportedLanguage"]:
+        """Get all supported languages as a list.
+
+        Returns:
+            list[SupportedLanguage]: List of all supported languages
+        """
+        return list(cls)
+
+    @classmethod
+    def get_name_detection_languages(cls) -> list["SupportedLanguage"]:
+        """Get languages for stockpile name detection.
+
+        Uses a subset of languages (eng+rus+chi_sim) that properly detect
+        underscores in names. Portuguese and other Latin-based languages
+        cause underscore characters to be misread as spaces.
+
+        Returns:
+            list[SupportedLanguage]: Languages for name detection
+        """
+        return [cls.ENGLISH, cls.RUSSIAN, cls.CHINESE_SIMPLIFIED]
+
+    @classmethod
+    def to_tesseract_string(cls, languages: list["SupportedLanguage"] | None) -> str:
+        """Convert a list of languages to a Tesseract language string.
+
+        Args:
+            languages (list[SupportedLanguage] | None): List of languages or None for all
 
         Returns:
             str: Plus-separated list of Tesseract language codes (e.g., "eng+por+fra")
         """
-        return "+".join([lang.get_tesseract_code() for lang in cls])
+        if languages is None:
+            languages = list(cls)
+        return "+".join([lang.get_tesseract_code() for lang in languages])

@@ -219,8 +219,10 @@ async def main() -> dict[str, Any] | None:
     # Parse faction filter
     faction_filter = ItemFaction.from_string(args.faction)
 
-    # Parse language filter
-    language_filter = SupportedLanguage(args.language) if args.language else None
+    # Parse language filter (wrap single language in list for API)
+    language_filter: list[SupportedLanguage] | None = (
+        [SupportedLanguage(args.language)] if args.language else None
+    )
 
     try:
         scanner_settings: ScannerSettings = settings.scanner
@@ -231,7 +233,7 @@ async def main() -> dict[str, Any] | None:
 
         coordinator = OCRCoordinator(scanner_settings)
         stockpile: Stockpile = await coordinator.analyze_stockpile(
-            image, language=language_filter, faction=faction_filter
+            image, languages=language_filter, faction=faction_filter
         )
         output_coordinator = OutputCoordinator(output_settings=output_settings)
 
