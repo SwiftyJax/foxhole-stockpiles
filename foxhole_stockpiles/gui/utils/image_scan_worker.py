@@ -9,7 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 from PyQt6.QtCore import QThread, pyqtSignal
 
-from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
+from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.models.detected_icon_info import DetectedIconInfo
 from foxhole_stockpiles.models.scan_result import ScanResult
 from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
@@ -67,8 +67,8 @@ class ImageScanWorker(QThread):
                 self.error.emit("Failed to extract stockpile regions")
                 return
 
-            # Run scan using OCRCoordinator
-            config = ScannerSettings(database_path=self.database_path)
+            # Run scan using OCRCoordinator with user settings
+            config = get_settings().scanner
             coordinator = OCRCoordinator(config=config)
             stockpile = asyncio.run(coordinator.analyze_stockpile(image))
 
