@@ -740,26 +740,27 @@ class TestMatchIcon:
         assert len(result.gap_candidates) == 0
 
     async def test_match_icon_tiebreaker_changes_winner(self, tmp_path: Path) -> None:
-        """Test that tiebreaker selects template with lower pixel difference.
+        """Test that tiebreaker selects template with lower edge difference.
 
         When NCC scores are very close, the tiebreaker should select the template
-        with lower mean absolute pixel difference.
+        with lower edge-based difference (more similar edge structure).
 
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
         db_path = tmp_path / "test.h5"
 
-        # Create test image
+        # Create test image with a center square (creates edges at boundaries)
         test_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
         test_image[8:24, 8:24] = [200, 200, 200]  # Center square
 
         # Create database with two templates that will have very close NCC scores
         db = TemplateDatabase(SupportedResolution.R_1080)
 
-        # Template 1: Slightly different but higher NCC due to normalization effects
-        template1_image = np.ones((32, 32, 3), dtype=np.uint8) * 130  # Slightly brighter
-        template1_image[8:24, 8:24] = [202, 202, 202]
+        # Template 1: Has extra edge (vertical line) that test_image doesn't have
+        template1_image = np.ones((32, 32, 3), dtype=np.uint8) * 128
+        template1_image[8:24, 8:24] = [200, 200, 200]  # Same center square
+        template1_image[4:28, 15:17] = [50, 50, 50]  # Extra vertical line (different edges)
         template1 = IconTemplate(
             code="ItemA",
             faction=ItemFaction.NEUTRAL,
@@ -772,7 +773,7 @@ class TestMatchIcon:
         )
         db.add_template(template1)
 
-        # Template 2: Exact match - lower pixel diff but potentially similar NCC
+        # Template 2: Exact match - same edge structure
         template2_image = test_image.copy()
         template2 = IconTemplate(
             code="ItemB",
@@ -798,7 +799,7 @@ class TestMatchIcon:
             ncc_tiebreaker_threshold=0.1,  # Large threshold to ensure tiebreaker kicks in
         )
 
-        # The exact match (ItemB) should win due to lower pixel difference
+        # The exact match (ItemB) should win due to lower edge difference
         assert result.icon is not None
         assert result.icon.code == "ItemB"
 

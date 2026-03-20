@@ -685,17 +685,17 @@ class TemplateManager:
             ]
 
             if len(close_matches) > 1:
-                # Compute mean absolute pixel difference for close matches
+                # Compute edge-based difference for close matches
+                # Edge comparison is gamma-invariant (local contrast, not absolute brightness)
+                icon_gray = cv2.cvtColor(icon_image, cv2.COLOR_BGR2GRAY)
+                icon_edges = cv2.Sobel(icon_gray, cv2.CV_32F, 1, 1)
+
                 scored: list[tuple[float, float, IconTemplate]] = []
                 for conf, template in close_matches:
-                    pixel_diff = float(
-                        np.mean(
-                            np.abs(
-                                icon_image.astype(np.float32) - template.image.astype(np.float32)
-                            )
-                        )
-                    )
-                    scored.append((pixel_diff, conf, template))
+                    template_gray = cv2.cvtColor(template.image, cv2.COLOR_BGR2GRAY)
+                    template_edges = cv2.Sobel(template_gray, cv2.CV_32F, 1, 1)
+                    edge_diff = float(np.mean(np.abs(icon_edges - template_edges)))
+                    scored.append((edge_diff, conf, template))
 
                 # Sort by pixel diff (lower = better match)
                 scored.sort(key=lambda x: x[0])
