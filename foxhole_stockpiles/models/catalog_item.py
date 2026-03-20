@@ -109,8 +109,11 @@ class CatalogItem(BaseModel):
 
         # Check for shippable items
         if item.get("ShippableInfo") or "Shippable" in chassis_name:
-            # Aircraft are vehicles even though they have ShippableInfo
-            if "Aircraft" in chassis_name:
+            # Actual aircraft are vehicles even though they have ShippableInfo
+            # Only match items with ChassisName starting with "ChassisAircraft"
+            # (e.g., ChassisAircraftBomber, ChassisAircraftFighter)
+            # NOT items like "Emplaced Anti-Aircraft Cannon"
+            if chassis_name.startswith("ChassisAircraft"):
                 return ItemCategory.Vehicle
             return ItemCategory.Shippable
 
