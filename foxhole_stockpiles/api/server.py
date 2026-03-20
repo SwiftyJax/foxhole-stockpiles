@@ -22,8 +22,10 @@ from foxhole_stockpiles.api.dependencies import (
     get_notification_service,
     get_ocr_coordinator,
     get_output_coordinator,
+    get_scan_limiter,
 )
 from foxhole_stockpiles.api.memory_middleware import MemoryMonitorMiddleware
+from foxhole_stockpiles.api.scan_limiter import ScanLimiter
 from foxhole_stockpiles.api.web.routes import router as web_router
 from foxhole_stockpiles.core.events import get_event_bus
 from foxhole_stockpiles.core.logging import setup_logging
@@ -237,6 +239,7 @@ async def scan_stockpile(
     image: UploadFile,
     coordinator: Annotated[OCRCoordinator, Depends(get_ocr_coordinator)],
     output_coordinator: Annotated[OutputCoordinator, Depends(get_output_coordinator)],
+    scan_limiter: Annotated[ScanLimiter, Depends(get_scan_limiter)],
     faction: Annotated[
         ItemFaction | None, Query(description="Faction filter (Colonials or Wardens)")
     ] = None,
@@ -252,6 +255,7 @@ async def scan_stockpile(
         request (Request): FastAPI request object
         coordinator (OCRCoordinator): OCR coordinator singleton (injected)
         output_coordinator (OutputCoordinator): Output coordinator singleton (injected)
+        scan_limiter (ScanLimiter): Concurrency limiter for CPU-bound operations (injected)
         faction (ItemFaction | None): Optional faction filter to limit detection to specific
             faction items
         language (SupportedLanguage | None): Optional language for text detection. If None,
@@ -294,9 +298,11 @@ async def scan_stockpile(
         # Convert single language to list for API compatibility
         languages = [language] if language else None
 
-        stockpile = await coordinator.analyze_stockpile(
-            image=image_bgr, languages=languages, faction=faction_filter
-        )
+        # Limit concurrent scans to prevent CPU contention
+        async with scan_limiter.acquire():
+            stockpile = await coordinator.analyze_stockpile(
+                image=image_bgr, languages=languages, faction=faction_filter
+            )
 
         # Read the token from the specified header if any webhook handler uses forward auth
         token = None
@@ -413,3 +419,15 @@ async def garbage_collection_stats() -> dict[str, Any]:
         "top_object_types": [{"type": t, "count": c} for t, c in sorted_types],
         "gc_stats": gc_stats,
     }
+
+
+@app.get("/scan/stats", dependencies=[Depends(auth_dependency)])
+async def scan_limiter_stats(
+    limiter: Annotated[ScanLimiter, Depends(get_scan_limiter)],
+) -> dict[str, Any]:
+    """Get scan limiter statistics for this worker.
+
+    Returns:
+        dict[str, Any]: Scan limiter statistics including queue times and active scans.
+    """
+    return limiter.get_stats()

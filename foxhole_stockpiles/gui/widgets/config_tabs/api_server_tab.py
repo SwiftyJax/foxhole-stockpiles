@@ -66,6 +66,14 @@ class APIServerTab(QWidget):
         self.workers_input.setValue(1)
         server_layout.addRow(self.workers_label, self.workers_input)
 
+        # Max Concurrent Scans
+        self.max_concurrent_scans_label = QLabel()
+        self.max_concurrent_scans_input = QSpinBox()
+        self.max_concurrent_scans_input.setRange(0, 32)
+        self.max_concurrent_scans_input.setValue(0)
+        self.max_concurrent_scans_input.setSpecialValueText("Disabled")
+        server_layout.addRow(self.max_concurrent_scans_label, self.max_concurrent_scans_input)
+
         # CORS Allow Origins - ADVANCED
         self._cors_label = QLabel()
         self.cors_input = QPlainTextEdit()
@@ -184,6 +192,9 @@ class APIServerTab(QWidget):
         self.workers_label.setText(t("api_server_tab.workers"))
         self.workers_label.setToolTip(t("api_server_tab.workers_tooltip"))
 
+        self.max_concurrent_scans_label.setText(t("api_server_tab.max_concurrent_scans"))
+        self.max_concurrent_scans_label.setToolTip(t("api_server_tab.max_concurrent_scans_tooltip"))
+
         self._cors_label.setText(t("api_server_tab.cors_origins"))
         self._cors_label.setToolTip(t("api_server_tab.cors_tooltip"))
 
@@ -234,6 +245,7 @@ class APIServerTab(QWidget):
         self.host_input.setText(server_settings.host)
         self.port_input.setValue(server_settings.port)
         self.workers_input.setValue(server_settings.workers)
+        self.max_concurrent_scans_input.setValue(server_settings.max_concurrent_scans)
 
         # Convert list to JSON string for display
         cors_text = json.dumps(server_settings.cors_allow_origins, indent=2)
@@ -284,6 +296,7 @@ class APIServerTab(QWidget):
             host=self.host_input.text(),
             port=self.port_input.value(),
             workers=self.workers_input.value(),
+            max_concurrent_scans=self.max_concurrent_scans_input.value(),
             cors_allow_origins=cors_origins,
             log_level="info",  # Use default, configured in Logging tab
             reload=False,  # Always False for GUI users (development-only option)

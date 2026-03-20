@@ -127,6 +127,8 @@
     "port_tooltip": "Numéro de port sur lequel le serveur API écoutera.\nPar défaut : 8000. Doit être entre 1-65535.\nAssurez-vous que ce port n'est pas déjà utilisé par une autre application.",
     "workers": "Workers :",
     "workers_tooltip": "Nombre de processus worker pour le serveur API.\nPlus de workers peuvent gérer plus de requêtes simultanées mais utilisent plus de mémoire.\nRecommandé : 1 pour un seul utilisateur, 2-4 pour plusieurs utilisateurs.",
+    "max_concurrent_scans": "Scans concurrents max :",
+    "max_concurrent_scans_tooltip": "Maximum d'opérations de scan concurrentes par worker.\nLimite la contention CPU lorsque plusieurs requêtes arrivent simultanément.\n\nLimite effective du système = workers × max_concurrent_scans.\nMettez 0 pour désactiver (par défaut).\n\nRecommandé : workers=2, max_concurrent_scans=2 pour les systèmes à 6 cœurs.",
     "cors_origins": "Origines CORS :",
     "cors_tooltip": "Origines autorisées pour Cross-Origin Resource Sharing (CORS) au format JSON.\n\nUtilisez [\"*\"] pour autoriser toutes les origines (moins sécurisé mais pratique).\nUtilisez [\"http://localhost:3000\", \"http://exemple.com\"] pour restreindre à des origines spécifiques.\n\nNécessaire uniquement si vous accédez à l'API depuis un navigateur web.",
     "memory_monitoring": "Surveillance mémoire :",

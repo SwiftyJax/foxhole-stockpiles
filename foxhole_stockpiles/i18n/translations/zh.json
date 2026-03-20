@@ -127,6 +127,8 @@
     "port_tooltip": "API 服务器将监听的端口号。\n默认：8000。必须在 1-65535 之间。\n确保此端口未被其他应用程序使用。",
     "workers": "工作进程：",
     "workers_tooltip": "API 服务器的工作进程数。\n更多工作进程可以处理更多并发请求，但使用更多内存。\n推荐：单用户 1 个，多用户场景 2-4 个。",
+    "max_concurrent_scans": "最大并发扫描数：",
+    "max_concurrent_scans_tooltip": "每个工作进程的最大并发扫描操作数。\n当多个请求同时到达时限制 CPU 争用。\n\n有效系统限制 = 工作进程 × max_concurrent_scans。\n设置为 0 禁用（默认）。\n\n推荐：6 核系统使用 workers=2，max_concurrent_scans=2。",
     "cors_origins": "CORS 允许的源：",
     "cors_tooltip": "JSON 格式的跨域资源共享 (CORS) 允许的源。\n\n使用 [\"*\"] 允许所有源（安全性较低但方便）。\n使用 [\"http://localhost:3000\", \"http://example.com\"] 限制为特定源。\n\n仅在通过 Web 浏览器访问 API 时需要。",
     "memory_monitoring": "内存监控：",

@@ -3,6 +3,7 @@
 import logging
 from functools import lru_cache
 
+from foxhole_stockpiles.api.scan_limiter import ScanLimiter
 from foxhole_stockpiles.api.web.services import IconService
 from foxhole_stockpiles.core.events import get_event_bus
 from foxhole_stockpiles.core.settings import get_settings
@@ -12,6 +13,19 @@ from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
 
 logger = logging.getLogger(__name__)
+
+
+@lru_cache
+def get_scan_limiter() -> ScanLimiter:
+    """Get the scan limiter singleton.
+
+    Limits concurrent scan operations per worker to prevent CPU contention.
+
+    Returns:
+        ScanLimiter: The scan limiter instance.
+    """
+    settings = get_settings()
+    return ScanLimiter(max_concurrent=settings.api_server.max_concurrent_scans)
 
 
 @lru_cache
@@ -116,3 +130,4 @@ def clear_dependency_caches() -> None:
     get_output_coordinator.cache_clear()
     get_ocr_coordinator.cache_clear()
     get_notification_service.cache_clear()
+    get_scan_limiter.cache_clear()

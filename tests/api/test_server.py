@@ -19,7 +19,9 @@ from foxhole_stockpiles import __version__
 from foxhole_stockpiles.api.dependencies import (
     get_ocr_coordinator,
     get_output_coordinator,
+    get_scan_limiter,
 )
+from foxhole_stockpiles.api.scan_limiter import ScanLimiter
 from foxhole_stockpiles.api.server import MAX_UPLOAD_SIZE_BYTES, app, auth_dependency
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings
@@ -45,6 +47,7 @@ def clear_dependency_cache() -> Generator[None, None, None]:
         get_notification_service,
         get_ocr_coordinator,
         get_output_coordinator,
+        get_scan_limiter,
     )
 
     # Clear all caches before test
@@ -52,6 +55,7 @@ def clear_dependency_cache() -> Generator[None, None, None]:
     get_notification_service.cache_clear()
     get_ocr_coordinator.cache_clear()
     get_output_coordinator.cache_clear()
+    get_scan_limiter.cache_clear()
 
     # Clear any dependency overrides
     app.dependency_overrides.clear()
@@ -63,6 +67,7 @@ def clear_dependency_cache() -> Generator[None, None, None]:
     get_notification_service.cache_clear()
     get_ocr_coordinator.cache_clear()
     get_output_coordinator.cache_clear()
+    get_scan_limiter.cache_clear()
     app.dependency_overrides.clear()
 
 
@@ -86,6 +91,7 @@ def client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> TestClient:
     mock_settings.api.auth_token = None
     mock_settings.api_auth.auth_type = None
     mock_settings.api_auth.auth_token = None
+    mock_settings.api_server.max_concurrent_scans = 0  # Disable scan limiting in tests
 
     # Patch get_settings everywhere it's imported
     monkeypatch.setattr("foxhole_stockpiles.core.settings.get_settings", lambda: mock_settings)
@@ -106,6 +112,16 @@ def sample_image() -> bytes:
     # Create a simple test image file
     content = b"fake_image_content"
     return content
+
+
+@pytest.fixture
+def mock_scan_limiter() -> ScanLimiter:
+    """Create a disabled scan limiter for testing.
+
+    Returns:
+        ScanLimiter: A scan limiter with limiting disabled (max_concurrent=0).
+    """
+    return ScanLimiter(max_concurrent=0)
 
 
 class TestHealthEndpoint:
@@ -310,6 +326,9 @@ class TestScanStockpileEndpoint:
         mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
 
+        # Mock the scan limiter (disabled for tests)
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
+
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
             response = client.post("/ocr/scan_image", files=files)
@@ -340,6 +359,7 @@ class TestScanStockpileEndpoint:
         mock_output_coordinator = Mock()
         mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -369,6 +389,7 @@ class TestScanStockpileEndpoint:
         mock_output_coordinator = Mock()
         mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -403,6 +424,7 @@ class TestScanStockpileEndpoint:
         mock_output_coordinator = Mock()
         mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -452,6 +474,7 @@ class TestScanStockpileEndpoint:
         mock_output_coordinator = Mock()
         mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -496,6 +519,7 @@ class TestScanStockpileEndpoint:
         mock_coordinator = Mock()
         mock_coordinator.analyze_stockpile = AsyncMock(side_effect=ValueError("Processing failed"))
         app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -520,6 +544,7 @@ class TestScanStockpileEndpoint:
         mock_coordinator = Mock()
         mock_coordinator.analyze_stockpile = AsyncMock(side_effect=RuntimeError("Unexpected"))
         app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -545,6 +570,7 @@ class TestScanStockpileEndpoint:
         error_msg = "Mod 'CustomMod' is not supported. Available mods: Vanilla, OtherMod"
         mock_coordinator.analyze_stockpile = AsyncMock(side_effect=ValueError(error_msg))
         app.dependency_overrides[get_ocr_coordinator] = lambda: mock_coordinator
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -650,6 +676,7 @@ class TestAuthHeaderHandling:
         mock_output_coordinator = Mock()
         mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -695,6 +722,7 @@ class TestAuthHeaderHandling:
         mock_output_coordinator = Mock()
         mock_output_coordinator.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coordinator
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -738,6 +766,7 @@ class TestAPIAuthentication:
         mock_output_coord = Mock()
         mock_output_coord.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coord
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -773,6 +802,7 @@ class TestAPIAuthentication:
         mock_output_coord = Mock()
         mock_output_coord.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coord
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}
@@ -862,6 +892,7 @@ class TestAPIAuthentication:
         mock_output_coord = Mock()
         mock_output_coord.handle_output = AsyncMock(return_value={"result": "success"})
         app.dependency_overrides[get_output_coordinator] = lambda: mock_output_coord
+        app.dependency_overrides[get_scan_limiter] = lambda: ScanLimiter(max_concurrent=0)
 
         try:
             files = {"image": ("test.png", io.BytesIO(image_bytes), "image/png")}

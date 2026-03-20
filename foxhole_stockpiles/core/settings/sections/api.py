@@ -32,6 +32,17 @@ class APIServerSettings(BaseModel):
         default=1,
         gt=0,
     )
+    max_concurrent_scans: int = Field(
+        description=(
+            "Maximum concurrent scan operations per worker. "
+            "Limits CPU contention from parallel OCR/template matching. "
+            "Effective system limit = workers × max_concurrent_scans. "
+            "Set to 0 to disable (default). "
+            "Recommended: workers=2, max_concurrent_scans=2 for 6-core systems."
+        ),
+        default=0,
+        ge=0,
+    )
     reload: bool = Field(
         description="Enable auto-reload on code changes (development only)",
         default=False,
@@ -72,6 +83,7 @@ class APIServerSettings(BaseModel):
                 "host": "0.0.0.0",
                 "port": 8000,
                 "workers": 4,
+                "max_concurrent_scans": 2,
                 "reload": False,
                 "log_level": "info",
                 "enable_memory_monitoring": False,
