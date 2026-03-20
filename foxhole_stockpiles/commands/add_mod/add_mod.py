@@ -63,6 +63,12 @@ Examples:
   # Add multiple PAK files for the same mod
   fs add-mod --pak mod_part1.pak --pak mod_part2.pak --name "My Mod"
 
+  # Extract assets to a directory for later reuse
+  fs add-mod --pak mod.pak --name "my-mod" --extract-dir ./extracted/my-mod --extract-only
+
+  # Build database from previously extracted assets (no PAK extraction needed)
+  fs add-mod --name "my-mod" --extract-dir ./extracted/my-mod
+
   # Specify custom paths for all required files
   fs add-mod --pak mod.pak --name "My Mod" \\
     --catalog /path/to/catalog.json \\
@@ -80,14 +86,14 @@ Prerequisites:
         """,
     )
 
-    # Required arguments
+    # PAK files (required unless using pre-extracted assets)
     parser.add_argument(
         "--pak",
         type=Path,
         action="append",
-        required=True,
         dest="pak_files",
-        help="Path to mod PAK file (can be specified multiple times for multi-PAK mods)",
+        help="Path to mod PAK file (can be specified multiple times for multi-PAK mods). "
+        "Not required when using --extract-dir without --extract-only.",
     )
     parser.add_argument(
         "--name",
@@ -141,6 +147,26 @@ Prerequisites:
         ),
     )
 
+    # Extraction options
+    parser.add_argument(
+        "--extract-dir",
+        type=Path,
+        dest="extract_dir",
+        help=(
+            "Directory for extracted assets. With --extract-only, assets are saved here. "
+            "Without --extract-only, assets are read from here (skipping extraction)."
+        ),
+    )
+    parser.add_argument(
+        "--extract-only",
+        action="store_true",
+        dest="extract_only",
+        help=(
+            "Only extract assets to --extract-dir and stop. "
+            "Does not generate templates or build database. Requires --extract-dir."
+        ),
+    )
+
     # Performance options
     parser.add_argument(
         "--workers",
@@ -181,6 +207,20 @@ Prerequisites:
     logging_settings.log_file = args.log_file
     setup_logging(logging_settings)
 
+    # Validate extraction options
+    if args.extract_only and not args.extract_dir:
+        parser.error("--extract-only requires --extract-dir to specify where to save assets")
+
+    # Determine if we're using pre-extracted assets (no extraction needed)
+    using_preextracted = args.extract_dir and not args.extract_only
+
+    # PAK files are required unless using pre-extracted assets
+    if not using_preextracted and not args.pak_files:
+        parser.error(
+            "--pak is required unless using --extract-dir without --extract-only "
+            "(pre-extracted assets mode)"
+        )
+
     # Resolve paths from args or settings
     catalog_path = args.catalog or settings.database_builder.catalog_file
     if not catalog_path:
@@ -188,29 +228,33 @@ Prerequisites:
             "Catalog path must be provided via --catalog or database_builder.catalog_file setting"
         )
 
+    # Database path not required for extract-only mode
     database_path = args.database or settings.scanner.database_path
-    if not database_path:
+    if not args.extract_only and not database_path:
         parser.error(
             "Database path must be provided via --database or scanner.database_path setting"
         )
 
+    # Extractor and converter tools only required when extracting
     extractor_tool = args.extractor or settings.external_tools.repak
-    if not extractor_tool:
-        parser.error(
-            "Extractor tool must be provided via --extractor or external_tools.repak setting"
-        )
-
     converter_tool = args.converter or settings.external_tools.umodel
-    if not converter_tool:
-        parser.error(
-            "Converter tool must be provided via --converter or external_tools.umodel setting"
-        )
 
-    # Validate PAK files exist
-    for pak_file in args.pak_files:
-        if not pak_file.exists():
-            print(f"Error: PAK file not found: {pak_file}", file=sys.stderr)
-            sys.exit(1)
+    if not using_preextracted:
+        if not extractor_tool:
+            parser.error(
+                "Extractor tool must be provided via --extractor or external_tools.repak setting"
+            )
+
+        if not converter_tool:
+            parser.error(
+                "Converter tool must be provided via --converter or external_tools.umodel setting"
+            )
+
+        # Validate PAK files exist
+        for pak_file in args.pak_files:
+            if not pak_file.exists():
+                print(f"Error: PAK file not found: {pak_file}", file=sys.stderr)
+                sys.exit(1)
 
     # Validate vanilla PAK if provided
     vanilla_pak = str(args.vanilla_pak) if args.vanilla_pak else None
@@ -239,7 +283,7 @@ Prerequisites:
 
     # Create configuration
     config = ModImportConfig(
-        mod_pak_files=[str(p) for p in args.pak_files],
+        mod_pak_files=[str(p) for p in args.pak_files] if args.pak_files else [],
         mod_name=args.mod_name,
         catalog_path=catalog_path,
         overwrite=args.overwrite,
@@ -250,6 +294,8 @@ Prerequisites:
         target_resolutions=target_resolutions,
         template_settings=settings.templates,
         database_workers=workers,
+        extract_dir=args.extract_dir,
+        extract_only=args.extract_only,
     )
 
     # Run import
@@ -262,11 +308,19 @@ Prerequisites:
         if result.success:
             if not args.quiet:
                 print()
-                print(f"Successfully imported mod '{args.mod_name}'")
-                if result.templates_added > 0:
-                    print(f"  Templates added: {result.templates_added}")
-                if result.templates_skipped > 0:
-                    print(f"  Templates skipped (already in database): {result.templates_skipped}")
+                if args.extract_only:
+                    print(f"Successfully extracted mod '{args.mod_name}'")
+                    if result.templates_added > 0:
+                        print(f"  Assets extracted: {result.templates_added}")
+                    print(f"  Output directory: {args.extract_dir}")
+                else:
+                    print(f"Successfully imported mod '{args.mod_name}'")
+                    if result.templates_added > 0:
+                        print(f"  Templates added: {result.templates_added}")
+                    if result.templates_skipped > 0:
+                        print(
+                            f"  Templates skipped (already in database): {result.templates_skipped}"
+                        )
                 if result.warnings:
                     print("  Warnings:")
                     for warning in result.warnings:

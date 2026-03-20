@@ -12,6 +12,16 @@ class ModImportConfig(BaseModel):
 
     mod_pak_files: list[str] = Field(description="List of mod PAK file paths to extract icons from")
     mod_name: str = Field(description="Name of the mod (used for organizing templates)")
+    extract_dir: Path | None = Field(
+        default=None,
+        description="Directory for extracted assets. If extract_only=True, assets are saved here. "
+        "Otherwise, assets are read from here (skipping extraction).",
+    )
+    extract_only: bool = Field(
+        default=False,
+        description="If True, only extract assets to extract_dir and stop. "
+        "Does not generate templates or build database.",
+    )
     catalog_path: Path = Field(description="Path to catalog.json file")
     overwrite: bool = Field(
         default=False, description="Whether to overwrite existing templates for this mod"

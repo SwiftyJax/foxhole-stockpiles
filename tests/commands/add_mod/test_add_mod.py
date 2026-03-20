@@ -120,6 +120,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_result = ModImportResult(success=True, templates_added=10)
@@ -164,6 +166,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_result = ModImportResult(success=False, error_message="Test error")
@@ -211,6 +215,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -247,6 +253,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -284,6 +292,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -323,6 +333,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_result = ModImportResult(success=True)
@@ -371,6 +383,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_result = ModImportResult(success=True)
@@ -416,6 +430,8 @@ class TestMainFunction:
             quiet=True,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_result = ModImportResult(success=True)
@@ -460,6 +476,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_result = ModImportResult(success=True)
@@ -515,6 +533,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -563,6 +583,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -611,6 +633,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -650,6 +674,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         with pytest.raises(SystemExit) as exc_info:
@@ -689,6 +715,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_result = ModImportResult(success=True)
@@ -749,6 +777,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_result = ModImportResult(success=True)
@@ -795,6 +825,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_result = ModImportResult(
@@ -849,6 +881,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_importer_class.side_effect = ValueError("Invalid configuration")
@@ -894,6 +928,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_importer_class.side_effect = FileNotFoundError("Required file missing")
@@ -939,6 +975,8 @@ class TestMainFunction:
             quiet=False,
             log_file=None,
             workers=None,
+            extract_dir=None,
+            extract_only=False,
         )
 
         mock_importer_class.side_effect = RuntimeError("Unexpected error")
@@ -950,6 +988,228 @@ class TestMainFunction:
         captured = capsys.readouterr()
         assert "Error:" in captured.err
         assert "Unexpected error" in captured.err
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.get_settings")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.setup_logging")
+    async def test_main_extract_only_without_extract_dir_exits(
+        self,
+        mock_setup_logging: MagicMock,
+        mock_get_settings: MagicMock,
+        mock_args: MagicMock,
+        mock_settings: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main exits when extract_only is used without extract_dir."""
+        pak_file = tmp_path / "mod.pak"
+        pak_file.touch()
+
+        mock_get_settings.return_value = mock_settings
+        mock_args.return_value = argparse.Namespace(
+            pak_files=[pak_file],
+            mod_name="TestMod",
+            vanilla_pak=None,
+            catalog=None,
+            database=None,
+            extractor=None,
+            converter=None,
+            overwrite=False,
+            resolutions=None,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+            workers=None,
+            extract_dir=None,
+            extract_only=True,  # extract_only without extract_dir
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.get_settings")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.setup_logging")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.ModImporter")
+    async def test_main_extract_only_with_extract_dir(
+        self,
+        mock_importer_class: MagicMock,
+        mock_setup_logging: MagicMock,
+        mock_get_settings: MagicMock,
+        mock_args: MagicMock,
+        mock_settings: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main passes extract_dir and extract_only correctly."""
+        pak_file = tmp_path / "mod.pak"
+        pak_file.touch()
+        extract_dir = tmp_path / "extract"
+
+        mock_get_settings.return_value = mock_settings
+        mock_args.return_value = argparse.Namespace(
+            pak_files=[pak_file],
+            mod_name="TestMod",
+            vanilla_pak=None,
+            catalog=None,
+            database=None,
+            extractor=None,
+            converter=None,
+            overwrite=False,
+            resolutions=None,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+            workers=None,
+            extract_dir=extract_dir,
+            extract_only=True,
+        )
+
+        mock_result = ModImportResult(success=True, templates_added=10)
+        mock_importer = MagicMock()
+        mock_importer.run = AsyncMock(return_value=mock_result)
+        mock_importer_class.return_value = mock_importer
+
+        await main()
+
+        call_kwargs = mock_importer_class.call_args[1]
+        config = call_kwargs["config"]
+        assert config.extract_dir == extract_dir
+        assert config.extract_only is True
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.get_settings")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.setup_logging")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.ModImporter")
+    async def test_main_preextracted_assets_no_pak_required(
+        self,
+        mock_importer_class: MagicMock,
+        mock_setup_logging: MagicMock,
+        mock_get_settings: MagicMock,
+        mock_args: MagicMock,
+        mock_settings: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main allows no PAK files when using pre-extracted assets."""
+        extract_dir = tmp_path / "extract"
+
+        mock_get_settings.return_value = mock_settings
+        mock_args.return_value = argparse.Namespace(
+            pak_files=None,  # No PAK files
+            mod_name="TestMod",
+            vanilla_pak=None,
+            catalog=None,
+            database=None,
+            extractor=None,
+            converter=None,
+            overwrite=False,
+            resolutions=None,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+            workers=None,
+            extract_dir=extract_dir,
+            extract_only=False,  # Using pre-extracted
+        )
+
+        mock_result = ModImportResult(success=True, templates_added=10)
+        mock_importer = MagicMock()
+        mock_importer.run = AsyncMock(return_value=mock_result)
+        mock_importer_class.return_value = mock_importer
+
+        await main()
+
+        call_kwargs = mock_importer_class.call_args[1]
+        config = call_kwargs["config"]
+        assert config.mod_pak_files == []
+        assert config.extract_dir == extract_dir
+        assert config.extract_only is False
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.get_settings")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.setup_logging")
+    async def test_main_no_pak_without_extract_dir_exits(
+        self,
+        mock_setup_logging: MagicMock,
+        mock_get_settings: MagicMock,
+        mock_args: MagicMock,
+        mock_settings: MagicMock,
+        tmp_path: Path,
+    ) -> None:
+        """Test main exits when no PAK files and no extract_dir."""
+        mock_get_settings.return_value = mock_settings
+        mock_args.return_value = argparse.Namespace(
+            pak_files=None,  # No PAK files
+            mod_name="TestMod",
+            vanilla_pak=None,
+            catalog=None,
+            database=None,
+            extractor=None,
+            converter=None,
+            overwrite=False,
+            resolutions=None,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+            workers=None,
+            extract_dir=None,  # No extract_dir
+            extract_only=False,
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            await main()
+
+        assert exc_info.value.code == 2
+
+    @patch("argparse.ArgumentParser.parse_args")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.get_settings")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.setup_logging")
+    @patch("foxhole_stockpiles.commands.add_mod.add_mod.ModImporter")
+    async def test_main_extract_only_success_message(
+        self,
+        mock_importer_class: MagicMock,
+        mock_setup_logging: MagicMock,
+        mock_get_settings: MagicMock,
+        mock_args: MagicMock,
+        mock_settings: MagicMock,
+        tmp_path: Path,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """Test main prints correct success message for extract_only."""
+        pak_file = tmp_path / "mod.pak"
+        pak_file.touch()
+        extract_dir = tmp_path / "extract"
+
+        mock_get_settings.return_value = mock_settings
+        mock_args.return_value = argparse.Namespace(
+            pak_files=[pak_file],
+            mod_name="TestMod",
+            vanilla_pak=None,
+            catalog=None,
+            database=None,
+            extractor=None,
+            converter=None,
+            overwrite=False,
+            resolutions=None,
+            verbose=False,
+            quiet=False,
+            log_file=None,
+            workers=None,
+            extract_dir=extract_dir,
+            extract_only=True,
+        )
+
+        mock_result = ModImportResult(success=True, templates_added=10)
+        mock_importer = MagicMock()
+        mock_importer.run = AsyncMock(return_value=mock_result)
+        mock_importer_class.return_value = mock_importer
+
+        await main()
+
+        captured = capsys.readouterr()
+        assert "Successfully extracted mod 'TestMod'" in captured.out
+        assert "Assets extracted: 10" in captured.out
+        assert f"Output directory: {extract_dir}" in captured.out
 
 
 def test_module_importable() -> None:
