@@ -225,7 +225,7 @@ cratable = res_group["cratable"][:]      # Shape: (N,)
 
 ### Catalog JSON
 
-**Location:** `data/fs_catalog.json`
+**Location:** `data/catalog.json`
 
 ```json
 {
