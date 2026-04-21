@@ -30,8 +30,8 @@ def test_stockpile_types_tab_initialization(stockpile_types_tab: StockpileTypesT
     Args:
         stockpile_types_tab: StockpileTypesTab instance
     """
-    # Should have all 12 input fields (excluding undefined)
-    assert len(stockpile_types_tab._inputs) == 12
+    # Should have all 13 input fields (excluding undefined)
+    assert len(stockpile_types_tab._inputs) == 13
 
     # Check all expected fields exist
     expected_fields = [
@@ -44,6 +44,7 @@ def test_stockpile_types_tab_initialization(stockpile_types_tab: StockpileTypesT
         "town_base",
         "underground_fortress",
         "bms_longhook",
+        "bms_bluefin",
         "storage_depot",
         "seaport",
         "aircraft_depot",
@@ -133,6 +134,7 @@ def test_stockpile_types_tab_get_values_empty(stockpile_types_tab: StockpileType
     assert settings.border_base == []
     assert settings.town_base == []
     assert settings.bms_longhook == []
+    assert settings.bms_bluefin == []
 
 
 def test_stockpile_types_tab_get_values_whitespace_handling(

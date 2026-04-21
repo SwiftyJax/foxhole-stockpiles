@@ -40,6 +40,7 @@ class StockpileTypeClassifier:
             "town_base": StockpileType.TOWN_BASE,
             "underground_fortress": StockpileType.UNDERGROUND_FORTRESS,
             "bms_longhook": StockpileType.BMS_LONGHOOK,
+            "bms_bluefin": StockpileType.BMS_BLUEFIN,
             "storage_depot": StockpileType.STORAGE_DEPOT,
             "seaport": StockpileType.SEAPORT,
             "aircraft_depot": StockpileType.AIRCRAFT_DEPOT,

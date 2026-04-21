@@ -305,6 +305,7 @@ Configure additional aliases for stockpile type recognition. The standard transl
 | `town_base` | array[string] | `[]` | Additional aliases for Town Base |
 | `underground_fortress` | array[string] | `[]` | Additional aliases for Underground Fortress |
 | `bms_longhook` | array[string] | `[]` | Additional aliases for BMS - Longhook |
+| `bms_bluefin` | array[string] | `[]` | Additional aliases for BMS - Bluefin |
 | `storage_depot` | array[string] | `[]` | Additional aliases for Storage Depot |
 | `seaport` | array[string] | `[]` | Additional aliases for Seaport |
 | `aircraft_depot` | array[string] | `[]` | Additional aliases for Aircraft Depot |

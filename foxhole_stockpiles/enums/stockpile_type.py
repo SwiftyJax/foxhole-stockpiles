@@ -19,6 +19,7 @@ class StockpileType(StrEnum):
     TOWN_BASE = "Town Base"
     UNDERGROUND_FORTRESS = "Underground Fortress"
     BMS_LONGHOOK = "BMS - Longhook"
+    BMS_BLUEFIN = "BMS - Bluefin"
 
     # Structures (order from the game)
     STORAGE_DEPOT = "Storage Depot"

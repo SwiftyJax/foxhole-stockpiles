@@ -24,6 +24,7 @@ STOCKPILE_TYPE_FIELDS = [
     ("town_base", "Town Base"),
     ("underground_fortress", "Underground Fortress"),
     ("bms_longhook", "BMS - Longhook"),
+    ("bms_bluefin", "BMS - Bluefin"),
     ("storage_depot", "Storage Depot"),
     ("seaport", "Seaport"),
     ("aircraft_depot", "Aircraft Depot"),

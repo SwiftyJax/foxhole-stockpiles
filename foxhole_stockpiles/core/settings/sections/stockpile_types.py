@@ -52,6 +52,10 @@ class StockpileTypesSettings(BaseModel):
         description="Additional aliases for BMS - Longhook",
         default_factory=list,
     )
+    bms_bluefin: list[str] = Field(
+        description="Additional aliases for BMS - Bluefin",
+        default_factory=list,
+    )
     storage_depot: list[str] = Field(
         description="Additional aliases for Storage Depot",
         default_factory=list,

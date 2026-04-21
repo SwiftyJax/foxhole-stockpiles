@@ -80,6 +80,9 @@ STOCKPILE_TYPE_TEXTS: dict[StockpileType, list[str]] = {
     StockpileType.BMS_LONGHOOK: [
         "BMS - Longhook",
     ],
+    StockpileType.BMS_BLUEFIN: [
+        "BMS - Bluefin",
+    ],
     StockpileType.STORAGE_DEPOT: [
         "Storage Depot",
         "Lagerdepot",

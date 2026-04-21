@@ -298,6 +298,7 @@ class TestStockpileTypesSettings:
         assert settings.border_base == []
         assert settings.town_base == []
         assert settings.bms_longhook == []
+        assert settings.bms_bluefin == []
         assert settings.storage_depot == []
         assert settings.seaport == []
 
