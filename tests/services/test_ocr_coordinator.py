@@ -280,7 +280,7 @@ class TestSaveScreenshot:
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
         mock_stockpile = Stockpile(resolution="1920x1080")
 
-        coordinator._save_screenshot_with_metadata(mock_image, mock_stockpile)
+        coordinator._save_screenshot(mock_image, stockpile=mock_stockpile)
 
         # No screenshots folder should be created
         assert not (tmp_path / "screenshots").exists()
@@ -305,7 +305,7 @@ class TestSaveScreenshot:
             resolution="1920x1080", name="Test Storage", type=StockpileType.STORAGE_DEPOT
         )
 
-        coordinator._save_screenshot_with_metadata(mock_image, mock_stockpile)
+        coordinator._save_screenshot(mock_image, stockpile=mock_stockpile)
 
         # Check that daily folder was created
         from datetime import datetime
@@ -2166,7 +2166,7 @@ class TestDetectRegionsCriticalException:
             mock_imwrite.side_effect = OSError("Simulated write failure")
 
             # Should not raise - exception should be caught and logged
-            coordinator._save_screenshot_with_metadata(mock_image, mock_stockpile)
+            coordinator._save_screenshot(mock_image, stockpile=mock_stockpile)
 
 
 class TestOCRCoordinatorIntegration:

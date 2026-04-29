@@ -98,14 +98,20 @@ class OCRCoordinator:
         except Exception as e:
             self.logger.error("Failed to extract icon %d: %s", icon_index, e)
 
-    def _save_screenshot_with_metadata(
-        self, image: NDArray[np.uint8], stockpile: Stockpile
+    def _save_screenshot(
+        self,
+        image: NDArray[np.uint8],
+        stockpile: Stockpile | None = None,
+        storage_type: str | None = None,
+        name: str | None = None,
     ) -> None:
-        """Save screenshot with metadata to folder.
+        """Save screenshot to folder.
 
         Args:
             image (NDArray[np.uint8]): Image to save (BGR format)
-            stockpile (Stockpile): Stockpile with metadata for filename
+            stockpile (Stockpile | None): Stockpile with metadata for filename
+            storage_type (str | None): Override storage type (e.g., "FAILED")
+            name (str | None): Override name
         """
         if not self.config.screenshots_folder:
             return
@@ -118,8 +124,20 @@ class OCRCoordinator:
 
             # Generate filename: Date_HourWithSeconds_StorageType_Name_Resolution.png
             timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            storage_type = stockpile.type if stockpile.type else "Unknown"
-            name = stockpile.name if stockpile.name else "Unknown"
+
+            # Use overrides or extract from stockpile
+            if storage_type is None:
+                storage_type = str(stockpile.type) if stockpile and stockpile.type else "Unknown"
+            if name is None:
+                name = stockpile.name if stockpile and stockpile.name else "Unknown"
+
+            # Get resolution from stockpile or image dimensions
+            if stockpile:
+                resolution = stockpile.resolution
+            else:
+                height, width = image.shape[:2]
+                resolution = f"{width}x{height}"
+
             # Sanitize storage type and name for filename
             storage_type = "".join(
                 c if c.isalnum() or c in (" ", "-", "_") else "_" for c in storage_type
@@ -127,7 +145,7 @@ class OCRCoordinator:
             storage_type = storage_type.replace(" ", "_")
             name = "".join(c if c.isalnum() or c in (" ", "-", "_") else "_" for c in name)
             name = name.replace(" ", "_")
-            resolution = stockpile.resolution
+
             filename = f"{timestamp}_{storage_type}_{name}_{resolution}.png"
             filepath = daily_folder / filename
 
@@ -197,6 +215,8 @@ class OCRCoordinator:
                 scanned_stockpile.ingame_timestamp = metadata["ingame_timestamp"]
         except Exception as e:
             elapsed_time = time.perf_counter() - start_time
+            # Save failed scan image for debugging
+            self._save_screenshot(image, storage_type="FAILED")
             # Emit scan failed event
             self._event_bus.emit(
                 EventType.STOCKPILE_SCAN_FAILED,
@@ -211,7 +231,7 @@ class OCRCoordinator:
         elapsed_time = time.perf_counter() - start_time
 
         # Save screenshot with metadata if enabled
-        self._save_screenshot_with_metadata(image, scanned_stockpile)
+        self._save_screenshot(image, stockpile=scanned_stockpile)
 
         # Log summary
         stockpile_type = scanned_stockpile.type.value if scanned_stockpile.type else "Unknown"
