@@ -424,15 +424,9 @@ class OCRCoordinator:
             if self.config.debug_mode:
                 cv2.imwrite("stockpile_name_region.png", name_source)
 
-        # Detect Tab button presence using contrast analysis instead of OCR
-        # Tab button has high contrast (std > 30), empty area has low contrast (std < 15)
-        has_tab_button = False
-        if stockpile_images.stockpile_name_tab is not None:
-            tab_gray = cv2.cvtColor(stockpile_images.stockpile_name_tab, cv2.COLOR_BGR2GRAY)
-            tab_std = float(np.std(tab_gray))
-            has_tab_button = tab_std > 30
-            if self.config.debug_mode:
-                self.logger.debug("Tab region std: %.1f, has_tab: %s", tab_std, has_tab_button)
+        # Check if stockpile has a name region
+        # either pinned with name, or unpinned with custom name
+        has_name_region = stockpile_images.stockpile_name is not None
 
         # Define async OCR tasks
         async def extract_quantities_task() -> list[int]:
@@ -498,9 +492,18 @@ class OCRCoordinator:
             name_text is not None
             and stockpile_type
             and stockpile_type.has_custom_name()
-            and has_tab_button
+            and has_name_region
         ):
-            metadata["name"] = name_text.strip()
+            # Concatenate multi-line names:
+            # - If line ends with hyphen, concatenate directly (e.g., "ab-\ncd" -> "ab-cd")
+            # - Otherwise add space between lines (e.g., "ab\ncd" -> "ab cd")
+            lines = [line.strip() for line in name_text.strip().split("\n") if line.strip()]
+            result = ""
+            for line in lines:
+                if result and not result.endswith("-"):
+                    result += " "
+                result += line
+            metadata["name"] = result
 
         return quantities, metadata
 

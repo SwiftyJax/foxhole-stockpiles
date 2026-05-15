@@ -67,6 +67,9 @@ class StockpileDetector:
         # Detected groups for icons
         self.groups: list[GroupResult] = []
 
+        # Measured grey median from quantity boxes (for type bar detection)
+        self._measured_grey_median: int = 0
+
         # BMS Longhook has a single item in the first row
         self.has_single_item_first_row: bool = False
 
@@ -298,6 +301,7 @@ class StockpileDetector:
         # If we found at least 2 boxes, refine grey range based on measured values
         if len(background_greys) >= 2:
             measured_median = int(np.median(background_greys))
+            self._measured_grey_median = measured_median
 
             # Adaptive range: median ± 5 margin (bounded by configured limits)
             margin = 5
@@ -454,6 +458,34 @@ class StockpileDetector:
 
         self._build_quantity_composite_image()
 
+    def _find_type_bar_y(self, sample_x: int, grey_bar_top_y: int) -> int:
+        """Find the Y coordinate of the type bar by scanning upward.
+
+        Starts at the top of the grey separator bar and scans upward through
+        the dark info bar area until finding the bright type bar.
+
+        Args:
+            sample_x (int): X coordinate to sample (left of first icon).
+            grey_bar_top_y (int): Y coordinate at top of grey separator bar.
+
+        Returns:
+            int: Y coordinate of the type bar bottom edge.
+        """
+        gray = cv2.cvtColor(self.img, cv2.COLOR_RGB2GRAY)
+        grey_median = self._measured_grey_median
+
+        # Scan upward from grey bar top until we find bright type bar
+        max_scan = int(self.title_height * 3)
+        type_bar_y = grey_bar_top_y
+
+        for y in range(grey_bar_top_y, max(0, grey_bar_top_y - max_scan), -1):
+            current = int(gray[y, sample_x])
+            if current > grey_median + 10:  # Bright = type bar
+                type_bar_y = y
+                break
+
+        return type_bar_y
+
     def detect_stockpile_regions(self) -> None:
         """Detect stockpile type and name from the quantities detected."""
         if not self.quantities:
@@ -461,29 +493,85 @@ class StockpileDetector:
             return
 
         x, y = self.quantities[0]
+        first_icon_x = x - self.icon_to_quantity_offset
 
-        title_min_x = x - self.column_offset + self.box_width
-        title_y = y - int(self.row_offset)
-
+        title_min_x = first_icon_x - self.title_margin // 2
         title_max_x = max(
             self.max_detected_x + self.box_width + self.title_margin,
             title_min_x + self.title_min_width,
         )
 
-        # Calculate stockpile name region
-        name_x = title_max_x - self.stockpile_name_width - self.box_width
+        grey_bar_top_y = y - int(self.group_offset - self.row_offset)
+        type_bar_y = self._find_type_bar_y(sample_x=title_min_x, grey_bar_top_y=grey_bar_top_y)
+        info_bar_height = grey_bar_top_y - type_bar_y
+        title_y = type_bar_y - self.box_height
 
         self.stockpile_type = (
-            title_min_x + self.title_margin * 3 // 4,
+            title_min_x,
             title_y + self.title_height // 8,
             self.stockpile_type_width,
             self.title_height * 3 // 4,
         )
-        self.stockpile_name = (name_x, title_y, self.stockpile_name_width, self.title_height)
 
-        # Tab region: right of name area, used to detect if stockpile has a custom name
-        tab_x = name_x + self.stockpile_name_width
-        self.stockpile_name_tab = (tab_x, title_y, self.box_width, self.title_height)
+        if info_bar_height == 0:
+            # No info bar - Image has old format
+            name_x = title_max_x - self.stockpile_name_width - self.box_width
+            tab_x = name_x + self.stockpile_name_width
+            self.stockpile_name_tab = (tab_x, title_y, self.box_width, self.title_height)
+
+            # Check if tab button is present (high contrast = has custom name)
+            if self._has_tab_button():
+                self.stockpile_name = (
+                    name_x,
+                    title_y,
+                    self.stockpile_name_width,
+                    self.title_height,
+                )
+            else:
+                # No tab button = no custom name
+                self.stockpile_name = None
+            return
+
+        # Has info bar - Determine type based on info bar height
+        # < box_height: no name, < group_offset: pinned, >= group_offset: unpinned
+        if info_bar_height < self.box_height:
+            # No custom name
+            self.stockpile_name = None
+            return
+
+        if info_bar_height < self.group_offset:
+            # Pinned: stockpile name is relative to first icon
+            name_x = first_icon_x - self.title_margin // 3
+            top_margin = int(3 * self.scale_factor)  # Reduce top by 3px at 4K
+            name_y = y - self.box_height - self.title_margin // 6 + top_margin
+            name_w = self.box_width + self.title_height - self.title_margin // 12
+            name_h = self.title_height // 2 + self.title_margin // 12 - top_margin
+            self.stockpile_name = (name_x, name_y, name_w, name_h)
+            return
+
+        # Unpinned: custom name is in the info bar area
+        name_y = int(y - self.group_offset)
+        name_x = x - self.title_margin // 2
+        self.stockpile_name = (name_x, name_y, self.box_width * 2, self.title_height)
+
+    def _has_tab_button(self) -> bool:
+        """Check if tab button is present in the tab region.
+
+        Tab button has high contrast (std > 30), empty area has low contrast (std < 15).
+        Used when there's no info bar to detect if stockpile has a custom name.
+
+        Returns:
+            bool: True if tab button detected, False otherwise.
+        """
+        if not self.stockpile_name_tab:
+            return False
+
+        x, y, w, h = self.stockpile_name_tab
+        region = self.img[y : y + h, x : x + w]
+        gray = cv2.cvtColor(region, cv2.COLOR_RGB2GRAY)
+
+        tab_std = float(np.std(gray))
+        return tab_std > 30
 
     def analize(self) -> None:
         """Detect quantity boxes, stockpile type regions, and stockpile name regions."""

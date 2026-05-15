@@ -319,11 +319,89 @@ class TestDetectStockpileRegions:
 
         detector.detect_stockpile_regions()
 
-        # Should set regions
+        # Should set stockpile_type region
+        assert detector.stockpile_type is not None
+        assert len(detector.stockpile_type) == 4  # (x, y, w, h)
+
+        # stockpile_name is None because:
+        # - Black image has no info bar (_info_bar_height = 0 -> old format)
+        # - No tab button detected (no contrast on black image)
+        assert detector.stockpile_name is None
+
+    def test_detect_regions_pinned_format(self) -> None:
+        """Test region detection for pinned stockpile (info_bar_height < group_offset)."""
+        image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        detector = StockpileDetector(image)
+
+        # Mock quantities
+        detector.quantities = [(500, 400), (600, 400)]
+        detector.max_detected_x = 600
+
+        # At 1080p: box_height=32, group_offset=49, row_offset=39
+        # grey_bar_top_y = 400 - (49 - 39) = 390
+        # For pinned: box_height <= info_bar_height < group_offset
+        # So 32 <= (390 - type_bar_y) < 49
+        # Therefore: 341 < type_bar_y <= 358
+        with patch.object(detector, "_find_type_bar_y", return_value=350):
+            detector.detect_stockpile_regions()
+
         assert detector.stockpile_type is not None
         assert detector.stockpile_name is not None
-        assert len(detector.stockpile_type) == 4  # (x, y, w, h)
-        assert len(detector.stockpile_name) == 4
+        assert detector.stockpile_name_tab is None  # No tab for pinned format
+
+    def test_detect_regions_unpinned_format(self) -> None:
+        """Test region detection for unpinned stockpile (info_bar_height >= group_offset)."""
+        image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        detector = StockpileDetector(image)
+
+        # Mock quantities
+        detector.quantities = [(500, 400), (600, 400)]
+        detector.max_detected_x = 600
+
+        # At 1080p: box_height=32, group_offset=49, row_offset=39
+        # grey_bar_top_y = 400 - (49 - 39) = 390
+        # For unpinned: info_bar_height >= group_offset (49)
+        # So (390 - type_bar_y) >= 49
+        # Therefore: type_bar_y <= 341
+        with patch.object(detector, "_find_type_bar_y", return_value=330):
+            detector.detect_stockpile_regions()
+
+        assert detector.stockpile_type is not None
+        assert detector.stockpile_name is not None
+        assert detector.stockpile_name_tab is None  # No tab for unpinned format
+
+    def test_detect_regions_no_name_format(self) -> None:
+        """Test region detection when info_bar_height < box_height (no custom name)."""
+        image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        detector = StockpileDetector(image)
+
+        # Mock quantities
+        detector.quantities = [(500, 400), (600, 400)]
+        detector.max_detected_x = 600
+
+        # At 1080p: box_height=32, group_offset=49, row_offset=39
+        # grey_bar_top_y = 400 - (49 - 39) = 390
+        # For no name: info_bar_height < box_height (32)
+        # So (390 - type_bar_y) < 32
+        # Therefore: type_bar_y > 358
+        with patch.object(detector, "_find_type_bar_y", return_value=370):
+            detector.detect_stockpile_regions()
+
+        assert detector.stockpile_type is not None
+        assert detector.stockpile_name is None  # No name when info_bar_height < box_height
+
+
+class TestHasTabButton:
+    """Test suite for StockpileDetector._has_tab_button method."""
+
+    def test_has_tab_button_no_tab_region(self) -> None:
+        """Test _has_tab_button returns False when stockpile_name_tab is None."""
+        image = np.zeros((1080, 1920, 3), dtype=np.uint8)
+        detector = StockpileDetector(image)
+
+        detector.stockpile_name_tab = None
+
+        assert detector._has_tab_button() is False
 
 
 class TestAnalize:

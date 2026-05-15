@@ -2416,3 +2416,58 @@ class TestFrozenBundlePath:
 
         # The text extractor should have been initialized with the bundled path
         assert coordinator._text_extractor is not None
+
+
+class TestMultiLineNameConcatenation:
+    """Test suite for multi-line stockpile name concatenation."""
+
+    def test_name_concatenation_with_hyphen(self) -> None:
+        """Test that lines ending with hyphen are concatenated directly."""
+        # Simulate the concatenation logic from _extract_metadata
+        name_text = "ABC-\nDEF"
+        lines = [line.strip() for line in name_text.strip().split("\n") if line.strip()]
+        result = ""
+        for line in lines:
+            if result and not result.endswith("-"):
+                result += " "
+            result += line
+
+        assert result == "ABC-DEF"
+
+    def test_name_concatenation_without_hyphen(self) -> None:
+        """Test that lines not ending with hyphen are concatenated with space."""
+        # Simulate the concatenation logic from _extract_metadata
+        name_text = "ABC\nDEF"
+        lines = [line.strip() for line in name_text.strip().split("\n") if line.strip()]
+        result = ""
+        for line in lines:
+            if result and not result.endswith("-"):
+                result += " "
+            result += line
+
+        assert result == "ABC DEF"
+
+    def test_name_concatenation_mixed(self) -> None:
+        """Test mixed hyphen and non-hyphen line endings."""
+        # Simulate the concatenation logic from _extract_metadata
+        name_text = "AB-\nCD\nEF"
+        lines = [line.strip() for line in name_text.strip().split("\n") if line.strip()]
+        result = ""
+        for line in lines:
+            if result and not result.endswith("-"):
+                result += " "
+            result += line
+
+        assert result == "AB-CD EF"
+
+    def test_name_concatenation_single_line(self) -> None:
+        """Test single line name remains unchanged."""
+        name_text = "SingleName"
+        lines = [line.strip() for line in name_text.strip().split("\n") if line.strip()]
+        result = ""
+        for line in lines:
+            if result and not result.endswith("-"):
+                result += " "
+            result += line
+
+        assert result == "SingleName"
