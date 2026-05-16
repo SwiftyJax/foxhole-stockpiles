@@ -962,8 +962,11 @@ class OCRCoordinator:
 
         _, binary = cv2.threshold(upscaled, 0, 255, threshold_mode)
 
-        kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-        binary = cv2.dilate(binary, kernel, iterations=1)
+        # Skip dilation when extra_upscale is used (name detection)
+        # The 4x scaling already makes text thick enough, and dilation creates artifacts
+        if not extra_upscale:
+            kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+            binary = cv2.dilate(binary, kernel, iterations=1)
 
         post_cleaned = cv2.cvtColor(binary, cv2.COLOR_GRAY2RGB)
 
