@@ -4,6 +4,7 @@ import logging
 
 from foxhole_stockpiles.constants import STOCKPILE_TYPE_TEXTS
 from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
 from foxhole_stockpiles.enums.stockpile_type import StockpileType
 
 
@@ -29,27 +30,17 @@ class StockpileTypeClassifier:
             stockpile_type: list(texts) for stockpile_type, texts in STOCKPILE_TYPE_TEXTS.items()
         }
 
-        # Map settings field names to StockpileType enum values
-        field_to_type: dict[str, StockpileType] = {
-            "encampment": StockpileType.ENCAMPMENT,
-            "keep": StockpileType.KEEP,
-            "safe_house": StockpileType.SAFE_HOUSE,
-            "relic_base": StockpileType.RELIC_BASE,
-            "bunker_base": StockpileType.BUNKER_BASE,
-            "border_base": StockpileType.BORDER_BASE,
-            "town_base": StockpileType.TOWN_BASE,
-            "underground_fortress": StockpileType.UNDERGROUND_FORTRESS,
-            "bms_longhook": StockpileType.BMS_LONGHOOK,
-            "bms_bluefin": StockpileType.BMS_BLUEFIN,
-            "storage_depot": StockpileType.STORAGE_DEPOT,
-            "seaport": StockpileType.SEAPORT,
-            "aircraft_depot": StockpileType.AIRCRAFT_DEPOT,
-            # Note: UNDEFINED has no user-configurable aliases
-        }
-
-        # Add user-configured additional aliases from each field
+        # Add user-configured additional aliases from settings
+        # Field names are snake_case matching StockpileType enum names (lowercase)
         user_settings = self._settings.stockpile_types
-        for field_name, stockpile_type in field_to_type.items():
+        for field_name in StockpileTypesSettings.model_fields:
+            # Convert snake_case field name to enum name (uppercase)
+            enum_name = field_name.upper()
+            try:
+                stockpile_type = StockpileType[enum_name]
+            except KeyError:
+                continue  # Skip fields that don't match a StockpileType
+
             aliases: list[str] = getattr(user_settings, field_name, [])
             for alias in aliases:
                 if alias not in translations[stockpile_type]:

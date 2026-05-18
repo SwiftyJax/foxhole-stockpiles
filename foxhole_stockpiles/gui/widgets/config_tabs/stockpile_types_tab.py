@@ -9,26 +9,27 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from foxhole_stockpiles.constants import STOCKPILE_TYPE_TEXTS
 from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
+from foxhole_stockpiles.enums.stockpile_type import StockpileType
 from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
-# Define fields with their display names (for now, these are hardcoded since they're
-# game-specific terms that may not need translation)
-STOCKPILE_TYPE_FIELDS = [
-    ("encampment", "Encampment"),
-    ("keep", "Keep"),
-    ("safe_house", "Safe House"),
-    ("relic_base", "Relic Base"),
-    ("bunker_base", "Bunker Base"),
-    ("border_base", "Border Base"),
-    ("town_base", "Town Base"),
-    ("underground_fortress", "Underground Fortress"),
-    ("bms_longhook", "BMS - Longhook"),
-    ("bms_bluefin", "BMS - Bluefin"),
-    ("storage_depot", "Storage Depot"),
-    ("seaport", "Seaport"),
-    ("aircraft_depot", "Aircraft Depot"),
-]
+# Build fields from StockpileTypesSettings, using STOCKPILE_TYPE_TEXTS for display names
+# Field names are snake_case matching StockpileType enum names (e.g., "bunker_base_1")
+STOCKPILE_TYPE_FIELDS: list[tuple[str, str]] = []
+for field_name in StockpileTypesSettings.model_fields:
+    # Convert snake_case field name to enum name (uppercase)
+    enum_name = field_name.upper()
+    try:
+        stockpile_type = StockpileType[enum_name]
+    except KeyError:
+        continue
+    if stockpile_type in STOCKPILE_TYPE_TEXTS:
+        display_name = STOCKPILE_TYPE_TEXTS[stockpile_type][0]
+        # Add tier suffix for tiered types (those ending with _1, _2, _3)
+        if field_name[-2:-1] == "_" and field_name[-1].isdigit():
+            display_name += f" T{field_name[-1]}"
+        STOCKPILE_TYPE_FIELDS.append((field_name, display_name))
 
 
 class StockpileTypesTab(QWidget):

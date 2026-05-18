@@ -9,6 +9,8 @@ Generated/verified by: tools/sync_stockpile_translations.py
 
 from foxhole_stockpiles.enums.stockpile_type import StockpileType
 
+# Display texts for each stockpile type (used for OCR text matching)
+# Each tier may have unique translations in some languages (e.g., Portuguese Bunker Base)
 STOCKPILE_TYPE_TEXTS: dict[StockpileType, list[str]] = {
     StockpileType.ENCAMPMENT: [
         "Encampment",
@@ -42,15 +44,29 @@ STOCKPILE_TYPE_TEXTS: dict[StockpileType, list[str]] = {
         "Реликтовая База",
         "遗迹基地",
     ],
-    StockpileType.BUNKER_BASE: [
+    # Bunker Base tiers - Portuguese uses different translations per tier
+    StockpileType.BUNKER_BASE_1: [
         "Bunker Base",
         "Bunkerbasis",
         "Base Bunker",
-        "Centro do Bunker",
-        "Base de Bunker",
-        "Centro do bunker",
+        "Centro do Bunker",  # Portuguese T1-specific
         "Бункерная база",
-        "Бункерная База",
+        "地堡基地",
+    ],
+    StockpileType.BUNKER_BASE_2: [
+        "Bunker Base",
+        "Bunkerbasis",
+        "Base Bunker",
+        "Base de Bunker",  # Portuguese T2/T3
+        "Бункерная база",
+        "地堡基地",
+    ],
+    StockpileType.BUNKER_BASE_3: [
+        "Bunker Base",
+        "Bunkerbasis",
+        "Base Bunker",
+        "Base de Bunker",  # Portuguese T2/T3
+        "Бункерная База",  # Russian T3 uses uppercase
         "地堡基地",
     ],
     StockpileType.BORDER_BASE: [
@@ -61,9 +77,27 @@ STOCKPILE_TYPE_TEXTS: dict[StockpileType, list[str]] = {
         "Пограничная База",
         "边境基地",
     ],
-    StockpileType.TOWN_BASE: [
+    # Town Base tiers - Chinese TownBase2 has unique translation
+    StockpileType.TOWN_BASE_1: [
         "Town Base",
-        "Stadtkernbasis",
+        "Stadthalle",
+        "Quartier Général",
+        "Base da Cidade",
+        "Ратуша",
+        "城镇基地",
+    ],
+    StockpileType.TOWN_BASE_2: [
+        "Town Base",
+        "Stadthalle",
+        "Quartier Général",
+        "Base da Cidade",
+        "Ратуша",
+        "市政厅",  # Chinese TownBase2-specific
+        "城镇基地",
+    ],
+    StockpileType.TOWN_BASE_3: [
+        "Town Base",
+        "Stadthalle",
         "Quartier Général",
         "Base da Cidade",
         "Ратуша",
@@ -101,6 +135,40 @@ STOCKPILE_TYPE_TEXTS: dict[StockpileType, list[str]] = {
     ],
     StockpileType.AIRCRAFT_DEPOT: [
         "Aircraft Depot",
+    ],
+    # Facilities
+    StockpileType.HOSPITAL: [
+        "Hospital",
+    ],
+    StockpileType.REFINERY: [
+        "Refinery",
+    ],
+    StockpileType.MAINTENANCE_TUNNEL: [
+        "Maintenance Tunnel",
+    ],
+    StockpileType.SMALL_ARMS_FACTORY: [
+        "Small Arms Factory",
+    ],
+    StockpileType.MODIFICATION_CENTER: [
+        "Modification Center",
+    ],
+    StockpileType.TRANSFER_LIQUID: [
+        "Transfer Station",
+    ],
+    StockpileType.TRANSFER_MATERIAL: [
+        "Transfer Station",
+    ],
+    StockpileType.TRANSFER_RESOURCE: [
+        "Transfer Station",
+    ],
+    StockpileType.VEHICLE_FACTORY_1: [
+        "Vehicle Factory",
+    ],
+    StockpileType.VEHICLE_FACTORY_2: [
+        "Vehicle Factory",
+    ],
+    StockpileType.VEHICLE_FACTORY_3: [
+        "Vehicle Factory",
     ],
     StockpileType.UNDEFINED: [
         "Undefined",

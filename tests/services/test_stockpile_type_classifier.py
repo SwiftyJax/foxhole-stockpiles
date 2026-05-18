@@ -293,15 +293,19 @@ class TestHardcodedTexts:
         """Test that all types have at least one text (English)."""
         for stockpile_type, texts in STOCKPILE_TYPE_TEXTS.items():
             assert len(texts) >= 1, f"{stockpile_type} has no texts"
-            # First text should be the English canonical name
-            assert texts[0] == stockpile_type.value
+            # First text should be a non-empty string (the English display name)
+            assert isinstance(texts[0], str) and texts[0], f"{stockpile_type} has empty first text"
 
 
 class TestRealWorldScenarios:
     """Test suite for real-world stockpile type classification scenarios."""
 
     def test_classify_all_stockpile_types(self) -> None:
-        """Test classification works for all stockpile types."""
+        """Test classification works for all stockpile types.
+
+        Note: Multiple tiers (e.g., BUNKER_BASE_1/2/3) share the same display name,
+        so classifying by display_name returns the first matching type.
+        """
         mock_settings = MagicMock(spec=AppSettings)
         mock_settings.stockpile_types = StockpileTypesSettings()
 
@@ -311,10 +315,24 @@ class TestRealWorldScenarios:
         ):
             classifier = StockpileTypeClassifier()
 
+            # Track which display names we've already tested (for tiered types)
+            tested_display_names: set[str] = set()
+
             for stockpile_type in StockpileType:
-                # Use the canonical name
-                result = classifier.classify_from_text(stockpile_type.value)
-                assert result == stockpile_type
+                # Get display name from STOCKPILE_TYPE_TEXTS
+                display_name = STOCKPILE_TYPE_TEXTS[stockpile_type][0]
+                # Skip if we've already tested this display name (e.g., Bunker Base tiers)
+                if display_name in tested_display_names:
+                    continue
+                tested_display_names.add(display_name)
+
+                # Use the display name for classification (what OCR sees)
+                result = classifier.classify_from_text(display_name)
+                # Result should be one of the types with this display name
+                result_display_name = STOCKPILE_TYPE_TEXTS[result][0]
+                assert result_display_name == display_name, (
+                    f"Failed for {stockpile_type}: got {result}"
+                )
 
     def test_classify_with_ocr_error_and_alias(self) -> None:
         """Test classification with user-configured OCR error alias."""
@@ -359,7 +377,7 @@ class TestRealWorldScenarios:
         assert classifier.classify_from_text("8order Base") == StockpileType.BORDER_BASE
 
         # "8" -> "B" variation (eight instead of B in "Bunker" and "Base")
-        assert classifier.classify_from_text("8unker Base") == StockpileType.BUNKER_BASE
+        assert classifier.classify_from_text("8unker Base") == StockpileType.BUNKER_BASE_1
 
         # "8" -> "B" variation (eight instead of B in "Base" only)
-        assert classifier.classify_from_text("Town 8ase") == StockpileType.TOWN_BASE
+        assert classifier.classify_from_text("Town 8ase") == StockpileType.TOWN_BASE_1

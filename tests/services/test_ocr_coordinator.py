@@ -319,7 +319,7 @@ class TestSaveScreenshot:
 
         # Verify filename format
         filename = screenshots[0].name
-        assert "Storage_Depot" in filename
+        assert "StorageFacility" in filename  # In-game code name
         assert "Test_Storage" in filename
         assert "1920x1080" in filename
 

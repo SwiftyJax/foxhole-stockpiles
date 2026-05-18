@@ -30,24 +30,35 @@ def test_stockpile_types_tab_initialization(stockpile_types_tab: StockpileTypesT
     Args:
         stockpile_types_tab: StockpileTypesTab instance
     """
-    # Should have all 13 input fields (excluding undefined)
-    assert len(stockpile_types_tab._inputs) == 13
+    # Should have input fields for stockpile types that have aliases configurable
+    # (28 fields: all bases, structures, and facilities - excludes UNDEFINED)
+    assert len(stockpile_types_tab._inputs) == 28
 
-    # Check all expected fields exist
+    # Check some expected fields exist (using snake_case matching enum names)
     expected_fields = [
         "encampment",
         "keep",
         "safe_house",
         "relic_base",
-        "bunker_base",
+        "bunker_base_1",
+        "bunker_base_2",
+        "bunker_base_3",
         "border_base",
-        "town_base",
+        "town_base_1",
+        "town_base_2",
+        "town_base_3",
         "underground_fortress",
         "bms_longhook",
         "bms_bluefin",
         "storage_depot",
         "seaport",
         "aircraft_depot",
+        "vehicle_factory_1",
+        "vehicle_factory_2",
+        "vehicle_factory_3",
+        "transfer_liquid",
+        "transfer_material",
+        "transfer_resource",
     ]
     for field in expected_fields:
         assert field in stockpile_types_tab._inputs
@@ -124,17 +135,31 @@ def test_stockpile_types_tab_get_values_empty(stockpile_types_tab: StockpileType
     """
     settings = stockpile_types_tab.get_values()
 
-    assert settings.seaport == []
-    assert settings.storage_depot == []
+    # Bases
     assert settings.encampment == []
     assert settings.keep == []
     assert settings.safe_house == []
     assert settings.relic_base == []
-    assert settings.bunker_base == []
+    assert settings.bunker_base_1 == []
+    assert settings.bunker_base_2 == []
+    assert settings.bunker_base_3 == []
     assert settings.border_base == []
-    assert settings.town_base == []
+    assert settings.town_base_1 == []
+    assert settings.town_base_2 == []
+    assert settings.town_base_3 == []
     assert settings.bms_longhook == []
     assert settings.bms_bluefin == []
+    # Structures
+    assert settings.storage_depot == []
+    assert settings.seaport == []
+    assert settings.aircraft_depot == []
+    # Facilities
+    assert settings.vehicle_factory_1 == []
+    assert settings.vehicle_factory_2 == []
+    assert settings.vehicle_factory_3 == []
+    assert settings.transfer_liquid == []
+    assert settings.transfer_material == []
+    assert settings.transfer_resource == []
 
 
 def test_stockpile_types_tab_get_values_whitespace_handling(
@@ -178,7 +203,7 @@ def test_stockpile_types_tab_roundtrip(stockpile_types_tab: StockpileTypesTab) -
     original_settings = StockpileTypesSettings(
         seaport=["seapon", "Seapont", "5eaport"],
         storage_depot=["Storage Depo", "Slorage Depot"],
-        bunker_base=["Bunker Bose"],
+        bunker_base_1=["Bunker Bose"],
     )
 
     stockpile_types_tab.set_values(original_settings)
@@ -186,7 +211,7 @@ def test_stockpile_types_tab_roundtrip(stockpile_types_tab: StockpileTypesTab) -
 
     assert retrieved_settings.seaport == original_settings.seaport
     assert retrieved_settings.storage_depot == original_settings.storage_depot
-    assert retrieved_settings.bunker_base == original_settings.bunker_base
+    assert retrieved_settings.bunker_base_1 == original_settings.bunker_base_1
     assert retrieved_settings.encampment == []
 
 

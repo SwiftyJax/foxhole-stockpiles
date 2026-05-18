@@ -2,13 +2,11 @@
 
 from typing import Any
 
-from foxhole_stockpiles.constants import STOCKPILE_TYPE_TEXTS
-
 
 class ConfigMigrator:
     """Handles migration of configuration data between versions."""
 
-    CURRENT_VERSION = 5
+    CURRENT_VERSION = 6
 
     @classmethod
     def apply_migrations(cls, data: dict[str, Any]) -> dict[str, Any]:
@@ -48,6 +46,11 @@ class ConfigMigrator:
         if version == 4:
             data = cls._migrate_v4_to_v5(data)
             data["config_version"] = 5
+            version = 5
+
+        if version == 5:
+            data = cls._migrate_v5_to_v6(data)
+            data["config_version"] = 6
 
         return data
 
@@ -132,8 +135,8 @@ class ConfigMigrator:
         V3 had: stockpile_types with all translations as defaults (including undefined)
         V4 has: stockpile_types with only user-added aliases (no undefined field)
 
-        The valid translations are now in the constants module, so we filter
-        out any default translations from the config, keeping only user-added aliases.
+        The default texts are hardcoded here as they existed at v3 time, so this
+        migration remains stable regardless of future changes to STOCKPILE_TYPE_TEXTS.
 
         Args:
             data: V3 configuration data
@@ -149,16 +152,99 @@ class ConfigMigrator:
         # Remove the undefined field (no longer valid)
         stockpile_types.pop("undefined", None)
 
-        # Build mapping from settings field names to default texts
-        # The field names use snake_case, enum values use Title Case
-        field_to_defaults: dict[str, set[str]] = {
-            stockpile_type.name.lower(): set(texts)
-            for stockpile_type, texts in STOCKPILE_TYPE_TEXTS.items()
-            if stockpile_type.name != "UNDEFINED"  # Skip UNDEFINED
+        # Hardcoded defaults as they existed at v3 time (before enum refactoring)
+        # These are the translations that should be filtered out
+        v3_defaults: dict[str, set[str]] = {
+            "encampment": {
+                "Encampment",
+                "Feldlager",
+                "Campement",
+                "Acampamento",
+                "Лагерь",
+                "营地",
+            },
+            "keep": {
+                "Keep",
+                "Wehrturm",
+                "Place Forte",
+                "Torreão",
+                "Крепость",
+                "要塞",
+            },
+            "safe_house": {
+                "Safe House",
+                "Unterschlupf",
+                "Planque",
+                "Casa Fortificada",
+                "Убежище",
+                "安全屋",
+            },
+            "relic_base": {
+                "Relic Base",
+                "Reliktbasis",
+                "Base Relique",
+                "Base Relíquia",
+                "Реликтовая База",
+                "遗迹基地",
+            },
+            "bunker_base": {
+                "Bunker Base",
+                "Bunkerbasis",
+                "Base Bunker",
+                "Centro do Bunker",
+                "Base de Bunker",
+                "Centro do bunker",
+                "Бункерная база",
+                "Бункерная База",
+                "地堡基地",
+            },
+            "border_base": {
+                "Border Base",
+                "Grenzbasis",
+                "Base Frontalière",
+                "Base Fronteiriça",
+                "Пограничная База",
+                "边境基地",
+            },
+            "town_base": {
+                "Town Base",
+                "Stadtkernbasis",
+                "Quartier Général",
+                "Base da Cidade",
+                "Ратуша",
+                "城镇基地",
+            },
+            "underground_fortress": {
+                "Underground Fortress",
+                "Untergrundfestung",
+                "Forteresse Souterraine",
+                "Bunker Subterrâneo",
+                "Подземная Крепость",
+                "地下要塞",
+            },
+            "bms_longhook": {"BMS - Longhook"},
+            "bms_bluefin": {"BMS - Bluefin"},
+            "storage_depot": {
+                "Storage Depot",
+                "Lagerdepot",
+                "Dépôt",
+                "Depósito",
+                "Складское помещение",
+                "仓库",
+            },
+            "seaport": {
+                "Seaport",
+                "Seehafen",
+                "Port",
+                "Porto",
+                "Морской порт",
+                "海港",
+            },
+            "aircraft_depot": {"Aircraft Depot"},
         }
 
         # Filter out default translations, keeping only user-added aliases
-        for field_name, defaults in field_to_defaults.items():
+        for field_name, defaults in v3_defaults.items():
             if field_name in stockpile_types and isinstance(stockpile_types[field_name], list):
                 stockpile_types[field_name] = [
                     alias for alias in stockpile_types[field_name] if alias not in defaults
@@ -231,5 +317,32 @@ class ConfigMigrator:
                 }
             ]
         }
+
+        return data
+
+    @staticmethod
+    def _migrate_v5_to_v6(data: dict[str, Any]) -> dict[str, Any]:
+        """Migrate from v5 to v6 (expand non-tiered fields to tiered fields).
+
+        V5 had: stockpile_types with non-tiered fields (bunker_base, town_base)
+        V6 has: stockpile_types with tiered fields (bunker_base_1, town_base_1, etc.)
+
+        Args:
+            data: V5 configuration data
+
+        Returns:
+            V6 configuration data
+        """
+        if "stockpile_types" not in data or not isinstance(data["stockpile_types"], dict):
+            return data
+
+        stockpile_types = data["stockpile_types"]
+
+        # Rename non-tiered fields to tier 1 (user aliases apply to all tiers via tier 1)
+        if "bunker_base" in stockpile_types:
+            stockpile_types["bunker_base_1"] = stockpile_types.pop("bunker_base")
+
+        if "town_base" in stockpile_types:
+            stockpile_types["town_base_1"] = stockpile_types.pop("town_base")
 
         return data

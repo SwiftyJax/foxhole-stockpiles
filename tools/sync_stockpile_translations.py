@@ -61,7 +61,7 @@ STOCKPILE_BLUEPRINTS = {
         "patterns": ["BPRelicBase.json"],
         "english": "Relic Base",
     },
-    StockpileType.BUNKER_BASE: {
+    StockpileType.BUNKER_BASE_1: {
         "patterns": [
             "BPFortBaseT1.json",
             "BPFortBaseT2.json",
@@ -76,7 +76,7 @@ STOCKPILE_BLUEPRINTS = {
         "patterns": ["BPBorderBase.json"],
         "english": "Border Base",
     },
-    StockpileType.TOWN_BASE: {
+    StockpileType.TOWN_BASE_1: {
         "patterns": ["BPTownBase1.json", "BPTownBase2.json", "BPTownBase3.json"],
         "english": "Town Base",
     },

@@ -285,7 +285,7 @@ class TestWebScan:
 
             assert response.status_code == 200
             assert "Test Stockpile" in response.text
-            assert "Storage Depot" in response.text
+            assert "StorageFacility" in response.text  # In-game code name
             assert "100" in response.text
             assert "50" in response.text
             assert "Crated" in response.text  # Crated badge
@@ -551,7 +551,7 @@ class TestRenderStockpileTable:
         )
 
         assert "Test Stockpile" in html
-        assert "Storage Depot" in html
+        assert "StorageFacility" in html  # In-game code name
         assert "100" in html
         assert "Display Name for Item1" in html
         assert 'src="data:image/png;base64,abc123"' in html
