@@ -6,6 +6,7 @@ from typing import Any, cast
 from pydantic import BaseModel, ConfigDict, Field, field_serializer
 
 from foxhole_stockpiles.enums.stockpile_type import StockpileType
+from foxhole_stockpiles.models.stockpile_coords import StockpileCoords
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
 
 
@@ -14,6 +15,9 @@ class Stockpile(BaseModel):
 
     name: str = Field(description="Name of the stockpile", default="")
     type: StockpileType = Field(description="Type of stockpile", default=StockpileType.UNDEFINED)
+    hex: str = Field(description="Hex region name", default="")
+    coords: StockpileCoords | None = Field(description="Map coordinates", default=None)
+    is_reserve: bool = Field(description="Whether this is a reserve stockpile", default=False)
     items: list[StockpileItem] = Field(description="List of items", default_factory=list)
     timestamp: datetime = Field(description="last update datetime", default_factory=datetime.now)
     shard: str = Field(description="Shard name", default="")
@@ -35,6 +39,9 @@ class Stockpile(BaseModel):
             "example": {
                 "name": "Logi",
                 "type": StockpileType.SEAPORT,
+                "hex": "Westgate",
+                "coords": {"x": 0.457745, "y": 0.664469},
+                "is_reserve": False,
                 "items": [
                     cast(dict[str, Any], StockpileItem.model_config)
                     .get("json_schema_extra", {})

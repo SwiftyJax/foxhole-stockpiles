@@ -213,6 +213,12 @@ class OCRCoordinator:
                 scanned_stockpile.shard = metadata["shard"]
             if metadata["ingame_timestamp"] is not None:
                 scanned_stockpile.ingame_timestamp = metadata["ingame_timestamp"]
+
+            # Determine if this is a reserve stockpile based on name
+            # Empty, "Public", or "Unknown" name means it's not a reserve
+            scanned_stockpile.is_reserve = bool(
+                scanned_stockpile.name
+            ) and scanned_stockpile.name not in ("Public", "Unknown")
         except Exception as e:
             elapsed_time = time.perf_counter() - start_time
             # Save failed scan image for debugging
