@@ -52,10 +52,10 @@ def update_pyproject(
     # Create lookup dict with normalized names
     outdated_lookup = {normalize_name(pkg["name"]): pkg for pkg in outdated}
 
-    # Pattern to match dependency lines like: "package>=1.0.0" or "package[extra]>=1.0.0"
-    # Captures: package name, optional extras, operator, version
+    # Pattern to match dependency lines like: "package>=1.0.0" or "package[extra]>=1.0.0,<2.0.0"
+    # Captures: package name, optional extras, operator, version, optional upper bound
     dep_pattern = re.compile(
-        r'"([a-zA-Z0-9_-]+)(\[[^\]]+\])?(>=|<=|==|~=|>|<)([0-9]+\.[0-9]+\.?[0-9]*)"'
+        r'"([a-zA-Z0-9_-]+)(\[[^\]]+\])?(>=|<=|==|~=|>|<)([0-9]+\.[0-9]+\.?[0-9]*)(,[<>=!]+[0-9]+\.[0-9]+\.?[0-9]*)?"'
     )
 
     def replace_version(match: re.Match[str]) -> str:
@@ -63,6 +63,7 @@ def update_pyproject(
         extras = match.group(2) or ""
         operator = match.group(3)
         old_version = match.group(4)
+        upper_bound = match.group(5) or ""
 
         normalized = normalize_name(pkg_name)
         if normalized in outdated_lookup:
@@ -72,7 +73,7 @@ def update_pyproject(
                 updated_count += 1
                 action = "Would update" if dry_run else "Updating"
                 print(f"  {action}: {pkg_name} {operator}{old_version} -> {operator}{new_version}")
-                return f'"{pkg_name}{extras}{operator}{new_version}"'
+                return f'"{pkg_name}{extras}{operator}{new_version}{upper_bound}"'
 
         return match.group(0)
 
