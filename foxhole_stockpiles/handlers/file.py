@@ -2,6 +2,7 @@
 
 import asyncio
 import datetime
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -37,11 +38,11 @@ class FileOutputHandler(BaseOutputDestinationHandler):
         self.default_file_path = default_file_path
         self.format_settings = format_settings or JsonFormatSettings()
 
-    async def handle(self, stockpile: Stockpile, **kwargs: Any) -> None:
+    async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> None:
         """Write stockpile data to file.
 
         Args:
-            stockpile (Stockpile): The stockpile data to write
+            stockpiles (list[Stockpile]): The stockpile data to write
             **kwargs: Additional parameters:
                 - file_path (str | Path): Path where to write the file
 
@@ -53,9 +54,19 @@ class FileOutputHandler(BaseOutputDestinationHandler):
         if not file_path_arg and not self.default_file_path:
             raise ValueError("File path must be provided via file_path argument or default")
 
+        if len(stockpiles) == 0:
+            self.logger.warning("No stockpiles to write, skipping file output")
+            return
+
         file = str(file_path_arg) if file_path_arg else self.default_file_path or "output.json"
 
         # Support placeholders in filename/path
+        # For stockpile-specific placeholders, use first stockpile's values
+        resolution = stockpiles[0].resolution or "Unknown"
+        if len(stockpiles) == 1:
+            name = stockpiles[0].name or "Unknown"
+        else:
+            name = "multiple_stockpiles"
         now = datetime.datetime.now()
         placeholders = {
             "{timestamp}": now.strftime("%Y-%m-%d_%H-%M-%S"),
@@ -65,15 +76,9 @@ class FileOutputHandler(BaseOutputDestinationHandler):
             "{hour}": now.strftime("%H"),
             "{minute}": now.strftime("%M"),
             "{second}": now.strftime("%S"),
-            "{stockpile_type}": (
-                stockpile.type.title()
-                if isinstance(stockpile.type, str)
-                else stockpile.type.value.title()
-            )
-            if stockpile.type
-            else "Unknown",
-            "{stockpile_name}": stockpile.name or "Unknown",
-            "{resolution}": stockpile.resolution or "Unknown",
+            "{stockpile_type}": self._get_stockpile_type_str(stockpiles[0]),
+            "{stockpile_name}": name,
+            "{resolution}": resolution,
         }
         for placeholder, value in placeholders.items():
             file = file.replace(placeholder, value)
@@ -85,7 +90,7 @@ class FileOutputHandler(BaseOutputDestinationHandler):
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         # Format the output based on settings
-        content = self._format_output(stockpile)
+        content = self._format_output(stockpiles)
 
         def write_file() -> None:
             """Write stockpile data to file synchronously."""
@@ -96,24 +101,51 @@ class FileOutputHandler(BaseOutputDestinationHandler):
 
         self.logger.debug("Output saved to: %s", output_path)
 
-    def _format_output(self, stockpile: Stockpile) -> str:
+    def _get_stockpile_type_str(self, stockpile: Stockpile | None) -> str:
+        """Get stockpile type as string for placeholders.
+
+        Args:
+            stockpile (Stockpile | None): The stockpile to get type from
+
+        Returns:
+            str: Stockpile type string or "Unknown"
+        """
+        if not stockpile or not stockpile.type:
+            return "Unknown"
+        if isinstance(stockpile.type, str):
+            return stockpile.type.title()
+        return stockpile.type.value.title()
+
+    def _format_output(self, stockpiles: list[Stockpile]) -> str:
         """Format stockpile data based on format settings.
 
         Args:
-            stockpile (Stockpile): The stockpile data to format
+            stockpiles (list[Stockpile]): The stockpile data to format
 
         Returns:
             str: Formatted output string
         """
         if isinstance(self.format_settings, CsvFormatSettings):
-            return self._format_csv(stockpile)
-        return stockpile.model_dump_json(indent=2)
+            return self._format_csv(stockpiles)
+        return self._format_json(stockpiles)
 
-    def _format_csv(self, stockpile: Stockpile) -> str:
+    def _format_json(self, stockpiles: list[Stockpile]) -> str:
+        """Format stockpiles as JSON with wrapper object.
+
+        Args:
+            stockpiles (list[Stockpile]): The stockpile data to format
+
+        Returns:
+            str: JSON formatted string with {"stockpiles": [...]} structure
+        """
+        payload = {"stockpiles": [s.model_dump(mode="json") for s in stockpiles]}
+        return json.dumps(obj=payload, indent=2)
+
+    def _format_csv(self, stockpiles: list[Stockpile]) -> str:
         """Format stockpile data as CSV/TSV.
 
         Args:
-            stockpile (Stockpile): The stockpile data to format
+            stockpiles (list[Stockpile]): The stockpile data to format
 
         Returns:
             str: CSV/TSV formatted string
@@ -128,17 +160,30 @@ class FileOutputHandler(BaseOutputDestinationHandler):
         ):
             lines.append(separator.join(CSV_HEADERS))
 
+        # Add rows for each stockpile
+        for stockpile in stockpiles:
+            stockpile_lines = self._format_stockpile_csv_rows(
+                stockpile=stockpile, separator=separator
+            )
+            lines.extend(stockpile_lines)
+
+        return "\n".join(lines)
+
+    def _format_stockpile_csv_rows(self, stockpile: Stockpile, separator: str) -> list[str]:
+        """Format a single stockpile's items as CSV/TSV rows.
+
+        Args:
+            stockpile (Stockpile): The stockpile to format
+            separator (str): Field separator (comma or tab)
+
+        Returns:
+            list[str]: List of CSV/TSV row strings
+        """
+        lines: list[str] = []
+
         # Get stockpile-level values
         stockpile_name = stockpile.name or ""
-        stockpile_type = (
-            (
-                stockpile.type.title()
-                if isinstance(stockpile.type, str)
-                else stockpile.type.value.title()
-            )
-            if stockpile.type
-            else ""
-        )
+        stockpile_type = self._get_stockpile_type_str(stockpile) if stockpile.type else ""
         shard = stockpile.shard or ""
         ingame_timestamp = stockpile.ingame_timestamp or ""
 
@@ -146,8 +191,16 @@ class FileOutputHandler(BaseOutputDestinationHandler):
         for item in stockpile.items:
             row_values: list[str] = []
             for field in CSV_FIELDS:
-                if field == "code":
-                    row_values.append(self._escape_csv_value(item.code, separator))
+                if field == "stockpile_name":
+                    row_values.append(
+                        self._escape_csv_value(value=stockpile_name, separator=separator)
+                    )
+                elif field == "stockpile_type":
+                    row_values.append(
+                        self._escape_csv_value(value=stockpile_type, separator=separator)
+                    )
+                elif field == "code":
+                    row_values.append(self._escape_csv_value(value=item.code, separator=separator))
                 elif field == "crated":
                     row_values.append("1" if item.crated else "0")
                 elif field == "quantity":
@@ -155,17 +208,15 @@ class FileOutputHandler(BaseOutputDestinationHandler):
                 elif field == "confidence":
                     confidence = round(item.confidence, 3) if item.confidence is not None else ""
                     row_values.append(str(confidence) if confidence != "" else "")
-                elif field == "stockpile_name":
-                    row_values.append(self._escape_csv_value(stockpile_name, separator))
-                elif field == "stockpile_type":
-                    row_values.append(self._escape_csv_value(stockpile_type, separator))
                 elif field == "shard":
-                    row_values.append(self._escape_csv_value(shard, separator))
+                    row_values.append(self._escape_csv_value(value=shard, separator=separator))
                 elif field == "ingame_timestamp":
-                    row_values.append(self._escape_csv_value(ingame_timestamp, separator))
+                    row_values.append(
+                        self._escape_csv_value(value=ingame_timestamp, separator=separator)
+                    )
             lines.append(separator.join(row_values))
 
-        return "\n".join(lines)
+        return lines
 
     def _escape_csv_value(self, value: str, separator: str) -> str:
         """Escape a value for CSV/TSV output.

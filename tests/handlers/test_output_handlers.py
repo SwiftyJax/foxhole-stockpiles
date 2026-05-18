@@ -65,7 +65,7 @@ class TestConsoleOutputHandler:
         handler = ConsoleOutputHandler()
 
         with patch.object(handler.logger, "info") as mock_logger:
-            await handler.handle(sample_stockpile)
+            await handler.handle([sample_stockpile])
 
             # Verify logger calls
             mock_logger.assert_any_call("Name: %s", "Test Stockpile")
@@ -101,7 +101,7 @@ class TestConsoleOutputHandler:
         handler = ConsoleOutputHandler()
 
         with patch.object(handler.logger, "info") as mock_logger:
-            await handler.handle(stockpile)
+            await handler.handle([stockpile])
 
             # Verify crated item has _crated suffix
             mock_logger.assert_any_call(
@@ -118,6 +118,32 @@ class TestConsoleOutputHandler:
                 0.87,
             )
 
+    @pytest.mark.asyncio
+    async def test_console_output_multiple_stockpiles(self, sample_stockpile: Stockpile) -> None:
+        """Test console output with multiple stockpiles adds separator.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        second_stockpile = Stockpile(
+            name="Second Stockpile",
+            type=StockpileType.STORAGE_DEPOT,
+            items=[StockpileItem(quantity=200, code="SulfurIcon", confidence=0.99)],
+            shard="TEST",
+            resolution="1920x1080",
+        )
+
+        handler = ConsoleOutputHandler()
+
+        with patch.object(handler.logger, "info") as mock_logger:
+            await handler.handle([sample_stockpile, second_stockpile])
+
+            # Verify separator between stockpiles
+            mock_logger.assert_any_call("---")
+            # Verify both stockpiles logged
+            mock_logger.assert_any_call("Name: %s", "Test Stockpile")
+            mock_logger.assert_any_call("Name: %s", "Second Stockpile")
+
 
 class TestReturnOutputHandler:
     """Test cases for ReturnOutputHandler."""
@@ -130,12 +156,37 @@ class TestReturnOutputHandler:
             sample_stockpile (Stockpile): Sample stockpile data from fixture.
         """
         handler = ReturnOutputHandler()
-        result = await handler.handle(sample_stockpile)
+        result = await handler.handle([sample_stockpile])
 
         assert isinstance(result, dict)
-        assert result["name"] == "Test Stockpile"
-        assert result["type"] == "Seaport"
-        assert len(result["items"]) == 3
+        assert "stockpiles" in result
+        assert len(result["stockpiles"]) == 1
+        assert result["stockpiles"][0]["name"] == "Test Stockpile"
+        assert result["stockpiles"][0]["type"] == "Seaport"
+        assert len(result["stockpiles"][0]["items"]) == 3
+
+    @pytest.mark.asyncio
+    async def test_return_output_multiple_stockpiles(self, sample_stockpile: Stockpile) -> None:
+        """Test return output handler with multiple stockpiles.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        second_stockpile = Stockpile(
+            name="Second Stockpile",
+            type=StockpileType.STORAGE_DEPOT,
+            items=[],
+            resolution="1920x1080",
+        )
+
+        handler = ReturnOutputHandler()
+        result = await handler.handle([sample_stockpile, second_stockpile])
+
+        assert isinstance(result, dict)
+        assert "stockpiles" in result
+        assert len(result["stockpiles"]) == 2
+        assert result["stockpiles"][0]["name"] == "Test Stockpile"
+        assert result["stockpiles"][1]["name"] == "Second Stockpile"
 
 
 class TestFileOutputHandler:
@@ -154,12 +205,13 @@ class TestFileOutputHandler:
             mock_file = Mock()
             mock_open.return_value.__enter__.return_value = mock_file
 
-            await handler.handle(sample_stockpile)
+            await handler.handle([sample_stockpile])
 
             mock_file.write.assert_called_once()
             written_data = mock_file.write.call_args[0][0]
             data = json.loads(written_data)
-            assert data["name"] == "Test Stockpile"
+            assert "stockpiles" in data
+            assert data["stockpiles"][0]["name"] == "Test Stockpile"
 
     @pytest.mark.asyncio
     async def test_file_output_custom_path(self, sample_stockpile: Stockpile) -> None:
@@ -175,7 +227,7 @@ class TestFileOutputHandler:
             mock_file = Mock()
             mock_open.return_value.__enter__.return_value = mock_file
 
-            await handler.handle(sample_stockpile, file_path=custom_path)
+            await handler.handle([sample_stockpile], file_path=custom_path)
 
             mock_file.write.assert_called_once()
 
@@ -207,7 +259,7 @@ class TestFileOutputHandler:
             mock_file = Mock()
             mock_open.return_value.__enter__.return_value = mock_file
 
-            await handler.handle(sample_stockpile)
+            await handler.handle([sample_stockpile])
 
             mock_file.write.assert_called_once()
 
@@ -243,7 +295,7 @@ class TestFileOutputHandler:
             mock_file = Mock()
             mock_open.return_value.__enter__.return_value = mock_file
 
-            await handler.handle(sample_stockpile)
+            await handler.handle([sample_stockpile])
 
             # Verify mkdir was called to create the date-based directory
             mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
@@ -282,7 +334,7 @@ class TestFileOutputHandler:
             mock_file = Mock()
             mock_open.return_value.__enter__.return_value = mock_file
 
-            await handler.handle(sample_stockpile)
+            await handler.handle([sample_stockpile])
 
             mock_file.write.assert_called_once()
 
@@ -296,7 +348,7 @@ class TestFileOutputHandler:
         handler = FileOutputHandler()
 
         with pytest.raises(ValueError, match="File path must be provided"):
-            await handler.handle(sample_stockpile)
+            await handler.handle([sample_stockpile])
 
     @pytest.mark.asyncio
     async def test_file_output_csv_format(self, sample_stockpile: Stockpile) -> None:
@@ -312,7 +364,7 @@ class TestFileOutputHandler:
             mock_file = Mock()
             mock_open.return_value.__enter__.return_value = mock_file
 
-            await handler.handle(sample_stockpile)
+            await handler.handle([sample_stockpile])
 
             mock_file.write.assert_called_once()
             written_data = mock_file.write.call_args[0][0]
@@ -320,11 +372,12 @@ class TestFileOutputHandler:
             # Verify CSV structure
             lines = written_data.split("\n")
             assert len(lines) == 4  # 1 header + 3 items
-            assert (
-                lines[0]
-                == "Code,Crated,Quantity,Confidence,Stockpile Name,Stockpile Type,Shard,Ingame Time"
+            # Header starts with stockpile_name
+            assert lines[0] == (
+                "Stockpile Name,Stockpile Type,Code,Crated,Quantity,Confidence,Shard,Ingame Time"
             )
-            # Check first data row
+            # Check first data row has stockpile_name
+            assert lines[1].startswith("Test Stockpile,")
             assert "BasicMaterialsIcon" in lines[1]
             assert ",0," in lines[1]  # crated = 0 (false)
             assert "100" in lines[1]
@@ -346,7 +399,7 @@ class TestFileOutputHandler:
             mock_file = Mock()
             mock_open.return_value.__enter__.return_value = mock_file
 
-            await handler.handle(sample_stockpile)
+            await handler.handle([sample_stockpile])
 
             mock_file.write.assert_called_once()
             written_data = mock_file.write.call_args[0][0]
@@ -355,9 +408,9 @@ class TestFileOutputHandler:
             lines = written_data.split("\n")
             assert len(lines) == 4  # 1 header + 3 items
             assert "\t" in lines[0]  # Tab separator
-            assert (
-                "Code\tCrated\tQuantity\tConfidence"
-                "\tStockpile Name\tStockpile Type\tShard\tIngame Time" == lines[0]
+            assert lines[0] == (
+                "Stockpile Name\tStockpile Type\tCode\tCrated\tQuantity"
+                "\tConfidence\tShard\tIngame Time"
             )
 
     @pytest.mark.asyncio
@@ -374,7 +427,7 @@ class TestFileOutputHandler:
             mock_file = Mock()
             mock_open.return_value.__enter__.return_value = mock_file
 
-            await handler.handle(sample_stockpile)
+            await handler.handle([sample_stockpile])
 
             mock_file.write.assert_called_once()
             written_data = mock_file.write.call_args[0][0]
@@ -382,7 +435,47 @@ class TestFileOutputHandler:
             # Verify no header - only data rows
             lines = written_data.split("\n")
             assert len(lines) == 3  # 3 items, no header
-            assert "BasicMaterialsIcon" in lines[0]
+            assert lines[0].startswith("Test Stockpile,")  # stockpile_name first
+
+    @pytest.mark.asyncio
+    async def test_file_output_csv_multiple_stockpiles(self, sample_stockpile: Stockpile) -> None:
+        """Test file output with CSV format and multiple stockpiles.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        second_stockpile = Stockpile(
+            name="Second Stockpile",
+            type=StockpileType.STORAGE_DEPOT,
+            items=[StockpileItem(quantity=200, code="SulfurIcon", confidence=0.99)],
+            shard="TEST",
+            resolution="1920x1080",
+        )
+
+        csv_settings = CsvFormatSettings(type=OutputFormat.CSV, include_header=True)
+        handler = FileOutputHandler(default_file_path="output.csv", format_settings=csv_settings)
+
+        with patch("pathlib.Path.open") as mock_open, patch("pathlib.Path.mkdir"):
+            mock_file = Mock()
+            mock_open.return_value.__enter__.return_value = mock_file
+
+            await handler.handle([sample_stockpile, second_stockpile])
+
+            mock_file.write.assert_called_once()
+            written_data = mock_file.write.call_args[0][0]
+
+            # Verify CSV structure with multiple stockpiles
+            lines = written_data.split("\n")
+            assert len(lines) == 5  # 1 header + 3 items from first + 1 item from second
+
+            # First stockpile items have name "Test Stockpile"
+            assert lines[1].startswith("Test Stockpile,")
+            assert lines[2].startswith("Test Stockpile,")
+            assert lines[3].startswith("Test Stockpile,")
+
+            # Second stockpile item has name "Second Stockpile"
+            assert lines[4].startswith("Second Stockpile,")
+            assert "SulfurIcon" in lines[4]
 
     def test_fix_extension_replaces_wrong_extension(self) -> None:
         """Test that _fix_extension replaces wrong extensions."""
@@ -453,10 +546,15 @@ class TestWebhookOutputHandler:
             mock_connector_class.return_value = mock_connector
 
             handler = WebhookOutputHandler(webhook_settings=webhook_settings)
-            result = await handler.handle(sample_stockpile)
+            result = await handler.handle([sample_stockpile])
 
             assert result == webhook_response
             mock_connector.send_stockpile.assert_called_once()
+            # Verify payload structure
+            call_args = mock_connector.send_stockpile.call_args
+            payload = call_args.kwargs["payload"]
+            assert "stockpiles" in payload
+            assert len(payload["stockpiles"]) == 1
 
     @pytest.mark.asyncio
     async def test_webhook_output_with_token(self, sample_stockpile: Stockpile) -> None:
@@ -475,12 +573,12 @@ class TestWebhookOutputHandler:
             mock_connector_class.return_value = mock_connector
 
             handler = WebhookOutputHandler(webhook_settings=webhook_settings)
-            result = await handler.handle(sample_stockpile, token=custom_token)
+            result = await handler.handle([sample_stockpile], token=custom_token)
 
             assert result == webhook_response
-            mock_connector.send_stockpile.assert_called_once_with(
-                payload=sample_stockpile.model_dump(mode="json"), token=custom_token
-            )
+            # Verify token was passed
+            call_args = mock_connector.send_stockpile.call_args
+            assert call_args.kwargs["token"] == custom_token
 
     @pytest.mark.asyncio
     async def test_webhook_output_no_url(self, sample_stockpile: Stockpile) -> None:
@@ -493,6 +591,38 @@ class TestWebhookOutputHandler:
 
         with patch("foxhole_stockpiles.handlers.webhook.WebhookConnector"):
             handler = WebhookOutputHandler(webhook_settings=webhook_settings)
-            result = await handler.handle(sample_stockpile)
+            result = await handler.handle([sample_stockpile])
 
             assert result == {"message": "URL not configured"}
+
+    @pytest.mark.asyncio
+    async def test_webhook_output_multiple_stockpiles(self, sample_stockpile: Stockpile) -> None:
+        """Test webhook output with multiple stockpiles.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        second_stockpile = Stockpile(
+            name="Second Stockpile",
+            type=StockpileType.STORAGE_DEPOT,
+            items=[],
+            resolution="1920x1080",
+        )
+
+        webhook_settings = WebhookHandlerSettings(url="https://example.com/webhook")
+        webhook_response = {"status": "success", "count": 2}
+
+        with patch("foxhole_stockpiles.handlers.webhook.WebhookConnector") as mock_connector_class:
+            mock_connector = Mock()
+            mock_connector.send_stockpile = AsyncMock(return_value=webhook_response)
+            mock_connector_class.return_value = mock_connector
+
+            handler = WebhookOutputHandler(webhook_settings=webhook_settings)
+            result = await handler.handle([sample_stockpile, second_stockpile])
+
+            assert result == webhook_response
+            # Verify payload contains both stockpiles
+            call_args = mock_connector.send_stockpile.call_args
+            payload = call_args.kwargs["payload"]
+            assert "stockpiles" in payload
+            assert len(payload["stockpiles"]) == 2

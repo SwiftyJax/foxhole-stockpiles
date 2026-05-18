@@ -14,12 +14,25 @@ class ConsoleOutputHandler(BaseOutputDestinationHandler):
         """Initialize console output handler."""
         self.logger = logging.getLogger(__name__)
 
-    async def handle(self, stockpile: Stockpile, **kwargs: Any) -> None:
+    async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> None:
         """Print stockpile data to console.
+
+        Prints each stockpile separately for readability.
+
+        Args:
+            stockpiles (list[Stockpile]): The stockpile data to print
+            **kwargs: Additional parameters (unused)
+        """
+        for i, stockpile in enumerate(stockpiles):
+            if i > 0:
+                self.logger.info("---")  # Separator between stockpiles
+            self._print_stockpile(stockpile)
+
+    def _print_stockpile(self, stockpile: Stockpile) -> None:
+        """Print a single stockpile to console.
 
         Args:
             stockpile (Stockpile): The stockpile data to print
-            **kwargs: Additional parameters (unused)
         """
         self.logger.info("Name: %s", stockpile.name)
         self.logger.info("Type: %s", stockpile.type)

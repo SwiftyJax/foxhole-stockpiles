@@ -14,15 +14,15 @@ class ReturnOutputHandler(BaseOutputDestinationHandler):
         """Initialize return output handler."""
         self.logger = logging.getLogger(__name__)
 
-    async def handle(self, stockpile: Stockpile, **kwargs: Any) -> dict[str, Any]:
+    async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> dict[str, Any]:
         """Return stockpile data as JSON dictionary.
 
         Args:
-            stockpile (Stockpile): The stockpile data to return
+            stockpiles (list[Stockpile]): The stockpile data to return
             **kwargs: Additional parameters (unused)
 
         Returns:
-            dict[str, Any]: Stockpile data as JSON dictionary
+            dict[str, Any]: Stockpile data as JSON dictionary with {"stockpiles": [...]}
         """
         self.logger.debug("Returning stockpile data to caller")
-        return stockpile.model_dump(mode="json")
+        return {"stockpiles": [s.model_dump(mode="json") for s in stockpiles]}

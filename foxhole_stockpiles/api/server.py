@@ -314,7 +314,7 @@ async def scan_stockpile(
                     break  # Use the first forward auth header found
 
         return await output_coordinator.handle_output(
-            stockpile=stockpile,
+            stockpiles=[stockpile],
             token=token,
         )
 

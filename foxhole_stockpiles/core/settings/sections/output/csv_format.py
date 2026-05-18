@@ -6,24 +6,24 @@ from foxhole_stockpiles.enums.output_format import OutputFormat
 
 # Fixed fields for CSV/TSV export (order matters)
 CSV_FIELDS = [
+    "stockpile_name",
+    "stockpile_type",
     "code",
     "crated",
     "quantity",
     "confidence",
-    "stockpile_name",
-    "stockpile_type",
     "shard",
     "ingame_timestamp",
 ]
 
 # Header names for CSV/TSV export
 CSV_HEADERS = [
+    "Stockpile Name",
+    "Stockpile Type",
     "Code",
     "Crated",
     "Quantity",
     "Confidence",
-    "Stockpile Name",
-    "Stockpile Type",
     "Shard",
     "Ingame Time",
 ]

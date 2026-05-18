@@ -242,7 +242,7 @@ async def main() -> dict[str, Any] | None:
         if args.token:
             output_kwargs["token"] = args.token
 
-        return await output_coordinator.handle_output(stockpile=stockpile, **output_kwargs)
+        return await output_coordinator.handle_output(stockpiles=[stockpile], **output_kwargs)
 
     except FileNotFoundError as e:
         print(f"Error: {e}", file=sys.stderr)

@@ -85,13 +85,15 @@ class TestOutputCoordinator:
         )
         coordinator = OutputCoordinator(output_settings=output_settings)
 
-        result = await coordinator.handle_output(sample_stockpile)
+        result = await coordinator.handle_output([sample_stockpile])
 
-        # Should return dict from the return handler
+        # Should return dict with stockpiles list from the return handler
         assert isinstance(result, dict)
-        assert result["name"] == "Test Stockpile"
-        assert result["type"] == "Seaport"
-        assert len(result["items"]) == 3
+        assert "stockpiles" in result
+        assert len(result["stockpiles"]) == 1
+        assert result["stockpiles"][0]["name"] == "Test Stockpile"
+        assert result["stockpiles"][0]["type"] == "Seaport"
+        assert len(result["stockpiles"][0]["items"]) == 3
 
     @pytest.mark.asyncio
     async def test_handle_output_file(self, sample_stockpile: Stockpile) -> None:
@@ -114,7 +116,7 @@ class TestOutputCoordinator:
         with patch("foxhole_stockpiles.handlers.file.FileOutputHandler.handle") as mock_handle:
             mock_handle.return_value = None
 
-            result = await coordinator.handle_output(sample_stockpile)
+            result = await coordinator.handle_output([sample_stockpile])
 
             # No return handler configured, should return None
             assert result is None
@@ -145,11 +147,12 @@ class TestOutputCoordinator:
         with patch("foxhole_stockpiles.handlers.file.FileOutputHandler.handle") as mock_file_handle:
             mock_file_handle.return_value = None
 
-            result = await coordinator.handle_output(sample_stockpile)
+            result = await coordinator.handle_output([sample_stockpile])
 
             # Should return result from the return handler
             assert isinstance(result, dict)
-            assert result["name"] == "Test Stockpile"
+            assert "stockpiles" in result
+            assert result["stockpiles"][0]["name"] == "Test Stockpile"
             # File handler should also be called
             mock_file_handle.assert_called_once()
 
@@ -163,7 +166,7 @@ class TestOutputCoordinator:
         output_settings = OutputSettings(handlers=[])
         coordinator = OutputCoordinator(output_settings=output_settings)
 
-        result = await coordinator.handle_output(sample_stockpile)
+        result = await coordinator.handle_output([sample_stockpile])
 
         # No handlers, should return None
         assert result is None
@@ -195,9 +198,11 @@ class TestOutputCoordinator:
         ) as mock_handle:
             mock_handle.return_value = {"status": "success"}
 
-            result = await coordinator.handle_output(sample_stockpile, token="override-token")
+            result = await coordinator.handle_output([sample_stockpile], token="override-token")
 
-            mock_handle.assert_called_once_with(sample_stockpile, token="override-token")
+            mock_handle.assert_called_once_with(
+                stockpiles=[sample_stockpile], token="override-token"
+            )
             # Webhook response is now passed through to caller
             assert result == {"status": "success"}
 
@@ -230,10 +235,11 @@ class TestOutputCoordinator:
             mock_console.side_effect = Exception("Handler failed")
 
             # Should still return result from return handler even though console failed
-            result = await coordinator.handle_output(sample_stockpile)
+            result = await coordinator.handle_output([sample_stockpile])
 
             assert isinstance(result, dict)
-            assert result["name"] == "Test Stockpile"
+            assert "stockpiles" in result
+            assert result["stockpiles"][0]["name"] == "Test Stockpile"
 
     @pytest.mark.asyncio
     async def test_return_handler_takes_precedence(self, sample_stockpile: Stockpile) -> None:
@@ -258,11 +264,12 @@ class TestOutputCoordinator:
         )
         coordinator = OutputCoordinator(output_settings=output_settings)
 
-        result = await coordinator.handle_output(sample_stockpile)
+        result = await coordinator.handle_output([sample_stockpile])
 
         # First return handler result is used
         assert isinstance(result, dict)
-        assert result["name"] == "Test Stockpile"
+        assert "stockpiles" in result
+        assert result["stockpiles"][0]["name"] == "Test Stockpile"
 
     @pytest.mark.asyncio
     async def test_webhook_first_returns_webhook_response(
@@ -299,7 +306,7 @@ class TestOutputCoordinator:
         ) as mock_webhook:
             mock_webhook.return_value = {"webhook": "response", "processed": True}
 
-            result = await coordinator.handle_output(sample_stockpile)
+            result = await coordinator.handle_output([sample_stockpile])
 
             # Webhook response is used because it's first
             assert result == {"webhook": "response", "processed": True}
@@ -337,9 +344,48 @@ class TestOutputCoordinator:
         ) as mock_webhook:
             mock_webhook.return_value = {"webhook": "response"}
 
-            result = await coordinator.handle_output(sample_stockpile)
+            result = await coordinator.handle_output([sample_stockpile])
 
             # Return handler response is used because it's first
             assert isinstance(result, dict)
-            assert result["name"] == "Test Stockpile"
+            assert "stockpiles" in result
+            assert result["stockpiles"][0]["name"] == "Test Stockpile"
             assert "webhook" not in result
+
+    @pytest.mark.asyncio
+    async def test_handle_output_multiple_stockpiles(self, sample_stockpile: Stockpile) -> None:
+        """Test handling multiple stockpiles at once.
+
+        Args:
+            sample_stockpile (Stockpile): Sample stockpile data from fixture.
+        """
+        # Create a second stockpile
+        second_stockpile = Stockpile(
+            name="Second Stockpile",
+            type=StockpileType.STORAGE_DEPOT,
+            items=[
+                StockpileItem(quantity=200, code="SulfurIcon", confidence=0.99),
+            ],
+            shard="TEST",
+            resolution="1920x1080",
+        )
+
+        output_settings = OutputSettings(
+            handlers=[
+                OutputHandlerConfig(
+                    name="API Response",
+                    format=JsonFormatSettings(),
+                    handler=ReturnHandlerSettings(),
+                )
+            ]
+        )
+        coordinator = OutputCoordinator(output_settings=output_settings)
+
+        result = await coordinator.handle_output([sample_stockpile, second_stockpile])
+
+        # Should return both stockpiles
+        assert isinstance(result, dict)
+        assert "stockpiles" in result
+        assert len(result["stockpiles"]) == 2
+        assert result["stockpiles"][0]["name"] == "Test Stockpile"
+        assert result["stockpiles"][1]["name"] == "Second Stockpile"

@@ -22,11 +22,11 @@ class WebhookOutputHandler(BaseOutputDestinationHandler):
         self._url = webhook_settings.url
         self._webhook_connector = WebhookConnector(webhook_settings)
 
-    async def handle(self, stockpile: Stockpile, **kwargs: Any) -> dict[str, Any]:
+    async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> dict[str, Any]:
         """Send stockpile data to webhook endpoint.
 
         Args:
-            stockpile (Stockpile): The stockpile data to send
+            stockpiles (list[Stockpile]): The stockpile data to send
             **kwargs: Additional parameters:
                 - token (str | None): Optional auth token to override configured token
 
@@ -36,7 +36,7 @@ class WebhookOutputHandler(BaseOutputDestinationHandler):
         if not self._url:
             return {"message": "URL not configured"}
 
-        payload = stockpile.model_dump(mode="json")
+        payload = {"stockpiles": [s.model_dump(mode="json") for s in stockpiles]}
         token = kwargs.get("token")
 
         response = await self._webhook_connector.send_stockpile(payload=payload, token=token)

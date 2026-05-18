@@ -10,11 +10,11 @@ class BaseOutputDestinationHandler(ABC):
     """Abstract base class for output destination handlers."""
 
     @abstractmethod
-    async def handle(self, stockpile: Stockpile, **kwargs: Any) -> dict[str, Any] | None:
+    async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> dict[str, Any] | None:
         """Handle output to the destination.
 
         Args:
-            stockpile (Stockpile): The stockpile data to output
+            stockpiles (list[Stockpile]): The stockpile data to output
             **kwargs: Additional destination-specific parameters
 
         Returns:

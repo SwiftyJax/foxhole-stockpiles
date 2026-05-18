@@ -62,7 +62,7 @@ class OutputCoordinator:
 
     async def handle_output(
         self,
-        stockpile: Stockpile,
+        stockpiles: list[Stockpile],
         **kwargs: Any,
     ) -> dict[str, Any] | None:
         """Handle output to all configured handlers.
@@ -73,7 +73,7 @@ class OutputCoordinator:
         response should be returned first in the list.
 
         Args:
-            stockpile (Stockpile): The stockpile data to output
+            stockpiles (list[Stockpile]): The stockpile data to output
             **kwargs: Additional handler-specific parameters (e.g., token for webhooks)
 
         Returns:
@@ -98,7 +98,7 @@ class OutputCoordinator:
             )
 
             try:
-                handler_result = await handler.handle(stockpile, **kwargs)
+                handler_result = await handler.handle(stockpiles=stockpiles, **kwargs)
 
                 # First handler that returns data becomes the API response
                 if handler_result is not None and result is None:
