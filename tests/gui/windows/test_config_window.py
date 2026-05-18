@@ -18,6 +18,7 @@ from foxhole_stockpiles.core.settings.sections import (
     NotificationsSettings,
     OCRSettings,
     OutputSettings,
+    SavProcessingSettings,
     ScannerSettings,
     StockpileTypesSettings,
     TemplateSettings,
@@ -65,6 +66,7 @@ def mock_config_manager() -> Any:
         default_settings.logging = LoggingSettings()
         default_settings.notifications = NotificationsSettings()
         default_settings.stockpile_types = StockpileTypesSettings()
+        default_settings.sav_processing = SavProcessingSettings()
         mock_instance.load_config.return_value = default_settings
 
         yield mock_instance
@@ -145,21 +147,22 @@ def test_config_window_config_level_tabs(qtbot: Any, mock_config_manager: MagicM
     qtbot.addWidget(window)
     assert window.tab_widget.count() == 5
 
-    # Test ADVANCED level (9 tabs: + Stockpile Types, Notifications, External Tools, DB Builder)
+    # Test ADVANCED level
+    # (10 tabs: + Stockpile Types, Notifications, External Tools, DB Builder, SAV Processing)
     settings.gui = GUISettings(config_level=ConfigLevel.ADVANCED)
     mock_config_manager.load_config.return_value = settings
 
     window2 = ConfigWindow()
     qtbot.addWidget(window2)
-    assert window2.tab_widget.count() == 9
+    assert window2.tab_widget.count() == 10
 
-    # Test DEVELOPER level (11 tabs: + OCR, Templates)
+    # Test DEVELOPER level (12 tabs: + OCR, Templates)
     settings.gui = GUISettings(config_level=ConfigLevel.DEVELOPER)
     mock_config_manager.load_config.return_value = settings
 
     window3 = ConfigWindow()
     qtbot.addWidget(window3)
-    assert window3.tab_widget.count() == 11
+    assert window3.tab_widget.count() == 12
     assert window3.tab_widget.tabText(0) == t("config_window.tabs.api_server")
 
 
@@ -667,7 +670,17 @@ class TestSaveSettingsLanguageChange:
         from foxhole_stockpiles.core.settings.sections.gui import GUISettings
         from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 
-        with patch("foxhole_stockpiles.gui.windows.config_window.ConfigManager") as mock_class:
+        # Mock get_translator to ensure consistent language state
+        mock_translator = MagicMock()
+        mock_translator.language = "en"
+
+        with (
+            patch("foxhole_stockpiles.gui.windows.config_window.ConfigManager") as mock_class,
+            patch(
+                "foxhole_stockpiles.gui.windows.config_window.get_translator",
+                return_value=mock_translator,
+            ),
+        ):
             mock_instance = MagicMock()
             mock_class.return_value = mock_instance
 
@@ -769,7 +782,7 @@ class TestSaveSettingsConfigLevelChange:
         config_window.save_settings()
 
         # Tabs should be rebuilt with more tabs
-        assert config_window.tab_widget.count() == 9
+        assert config_window.tab_widget.count() == 10
 
 
 class TestRetranslate:

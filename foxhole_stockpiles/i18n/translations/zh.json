@@ -65,6 +65,8 @@
   },
 
   "server_panel": {
+    "sav_group_title": "SAV 处理",
+    "server_group_title": "服务器",
     "start_server": "启动服务器",
     "stop_server": "停止服务器",
     "status_running": "状态：运行中",
@@ -87,6 +89,19 @@
       "no_config_title": "未找到配置",
       "no_config_message": "请在<br><b>文件 → 配置</b>中设置您的配置",
       "cannot_scan": "无法扫描：服务器未运行！"
+    },
+    "scan_sav": "扫描 SAV",
+    "start_monitor": "启动 SAV 监视器",
+    "stop_monitor": "停止 SAV 监视器",
+    "sav": {
+      "error_title": "SAV 处理错误",
+      "error_loading_settings": "加载设置失败：{error}",
+      "error_no_sav_file": "未配置 SAV 文件。请在 文件 → 配置 → SAV 处理 中配置 SAV 文件路径，或将尝试自动检测。",
+      "error_sav_not_found": "配置的 SAV 文件不存在。",
+      "error_no_uesave": "未找到 uesave 工具。请在 文件 → 配置 → 外部工具 中配置路径，或安装 uesave 并添加到 PATH。",
+      "error_output": "创建输出协调器失败：{error}",
+      "status_scanning": "扫描中...",
+      "status_monitoring": "监视中..."
     }
   },
 
@@ -103,6 +118,7 @@
       "notifications": "通知",
       "external_tools": "外部工具",
       "database_builder": "数据库构建器",
+      "sav_processing": "SAV 处理",
       "logging": "日志",
       "gui": "界面"
     },
@@ -492,7 +508,11 @@
     "download": "下载",
     "select_repak": "选择提取工具 (repak)",
     "select_umodel": "选择转换工具 (umodel)",
-    "select_uassetgui": "选择 JSON 转换器 (UAssetGUI)"
+    "select_uassetgui": "选择 JSON 转换器 (UAssetGUI)",
+    "uesave_label": "SAV 转换器 (uesave)：",
+    "uesave_tooltip": "uesave 可执行文件的路径，用于将存档文件转换为 JSON。\n\n需要此工具才能使用 'SAV 处理' 功能。\n下载地址：https://github.com/trumank/uesave-rs",
+    "uesave_placeholder": "uesave 可执行文件路径",
+    "select_uesave": "选择 SAV 转换器 (uesave)"
   },
 
   "ocr_tab": {
@@ -596,5 +616,21 @@
     "all_resolutions": "所有分辨率",
     "status_note": "<b>注意：</b>必须配置目录文件和外部工具（repak、umodel）才能使「构建数据库」功能正常工作。",
     "select_catalog": "选择目录文件 (catalog.json)"
+  },
+
+  "sav_processing_tab": {
+    "sav_file_label": "SAV 文件路径：",
+    "sav_file_tooltip": "要处理的 Foxhole 存档文件 (.sav) 的路径。\n\n此文件通常位于：\nWindows：%LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL：/mnt/c/Users/<用户名>/AppData/Local/Foxhole/Saved/SaveGames/\n\n查找名为 *_MapData.sav 的文件",
+    "sav_file_placeholder": "MapData.sav 文件的路径",
+    "auto_detect": "自动检测",
+    "auto_detect_title": "自动检测 SAV 文件",
+    "auto_detect_not_found": "无法在默认位置找到 Foxhole 存档文件。\n\n请手动浏览选择文件。",
+    "poll_interval_label": "轮询间隔：",
+    "poll_interval_tooltip": "监视时检查文件更改的频率。\n\n较低的值检测更快但使用更多 CPU。\n建议：1.0 秒。",
+    "emit_all_label": "启动时输出全部：",
+    "emit_all_tooltip": "启用时，首次扫描时显示所有仓库。\n禁用时，仅显示更改（适用于监视）。",
+    "emit_all_checkbox": "首次读取时显示所有仓库",
+    "select_sav_file": "选择 SAV 文件",
+    "sav_file_filter": "SAV 文件 (*.sav);;所有文件 (*)"
   }
 }

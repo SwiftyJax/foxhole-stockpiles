@@ -17,6 +17,7 @@ from foxhole_stockpiles.core.settings.sections.output import (
     ReturnHandlerSettings,
     WebhookHandlerSettings,
 )
+from foxhole_stockpiles.core.settings.sections.sav_processing import SavProcessingSettings
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
 from foxhole_stockpiles.core.settings.sections.templates import TemplateSettings
@@ -37,6 +38,7 @@ __all__ = [
     "OutputHandlerConfig",
     "OutputSettings",
     "ReturnHandlerSettings",
+    "SavProcessingSettings",
     "ScannerSettings",
     "StockpileTypesSettings",
     "TemplateSettings",

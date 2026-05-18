@@ -95,6 +95,7 @@ class MainWindow(QMainWindow):
         self.scan_action.triggered.connect(self.scan_screenshot)  # type: ignore[union-attr]
 
         # Build Catalog - hidden at Basic config level
+        self.file_menu.addSeparator()  # type: ignore[union-attr]
         self.build_catalog_action = self.file_menu.addAction("")  # type: ignore[union-attr]
         self.build_catalog_action.triggered.connect(self.show_catalog_builder)  # type: ignore[union-attr]
         self._advanced_menu_actions.append(self.build_catalog_action)  # type: ignore[arg-type]
@@ -448,6 +449,10 @@ class MainWindow(QMainWindow):
         if hasattr(self, "server_panel") and self.server_panel.server_running:
             logger.info("Stopping server before quit")
             self.server_panel.stop_server()
+
+        # Stop SAV workers if running
+        if hasattr(self, "server_panel"):
+            self.server_panel._stop_all_workers()
 
         # Remove all QtLogHandler instances from all loggers before Qt cleanup
         root_logger = logging.getLogger()

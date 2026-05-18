@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QHBoxLayout,
     QHeaderView,
     QLabel,
+    QMessageBox,
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
@@ -22,11 +23,14 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles.api.dependencies import clear_dependency_caches
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
+from foxhole_stockpiles.core.utils import auto_detect_savefile, get_uesave_path
 from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
+from foxhole_stockpiles.gui.utils.sav_workers import SavMonitorWorker, SavScanWorker
 from foxhole_stockpiles.gui.utils.scan_worker import ScanWorker
 from foxhole_stockpiles.gui.utils.scanner_client import ScannerClient
 from foxhole_stockpiles.gui.utils.server_thread import ServerThread
 from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
+from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
 from foxhole_stockpiles.services.template_manager import TemplateManager
 
 logger = logging.getLogger(__name__)
@@ -49,6 +53,11 @@ class ServerControlPanel(QWidget):
         self.server_running = False
         self.server_thread: ServerThread | None = None
 
+        # SAV processing state
+        self._sav_scan_worker: SavScanWorker | None = None
+        self._sav_monitor_worker: SavMonitorWorker | None = None
+        self._sav_monitoring = False
+
         # Setup log handler and attach to root logger immediately
         # This allows capturing logs even before the server starts
         self.log_handler = QtLogHandler()
@@ -63,7 +72,23 @@ class ServerControlPanel(QWidget):
         # Connect to language changes with cleanup on destruction
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(self._cleanup)
+
+    def _cleanup(self) -> None:
+        """Clean up resources when widget is destroyed."""
+        off_language_changed(self._language_callback)
+        self._stop_all_workers()
+
+    def _stop_all_workers(self) -> None:
+        """Stop all running worker threads and wait for them to finish."""
+        # Stop SAV monitor worker
+        if self._sav_monitor_worker and self._sav_monitor_worker.isRunning():
+            self._sav_monitor_worker.stop()
+            self._sav_monitor_worker.wait(2000)  # Wait up to 2 seconds
+
+        # Stop SAV scan worker (can't really stop it, just wait)
+        if self._sav_scan_worker and self._sav_scan_worker.isRunning():
+            self._sav_scan_worker.wait(2000)  # Wait up to 2 seconds
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event.
@@ -77,27 +102,58 @@ class ServerControlPanel(QWidget):
         """Initialize the user interface."""
         layout = QVBoxLayout(self)
 
-        # Server Control section
-        server_layout = QHBoxLayout()
+        # Top section: two columns (SAV Processing | Server)
+        top_layout = QHBoxLayout()
 
+        # === Left side: SAV Processing ===
+        self.sav_group = QGroupBox("")
+        sav_layout = QVBoxLayout(self.sav_group)
+
+        # SAV buttons row
+        sav_buttons_layout = QHBoxLayout()
+        self.scan_sav_button = QPushButton("")
+        self.scan_sav_button.clicked.connect(self.scan_sav_file)
+        sav_buttons_layout.addWidget(self.scan_sav_button)
+
+        self.monitor_sav_button = QPushButton("")
+        self.monitor_sav_button.clicked.connect(self.toggle_sav_monitor)
+        sav_buttons_layout.addWidget(self.monitor_sav_button)
+
+        sav_buttons_layout.addStretch()
+        sav_layout.addLayout(sav_buttons_layout)
+
+        # SAV status
+        self.sav_status_label = QLabel("")
+        self.sav_status_label.setStyleSheet("QLabel { font-size: 11px; color: #888; }")
+        sav_layout.addWidget(self.sav_status_label)
+
+        top_layout.addWidget(self.sav_group, 1)
+
+        # === Right side: Server ===
+        self.server_group = QGroupBox("")
+        server_layout = QVBoxLayout(self.server_group)
+
+        # Server button and status row
+        server_control_layout = QHBoxLayout()
         self.start_stop_button = QPushButton("Start Server")
         self.start_stop_button.clicked.connect(self.toggle_server)
-        self.start_stop_button.setFixedWidth(120)
-        server_layout.addWidget(self.start_stop_button)
+        server_control_layout.addWidget(self.start_stop_button)
 
         self.status_label = QLabel("Status: Stopped")
         self.status_label.setStyleSheet("QLabel { font-weight: bold; }")
-        server_layout.addWidget(self.status_label)
+        server_control_layout.addWidget(self.status_label)
 
-        server_layout.addStretch()
+        server_control_layout.addStretch()
+        server_layout.addLayout(server_control_layout)
 
-        # DB info label (shown when valid)
+        # DB info label
         self.db_info_text = QLabel("")
-        self.db_info_text.setStyleSheet("QLabel { font-size: 12px; }")
-        self.db_info_text.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self.db_info_text.setStyleSheet("QLabel { font-size: 11px; color: #888; }")
         server_layout.addWidget(self.db_info_text)
 
-        layout.addLayout(server_layout)
+        top_layout.addWidget(self.server_group, 1)
+
+        layout.addLayout(top_layout)
 
         # Error panel (shown when config/DB invalid, replaces logs)
         self.error_panel = QLabel("")
@@ -413,6 +469,10 @@ class ServerControlPanel(QWidget):
 
     def retranslate(self) -> None:
         """Update all translatable strings."""
+        # Group titles
+        self.sav_group.setTitle(t("server_panel.sav_group_title"))
+        self.server_group.setTitle(t("server_panel.server_group_title"))
+
         # Button text depends on server state
         if self.server_running:
             self.start_stop_button.setText(t("server_panel.stop_server"))
@@ -433,3 +493,186 @@ class ServerControlPanel(QWidget):
 
         # Clear logs button
         self.clear_logs_button.setText(t("common.clear_logs"))
+
+        # SAV processing buttons
+        self.scan_sav_button.setText(t("server_panel.scan_sav"))
+        if self._sav_monitoring:
+            self.monitor_sav_button.setText(t("server_panel.stop_monitor"))
+        else:
+            self.monitor_sav_button.setText(t("server_panel.start_monitor"))
+
+    # ==================== SAV Processing ====================
+
+    def _validate_sav_config(self) -> tuple[Path | None, Path | None, str | None]:
+        """Validate SAV processing configuration.
+
+        Returns:
+            tuple: (sav_path, uesave_path, error_message)
+                   If error_message is not None, the other values are invalid.
+        """
+        try:
+            settings = AppSettings()
+        except Exception as e:
+            return None, None, t("server_panel.sav.error_loading_settings", error=str(e))
+
+        # Check SAV file path
+        sav_path = settings.sav_processing.sav_file_path
+        if not sav_path:
+            # Try auto-detect
+            sav_path = auto_detect_savefile()
+
+        if not sav_path:
+            return None, None, t("server_panel.sav.error_no_sav_file")
+
+        if not sav_path.exists():
+            return None, None, t("server_panel.sav.error_sav_not_found")
+
+        # Check uesave path (configured or in PATH)
+        uesave_path = get_uesave_path(settings.external_tools.uesave)
+        if not uesave_path:
+            return None, None, t("server_panel.sav.error_no_uesave")
+
+        return sav_path, uesave_path, None
+
+    def scan_sav_file(self) -> None:
+        """Perform a one-time SAV file scan."""
+        # Validate configuration
+        sav_path, uesave_path, error = self._validate_sav_config()
+        if error:
+            QMessageBox.warning(
+                self,
+                t("server_panel.sav.error_title"),
+                error,
+            )
+            return
+
+        # Don't start if already scanning
+        if self._sav_scan_worker and self._sav_scan_worker.isRunning():
+            logger.warning("SAV scan already in progress")
+            return
+
+        # Create output coordinator
+        try:
+            settings = AppSettings()
+            output_coordinator = OutputCoordinator(settings.output)
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                t("server_panel.sav.error_title"),
+                t("server_panel.sav.error_output", error=str(e)),
+            )
+            return
+
+        # At this point validation passed, so paths are guaranteed to be non-None
+        assert sav_path is not None
+        assert uesave_path is not None
+
+        logger.info(f"Starting SAV scan: {sav_path}")
+        self.sav_status_label.setText(t("server_panel.sav.status_scanning"))
+        self.sav_status_label.setStyleSheet("QLabel { font-size: 11px; color: #2196F3; }")
+        self.scan_sav_button.setEnabled(False)
+
+        # Create and start worker
+        self._sav_scan_worker = SavScanWorker(sav_path, uesave_path, output_coordinator)
+        self._sav_scan_worker.error.connect(self._on_sav_error)
+        self._sav_scan_worker.finished.connect(self._on_sav_scan_finished)
+        self._sav_scan_worker.start()
+
+    def toggle_sav_monitor(self) -> None:
+        """Toggle SAV file monitoring on/off."""
+        if self._sav_monitoring:
+            self._stop_sav_monitor()
+        else:
+            self._start_sav_monitor()
+
+    def _start_sav_monitor(self) -> None:
+        """Start SAV file monitoring."""
+        # Don't start if previous monitor is still running
+        if self._sav_monitor_worker and self._sav_monitor_worker.isRunning():
+            logger.warning("Cannot start monitor: previous monitor still stopping")
+            return
+
+        # Validate configuration
+        sav_path, uesave_path, error = self._validate_sav_config()
+        if error:
+            QMessageBox.warning(
+                self,
+                t("server_panel.sav.error_title"),
+                error,
+            )
+            return
+
+        # Create output coordinator
+        try:
+            settings = AppSettings()
+            output_coordinator = OutputCoordinator(settings.output)
+            poll_interval = settings.sav_processing.poll_interval
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                t("server_panel.sav.error_title"),
+                t("server_panel.sav.error_output", error=str(e)),
+            )
+            return
+
+        # At this point validation passed, so paths are guaranteed to be non-None
+        assert sav_path is not None
+        assert uesave_path is not None
+
+        logger.info(f"Starting SAV monitor: {sav_path} (poll: {poll_interval}s)")
+        self._sav_monitoring = True
+        self.monitor_sav_button.setText(t("server_panel.stop_monitor"))
+        self.sav_status_label.setText(t("server_panel.sav.status_monitoring"))
+        self.sav_status_label.setStyleSheet("QLabel { font-size: 11px; color: #4CAF50; }")
+
+        # Create and start worker
+        self._sav_monitor_worker = SavMonitorWorker(
+            sav_path, uesave_path, output_coordinator, poll_interval
+        )
+        self._sav_monitor_worker.error.connect(self._on_sav_error)
+        self._sav_monitor_worker.finished.connect(self._on_sav_monitor_finished)
+        self._sav_monitor_worker.start()
+
+    def _stop_sav_monitor(self) -> None:
+        """Stop SAV file monitoring."""
+        if self._sav_monitor_worker:
+            logger.info("Stopping SAV monitor...")
+            self._sav_monitor_worker.stop()
+
+            # Update UI immediately - don't wait for worker to finish
+            self._sav_monitoring = False
+            self.monitor_sav_button.setText(t("server_panel.start_monitor"))
+            self.sav_status_label.setText("")
+
+    def _on_sav_error(self, error_msg: str) -> None:
+        """Handle SAV processing error.
+
+        Args:
+            error_msg (str): Error message.
+        """
+        logger.error(f"[SAV] {error_msg}")
+
+    def _on_sav_scan_finished(self, success: bool) -> None:
+        """Handle SAV scan finished.
+
+        Args:
+            success (bool): Whether scan completed successfully.
+        """
+        self.scan_sav_button.setEnabled(True)
+        self.sav_status_label.setText("")
+        self._sav_scan_worker = None
+
+    def _on_sav_monitor_finished(self, success: bool) -> None:
+        """Handle SAV monitor finished.
+
+        Args:
+            success (bool): Whether monitor stopped normally.
+        """
+        # Only update UI if we're not already in a new monitoring session
+        # (user might have started a new monitor before the old one finished)
+        sender = self.sender()
+        if sender is self._sav_monitor_worker:
+            self._sav_monitoring = False
+            self.monitor_sav_button.setText(t("server_panel.start_monitor"))
+            self.sav_status_label.setText("")
+            self._sav_monitor_worker = None

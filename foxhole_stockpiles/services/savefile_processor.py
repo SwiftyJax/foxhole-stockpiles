@@ -1,14 +1,15 @@
 """Service to process Foxhole save files for stockpile data."""
 
 import asyncio
-import sys
-import time
+import logging
 from collections import defaultdict
 from pathlib import Path
 
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
 from foxhole_stockpiles.services.savefile_converter import SaveFileConverter
+
+logger = logging.getLogger(__name__)
 
 
 class SaveFileProcessor:
@@ -145,13 +146,13 @@ class SaveFileProcessor:
         Returns:
             list[Stockpile]: List of changed stockpiles that were output.
         """
-        print(f"[{time.strftime('%H:%M:%S')}] Processing file...")
+        logger.info("Processing file...")
 
         try:
             stockpiles = await asyncio.to_thread(self._converter.convert_file, self._file_path)
 
             if not stockpiles:
-                print("  No stockpiles found in save file.")
+                logger.info("No stockpiles found in save file.")
                 return []
 
             # On initial load with emit_all_on_start, output everything
@@ -161,7 +162,7 @@ class SaveFileProcessor:
                     if stockpile.raw_timestamp is not None:
                         self._stockpile_cache[stockpile.to_key()] = stockpile.raw_timestamp
 
-                print(f"  Initial load: {len(stockpiles)} stockpile(s)")
+                logger.info("Initial load: %d stockpile(s)", len(stockpiles))
                 await self._output_results(stockpiles)
                 return stockpiles
 
@@ -170,16 +171,16 @@ class SaveFileProcessor:
 
             total_changes = len(updated) + len(new) + len(removed)
             if total_changes == 0:
-                print("  No changes detected.")
+                logger.debug("No changes detected.")
                 return []
 
             # Log changes
             if new:
-                print(f"  New: {len(new)} stockpile(s)")
+                logger.info("New: %d stockpile(s)", len(new))
             if updated:
-                print(f"  Updated: {len(updated)} stockpile(s)")
+                logger.info("Updated: %d stockpile(s)", len(updated))
             if removed:
-                print(f"  Removed: {len(removed)} stockpile(s)")
+                logger.info("Removed: %d stockpile(s)", len(removed))
 
             # Output changed stockpiles (new + updated)
             changed_stockpiles = new + updated
@@ -189,7 +190,7 @@ class SaveFileProcessor:
             return changed_stockpiles
 
         except Exception as e:
-            print(f"  Error processing file: {e}", file=sys.stderr)
+            logger.error("Error processing file: %s", e)
             return []
 
     async def run_once(self) -> list[Stockpile]:
@@ -203,9 +204,8 @@ class SaveFileProcessor:
     async def run(self) -> None:
         """Run the file processor in watch mode."""
         self._running = True
-        print(f"Watching: {self._file_path}")
-        print(f"Poll interval: {self._poll_interval}s")
-        print("Press Ctrl+C to stop.\n")
+        logger.info("Watching: %s", self._file_path)
+        logger.info("Poll interval: %ss", self._poll_interval)
 
         try:
             # Process once immediately (initial load)
@@ -230,7 +230,7 @@ class SaveFileProcessor:
                 except asyncio.CancelledError:
                     break
                 except Exception as e:
-                    print(f"Processor error: {e}", file=sys.stderr)
+                    logger.error("Processor error: %s", e)
         finally:
             self._running = False
 

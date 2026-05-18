@@ -65,6 +65,8 @@
   },
 
   "server_panel": {
+    "sav_group_title": "Processamento SAV",
+    "server_group_title": "Servidor",
     "start_server": "Iniciar servidor",
     "stop_server": "Parar servidor",
     "status_running": "Estado: Em execução",
@@ -87,6 +89,19 @@
       "no_config_title": "Configuração não encontrada",
       "no_config_message": "Por favor, configure a sua aplicação em<br><b>Ficheiro → Configuração</b>",
       "cannot_scan": "Não é possível digitalizar: O servidor não está em execução!"
+    },
+    "scan_sav": "Escanear SAV",
+    "start_monitor": "Iniciar Monitor SAV",
+    "stop_monitor": "Parar Monitor SAV",
+    "sav": {
+      "error_title": "Erro de Processamento SAV",
+      "error_loading_settings": "Erro ao carregar configurações: {error}",
+      "error_no_sav_file": "Nenhum ficheiro SAV configurado. Por favor, configure o caminho do ficheiro SAV em Ficheiro → Configuração → Processamento SAV, ou a auto-deteção será tentada.",
+      "error_sav_not_found": "O ficheiro SAV configurado não existe.",
+      "error_no_uesave": "Ferramenta uesave não encontrada. Por favor, configure o caminho em Ficheiro → Configuração → Ferramentas Externas, ou instale o uesave e adicione ao PATH.",
+      "error_output": "Erro ao criar coordenador de saída: {error}",
+      "status_scanning": "A digitalizar...",
+      "status_monitoring": "A monitorizar..."
     }
   },
 
@@ -103,6 +118,7 @@
       "notifications": "Notificações",
       "external_tools": "Ferramentas externas",
       "database_builder": "Construtor de BD",
+      "sav_processing": "Processamento SAV",
       "logging": "Registos",
       "gui": "Interface"
     },
@@ -552,7 +568,11 @@
     "download": "Descarregar",
     "select_repak": "Selecionar ferramenta extratora (repak)",
     "select_umodel": "Selecionar ferramenta conversora (umodel)",
-    "select_uassetgui": "Selecionar conversor JSON (UAssetGUI)"
+    "select_uassetgui": "Selecionar conversor JSON (UAssetGUI)",
+    "uesave_label": "Conversor SAV (uesave):",
+    "uesave_tooltip": "Caminho para o executável uesave para converter ficheiros de salvamento em JSON.\n\nNecessário para a função 'Processamento SAV'.\nTransferir de: https://github.com/trumank/uesave-rs",
+    "uesave_placeholder": "Caminho para o executável uesave",
+    "select_uesave": "Selecionar conversor SAV (uesave)"
   },
 
   "database_builder_tab": {
@@ -596,5 +616,21 @@
   "catalog_builder_settings": {
     "title": "Configuração do construtor de catálogo",
     "info": "Configure as ferramentas necessárias para construir o catálogo de objetos a partir de ficheiros PAK."
+  },
+
+  "sav_processing_tab": {
+    "sav_file_label": "Caminho do ficheiro SAV:",
+    "sav_file_tooltip": "Caminho para o ficheiro de salvamento Foxhole (.sav) a processar.\n\nEste ficheiro normalmente está localizado em:\nWindows: %LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL: /mnt/c/Users/<utilizador>/AppData/Local/Foxhole/Saved/SaveGames/\n\nProcure ficheiros com nome *_MapData.sav",
+    "sav_file_placeholder": "Caminho para o ficheiro MapData.sav",
+    "auto_detect": "Auto-detetar",
+    "auto_detect_title": "Auto-detetar ficheiro SAV",
+    "auto_detect_not_found": "Não foi possível encontrar um ficheiro de salvamento Foxhole nas localizações predefinidas.\n\nPor favor, navegue para selecionar o ficheiro manualmente.",
+    "poll_interval_label": "Intervalo de sondagem:",
+    "poll_interval_tooltip": "Com que frequência verificar alterações no ficheiro durante a monitorização.\n\nValores mais baixos detetam alterações mais rapidamente mas usam mais CPU.\nRecomendado: 1.0 segundos.",
+    "emit_all_label": "Emitir tudo ao iniciar:",
+    "emit_all_tooltip": "Quando ativado, mostra todos os armazéns na primeira leitura.\nQuando desativado, apenas mostra alterações (útil para monitorização).",
+    "emit_all_checkbox": "Mostrar todos os armazéns na primeira leitura",
+    "select_sav_file": "Selecionar ficheiro SAV",
+    "sav_file_filter": "Ficheiros SAV (*.sav);;Todos os ficheiros (*)"
   }
 }

@@ -22,6 +22,7 @@ from foxhole_stockpiles.core.settings.sections import (
     NotificationsSettings,
     OCRSettings,
     OutputSettings,
+    SavProcessingSettings,
     ScannerSettings,
     StockpileTypesSettings,
     TemplateSettings,
@@ -65,6 +66,9 @@ class AppSettings(BaseSettings):
         description="Notifications settings", default_factory=NotificationsSettings
     )
     gui: GUISettings = Field(description="GUI settings", default_factory=GUISettings)
+    sav_processing: SavProcessingSettings = Field(
+        description="SAV file processing settings", default_factory=SavProcessingSettings
+    )
     model_config = SettingsConfigDict(
         env_nested_delimiter="__",
         env_prefix="FS_",

@@ -65,6 +65,8 @@
   },
 
   "server_panel": {
+    "sav_group_title": "SAV Verarbeitung",
+    "server_group_title": "Server",
     "start_server": "Server starten",
     "stop_server": "Server stoppen",
     "status_running": "Status: Läuft",
@@ -87,6 +89,19 @@
       "no_config_title": "Keine Konfiguration gefunden",
       "no_config_message": "Bitte richten Sie Ihre Konfiguration ein in<br><b>Datei → Konfiguration</b>",
       "cannot_scan": "Scannen nicht möglich: Server läuft nicht!"
+    },
+    "scan_sav": "SAV Scannen",
+    "start_monitor": "SAV Monitor Starten",
+    "stop_monitor": "SAV Monitor Stoppen",
+    "sav": {
+      "error_title": "SAV Verarbeitungsfehler",
+      "error_loading_settings": "Fehler beim Laden der Einstellungen: {error}",
+      "error_no_sav_file": "Keine SAV-Datei konfiguriert. Bitte konfigurieren Sie den SAV-Dateipfad in Datei → Konfiguration → SAV Verarbeitung, oder die automatische Erkennung wird versucht.",
+      "error_sav_not_found": "Die konfigurierte SAV-Datei existiert nicht.",
+      "error_no_uesave": "uesave-Tool nicht gefunden. Bitte konfigurieren Sie den Pfad in Datei → Konfiguration → Externe Werkzeuge, oder installieren Sie uesave und fügen Sie es zum PATH hinzu.",
+      "error_output": "Fehler beim Erstellen des Ausgabekoordinators: {error}",
+      "status_scanning": "Scanne...",
+      "status_monitoring": "Überwache..."
     }
   },
 
@@ -103,6 +118,7 @@
       "notifications": "Benachrichtigungen",
       "external_tools": "Externe Werkzeuge",
       "database_builder": "Datenbank-Builder",
+      "sav_processing": "SAV Verarbeitung",
       "logging": "Protokollierung",
       "gui": "Oberfläche"
     },
@@ -552,7 +568,11 @@
     "download": "Herunterladen",
     "select_repak": "Extraktor-Werkzeug (repak) auswählen",
     "select_umodel": "Konverter-Werkzeug (umodel) auswählen",
-    "select_uassetgui": "JSON-Konverter (UAssetGUI) auswählen"
+    "select_uassetgui": "JSON-Konverter (UAssetGUI) auswählen",
+    "uesave_label": "SAV-Konverter (uesave):",
+    "uesave_tooltip": "Pfad zur uesave-Anwendung zum Konvertieren von Speicherdateien in JSON.\n\nErforderlich für die Funktion 'SAV Verarbeitung'.\nHerunterladen von: https://github.com/trumank/uesave-rs",
+    "uesave_placeholder": "Pfad zur uesave-Anwendung",
+    "select_uesave": "SAV-Konverter (uesave) auswählen"
   },
 
   "database_builder_tab": {
@@ -596,5 +616,21 @@
   "catalog_builder_settings": {
     "title": "Katalog-Builder-Einstellungen",
     "info": "Konfigurieren Sie die Werkzeuge die für den Aufbau des Objektkatalogs aus PAK-Dateien erforderlich sind."
+  },
+
+  "sav_processing_tab": {
+    "sav_file_label": "SAV-Dateipfad:",
+    "sav_file_tooltip": "Pfad zur Foxhole-Speicherdatei (.sav) zum Verarbeiten.\n\nDiese Datei befindet sich normalerweise unter:\nWindows: %LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL: /mnt/c/Users/<benutzer>/AppData/Local/Foxhole/Saved/SaveGames/\n\nSuchen Sie nach Dateien mit dem Namen *_MapData.sav",
+    "sav_file_placeholder": "Pfad zur MapData.sav-Datei",
+    "auto_detect": "Auto-Erkennung",
+    "auto_detect_title": "SAV-Datei automatisch erkennen",
+    "auto_detect_not_found": "Konnte keine Foxhole-Speicherdatei an den Standardorten finden.\n\nBitte navigieren Sie, um die Datei manuell auszuwählen.",
+    "poll_interval_label": "Abfrageintervall:",
+    "poll_interval_tooltip": "Wie oft auf Dateiänderungen bei der Überwachung geprüft wird.\n\nNiedrigere Werte erkennen Änderungen schneller, verbrauchen aber mehr CPU.\nEmpfohlen: 1.0 Sekunden.",
+    "emit_all_label": "Alles beim Start ausgeben:",
+    "emit_all_tooltip": "Wenn aktiviert, werden alle Lager beim ersten Scan ausgegeben.\nWenn deaktiviert, werden nur Änderungen ausgegeben (nützlich zur Überwachung).",
+    "emit_all_checkbox": "Alle Lager bei der ersten Lesung ausgeben",
+    "select_sav_file": "SAV-Datei auswählen",
+    "sav_file_filter": "SAV-Dateien (*.sav);;Alle Dateien (*)"
   }
 }

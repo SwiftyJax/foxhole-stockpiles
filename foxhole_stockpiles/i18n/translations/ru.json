@@ -65,6 +65,8 @@
   },
 
   "server_panel": {
+    "sav_group_title": "Обработка SAV",
+    "server_group_title": "Сервер",
     "start_server": "Запустить сервер",
     "stop_server": "Остановить сервер",
     "status_running": "Статус: Работает",
@@ -87,6 +89,19 @@
       "no_config_title": "Конфигурация не найдена",
       "no_config_message": "Пожалуйста, настройте конфигурацию в<br><b>Файл → Конфигурация</b>",
       "cannot_scan": "Невозможно сканировать: сервер не запущен!"
+    },
+    "scan_sav": "Сканировать SAV",
+    "start_monitor": "Запустить Монитор SAV",
+    "stop_monitor": "Остановить Монитор SAV",
+    "sav": {
+      "error_title": "Ошибка Обработки SAV",
+      "error_loading_settings": "Ошибка загрузки настроек: {error}",
+      "error_no_sav_file": "SAV файл не настроен. Пожалуйста, укажите путь к SAV файлу в Файл → Конфигурация → Обработка SAV, или будет выполнено автоопределение.",
+      "error_sav_not_found": "Настроенный SAV файл не существует.",
+      "error_no_uesave": "Инструмент uesave не найден. Пожалуйста, укажите путь в Файл → Конфигурация → Внешние инструменты, или установите uesave и добавьте его в PATH.",
+      "error_output": "Ошибка создания координатора вывода: {error}",
+      "status_scanning": "Сканирование...",
+      "status_monitoring": "Мониторинг..."
     }
   },
 
@@ -103,6 +118,7 @@
       "notifications": "Уведомления",
       "external_tools": "Внешние инструменты",
       "database_builder": "Сборщик БД",
+      "sav_processing": "Обработка SAV",
       "logging": "Логирование",
       "gui": "Интерфейс"
     },
@@ -492,7 +508,11 @@
     "download": "Скачать",
     "select_repak": "Выберите инструмент извлечения (repak)",
     "select_umodel": "Выберите инструмент конвертации (umodel)",
-    "select_uassetgui": "Выберите JSON конвертер (UAssetGUI)"
+    "select_uassetgui": "Выберите JSON конвертер (UAssetGUI)",
+    "uesave_label": "SAV конвертер (uesave):",
+    "uesave_tooltip": "Путь к исполняемому файлу uesave для конвертации файлов сохранений в JSON.\n\nТребуется для функции 'Обработка SAV'.\nСкачать с: https://github.com/trumank/uesave-rs",
+    "uesave_placeholder": "Путь к исполняемому файлу uesave",
+    "select_uesave": "Выберите SAV конвертер (uesave)"
   },
 
   "ocr_tab": {
@@ -596,5 +616,21 @@
     "all_resolutions": "Все разрешения",
     "status_note": "<b>Примечание:</b> Файл каталога и внешние инструменты (repak, umodel) должны быть настроены для работы функции 'Создание базы данных'.",
     "select_catalog": "Выберите файл каталога (catalog.json)"
+  },
+
+  "sav_processing_tab": {
+    "sav_file_label": "Путь к SAV файлу:",
+    "sav_file_tooltip": "Путь к файлу сохранения Foxhole (.sav) для обработки.\n\nЭтот файл обычно находится в:\nWindows: %LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL: /mnt/c/Users/<пользователь>/AppData/Local/Foxhole/Saved/SaveGames/\n\nИщите файлы с именем *_MapData.sav",
+    "sav_file_placeholder": "Путь к файлу MapData.sav",
+    "auto_detect": "Автоопределение",
+    "auto_detect_title": "Автоопределение SAV файла",
+    "auto_detect_not_found": "Не удалось найти файл сохранения Foxhole в стандартных расположениях.\n\nПожалуйста, выберите файл вручную.",
+    "poll_interval_label": "Интервал опроса:",
+    "poll_interval_tooltip": "Как часто проверять изменения файла при мониторинге.\n\nМеньшие значения обнаруживают изменения быстрее, но используют больше CPU.\nРекомендуется: 1.0 секунд.",
+    "emit_all_label": "Выводить всё при запуске:",
+    "emit_all_tooltip": "Когда включено, показывает все склады при первом сканировании.\nКогда выключено, показывает только изменения (полезно для мониторинга).",
+    "emit_all_checkbox": "Показывать все склады при первом чтении",
+    "select_sav_file": "Выберите SAV файл",
+    "sav_file_filter": "SAV файлы (*.sav);;Все файлы (*)"
   }
 }

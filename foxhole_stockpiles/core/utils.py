@@ -4,7 +4,9 @@ import ctypes
 import gc
 import json
 import logging
+import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -293,3 +295,112 @@ def force_memory_release() -> dict[str, Any]:
         "gc_collected": collected,
         "malloc_trimmed": trimmed,
     }
+
+
+# ==================== Savefile Locator Utilities ====================
+
+
+def get_default_savefile_dir() -> Path | None:
+    """Get the default Foxhole save file directory based on OS.
+
+    Returns:
+        Path | None: Default save games directory or None if not found.
+    """
+    if sys.platform == "win32":
+        local_appdata = os.environ.get("LOCALAPPDATA")
+        if local_appdata:
+            save_dir = Path(local_appdata) / "Foxhole" / "Saved" / "SaveGames"
+            if save_dir.exists():
+                return save_dir
+    elif sys.platform == "linux":
+        # WSL path - try common WSL mount points
+        wsl_users = Path("/mnt/c/Users")
+        if wsl_users.exists():
+            try:
+                for user_dir in wsl_users.iterdir():
+                    try:
+                        wsl_path = (
+                            user_dir / "AppData" / "Local" / "Foxhole" / "Saved" / "SaveGames"
+                        )
+                        if wsl_path.exists():
+                            return wsl_path
+                    except PermissionError:
+                        continue
+            except PermissionError:
+                pass
+
+        # Native Linux (Proton/Wine)
+        home = Path.home()
+        proton_path = (
+            home
+            / ".steam"
+            / "steam"
+            / "steamapps"
+            / "compatdata"
+            / "505460"
+            / "pfx"
+            / "drive_c"
+            / "users"
+            / "steamuser"
+            / "AppData"
+            / "Local"
+            / "Foxhole"
+            / "Saved"
+            / "SaveGames"
+        )
+        if proton_path.exists():
+            return proton_path
+    return None
+
+
+def find_mapdata_file(save_dir: Path) -> Path | None:
+    """Find the MapData.sav file in the save directory.
+
+    Args:
+        save_dir (Path): Save games directory.
+
+    Returns:
+        Path | None: Path to MapData.sav or None if not found.
+    """
+    for f in save_dir.glob("*_MapData.sav"):
+        return f
+    return None
+
+
+def auto_detect_savefile() -> Path | None:
+    """Auto-detect the Foxhole MapData.sav file.
+
+    Returns:
+        Path | None: Path to the detected save file, or None if not found.
+    """
+    save_dir = get_default_savefile_dir()
+    if save_dir:
+        return find_mapdata_file(save_dir)
+    return None
+
+
+def find_uesave_in_path() -> Path | None:
+    """Find uesave executable in system PATH.
+
+    Returns:
+        Path | None: Path to uesave executable, or None if not found.
+    """
+    for name in ["uesave", "uesave.exe"]:
+        found = shutil.which(name)
+        if found:
+            return Path(found)
+    return None
+
+
+def get_uesave_path(configured_path: Path | None) -> Path | None:
+    """Get uesave path from configuration or PATH.
+
+    Args:
+        configured_path (Path | None): User-configured uesave path.
+
+    Returns:
+        Path | None: Valid uesave path, or None if not found.
+    """
+    if configured_path and configured_path.exists():
+        return configured_path
+    return find_uesave_in_path()

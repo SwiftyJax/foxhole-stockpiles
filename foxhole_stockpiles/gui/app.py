@@ -7,6 +7,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 
 from foxhole_stockpiles import __version__
+from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.gui.windows.main_window import MainWindow
 from foxhole_stockpiles.i18n import get_translator
@@ -33,6 +34,15 @@ def launch_gui() -> None:
     # Required for multiprocessing to work correctly in frozen executables (PyInstaller)
     # This must be called before any other multiprocessing code runs
     multiprocessing.freeze_support()
+
+    # Initialize logging from settings
+    try:
+        settings = AppSettings()
+        setup_logging(settings.logging)
+    except Exception as e:
+        # If settings fail to load, use basic logging config
+        logging.basicConfig(level=logging.INFO)
+        logger.warning("Could not load settings for logging: %s", e)
 
     # Initialize translator with user's language preference
     language = _load_language_from_settings()

@@ -65,6 +65,8 @@
   },
 
   "server_panel": {
+    "sav_group_title": "Procesamiento SAV",
+    "server_group_title": "Servidor",
     "start_server": "Iniciar servidor",
     "stop_server": "Detener servidor",
     "status_running": "Estado: En ejecución",
@@ -87,6 +89,19 @@
       "no_config_title": "Configuración no encontrada",
       "no_config_message": "Por favor, configure su aplicación en<br><b>Archivo → Configuración</b>",
       "cannot_scan": "No se puede escanear: ¡El servidor no está en ejecución!"
+    },
+    "scan_sav": "Escanear SAV",
+    "start_monitor": "Iniciar Monitor SAV",
+    "stop_monitor": "Detener Monitor SAV",
+    "sav": {
+      "error_title": "Error de Procesamiento SAV",
+      "error_loading_settings": "Error al cargar configuración: {error}",
+      "error_no_sav_file": "No hay archivo SAV configurado. Por favor, configure la ruta del archivo SAV en Archivo → Configuración → Procesamiento SAV, o se intentará auto-detectar.",
+      "error_sav_not_found": "El archivo SAV configurado no existe.",
+      "error_no_uesave": "Herramienta uesave no encontrada. Por favor, configure la ruta en Archivo → Configuración → Herramientas Externas, o instale uesave y añádalo a su PATH.",
+      "error_output": "Error al crear coordinador de salida: {error}",
+      "status_scanning": "Escaneando...",
+      "status_monitoring": "Monitoreando..."
     }
   },
 
@@ -103,6 +118,7 @@
       "notifications": "Notificaciones",
       "external_tools": "Herramientas externas",
       "database_builder": "Constructor de BD",
+      "sav_processing": "Procesamiento SAV",
       "logging": "Registros",
       "gui": "Interfaz"
     },
@@ -549,10 +565,14 @@
     "uassetgui_label": "Convertidor JSON (UAssetGUI):",
     "uassetgui_tooltip": "Ruta al ejecutable UAssetGUI para convertir archivos UAsset a JSON.\n\nRequerido para la función 'Construir catálogo'.\nDescargar de: https://github.com/atenfyr/UAssetGUI",
     "uassetgui_placeholder": "Ruta al ejecutable UAssetGUI",
+    "uesave_label": "Convertidor SAV (uesave):",
+    "uesave_tooltip": "Ruta al ejecutable uesave para convertir archivos de guardado a JSON.\n\nRequerido para la función 'Procesamiento SAV'.\nDescargar de: https://github.com/trumank/uesave-rs",
+    "uesave_placeholder": "Ruta al ejecutable uesave",
     "download": "Descargar",
     "select_repak": "Seleccionar herramienta extractora (repak)",
     "select_umodel": "Seleccionar herramienta convertidora (umodel)",
-    "select_uassetgui": "Seleccionar convertidor JSON (UAssetGUI)"
+    "select_uassetgui": "Seleccionar convertidor JSON (UAssetGUI)",
+    "select_uesave": "Seleccionar convertidor SAV (uesave)"
   },
 
   "database_builder_tab": {
@@ -596,5 +616,21 @@
   "catalog_builder_settings": {
     "title": "Configuración del constructor de catálogo",
     "info": "Configure las herramientas necesarias para construir el catálogo de objetos desde archivos PAK."
+  },
+
+  "sav_processing_tab": {
+    "sav_file_label": "Ruta del archivo SAV:",
+    "sav_file_tooltip": "Ruta al archivo de guardado de Foxhole (.sav) a procesar.\n\nEste archivo normalmente se encuentra en:\nWindows: %LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL: /mnt/c/Users/<usuario>/AppData/Local/Foxhole/Saved/SaveGames/\n\nBusque archivos con nombre *_MapData.sav",
+    "sav_file_placeholder": "Ruta al archivo MapData.sav",
+    "auto_detect": "Auto-detectar",
+    "auto_detect_title": "Auto-detectar archivo SAV",
+    "auto_detect_not_found": "No se pudo encontrar un archivo de guardado de Foxhole en las ubicaciones predeterminadas.\n\nPor favor, navegue para seleccionar el archivo manualmente.",
+    "poll_interval_label": "Intervalo de sondeo:",
+    "poll_interval_tooltip": "Con qué frecuencia verificar cambios en el archivo al monitorear.\n\nValores más bajos detectan cambios más rápido pero usan más CPU.\nRecomendado: 1.0 segundos.",
+    "emit_all_label": "Emitir todo al inicio:",
+    "emit_all_tooltip": "Cuando está habilitado, muestra todos los almacenes en el primer escaneo.\nCuando está deshabilitado, solo muestra cambios (útil para monitoreo).",
+    "emit_all_checkbox": "Mostrar todos los almacenes en la primera lectura",
+    "select_sav_file": "Seleccionar archivo SAV",
+    "sav_file_filter": "Archivos SAV (*.sav);;Todos los archivos (*)"
   }
 }

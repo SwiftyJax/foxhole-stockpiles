@@ -65,6 +65,8 @@
   },
 
   "server_panel": {
+    "sav_group_title": "Traitement SAV",
+    "server_group_title": "Serveur",
     "start_server": "Démarrer le serveur",
     "stop_server": "Arrêter le serveur",
     "status_running": "Statut : En cours",
@@ -87,6 +89,19 @@
       "no_config_title": "Configuration introuvable",
       "no_config_message": "Veuillez configurer votre application dans<br><b>Fichier → Configuration</b>",
       "cannot_scan": "Impossible de scanner : Le serveur n'est pas en cours d'exécution !"
+    },
+    "scan_sav": "Scanner SAV",
+    "start_monitor": "Démarrer Moniteur SAV",
+    "stop_monitor": "Arrêter Moniteur SAV",
+    "sav": {
+      "error_title": "Erreur de Traitement SAV",
+      "error_loading_settings": "Échec du chargement des paramètres : {error}",
+      "error_no_sav_file": "Aucun fichier SAV configuré. Veuillez configurer le chemin du fichier SAV dans Fichier → Configuration → Traitement SAV, ou la détection automatique sera tentée.",
+      "error_sav_not_found": "Le fichier SAV configuré n'existe pas.",
+      "error_no_uesave": "Outil uesave introuvable. Veuillez configurer le chemin dans Fichier → Configuration → Outils Externes, ou installez uesave et ajoutez-le à votre PATH.",
+      "error_output": "Échec de la création du coordinateur de sortie : {error}",
+      "status_scanning": "Scan en cours...",
+      "status_monitoring": "Surveillance en cours..."
     }
   },
 
@@ -103,6 +118,7 @@
       "notifications": "Notifications",
       "external_tools": "Outils externes",
       "database_builder": "Constructeur de BD",
+      "sav_processing": "Traitement SAV",
       "logging": "Journaux",
       "gui": "Interface"
     },
@@ -552,7 +568,11 @@
     "download": "Télécharger",
     "select_repak": "Sélectionner l'outil d'extraction (repak)",
     "select_umodel": "Sélectionner l'outil de conversion (umodel)",
-    "select_uassetgui": "Sélectionner le convertisseur JSON (UAssetGUI)"
+    "select_uassetgui": "Sélectionner le convertisseur JSON (UAssetGUI)",
+    "uesave_label": "Convertisseur SAV (uesave) :",
+    "uesave_tooltip": "Chemin vers l'exécutable uesave pour convertir les fichiers de sauvegarde en JSON.\n\nRequis pour la fonction 'Traitement SAV'.\nTélécharger depuis : https://github.com/trumank/uesave-rs",
+    "uesave_placeholder": "Chemin vers l'exécutable uesave",
+    "select_uesave": "Sélectionner le convertisseur SAV (uesave)"
   },
 
   "database_builder_tab": {
@@ -596,5 +616,21 @@
   "catalog_builder_settings": {
     "title": "Paramètres du Constructeur de Catalogue",
     "info": "Configurez les outils requis pour construire le catalogue d'objets depuis les fichiers PAK."
+  },
+
+  "sav_processing_tab": {
+    "sav_file_label": "Chemin du fichier SAV :",
+    "sav_file_tooltip": "Chemin vers le fichier de sauvegarde Foxhole (.sav) à traiter.\n\nCe fichier se trouve généralement dans :\nWindows : %LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL : /mnt/c/Users/<utilisateur>/AppData/Local/Foxhole/Saved/SaveGames/\n\nRecherchez les fichiers nommés *_MapData.sav",
+    "sav_file_placeholder": "Chemin vers le fichier MapData.sav",
+    "auto_detect": "Détection auto",
+    "auto_detect_title": "Détection automatique du fichier SAV",
+    "auto_detect_not_found": "Impossible de trouver un fichier de sauvegarde Foxhole aux emplacements par défaut.\n\nVeuillez naviguer pour sélectionner le fichier manuellement.",
+    "poll_interval_label": "Intervalle de sondage :",
+    "poll_interval_tooltip": "Fréquence de vérification des modifications du fichier lors de la surveillance.\n\nDes valeurs plus basses détectent les changements plus rapidement mais utilisent plus de CPU.\nRecommandé : 1.0 secondes.",
+    "emit_all_label": "Tout émettre au démarrage :",
+    "emit_all_tooltip": "Lorsque activé, affiche tous les stocks lors de la première lecture.\nLorsque désactivé, affiche uniquement les changements (utile pour la surveillance).",
+    "emit_all_checkbox": "Afficher tous les stocks à la première lecture",
+    "select_sav_file": "Sélectionner le fichier SAV",
+    "sav_file_filter": "Fichiers SAV (*.sav);;Tous les fichiers (*)"
   }
 }

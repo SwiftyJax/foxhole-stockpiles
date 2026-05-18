@@ -29,6 +29,7 @@ from foxhole_stockpiles.gui.widgets.config_tabs.logging_tab import LoggingTab
 from foxhole_stockpiles.gui.widgets.config_tabs.notifications_tab import NotificationsTab
 from foxhole_stockpiles.gui.widgets.config_tabs.ocr_tab import OCRTab
 from foxhole_stockpiles.gui.widgets.config_tabs.output_tab import OutputTab
+from foxhole_stockpiles.gui.widgets.config_tabs.sav_processing_tab import SavProcessingTab
 from foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab import ScannerTab
 from foxhole_stockpiles.gui.widgets.config_tabs.stockpile_types_tab import StockpileTypesTab
 from foxhole_stockpiles.gui.widgets.config_tabs.template_tab import TemplateTab
@@ -96,6 +97,7 @@ class ConfigWindow(QMainWindow):
         self.gui_tab = GUITab()
         self.stockpile_types_tab = StockpileTypesTab()
         self.notifications_tab = NotificationsTab()
+        self.sav_processing_tab = SavProcessingTab()
 
         # Track current config level and language
         self._current_config_level: ConfigLevel = ConfigLevel.BASIC
@@ -155,6 +157,7 @@ class ConfigWindow(QMainWindow):
             self.tab_widget.addTab(
                 self.database_builder_tab, t("config_window.tabs.database_builder")
             )
+            self.tab_widget.addTab(self.sav_processing_tab, t("config_window.tabs.sav_processing"))
 
         # Always visible tabs (continued)
         self.tab_widget.addTab(self.logging_tab, t("config_window.tabs.logging"))
@@ -204,6 +207,7 @@ class ConfigWindow(QMainWindow):
         self.gui_tab.set_values(self.settings.gui)
         self.stockpile_types_tab.set_values(self.settings.stockpile_types)
         self.notifications_tab.set_values(self.settings.notifications)
+        self.sav_processing_tab.set_values(self.settings.sav_processing)
 
     def collect_settings(self) -> AppSettings:
         """Collect settings from all tabs.
@@ -224,6 +228,7 @@ class ConfigWindow(QMainWindow):
             gui=self.gui_tab.get_values(),
             notifications=self.notifications_tab.get_values(),
             stockpile_types=self.stockpile_types_tab.get_values(),
+            sav_processing=self.sav_processing_tab.get_values(),
         )
 
     def save_settings(self) -> None:
