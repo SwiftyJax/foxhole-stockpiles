@@ -1039,6 +1039,8 @@ class OCRCoordinator:
                                 f" (confidence: {match_result.best_confidence:.3f})"
                             )
 
+                        if stockpile.errors is None:
+                            stockpile.errors = []
                         stockpile.errors.append(
                             f"Group {group_index}, index {icon_index}: No match found. "
                             f"Quantity: {quantity}, crated: "
@@ -1186,6 +1188,8 @@ class OCRCoordinator:
                         f" (confidence: {rematch_result.best_confidence:.3f})"
                     )
 
+                if stockpile.errors is None:
+                    stockpile.errors = []
                 stockpile.errors.append(
                     f"Duplicate resolution failed at index {duplicate_index}: "
                     f"Conflicting with '{conflicting_code}'. "

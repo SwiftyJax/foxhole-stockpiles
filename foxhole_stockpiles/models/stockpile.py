@@ -15,22 +15,41 @@ class Stockpile(BaseModel):
 
     name: str = Field(description="Name of the stockpile", default="")
     type: StockpileType = Field(description="Type of stockpile", default=StockpileType.UNDEFINED)
-    hex: str = Field(description="Hex region name", default="")
+    hex: str | None = Field(description="Hex region name", default=None)
     coords: StockpileCoords | None = Field(description="Map coordinates", default=None)
     is_reserve: bool = Field(description="Whether this is a reserve stockpile", default=False)
     items: list[StockpileItem] = Field(description="List of items", default_factory=list)
     timestamp: datetime = Field(description="last update datetime", default_factory=datetime.now)
-    shard: str = Field(description="Shard name", default="")
-    ingame_timestamp: str = Field(description="In game timestamp", default="")
+    shard: str | None = Field(description="Shard name", default=None)
+    ingame_timestamp: str | None = Field(description="In game timestamp", default=None)
     resolution: str | None = Field(description="Resolution of the screenshot", default=None)
-    errors: list[str] = Field(
-        description="List of errors encountered during processing", default_factory=list
+    errors: list[str] | None = Field(
+        description="List of errors encountered during processing", default=None
     )
+    raw_timestamp: int | None = Field(
+        description="Raw timestamp ticks from save file (for change tracking)",
+        default=None,
+        exclude=True,
+    )
+
+    def to_key(self) -> str:
+        """Generate a unique key for this stockpile.
+
+        The key is based on type, hex, coords, and name (for reserves).
+        Used for tracking changes in the savefile monitor.
+
+        Returns:
+            str: Unique key for this stockpile.
+        """
+        coords_key = self.coords.to_key() if self.coords else "0,0"
+        # Handle both enum and string (use_enum_values=True converts to string)
+        type_value = self.type.value if hasattr(self.type, "value") else self.type
+        return f"{type_value}:{self.hex}:{coords_key}:{self.name}"
 
     @field_serializer("timestamp")
     def serialize_timestamp(self, value: datetime) -> str:
-        """Serialize the timestamp."""
-        return value.isoformat()
+        """Serialize the timestamp as UTC without milliseconds or timezone."""
+        return value.strftime("%Y-%m-%dT%H:%M:%S")
 
     model_config = ConfigDict(
         extra="forbid",

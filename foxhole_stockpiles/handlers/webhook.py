@@ -36,7 +36,7 @@ class WebhookOutputHandler(BaseOutputDestinationHandler):
         if not self._url:
             return {"message": "URL not configured"}
 
-        payload = {"stockpiles": [s.model_dump(mode="json") for s in stockpiles]}
+        payload = {"stockpiles": [s.model_dump(mode="json", exclude_none=True) for s in stockpiles]}
         token = kwargs.get("token")
 
         response = await self._webhook_connector.send_stockpile(payload=payload, token=token)

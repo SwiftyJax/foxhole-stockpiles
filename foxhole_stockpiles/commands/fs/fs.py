@@ -128,6 +128,11 @@ class CLIDispatcher:
                 module="foxhole_stockpiles.commands.catalog_builder.catalog_builder",
                 aliases=["catalog-builder"],
             ),
+            "process-sav": CommandInfo(
+                description="Process Foxhole save files for stockpile data",
+                module="foxhole_stockpiles.commands.process_sav.process_sav",
+                aliases=["sav"],
+            ),
         }
 
     def resolve_command_alias(self, command: str) -> str | None:

@@ -68,6 +68,9 @@ class FileOutputHandler(BaseOutputDestinationHandler):
         else:
             name = "multiple_stockpiles"
         now = datetime.datetime.now()
+        hex_name = stockpiles[0].hex or "Unknown"
+        coords = stockpiles[0].coords
+        coords_str = coords.to_key().replace("_", "-") if coords else "0-0"
         placeholders = {
             "{timestamp}": now.strftime("%Y-%m-%d_%H-%M-%S"),
             "{year}": now.strftime("%Y"),
@@ -79,6 +82,8 @@ class FileOutputHandler(BaseOutputDestinationHandler):
             "{stockpile_type}": self._get_stockpile_type_str(stockpiles[0]),
             "{stockpile_name}": name,
             "{resolution}": resolution,
+            "{hex}": hex_name,
+            "{coords}": coords_str,
         }
         for placeholder, value in placeholders.items():
             file = file.replace(placeholder, value)
@@ -138,7 +143,7 @@ class FileOutputHandler(BaseOutputDestinationHandler):
         Returns:
             str: JSON formatted string with {"stockpiles": [...]} structure
         """
-        payload = {"stockpiles": [s.model_dump(mode="json") for s in stockpiles]}
+        payload = {"stockpiles": [s.model_dump(mode="json", exclude_none=True) for s in stockpiles]}
         return json.dumps(obj=payload, indent=2)
 
     def _format_csv(self, stockpiles: list[Stockpile]) -> str:

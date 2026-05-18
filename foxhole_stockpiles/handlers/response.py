@@ -25,4 +25,4 @@ class ReturnOutputHandler(BaseOutputDestinationHandler):
             dict[str, Any]: Stockpile data as JSON dictionary with {"stockpiles": [...]}
         """
         self.logger.debug("Returning stockpile data to caller")
-        return {"stockpiles": [s.model_dump(mode="json") for s in stockpiles]}
+        return {"stockpiles": [s.model_dump(mode="json", exclude_none=True) for s in stockpiles]}
