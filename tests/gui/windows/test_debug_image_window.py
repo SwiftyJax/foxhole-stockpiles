@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QListWidgetItem
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QListWidgetItem
 
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
@@ -672,7 +672,7 @@ class TestDebugImageWindowComparison:
             debug_window: Window fixture.
         """
         # Add some widgets
-        from PyQt6.QtWidgets import QLabel
+        from PySide6.QtWidgets import QLabel
 
         debug_window.comparison_layout.addWidget(QLabel("Test"))
         debug_window.comparison_layout.addWidget(QLabel("Test2"))
@@ -1367,8 +1367,8 @@ class TestDebugImageWindowResize:
             mock_scan_result: Mock scan result.
             mock_detected_icon: Mock detected icon.
         """
-        from PyQt6.QtCore import QSize
-        from PyQt6.QtGui import QResizeEvent
+        from PySide6.QtCore import QSize
+        from PySide6.QtGui import QResizeEvent
 
         debug_window.scan_result = mock_scan_result
         debug_window.selected_icon = mock_detected_icon
@@ -1390,8 +1390,8 @@ class TestDebugImageWindowResize:
         Args:
             debug_window: Window fixture.
         """
-        from PyQt6.QtCore import QSize
-        from PyQt6.QtGui import QResizeEvent
+        from PySide6.QtCore import QSize
+        from PySide6.QtGui import QResizeEvent
 
         debug_window.scan_result = None
 

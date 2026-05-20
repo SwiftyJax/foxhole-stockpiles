@@ -104,7 +104,7 @@ Adds all icons from a mod's PAK file(s) to the template database in one command.
 Updates `.fs_config` configuration files to the latest format version with automatic migration.
 
 ### fs gui / fs-gui
-Launches the PyQt6 graphical user interface for managing configurations and running scans. Provides a user-friendly interface for non-technical users.
+Launches the PySide6 graphical user interface for managing configurations and running scans. Provides a user-friendly interface for non-technical users.
 
 - `fs gui` - Launches GUI via CLI dispatcher
 - `fs-gui` - Direct GUI launcher (no console window on Windows, recommended for building standalone executables)

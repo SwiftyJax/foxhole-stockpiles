@@ -3,9 +3,9 @@
 import logging
 
 from pydantic import ValidationError
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QAction, QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QAction, QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
+from PySide6.QtWidgets import (
     QApplication,
     QMainWindow,
     QMenu,
@@ -86,50 +86,50 @@ class MainWindow(QMainWindow):
         menu_bar = self.menuBar()
 
         # File menu
-        self.file_menu = menu_bar.addMenu("")  # type: ignore[union-attr]
+        self.file_menu = menu_bar.addMenu("")
 
-        self.config_action = self.file_menu.addAction("")  # type: ignore[union-attr]
-        self.config_action.triggered.connect(self.show_configuration)  # type: ignore[union-attr]
+        self.config_action = self.file_menu.addAction("")
+        self.config_action.triggered.connect(self.show_configuration)
 
-        self.scan_action = self.file_menu.addAction("")  # type: ignore[union-attr]
-        self.scan_action.triggered.connect(self.scan_screenshot)  # type: ignore[union-attr]
+        self.scan_action = self.file_menu.addAction("")
+        self.scan_action.triggered.connect(self.scan_screenshot)
 
         # Build Catalog - hidden at Basic config level
-        self.file_menu.addSeparator()  # type: ignore[union-attr]
-        self.build_catalog_action = self.file_menu.addAction("")  # type: ignore[union-attr]
-        self.build_catalog_action.triggered.connect(self.show_catalog_builder)  # type: ignore[union-attr]
-        self._advanced_menu_actions.append(self.build_catalog_action)  # type: ignore[arg-type]
+        self.file_menu.addSeparator()
+        self.build_catalog_action = self.file_menu.addAction("")
+        self.build_catalog_action.triggered.connect(self.show_catalog_builder)
+        self._advanced_menu_actions.append(self.build_catalog_action)
 
-        self.file_menu.addSeparator()  # type: ignore[union-attr]
+        self.file_menu.addSeparator()
 
-        self.exit_action = self.file_menu.addAction("")  # type: ignore[union-attr]
-        self.exit_action.triggered.connect(self.quit_application)  # type: ignore[union-attr]
+        self.exit_action = self.file_menu.addAction("")
+        self.exit_action.triggered.connect(self.quit_application)
 
         # Database menu
-        self.database_menu = menu_bar.addMenu("")  # type: ignore[union-attr]
+        self.database_menu = menu_bar.addMenu("")
 
         # Build Database - hidden at Basic config level
-        self.build_database_action = self.database_menu.addAction("")  # type: ignore[union-attr]
-        self.build_database_action.triggered.connect(self.show_icon_import)  # type: ignore[union-attr]
-        self._advanced_menu_actions.append(self.build_database_action)  # type: ignore[arg-type]
+        self.build_database_action = self.database_menu.addAction("")
+        self.build_database_action.triggered.connect(self.show_icon_import)
+        self._advanced_menu_actions.append(self.build_database_action)
 
-        self.info_database_action = self.database_menu.addAction("")  # type: ignore[union-attr]
-        self.info_database_action.triggered.connect(self.show_database_info)  # type: ignore[union-attr]
+        self.info_database_action = self.database_menu.addAction("")
+        self.info_database_action.triggered.connect(self.show_database_info)
 
         # Visualizer - hidden at Basic config level
-        self.visualizer_action = self.database_menu.addAction("")  # type: ignore[union-attr]
-        self.visualizer_action.triggered.connect(self.show_database_visualizer)  # type: ignore[union-attr]
-        self._advanced_menu_actions.append(self.visualizer_action)  # type: ignore[arg-type]
+        self.visualizer_action = self.database_menu.addAction("")
+        self.visualizer_action.triggered.connect(self.show_database_visualizer)
+        self._advanced_menu_actions.append(self.visualizer_action)
 
         # Debug Image Viewer - hidden at Basic config level
-        self.debug_viewer_action = self.database_menu.addAction("")  # type: ignore[union-attr]
-        self.debug_viewer_action.triggered.connect(self.show_debug_viewer)  # type: ignore[union-attr]
-        self._advanced_menu_actions.append(self.debug_viewer_action)  # type: ignore[arg-type]
+        self.debug_viewer_action = self.database_menu.addAction("")
+        self.debug_viewer_action.triggered.connect(self.show_debug_viewer)
+        self._advanced_menu_actions.append(self.debug_viewer_action)
 
         # Help menu
-        self.help_menu = menu_bar.addMenu("")  # type: ignore[union-attr]
-        self.about_action = self.help_menu.addAction("")  # type: ignore[union-attr]
-        self.about_action.triggered.connect(self.show_about)  # type: ignore[union-attr]
+        self.help_menu = menu_bar.addMenu("")
+        self.about_action = self.help_menu.addAction("")
+        self.about_action.triggered.connect(self.show_about)
 
         # Apply initial translations
         self.retranslate()
@@ -475,22 +475,22 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(t("main_window.title", version=__version__))
 
         # File menu
-        self.file_menu.setTitle(t("main_window.menu.file"))  # type: ignore[union-attr]
-        self.config_action.setText(t("main_window.menu.configuration"))  # type: ignore[union-attr]
-        self.scan_action.setText(t("main_window.menu.scan_screenshot"))  # type: ignore[union-attr]
-        self.build_catalog_action.setText(t("main_window.menu.build_catalog"))  # type: ignore[union-attr]
-        self.exit_action.setText(t("main_window.menu.exit"))  # type: ignore[union-attr]
+        self.file_menu.setTitle(t("main_window.menu.file"))
+        self.config_action.setText(t("main_window.menu.configuration"))
+        self.scan_action.setText(t("main_window.menu.scan_screenshot"))
+        self.build_catalog_action.setText(t("main_window.menu.build_catalog"))
+        self.exit_action.setText(t("main_window.menu.exit"))
 
         # Database menu
-        self.database_menu.setTitle(t("main_window.menu.database"))  # type: ignore[union-attr]
-        self.build_database_action.setText(t("main_window.menu.build"))  # type: ignore[union-attr]
-        self.info_database_action.setText(t("main_window.menu.information"))  # type: ignore[union-attr]
-        self.visualizer_action.setText(t("main_window.menu.visualizer"))  # type: ignore[union-attr]
-        self.debug_viewer_action.setText(t("main_window.menu.debug_viewer"))  # type: ignore[union-attr]
+        self.database_menu.setTitle(t("main_window.menu.database"))
+        self.build_database_action.setText(t("main_window.menu.build"))
+        self.info_database_action.setText(t("main_window.menu.information"))
+        self.visualizer_action.setText(t("main_window.menu.visualizer"))
+        self.debug_viewer_action.setText(t("main_window.menu.debug_viewer"))
 
         # Help menu
-        self.help_menu.setTitle(t("main_window.menu.help"))  # type: ignore[union-attr]
-        self.about_action.setText(t("main_window.menu.about"))  # type: ignore[union-attr]
+        self.help_menu.setTitle(t("main_window.menu.help"))
+        self.about_action.setText(t("main_window.menu.about"))
 
         # Tray menu (if available)
         self._retranslate_tray()

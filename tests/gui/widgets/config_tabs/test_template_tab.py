@@ -4,7 +4,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from PyQt6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
 from foxhole_stockpiles.core.settings.sections.templates import TemplateSettings
 from foxhole_stockpiles.gui.widgets.config_tabs.template_tab import TemplateTab
@@ -271,7 +271,7 @@ def test_template_tab_all_inputs_are_spin_boxes(template_tab: TemplateTab) -> No
     Args:
         template_tab: TemplateTab instance
     """
-    from PyQt6.QtWidgets import QSpinBox
+    from PySide6.QtWidgets import QSpinBox
 
     assert isinstance(template_tab.red_mult_input, QSpinBox)
     assert isinstance(template_tab.green_mult_input, QSpinBox)

@@ -1,6 +1,6 @@
 # GUI Command
 
-Launches the PyQt6 graphical user interface for FS (Foxhole Stockpiles).
+Launches the PySide6 graphical user interface for FS (Foxhole Stockpiles).
 
 ## Usage
 
@@ -383,7 +383,7 @@ The application supports system tray for background operation (opt-in):
 
 ### Dependencies
 
-- PyQt6 >= 6.6.0
+- PySide6 >= 6.6
 - Python 3.12+
 - All core Foxhole Stockpiles dependencies
 
@@ -414,7 +414,7 @@ The application supports system tray for background operation (opt-in):
 
 ### GUI Won't Start
 
-**Error: `No module named 'PyQt6'`**
+**Error: `No module named 'PySide6'`**
 ```bash
 # Reinstall the package
 pip install -e .

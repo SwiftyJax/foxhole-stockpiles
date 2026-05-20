@@ -4,7 +4,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from PyQt6.QtWidgets import QMenuBar
+from PySide6.QtWidgets import QMenuBar
 
 from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.windows.main_window import MainWindow
@@ -201,7 +201,7 @@ def test_window_quit_application(qtbot: Any, window: MainWindow) -> None:
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     with patch.object(QApplication, "quit") as mock_quit:
         window.quit_application()
@@ -215,7 +215,7 @@ def test_tray_icon_creation_when_available(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     from foxhole_stockpiles.core.settings.sections.gui import GUISettings
 
@@ -241,7 +241,7 @@ def test_tray_icon_creation_when_not_available(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
         with patch.object(QSystemTrayIcon, "isSystemTrayAvailable", return_value=False):
@@ -258,7 +258,7 @@ def test_tray_icon_activated_double_click(qtbot: Any, window: MainWindow) -> Non
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     with patch.object(window, "show_from_tray") as mock_show:
         window.tray_icon_activated(QSystemTrayIcon.ActivationReason.DoubleClick)
@@ -273,7 +273,7 @@ def test_tray_icon_activated_single_click(qtbot: Any, window: MainWindow) -> Non
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     with patch.object(window, "show_from_tray") as mock_show:
         window.tray_icon_activated(QSystemTrayIcon.ActivationReason.Trigger)
@@ -302,7 +302,7 @@ def test_load_minimize_to_tray_from_config(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     from foxhole_stockpiles.core.settings.sections.gui import GUISettings
 
@@ -401,8 +401,8 @@ def test_close_event_minimize_to_tray_enabled(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtGui import QCloseEvent
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtGui import QCloseEvent
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
         with patch.object(QSystemTrayIcon, "isSystemTrayAvailable", return_value=True):
@@ -426,8 +426,8 @@ def test_close_event_minimize_to_tray_disabled(qtbot: Any, window: MainWindow) -
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtGui import QCloseEvent
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtGui import QCloseEvent
+    from PySide6.QtWidgets import QApplication
 
     window.minimize_to_tray = False
     window.show()
@@ -446,8 +446,8 @@ def test_close_event_minimize_to_tray_enabled_no_tray_icon(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtGui import QCloseEvent
-    from PyQt6.QtWidgets import QApplication, QSystemTrayIcon
+    from PySide6.QtGui import QCloseEvent
+    from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
     with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
         with patch.object(QSystemTrayIcon, "isSystemTrayAvailable", return_value=False):
@@ -471,7 +471,7 @@ def test_quit_application_stops_server(qtbot: Any, window: MainWindow) -> None:
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     # Simulate running server
     window.server_panel.server_running = True
@@ -492,7 +492,7 @@ def test_quit_application_removes_qt_log_handlers(qtbot: Any, window: MainWindow
     """
     import logging
 
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 
@@ -514,7 +514,7 @@ def test_quit_application_hides_tray_icon(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtWidgets import QApplication, QSystemTrayIcon
+    from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
     with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
         with patch.object(QSystemTrayIcon, "isSystemTrayAvailable", return_value=True):

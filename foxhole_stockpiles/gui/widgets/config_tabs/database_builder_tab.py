@@ -3,9 +3,9 @@
 import os
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QUrl
-from PyQt6.QtGui import QDesktopServices
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QUrl
+from PySide6.QtGui import QDesktopServices
+from PySide6.QtWidgets import (
     QFileDialog,
     QFormLayout,
     QGroupBox,
@@ -139,7 +139,7 @@ class DatabaseBuilderTab(QWidget):
         # Connect to language change signal with cleanup
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(lambda cb=self._language_callback: off_language_changed(cb))
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event."""

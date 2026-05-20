@@ -5,8 +5,8 @@ from unittest.mock import MagicMock, patch
 
 import numpy as np
 import pytest
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QListWidgetItem, QMessageBox
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QListWidgetItem, QMessageBox
 
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction

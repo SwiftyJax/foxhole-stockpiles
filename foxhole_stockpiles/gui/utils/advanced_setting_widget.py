@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 
-from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
 
 class AdvancedSettingRow(QWidget):

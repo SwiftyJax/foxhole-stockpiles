@@ -32,7 +32,7 @@ jinja2>=3.1.0                        # HTML templating
 slowapi>=0.1.9                       # Rate limiting
 
 # Desktop UI
-PyQt6>=6.10.2                        # GUI application framework
+PySide6>=6.6                         # GUI application framework (LGPL)
 
 # Networking & Webhooks
 httpx>=0.28.1                        # Async HTTP client
@@ -140,9 +140,9 @@ FS_EXTERNAL_TOOLS__REPAK_PATH=/path/to/repak.exe
                     ↓
               numpy>=2.4.2
 
-            PyQt6>=6.10.2
+            PySide6>=6.6
                     ↓
-              PyQt6-sip, PyQt6-Qt6
+              shiboken6, PySide6-Essentials
 
             httpx>=0.28.1
                     ↓
@@ -189,7 +189,7 @@ dev = [
     "pytest-asyncio>=1.2.0"            # Async test support
     "pytest-cov>=7.0.0"                # Coverage measurement
     "pytest-xdist>=3.5.0"              # Parallel test execution
-    "pytest-qt>=4.5.0"                 # PyQt6 testing
+    "pytest-qt>=4.5.0"                 # Qt testing (PySide6)
 
     # Code Quality
     "mypy>=1.19.1"                     # Static type checking (strict mode)
@@ -323,7 +323,7 @@ Dependencies (All Compatible):
 - pydantic: MIT
 - h5py: BSD
 - pytesseract: GPLv3 (compatible with MIT)
-- PyQt6: GPLv3 (separate GUI module)
+- PySide6: LGPLv3 (Qt bindings)
 - discord-webhook: MIT
 - All others: MIT/Apache/BSD
 ```
@@ -348,7 +348,7 @@ Error: Microsoft Visual C++ not installed
 Solution: Pre-built wheels available, pip install should work
 ```
 
-### PyQt6 Display Issues
+### PySide6 Display Issues
 ```
 Error: Qt platform plugin not found
 Solution: QT_QPA_PLATFORM_PLUGIN_PATH environment variable

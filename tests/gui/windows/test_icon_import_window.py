@@ -6,9 +6,9 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PyQt6.QtCore import QMimeData, QUrl
-from PyQt6.QtGui import QDragEnterEvent, QDropEvent
-from PyQt6.QtWidgets import QMessageBox, QTableWidget
+from PySide6.QtCore import QMimeData, QUrl
+from PySide6.QtGui import QDragEnterEvent, QDropEvent
+from PySide6.QtWidgets import QMessageBox, QTableWidget
 
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseBuilderSettings
@@ -180,10 +180,11 @@ def test_icon_import_window_cancel_button_disabled(configured_window: IconImport
 # ===== Configuration Check Tests =====
 
 
-def test_check_configuration_all_present(tmp_path: Path) -> None:
+def test_check_configuration_all_present(qtbot: Any, tmp_path: Path) -> None:
     """Test configuration check when all tools are present.
 
     Args:
+        qtbot: PyQt test fixture
         tmp_path: Temporary directory path
     """
     catalog_file = tmp_path / "catalog.json"
@@ -209,13 +210,15 @@ def test_check_configuration_all_present(tmp_path: Path) -> None:
         "foxhole_stockpiles.gui.windows.icon_import_window.get_settings", return_value=settings
     ):
         window = IconImportWindow()
+        qtbot.addWidget(window)
         assert window._check_configuration() is True
 
 
-def test_check_configuration_missing_extractor(tmp_path: Path) -> None:
+def test_check_configuration_missing_extractor(qtbot: Any, tmp_path: Path) -> None:
     """Test configuration check when extractor tool is missing.
 
     Args:
+        qtbot: PyQt test fixture
         tmp_path: Temporary directory path
     """
     catalog_file = tmp_path / "catalog.json"
@@ -238,13 +241,15 @@ def test_check_configuration_missing_extractor(tmp_path: Path) -> None:
         "foxhole_stockpiles.gui.windows.icon_import_window.get_settings", return_value=settings
     ):
         window = IconImportWindow()
+        qtbot.addWidget(window)
         assert window._check_configuration() is False
 
 
-def test_check_configuration_missing_converter(tmp_path: Path) -> None:
+def test_check_configuration_missing_converter(qtbot: Any, tmp_path: Path) -> None:
     """Test configuration check when converter tool is missing.
 
     Args:
+        qtbot: PyQt test fixture
         tmp_path: Temporary directory path
     """
     catalog_file = tmp_path / "catalog.json"
@@ -267,13 +272,15 @@ def test_check_configuration_missing_converter(tmp_path: Path) -> None:
         "foxhole_stockpiles.gui.windows.icon_import_window.get_settings", return_value=settings
     ):
         window = IconImportWindow()
+        qtbot.addWidget(window)
         assert window._check_configuration() is False
 
 
-def test_check_configuration_missing_catalog(tmp_path: Path) -> None:
+def test_check_configuration_missing_catalog(qtbot: Any, tmp_path: Path) -> None:
     """Test configuration check when catalog file is missing.
 
     Args:
+        qtbot: PyQt test fixture
         tmp_path: Temporary directory path
     """
     extractor_tool = tmp_path / "repak.exe"
@@ -296,13 +303,15 @@ def test_check_configuration_missing_catalog(tmp_path: Path) -> None:
         "foxhole_stockpiles.gui.windows.icon_import_window.get_settings", return_value=settings
     ):
         window = IconImportWindow()
+        qtbot.addWidget(window)
         assert window._check_configuration() is False
 
 
-def test_check_configuration_file_not_exists(tmp_path: Path) -> None:
+def test_check_configuration_file_not_exists(qtbot: Any, tmp_path: Path) -> None:
     """Test configuration check when files don't exist.
 
     Args:
+        qtbot: PyQt test fixture
         tmp_path: Temporary directory path
     """
     settings = AppSettings(
@@ -319,6 +328,7 @@ def test_check_configuration_file_not_exists(tmp_path: Path) -> None:
         "foxhole_stockpiles.gui.windows.icon_import_window.get_settings", return_value=settings
     ):
         window = IconImportWindow()
+        qtbot.addWidget(window)
         assert window._check_configuration() is False
 
 
@@ -2023,8 +2033,8 @@ def test_log_key_press_event_other_key(configured_window: IconImportWindow) -> N
     Args:
         configured_window: Configured window instance
     """
-    from PyQt6.QtCore import Qt
-    from PyQt6.QtGui import QKeyEvent
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QKeyEvent
 
     # Create a key event for a non-copy key (e.g., Enter)
     event = QKeyEvent(
@@ -2045,8 +2055,8 @@ def test_log_key_press_event_copy_key(configured_window: IconImportWindow) -> No
     Args:
         configured_window: Configured window instance
     """
-    from PyQt6.QtCore import Qt
-    from PyQt6.QtGui import QKeyEvent
+    from PySide6.QtCore import Qt
+    from PySide6.QtGui import QKeyEvent
 
     # Create a key event for Ctrl+C (Copy)
     event = QKeyEvent(

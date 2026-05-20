@@ -2,9 +2,9 @@
 
 import logging
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QCloseEvent, QKeyEvent
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QCloseEvent, QKeyEvent
+from PySide6.QtWidgets import (
     QDialogButtonBox,
     QHBoxLayout,
     QLabel,
@@ -48,7 +48,7 @@ class ConfigWindow(QMainWindow):
     """Configuration window for managing application settings."""
 
     # Signal emitted when the window is closed
-    closed = pyqtSignal()
+    closed = Signal()
 
     def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the configuration window.
@@ -121,7 +121,7 @@ class ConfigWindow(QMainWindow):
 
         # Connect to language change signal and clean up on destruction
         on_language_changed(self.retranslate)
-        self.destroyed.connect(lambda: off_language_changed(self.retranslate))
+        self.destroyed.connect(lambda cb=self.retranslate: off_language_changed(cb))
 
         # Add status bar
         self.status_bar = QStatusBar()
@@ -303,7 +303,9 @@ class ConfigWindow(QMainWindow):
         Args:
             event (QKeyEvent | None): Key press event
         """
-        if event and event.key() == Qt.Key.Key_Escape:
+        if event is None:
+            return
+        if event.key() == Qt.Key.Key_Escape:
             self.close()
         else:
             super().keyPressEvent(event)

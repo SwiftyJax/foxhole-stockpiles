@@ -5,7 +5,7 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PyQt6.QtWidgets import QTableWidget
+from PySide6.QtWidgets import QTableWidget
 
 from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
 from foxhole_stockpiles.i18n import t
@@ -21,7 +21,7 @@ def panel(qtbot: Any) -> ServerControlPanel:
     Returns:
         ServerControlPanel: Panel instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
@@ -232,7 +232,7 @@ def test_panel_validation_no_config(qtbot: Any, panel: ServerControlPanel) -> No
         qtbot: PyQt test fixture
         panel (ServerControlPanel): Panel instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
@@ -254,7 +254,7 @@ def test_panel_validation_no_db_path(qtbot: Any, panel: ServerControlPanel) -> N
         qtbot: PyQt test fixture
         panel (ServerControlPanel): Panel instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
@@ -279,7 +279,7 @@ def test_panel_validation_db_not_found(qtbot: Any, panel: ServerControlPanel) ->
         qtbot: PyQt test fixture
         panel (ServerControlPanel): Panel instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
@@ -306,7 +306,7 @@ def test_panel_validation_valid_db(qtbot: Any, panel: ServerControlPanel) -> Non
     """
     from pathlib import Path
 
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
@@ -469,7 +469,7 @@ def test_panel_validation_db_load_exception(qtbot: Any, panel: ServerControlPane
     """
     from pathlib import Path
 
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
@@ -530,7 +530,7 @@ def test_panel_validation_relative_path(qtbot: Any, panel: ServerControlPanel) -
     """
     from pathlib import Path
 
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
@@ -1033,7 +1033,7 @@ def test_validation_path_not_relative_to_cwd(qtbot: Any, panel: ServerControlPan
         qtbot: PyQt test fixture
         panel (ServerControlPanel): Panel instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
@@ -1245,7 +1245,7 @@ def test_db_info_text_relative_path(qtbot: Any, panel: ServerControlPanel) -> No
     """
     import os
 
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
@@ -1371,7 +1371,7 @@ def test_validation_db_path_value_error(qtbot: Any, panel: ServerControlPanel) -
         qtbot: PyQt test fixture
         panel (ServerControlPanel): Panel instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 

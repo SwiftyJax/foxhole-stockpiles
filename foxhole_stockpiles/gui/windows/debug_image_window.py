@@ -6,9 +6,9 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QFont, QImage, QPixmap
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtGui import QFont, QImage, QPixmap
+from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
     QGroupBox,
@@ -42,8 +42,8 @@ logger = logging.getLogger(__name__)
 class DatabaseLoader(QThread):
     """Thread for loading all databases in background."""
 
-    finished = pyqtSignal(object)  # all_databases_dict
-    error = pyqtSignal(str)
+    finished = Signal(object)  # all_databases_dict
+    error = Signal(str)
 
     def __init__(self, database_path: str) -> None:
         """Initialize the database loader.
@@ -105,7 +105,7 @@ class DebugImageWindow(QDialog):
         # Connect to language change signal with cleanup
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(lambda cb=self._language_callback: off_language_changed(cb))
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event."""

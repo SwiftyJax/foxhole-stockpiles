@@ -4,7 +4,7 @@ import asyncio
 import logging
 from pathlib import Path
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
 from foxhole_stockpiles.services.savefile_converter import SaveFileConverter
@@ -16,10 +16,10 @@ logger = logging.getLogger(__name__)
 class SavScanWorker(QThread):
     """Worker thread for one-time SAV file scanning."""
 
-    finished = pyqtSignal(bool)  # True = success, False = failure
-    error = pyqtSignal(str)  # Error message
-    progress = pyqtSignal(str)  # Progress message
-    stockpiles_found = pyqtSignal(list)  # List of Stockpile objects
+    finished = Signal(bool)  # True = success, False = failure
+    error = Signal(str)  # Error message
+    progress = Signal(str)  # Progress message
+    stockpiles_found = Signal(list)  # List of Stockpile objects
 
     def __init__(
         self,
@@ -74,10 +74,10 @@ class SavScanWorker(QThread):
 class SavMonitorWorker(QThread):
     """Worker thread for continuous SAV file monitoring."""
 
-    finished = pyqtSignal(bool)  # True = stopped normally, False = error
-    error = pyqtSignal(str)  # Error message
-    progress = pyqtSignal(str)  # Progress/status message
-    stockpiles_changed = pyqtSignal(list)  # List of changed Stockpile objects
+    finished = Signal(bool)  # True = stopped normally, False = error
+    error = Signal(str)  # Error message
+    progress = Signal(str)  # Progress/status message
+    stockpiles_changed = Signal(list)  # List of changed Stockpile objects
 
     def __init__(
         self,

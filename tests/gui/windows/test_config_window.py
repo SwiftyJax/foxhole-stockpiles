@@ -4,9 +4,9 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QCloseEvent, QKeyEvent
-from PyQt6.QtWidgets import QMessageBox, QPushButton
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QCloseEvent, QKeyEvent
+from PySide6.QtWidgets import QMessageBox
 
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections import (
@@ -376,18 +376,9 @@ def test_config_window_close_button_closes_window(qtbot: Any, config_window: Con
         qtbot: PyQt test fixture
         config_window: ConfigWindow instance
     """
-    # Find close button
-    buttons = config_window.findChildren(QPushButton)
-    close_button = None
-    for btn in buttons:
-        if btn.text() == "Close":
-            close_button = btn
-            break
-
-    assert close_button is not None
-
-    # Verify button is connected to close slot
-    # The button should trigger close when clicked
+    # close_button is a named attribute on ConfigWindow
+    assert config_window.close_button is not None
+    assert config_window.close_button.text() == t("common.close")
 
 
 def test_config_window_preserves_notifications_settings(config_window: ConfigWindow) -> None:
@@ -449,8 +440,9 @@ def test_config_window_gui_tab_exists(config_window: ConfigWindow) -> None:
 
     # GUI tab should be in the tab widget
     gui_tab_index = -1
+    expected_text = t("config_window.tabs.gui")
     for i in range(config_window.tab_widget.count()):
-        if config_window.tab_widget.tabText(i) == "GUI":
+        if config_window.tab_widget.tabText(i) == expected_text:
             gui_tab_index = i
             break
     assert gui_tab_index >= 0

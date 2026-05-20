@@ -1,4 +1,4 @@
-"""GUI command for launching the PyQt6 application."""
+"""GUI command for launching the PySide6 application."""
 
 from foxhole_stockpiles.gui.app import launch_gui
 

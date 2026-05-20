@@ -53,17 +53,22 @@ def test_pak_validation_worker_run_success(qtbot: Any, tmp_path: Path) -> None:
     async def mock_validate(*args: Any, **kwargs: Any) -> PakValidationResult:
         return expected_result
 
-    with patch(
-        "foxhole_stockpiles.gui.utils.pak_validation_worker.PakExtractor.validate_required_assets",
-        side_effect=mock_validate,
-    ):
-        with qtbot.waitSignal(worker.validation_complete, timeout=5000) as blocker:
-            worker.start()
+    try:
+        with patch(
+            "foxhole_stockpiles.gui.utils.pak_validation_worker.PakExtractor.validate_required_assets",
+            side_effect=mock_validate,
+        ):
+            with qtbot.waitSignal(worker.validation_complete, timeout=5000) as blocker:
+                worker.start()
 
-    result = blocker.args[0]
-    assert result.is_valid is True
-    assert result.has_crate_icon is True
-    assert result.has_subicons is True
+        result = blocker.args[0]
+        assert result.is_valid is True
+        assert result.has_crate_icon is True
+        assert result.has_subicons is True
+    finally:
+        # Ensure worker is properly cleaned up
+        if worker.isRunning():
+            worker.wait(1000)
 
 
 def test_pak_validation_worker_run_failure(qtbot: Any, tmp_path: Path) -> None:
@@ -93,16 +98,21 @@ def test_pak_validation_worker_run_failure(qtbot: Any, tmp_path: Path) -> None:
     async def mock_validate(*args: Any, **kwargs: Any) -> PakValidationResult:
         return expected_result
 
-    with patch(
-        "foxhole_stockpiles.gui.utils.pak_validation_worker.PakExtractor.validate_required_assets",
-        side_effect=mock_validate,
-    ):
-        with qtbot.waitSignal(worker.validation_complete, timeout=5000) as blocker:
-            worker.start()
+    try:
+        with patch(
+            "foxhole_stockpiles.gui.utils.pak_validation_worker.PakExtractor.validate_required_assets",
+            side_effect=mock_validate,
+        ):
+            with qtbot.waitSignal(worker.validation_complete, timeout=5000) as blocker:
+                worker.start()
 
-    result = blocker.args[0]
-    assert result.is_valid is False
-    assert result.error_message == "Missing required assets"
+        result = blocker.args[0]
+        assert result.is_valid is False
+        assert result.error_message == "Missing required assets"
+    finally:
+        # Ensure worker is properly cleaned up
+        if worker.isRunning():
+            worker.wait(1000)
 
 
 def test_pak_validation_worker_run_exception(qtbot: Any, tmp_path: Path) -> None:

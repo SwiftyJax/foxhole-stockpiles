@@ -4,8 +4,8 @@ import asyncio
 import logging
 from pathlib import Path
 
-from PyQt6.QtCore import QThread, pyqtSignal
-from PyQt6.QtWidgets import QWidget
+from PySide6.QtCore import QThread, Signal
+from PySide6.QtWidgets import QWidget
 
 from foxhole_stockpiles.commands.uasset_extractor.uasset_extractor import PakExtractor
 from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
@@ -17,7 +17,7 @@ class PakValidationWorker(QThread):
     """Background worker thread for validating PAK files."""
 
     # Signal emitted when validation completes with the result
-    validation_complete = pyqtSignal(object)  # PakValidationResult
+    validation_complete = Signal(object)  # PakValidationResult
 
     def __init__(
         self,

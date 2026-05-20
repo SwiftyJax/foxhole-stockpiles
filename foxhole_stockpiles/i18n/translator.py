@@ -7,7 +7,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 from foxhole_stockpiles.core.utils import get_bundled_resource_path, is_frozen
 
@@ -91,7 +91,7 @@ def _load_json_file(path: Path) -> dict[str, Any] | None:
 class TranslatorSignals(QObject):
     """Signals for translator events."""
 
-    language_changed = pyqtSignal(str)  # Emits new language code
+    language_changed = Signal(str)  # Emits new language code
 
 
 class Translator:

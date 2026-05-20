@@ -13,7 +13,7 @@ Foxhole Stockpiles is a computer vision and OCR system that extracts structured 
 - **Resolutions:** 16 supported screen resolutions (664px to 2160px)
 - **Database:** HDF5 template storage (v2 format)
 - **CLI Commands:** 11 distinct subcommands
-- **Frameworks:** FastAPI, PyQt6, Click, Pydantic v2
+- **Frameworks:** FastAPI, PySide6, Click, Pydantic v2
 
 ## Architecture Overview
 
@@ -21,7 +21,7 @@ Foxhole Stockpiles is a computer vision and OCR system that extracts structured 
 ┌─────────────────────────────────────────────────────────────┐
 │                     ENTRY POINTS                            │
 ├──────────────────┬──────────────────┬──────────────────┐
-│  CLI (fs tool)   │  FastAPI Server  │   PyQt6 GUI     │
+│  CLI (fs tool)   │  FastAPI Server  │  PySide6 GUI    │
 │  11 commands     │  /ocr/scan_image │  Desktop App    │
 └──────────────────┴──────────────────┴──────────────────┘
           │                  │                   │
@@ -87,7 +87,7 @@ Unified CLI dispatcher with subcommands:
 - **add_mod/add_mod.py** - `fs add-mod` - import new mod into database
 - **add_icon/add_icon.py** - `fs add-icon` - add single icon
 - **candidate_inspector/candidate_inspector.py** - `fs inspect` - debug matching
-- **gui/gui.py** - `fs-gui` - launch PyQt6 desktop application
+- **gui/gui.py** - `fs-gui` - launch PySide6 desktop application
 - **update_config/update_config.py** - `fs config` - config management
 
 ### 4. **models/** - Data Models (Pydantic v2)
@@ -133,7 +133,7 @@ Multiple output destinations:
 - **base.py** - `BaseNotifier` interface
 - **discord.py** - `DiscordNotifier` - Discord webhook notifications
 
-### 9. **gui/** - PyQt6 Desktop Application
+### 9. **gui/** - PySide6 Desktop Application
 - **app.py** - Main window and orchestration
 - **widgets/** - Reusable UI components
 - **config_tabs/** - Configuration interface tabs

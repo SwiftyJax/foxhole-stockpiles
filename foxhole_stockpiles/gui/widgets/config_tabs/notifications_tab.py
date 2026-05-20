@@ -1,6 +1,6 @@
 """Notifications settings tab."""
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QCheckBox,
     QDialog,
     QDialogButtonBox,
@@ -145,7 +145,7 @@ class NotifierDialog(QDialog):
         # Connect to language change signal with cleanup
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(lambda cb=self._language_callback: off_language_changed(cb))
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event."""
@@ -351,7 +351,7 @@ class NotificationsTab(QWidget):
         # Connect to language change signal with cleanup
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(lambda cb=self._language_callback: off_language_changed(cb))
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event."""

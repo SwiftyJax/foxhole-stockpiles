@@ -5,7 +5,7 @@ import logging
 import traceback
 from pathlib import Path
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.models.mod_import_config import ModImportConfig
@@ -26,9 +26,9 @@ class IconImportWorker(QThread):
     All intermediate files are stored in temporary directories and cleaned up automatically.
     """
 
-    finished = pyqtSignal(bool)  # Emits True on success, False on failure/cancel
-    error = pyqtSignal(str)  # Emits error message
-    progress = pyqtSignal(int, str)  # Emits (step_number, message) for UI updates
+    finished = Signal(bool)  # Emits True on success, False on failure/cancel
+    error = Signal(str)  # Emits error message
+    progress = Signal(int, str)  # Emits (step_number, message) for UI updates
 
     def __init__(
         self,

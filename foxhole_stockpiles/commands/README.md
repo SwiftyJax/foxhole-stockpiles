@@ -198,7 +198,7 @@ python -m foxhole_stockpiles.commands.update_config.update_config
 ---
 
 ### 10. `fs gui` - Graphical User Interface
-**Purpose**: Launch the PyQt6 graphical interface for configuration and scanning.
+**Purpose**: Launch the PySide6 graphical interface for configuration and scanning.
 
 **Usage**:
 ```bash

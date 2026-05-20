@@ -6,9 +6,9 @@ import platform
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor, QDragEnterEvent, QDropEvent, QKeyEvent, QKeySequence
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QBrush, QColor, QDragEnterEvent, QDropEvent, QKeyEvent, QKeySequence
+from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QCheckBox,
@@ -46,7 +46,7 @@ class IconImportWindow(QMainWindow):
     """Window for importing new icons to the database."""
 
     # Signal emitted when database is successfully updated (passes the database path)
-    database_updated = pyqtSignal(Path)
+    database_updated = Signal(Path)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the icon import window.
@@ -268,7 +268,7 @@ class IconImportWindow(QMainWindow):
         self.log_display.setColumnWidth(2, 250)  # Module
 
         # Enable copy on CTRL-C
-        self.log_display.keyPressEvent = self._log_key_press_event  # type: ignore[assignment,method-assign]
+        self.log_display.keyPressEvent = self._log_key_press_event  # type: ignore[method-assign]
 
         logs_layout.addWidget(self.log_display)
 
@@ -308,7 +308,7 @@ class IconImportWindow(QMainWindow):
         # Connect to language change signal with cleanup
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(lambda cb=self._language_callback: off_language_changed(cb))
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event."""

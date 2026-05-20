@@ -4,9 +4,9 @@ import logging
 from pathlib import Path
 
 from pydantic import ValidationError
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QBrush, QColor
+from PySide6.QtWidgets import (
     QAbstractItemView,
     QFileDialog,
     QGroupBox,
@@ -39,9 +39,9 @@ logger = logging.getLogger(__name__)
 class ServerControlPanel(QWidget):
     """Panel for controlling the FastAPI server and scanning screenshots."""
 
-    server_started = pyqtSignal()
-    server_stopped = pyqtSignal()
-    screenshot_dropped = pyqtSignal(str)
+    server_started = Signal()
+    server_stopped = Signal()
+    screenshot_dropped = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the server control panel.

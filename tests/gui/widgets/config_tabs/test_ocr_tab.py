@@ -4,7 +4,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from PyQt6.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.gui.widgets.config_tabs.ocr_tab import OCRTab
@@ -391,7 +391,7 @@ def test_ocr_tab_all_inputs_are_spin_boxes(ocr_tab: OCRTab) -> None:
     Args:
         ocr_tab: OCRTab instance
     """
-    from PyQt6.QtWidgets import QSpinBox
+    from PySide6.QtWidgets import QSpinBox
 
     assert isinstance(ocr_tab.height_input, QSpinBox)
     assert isinstance(ocr_tab.box_width_input, QSpinBox)

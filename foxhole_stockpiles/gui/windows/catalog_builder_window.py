@@ -6,9 +6,9 @@ import platform
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QBrush, QColor, QKeyEvent, QKeySequence
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QBrush, QColor, QKeyEvent, QKeySequence
+from PySide6.QtWidgets import (
     QAbstractItemView,
     QApplication,
     QFileDialog,
@@ -168,7 +168,7 @@ class CatalogBuilderWindow(QMainWindow):
         self.log_display.setColumnWidth(2, 250)
 
         # Enable copy on CTRL-C
-        self.log_display.keyPressEvent = self._log_key_press_event  # type: ignore[assignment,method-assign]
+        self.log_display.keyPressEvent = self._log_key_press_event  # type: ignore[method-assign]
 
         logs_layout.addWidget(self.log_display)
         layout.addWidget(self.logs_group, stretch=1)
@@ -203,7 +203,7 @@ class CatalogBuilderWindow(QMainWindow):
         # Connect to language change signal with cleanup
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(lambda cb=self._language_callback: off_language_changed(cb))
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event."""

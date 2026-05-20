@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from PyQt6.QtCore import QThread
+from PySide6.QtCore import QThread
 
 from foxhole_stockpiles.gui.utils.sav_workers import SavMonitorWorker, SavScanWorker
 from foxhole_stockpiles.models.stockpile import Stockpile

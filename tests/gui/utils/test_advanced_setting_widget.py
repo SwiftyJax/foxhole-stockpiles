@@ -4,8 +4,8 @@ from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QCheckBox, QLineEdit, QSpinBox
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QCheckBox, QLineEdit, QSpinBox
 
 from foxhole_stockpiles.gui.utils.advanced_setting_widget import AdvancedSettingRow
 

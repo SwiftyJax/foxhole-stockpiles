@@ -6,7 +6,7 @@ import logging
 import traceback
 from pathlib import Path
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 
 from foxhole_stockpiles.services.catalog_builder import BlueprintExtractor, CatalogAssembler
 
@@ -23,9 +23,9 @@ class CatalogBuilderWorker(QThread):
     4. Write catalog to output file
     """
 
-    finished = pyqtSignal(bool)  # Emits True on success, False on failure/cancel
-    error = pyqtSignal(str)  # Emits error message
-    progress = pyqtSignal(str)  # Emits progress message for UI updates
+    finished = Signal(bool)  # Emits True on success, False on failure/cancel
+    error = Signal(str)  # Emits error message
+    progress = Signal(str)  # Emits progress message for UI updates
 
     def __init__(
         self,

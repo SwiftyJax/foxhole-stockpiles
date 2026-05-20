@@ -7,9 +7,9 @@ from pathlib import Path
 import cv2
 import numpy as np
 from PIL import Image
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
-from PyQt6.QtGui import QFont, QImage, QPixmap
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtGui import QFont, QImage, QPixmap
+from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDialog,
@@ -46,8 +46,8 @@ logger = logging.getLogger(__name__)
 class DatabaseLoader(QThread):
     """Thread for loading all databases in background."""
 
-    finished = pyqtSignal(object)  # all_databases_dict
-    error = pyqtSignal(str)
+    finished = Signal(object)  # all_databases_dict
+    error = Signal(str)
 
     def __init__(self, database_path: str) -> None:
         """Initialize the database loader.
@@ -135,7 +135,7 @@ class DatabaseVisualizerWindow(QDialog):
         # Connect to language change signal with cleanup
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(lambda cb=self._language_callback: off_language_changed(cb))
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event."""
@@ -435,8 +435,16 @@ class DatabaseVisualizerWindow(QDialog):
         self.replace_button.setEnabled(False)
         self.delete_button.setEnabled(False)
 
-        resolution = self.resolution_filter.currentData()
-        if resolution and resolution in self.all_databases:
+        # PySide6 returns enum value as string, convert back to enum
+        resolution_data = self.resolution_filter.currentData()
+        if not resolution_data:
+            return
+        resolution = (
+            resolution_data
+            if isinstance(resolution_data, SupportedResolution)
+            else SupportedResolution(resolution_data)
+        )
+        if resolution in self.all_databases:
             self.current_resolution = resolution
             self.database = self.all_databases[resolution]
             self.all_templates = list(enumerate(self.database.templates))
@@ -530,10 +538,20 @@ class DatabaseVisualizerWindow(QDialog):
         if not self.database:
             return
 
-        # Get filter values
+        # Get filter values (PySide6 returns enum values as strings, convert back)
         code_text = self.code_filter.text().lower()
-        faction = self.faction_filter.currentData()
-        category = self.category_filter.currentData()
+        faction_data = self.faction_filter.currentData()
+        faction = (
+            ItemFaction(faction_data)
+            if faction_data and not isinstance(faction_data, ItemFaction)
+            else faction_data
+        )
+        category_data = self.category_filter.currentData()
+        category = (
+            ItemCategory(category_data)
+            if category_data and not isinstance(category_data, ItemCategory)
+            else category_data
+        )
         mod = self.mod_filter.currentData()
 
         # Crated filter logic
