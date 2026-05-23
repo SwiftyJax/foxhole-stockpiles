@@ -212,12 +212,10 @@ class TestSaveFileProcessorInit:
 
     def test_init_with_defaults(self, tmp_path: Path) -> None:
         """Test initialization with default values."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
 
@@ -228,12 +226,10 @@ class TestSaveFileProcessorInit:
 
     def test_init_with_custom_values(self, tmp_path: Path) -> None:
         """Test initialization with custom values."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
             poll_interval=5.0,
             emit_all_on_start=False,
@@ -248,13 +244,11 @@ class TestSaveFileProcessorProperties:
 
     def test_file_path_property(self, tmp_path: Path) -> None:
         """Test file_path property."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
         expected_path = tmp_path / "test.sav"
 
         monitor = SaveFileProcessor(
             file_path=expected_path,
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
 
@@ -262,12 +256,10 @@ class TestSaveFileProcessorProperties:
 
     def test_poll_interval_property_getter(self, tmp_path: Path) -> None:
         """Test poll_interval property getter."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
             poll_interval=2.5,
         )
@@ -276,12 +268,10 @@ class TestSaveFileProcessorProperties:
 
     def test_poll_interval_property_setter(self, tmp_path: Path) -> None:
         """Test poll_interval property setter."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
             poll_interval=1.0,
         )
@@ -291,12 +281,10 @@ class TestSaveFileProcessorProperties:
 
     def test_is_running_property(self, tmp_path: Path) -> None:
         """Test is_running property."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
 
@@ -311,11 +299,9 @@ class TestSaveFileProcessorDetectChanges:
     @pytest.fixture
     def monitor(self, tmp_path: Path) -> SaveFileProcessor:
         """Create a monitor instance."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
         return SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
 
@@ -323,7 +309,6 @@ class TestSaveFileProcessorDetectChanges:
         self,
         name: str = "Test",
         stockpile_type: StockpileType = StockpileType.SEAPORT,
-        raw_timestamp: int | None = 100,
         coords_x: float = 0.5,
         coords_y: float = 0.5,
         hex_name: str = "TestHex",
@@ -338,12 +323,11 @@ class TestSaveFileProcessorDetectChanges:
             coords=StockpileCoords(x=coords_x, y=coords_y),
             hex=hex_name,
             is_reserve=is_reserve,
-            raw_timestamp=raw_timestamp,
         )
 
     def test_detect_new_stockpile(self, monitor: SaveFileProcessor) -> None:
         """Test detecting new stockpiles."""
-        stockpiles = [self._create_stockpile(name="New", raw_timestamp=100)]
+        stockpiles = [self._create_stockpile(name="New")]
 
         updated, new, removed = monitor._detect_changes(stockpiles)
 
@@ -356,25 +340,23 @@ class TestSaveFileProcessorDetectChanges:
 
     def test_detect_updated_stockpile(self, monitor: SaveFileProcessor) -> None:
         """Test detecting updated stockpiles."""
-        stockpile = self._create_stockpile(name="Existing", raw_timestamp=100)
-        # Pre-populate cache
-        monitor._stockpile_cache[stockpile.to_key()] = 100
+        stockpile = self._create_stockpile(name="Existing")
+        # Pre-populate cache with old timestamp
+        monitor._stockpile_cache[stockpile.to_key()] = "2024-01-01T00:00:00+00:00"
 
-        # Update with new timestamp
-        updated_stockpile = self._create_stockpile(name="Existing", raw_timestamp=200)
+        # Create updated stockpile with new timestamp (different datetime)
+        updated_stockpile = self._create_stockpile(name="Existing")
         updated, new, removed = monitor._detect_changes([updated_stockpile])
 
         assert len(updated) == 1
         assert len(new) == 0
         assert len(removed) == 0
-        # Check cache was updated
-        assert monitor._stockpile_cache[stockpile.to_key()] == 200
 
     def test_detect_unchanged_stockpile(self, monitor: SaveFileProcessor) -> None:
         """Test detecting unchanged stockpiles."""
-        stockpile = self._create_stockpile(name="Unchanged", raw_timestamp=100)
+        stockpile = self._create_stockpile(name="Unchanged")
         # Pre-populate cache with same timestamp
-        monitor._stockpile_cache[stockpile.to_key()] = 100
+        monitor._stockpile_cache[stockpile.to_key()] = stockpile.timestamp.isoformat()
 
         updated, new, removed = monitor._detect_changes([stockpile])
 
@@ -385,7 +367,7 @@ class TestSaveFileProcessorDetectChanges:
     def test_detect_removed_stockpile(self, monitor: SaveFileProcessor) -> None:
         """Test detecting removed stockpiles."""
         # Pre-populate cache
-        monitor._stockpile_cache["seaport:TestHex:0.500_0.500:public"] = 100
+        monitor._stockpile_cache["seaport:TestHex:0.500_0.500:public"] = "2024-01-01T00:00:00+00:00"
 
         # Empty list means stockpile was removed
         updated, new, removed = monitor._detect_changes([])
@@ -400,21 +382,15 @@ class TestSaveFileProcessorDetectChanges:
     def test_detect_mixed_changes(self, monitor: SaveFileProcessor) -> None:
         """Test detecting mixed changes."""
         # Pre-populate cache
-        existing = self._create_stockpile(
-            name="Existing", raw_timestamp=100, coords_x=0.1, coords_y=0.1
-        )
-        monitor._stockpile_cache[existing.to_key()] = 100
+        existing = self._create_stockpile(name="Existing", coords_x=0.1, coords_y=0.1)
+        monitor._stockpile_cache[existing.to_key()] = "2024-01-01T00:00:00+00:00"
 
         to_remove_key = "seaport:TestHex:0.999_0.999:public"
-        monitor._stockpile_cache[to_remove_key] = 50
+        monitor._stockpile_cache[to_remove_key] = "2024-01-01T00:00:00+00:00"
 
         # Create changes
-        updated_existing = self._create_stockpile(
-            name="Existing", raw_timestamp=200, coords_x=0.1, coords_y=0.1
-        )
-        new_stockpile = self._create_stockpile(
-            name="NewOne", raw_timestamp=300, coords_x=0.2, coords_y=0.2
-        )
+        updated_existing = self._create_stockpile(name="Existing", coords_x=0.1, coords_y=0.1)
+        new_stockpile = self._create_stockpile(name="NewOne", coords_x=0.2, coords_y=0.2)
 
         updated, new, removed = monitor._detect_changes([updated_existing, new_stockpile])
 
@@ -429,11 +405,9 @@ class TestSaveFileProcessorOutputResults:
     @pytest.fixture
     def monitor(self, tmp_path: Path) -> SaveFileProcessor:
         """Create a monitor instance with mock coordinator."""
-        mock_converter = MagicMock()
         mock_coordinator = AsyncMock()
         return SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
 
@@ -473,7 +447,6 @@ class TestSaveFileProcessorRunOnce:
                 type=StockpileType.SEAPORT,
                 items=[],
                 timestamp=datetime.now(tz=UTC),
-                raw_timestamp=100,
             )
         ]
 
@@ -482,18 +455,19 @@ class TestSaveFileProcessorRunOnce:
         self, tmp_path: Path, mock_stockpiles: list[Stockpile]
     ) -> None:
         """Test run_once emits all stockpiles."""
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = mock_stockpiles
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
             emit_all_on_start=True,
         )
 
-        await monitor.run_once()
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=mock_stockpiles,
+        ):
+            await monitor.run_once()
 
         mock_coordinator.handle_output.assert_called_once_with(mock_stockpiles)
 
@@ -503,12 +477,10 @@ class TestSaveFileProcessorStop:
 
     def test_stop_sets_flag(self, tmp_path: Path) -> None:
         """Test stop sets running flag to False."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
         monitor._running = True
@@ -523,16 +495,14 @@ class TestSaveFileProcessorClearCache:
 
     def test_clear_cache_empties_stockpile_cache(self, tmp_path: Path) -> None:
         """Test clear_cache empties the stockpile cache."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
-        monitor._stockpile_cache["key1"] = 100
-        monitor._stockpile_cache["key2"] = 200
+        monitor._stockpile_cache["key1"] = "2024-01-01T00:00:00+00:00"
+        monitor._stockpile_cache["key2"] = "2024-01-01T00:00:00+00:00"
 
         monitor.clear_cache()
 
@@ -540,12 +510,10 @@ class TestSaveFileProcessorClearCache:
 
     def test_clear_cache_resets_last_mtime(self, tmp_path: Path) -> None:
         """Test clear_cache resets last_mtime."""
-        mock_converter = MagicMock()
         mock_coordinator = MagicMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
         monitor._last_mtime = 12345.0
@@ -569,7 +537,6 @@ class TestSaveFileProcessorProcessFile:
                 timestamp=datetime.now(tz=UTC),
                 coords=StockpileCoords(x=0.5, y=0.5),
                 hex="TestHex",
-                raw_timestamp=100,
             )
         ]
 
@@ -578,18 +545,19 @@ class TestSaveFileProcessorProcessFile:
         self, tmp_path: Path, mock_stockpiles: list[Stockpile]
     ) -> None:
         """Test initial load emits all stockpiles when emit_all_on_start=True."""
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = mock_stockpiles
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
             emit_all_on_start=True,
         )
 
-        await monitor._process_file(is_initial=True)
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=mock_stockpiles,
+        ):
+            await monitor._process_file(is_initial=True)
 
         mock_coordinator.handle_output.assert_called_once_with(mock_stockpiles)
         # Cache should be populated
@@ -600,56 +568,61 @@ class TestSaveFileProcessorProcessFile:
         self, tmp_path: Path, mock_stockpiles: list[Stockpile]
     ) -> None:
         """Test subsequent load with no changes doesn't emit."""
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = mock_stockpiles
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
 
-        # Pre-populate cache
-        monitor._stockpile_cache[mock_stockpiles[0].to_key()] = 100
+        # Pre-populate cache with same timestamp
+        monitor._stockpile_cache[mock_stockpiles[0].to_key()] = mock_stockpiles[
+            0
+        ].timestamp.isoformat()
 
-        await monitor._process_file(is_initial=False)
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=mock_stockpiles,
+        ):
+            await monitor._process_file(is_initial=False)
 
         # Should not emit since no changes
         mock_coordinator.handle_output.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_process_file_handles_error(self, tmp_path: Path) -> None:
-        """Test process_file handles converter errors gracefully."""
-        mock_converter = MagicMock()
-        mock_converter.convert_file.side_effect = Exception("Conversion failed")
+        """Test process_file handles parser errors gracefully."""
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
 
-        # Should not raise
-        await monitor._process_file(is_initial=True)
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            side_effect=Exception("Parse failed"),
+        ):
+            # Should not raise
+            await monitor._process_file(is_initial=True)
 
         mock_coordinator.handle_output.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_process_file_empty_stockpiles(self, tmp_path: Path) -> None:
         """Test process_file handles empty stockpile list."""
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = []
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
 
-        await monitor._process_file(is_initial=True)
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=[],
+        ):
+            await monitor._process_file(is_initial=True)
 
         mock_coordinator.handle_output.assert_not_called()
 
@@ -663,19 +636,19 @@ class TestSaveFileProcessorProcessFile:
             timestamp=datetime.now(tz=UTC),
             coords=StockpileCoords(x=0.1, y=0.1),
             hex="TestHex",
-            raw_timestamp=200,
         )
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = [new_stockpile]
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
 
-        result = await monitor._process_file(is_initial=False)
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=[new_stockpile],
+        ):
+            result = await monitor._process_file(is_initial=False)
 
         assert len(result) == 1
         assert result[0].name == "NewStockpile"
@@ -691,21 +664,21 @@ class TestSaveFileProcessorProcessFile:
             timestamp=datetime.now(tz=UTC),
             coords=StockpileCoords(x=0.2, y=0.2),
             hex="TestHex",
-            raw_timestamp=300,  # New timestamp
         )
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = [stockpile]
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
         # Pre-populate cache with old timestamp
-        monitor._stockpile_cache[stockpile.to_key()] = 100
+        monitor._stockpile_cache[stockpile.to_key()] = "2024-01-01T00:00:00+00:00"
 
-        result = await monitor._process_file(is_initial=False)
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=[stockpile],
+        ):
+            result = await monitor._process_file(is_initial=False)
 
         assert len(result) == 1
         assert result[0].name == "UpdatedStockpile"
@@ -722,23 +695,23 @@ class TestSaveFileProcessorProcessFile:
             timestamp=datetime.now(tz=UTC),
             coords=StockpileCoords(x=0.1, y=0.1),
             hex="TestHex",
-            raw_timestamp=200,
         )
 
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = [remaining]  # Only one remains
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
         # Pre-populate cache with two stockpiles
-        monitor._stockpile_cache[remaining.to_key()] = 200  # Same timestamp - no update
-        monitor._stockpile_cache["seaport:TestHex:0.500_0.500:public"] = 100  # Will be removed
+        monitor._stockpile_cache[remaining.to_key()] = remaining.timestamp.isoformat()
+        monitor._stockpile_cache["seaport:TestHex:0.500_0.500:public"] = "2024-01-01T00:00:00+00:00"
 
-        result = await monitor._process_file(is_initial=False)
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=[remaining],
+        ):
+            result = await monitor._process_file(is_initial=False)
 
         # No new/updated stockpiles to output (remaining has same timestamp)
         assert len(result) == 0
@@ -757,7 +730,6 @@ class TestSaveFileProcessorProcessFile:
             timestamp=datetime.now(tz=UTC),
             coords=StockpileCoords(x=0.1, y=0.1),
             hex="TestHex",
-            raw_timestamp=100,
         )
         updated_stockpile = Stockpile(
             name="Updated",
@@ -766,23 +738,23 @@ class TestSaveFileProcessorProcessFile:
             timestamp=datetime.now(tz=UTC),
             coords=StockpileCoords(x=0.2, y=0.2),
             hex="TestHex",
-            raw_timestamp=200,
         )
 
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = [new_stockpile, updated_stockpile]
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=tmp_path / "test.sav",
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
         )
         # Pre-populate cache with old timestamp for updated stockpile and a removed one
-        monitor._stockpile_cache[updated_stockpile.to_key()] = 50  # Old timestamp
-        monitor._stockpile_cache["seaport:OtherHex:0.9_0.9:public"] = 999  # Will be removed
+        monitor._stockpile_cache[updated_stockpile.to_key()] = "2024-01-01T00:00:00+00:00"
+        monitor._stockpile_cache["seaport:OtherHex:0.9_0.9:public"] = "2024-01-01T00:00:00+00:00"
 
-        result = await monitor._process_file(is_initial=False)
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=[new_stockpile, updated_stockpile],
+        ):
+            result = await monitor._process_file(is_initial=False)
 
         # Should have new + updated
         assert len(result) == 2
@@ -806,81 +778,36 @@ class TestSaveFileProcessorRun:
             type=StockpileType.SEAPORT,
             items=[],
             timestamp=datetime.now(tz=UTC),
-            raw_timestamp=100,
         )
 
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = [stockpile]
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=save_file,
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
             poll_interval=0.1,
         )
 
-        # Run briefly then stop
-        async def stop_after_delay() -> None:
-            await asyncio.sleep(0.15)
-            monitor.stop()
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=[stockpile],
+        ):
+            # Run briefly then stop
+            async def stop_after_delay() -> None:
+                await asyncio.sleep(0.15)
+                monitor.stop()
 
-        await asyncio.gather(monitor.run(), stop_after_delay())
-
-        # Should have processed the file
-        mock_converter.convert_file.assert_called()
-
-    @pytest.mark.asyncio
-    async def test_run_detects_file_modification(self, tmp_path: Path) -> None:
-        """Test run detects file modifications."""
-        import time as time_module
-
-        save_file = tmp_path / "test.sav"
-        save_file.touch()
-
-        stockpile = Stockpile(
-            name="Test",
-            type=StockpileType.SEAPORT,
-            items=[],
-            timestamp=datetime.now(tz=UTC),
-            raw_timestamp=100,
-        )
-
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = [stockpile]
-        mock_coordinator = AsyncMock()
-
-        monitor = SaveFileProcessor(
-            file_path=save_file,
-            converter=mock_converter,
-            output_coordinator=mock_coordinator,
-            poll_interval=0.05,
-        )
-
-        async def modify_and_stop() -> None:
-            await asyncio.sleep(0.1)
-            # Modify file to trigger reprocessing
-            time_module.sleep(0.01)  # Ensure mtime changes
-            save_file.write_text("modified")
-            await asyncio.sleep(0.1)
-            monitor.stop()
-
-        await asyncio.gather(monitor.run(), modify_and_stop())
-
-        # Should have processed the file multiple times
-        assert mock_converter.convert_file.call_count >= 2
+            await asyncio.gather(monitor.run(), stop_after_delay())
 
     @pytest.mark.asyncio
     async def test_run_handles_missing_file(self, tmp_path: Path) -> None:
         """Test run handles missing file gracefully."""
         save_file = tmp_path / "nonexistent.sav"
 
-        mock_converter = MagicMock()
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=save_file,
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
             poll_interval=0.05,
         )
@@ -890,9 +817,6 @@ class TestSaveFileProcessorRun:
             monitor.stop()
 
         await asyncio.gather(monitor.run(), stop_after_delay())
-
-        # Should not have tried to process (file doesn't exist)
-        mock_converter.convert_file.assert_not_called()
 
     @pytest.mark.asyncio
     async def test_run_handles_errors_in_loop(self, tmp_path: Path) -> None:
@@ -900,23 +824,25 @@ class TestSaveFileProcessorRun:
         save_file = tmp_path / "test.sav"
         save_file.touch()
 
-        mock_converter = MagicMock()
-        mock_converter.convert_file.side_effect = Exception("Test error")
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=save_file,
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
             poll_interval=0.05,
         )
 
-        async def stop_after_delay() -> None:
-            await asyncio.sleep(0.15)
-            monitor.stop()
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            side_effect=Exception("Test error"),
+        ):
 
-        # Should not raise despite errors
-        await asyncio.gather(monitor.run(), stop_after_delay())
+            async def stop_after_delay() -> None:
+                await asyncio.sleep(0.15)
+                monitor.stop()
+
+            # Should not raise despite errors
+            await asyncio.gather(monitor.run(), stop_after_delay())
 
     @pytest.mark.asyncio
     async def test_run_cancelled(self, tmp_path: Path) -> None:
@@ -924,27 +850,28 @@ class TestSaveFileProcessorRun:
         save_file = tmp_path / "test.sav"
         save_file.touch()
 
-        mock_converter = MagicMock()
-        mock_converter.convert_file.return_value = []
         mock_coordinator = AsyncMock()
 
         monitor = SaveFileProcessor(
             file_path=save_file,
-            converter=mock_converter,
             output_coordinator=mock_coordinator,
             poll_interval=0.05,
         )
 
-        task = asyncio.create_task(monitor.run())
-        await asyncio.sleep(0.1)
-        task.cancel()
+        with patch(
+            "foxhole_stockpiles.services.savefile_processor.parse_save",
+            return_value=[],
+        ):
+            task = asyncio.create_task(monitor.run())
+            await asyncio.sleep(0.1)
+            task.cancel()
 
-        # The run() method catches CancelledError and exits gracefully
-        # So we just need to await and verify it completes without error
-        try:
-            await task
-        except asyncio.CancelledError:
-            pass  # This is acceptable too
+            # The run() method catches CancelledError and exits gracefully
+            # So we just need to await and verify it completes without error
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass  # This is acceptable too
 
         # Monitor should have stopped
         assert monitor.is_running is False
@@ -961,21 +888,15 @@ class TestMain:
 
         with patch("sys.argv", ["process-sav", "--file", str(save_file), "--once"]):
             with patch(
-                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileConverter"
-            ) as mock_converter_class:
-                with patch(
-                    "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
-                ) as mock_monitor_class:
-                    mock_converter = MagicMock()
-                    mock_converter_class.return_value = mock_converter
+                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
+            ) as mock_monitor_class:
+                mock_monitor = MagicMock()
+                mock_monitor.run_once = AsyncMock()
+                mock_monitor_class.return_value = mock_monitor
 
-                    mock_monitor = MagicMock()
-                    mock_monitor.run_once = AsyncMock()
-                    mock_monitor_class.return_value = mock_monitor
+                await main()
 
-                    await main()
-
-                    mock_monitor.run_once.assert_called_once()
+                mock_monitor.run_once.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_main_with_save_dir_argument(self, tmp_path: Path) -> None:
@@ -985,21 +906,15 @@ class TestMain:
 
         with patch("sys.argv", ["process-sav", "--save-dir", str(tmp_path), "--once"]):
             with patch(
-                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileConverter"
-            ) as mock_converter_class:
-                with patch(
-                    "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
-                ) as mock_monitor_class:
-                    mock_converter = MagicMock()
-                    mock_converter_class.return_value = mock_converter
+                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
+            ) as mock_monitor_class:
+                mock_monitor = MagicMock()
+                mock_monitor.run_once = AsyncMock()
+                mock_monitor_class.return_value = mock_monitor
 
-                    mock_monitor = MagicMock()
-                    mock_monitor.run_once = AsyncMock()
-                    mock_monitor_class.return_value = mock_monitor
+                await main()
 
-                    await main()
-
-                    mock_monitor.run_once.assert_called_once()
+                mock_monitor.run_once.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_main_save_dir_no_mapdata_file(self, tmp_path: Path) -> None:
@@ -1059,29 +974,23 @@ class TestMain:
             ["process-sav", "--file", str(save_file), "--output", str(output_file), "--once"],
         ):
             with patch(
-                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileConverter"
-            ) as mock_converter_class:
+                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
+            ) as mock_monitor_class:
                 with patch(
-                    "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
-                ) as mock_monitor_class:
-                    with patch(
-                        "foxhole_stockpiles.commands.process_sav.process_sav.OutputCoordinator"
-                    ) as mock_coordinator_class:
-                        mock_converter = MagicMock()
-                        mock_converter_class.return_value = mock_converter
+                    "foxhole_stockpiles.commands.process_sav.process_sav.OutputCoordinator"
+                ) as mock_coordinator_class:
+                    mock_monitor = MagicMock()
+                    mock_monitor.run_once = AsyncMock()
+                    mock_monitor_class.return_value = mock_monitor
 
-                        mock_monitor = MagicMock()
-                        mock_monitor.run_once = AsyncMock()
-                        mock_monitor_class.return_value = mock_monitor
+                    await main()
 
-                        await main()
-
-                        # OutputCoordinator should be called with custom settings
-                        mock_coordinator_class.assert_called_once()
-                        call_args = mock_coordinator_class.call_args
-                        output_settings = call_args[0][0]
-                        assert len(output_settings.handlers) == 1
-                        assert output_settings.handlers[0].handler.path == str(output_file)
+                    # OutputCoordinator should be called with custom settings
+                    mock_coordinator_class.assert_called_once()
+                    call_args = mock_coordinator_class.call_args
+                    output_settings = call_args[0][0]
+                    assert len(output_settings.handlers) == 1
+                    assert output_settings.handlers[0].handler.path == str(output_file)
 
     @pytest.mark.asyncio
     async def test_main_with_verbose_flag(self, tmp_path: Path) -> None:
@@ -1091,28 +1000,22 @@ class TestMain:
 
         with patch("sys.argv", ["process-sav", "--file", str(save_file), "--verbose", "--once"]):
             with patch(
-                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileConverter"
-            ) as mock_converter_class:
+                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
+            ) as mock_monitor_class:
                 with patch(
-                    "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
-                ) as mock_monitor_class:
-                    with patch(
-                        "foxhole_stockpiles.commands.process_sav.process_sav.setup_logging"
-                    ) as mock_setup_logging:
-                        mock_converter = MagicMock()
-                        mock_converter_class.return_value = mock_converter
+                    "foxhole_stockpiles.commands.process_sav.process_sav.setup_logging"
+                ) as mock_setup_logging:
+                    mock_monitor = MagicMock()
+                    mock_monitor.run_once = AsyncMock()
+                    mock_monitor_class.return_value = mock_monitor
 
-                        mock_monitor = MagicMock()
-                        mock_monitor.run_once = AsyncMock()
-                        mock_monitor_class.return_value = mock_monitor
+                    await main()
 
-                        await main()
-
-                        # setup_logging should be called with DEBUG level
-                        mock_setup_logging.assert_called_once()
-                        call_args = mock_setup_logging.call_args
-                        logging_settings = call_args[0][0]
-                        assert logging_settings.log_level == "DEBUG"
+                    # setup_logging should be called with DEBUG level
+                    mock_setup_logging.assert_called_once()
+                    call_args = mock_setup_logging.call_args
+                    logging_settings = call_args[0][0]
+                    assert logging_settings.log_level == "DEBUG"
 
     @pytest.mark.asyncio
     async def test_main_with_poll_interval(self, tmp_path: Path) -> None:
@@ -1125,40 +1028,18 @@ class TestMain:
             ["process-sav", "--file", str(save_file), "--poll-interval", "5.0", "--once"],
         ):
             with patch(
-                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileConverter"
-            ) as mock_converter_class:
-                with patch(
-                    "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
-                ) as mock_monitor_class:
-                    mock_converter = MagicMock()
-                    mock_converter_class.return_value = mock_converter
+                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
+            ) as mock_monitor_class:
+                mock_monitor = MagicMock()
+                mock_monitor.run_once = AsyncMock()
+                mock_monitor_class.return_value = mock_monitor
 
-                    mock_monitor = MagicMock()
-                    mock_monitor.run_once = AsyncMock()
-                    mock_monitor_class.return_value = mock_monitor
+                await main()
 
-                    await main()
-
-                    # SaveFileProcessor should be created with poll_interval=5.0
-                    mock_monitor_class.assert_called_once()
-                    call_kwargs = mock_monitor_class.call_args.kwargs
-                    assert call_kwargs["poll_interval"] == 5.0
-
-    @pytest.mark.asyncio
-    async def test_main_converter_initialization_error(self, tmp_path: Path) -> None:
-        """Test main handles converter FileNotFoundError."""
-        save_file = tmp_path / "test_MapData.sav"
-        save_file.touch()
-
-        with patch("sys.argv", ["process-sav", "--file", str(save_file)]):
-            with patch(
-                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileConverter"
-            ) as mock_converter_class:
-                mock_converter_class.side_effect = FileNotFoundError("Catalog not found")
-
-                with pytest.raises(SystemExit) as exc_info:
-                    await main()
-                assert exc_info.value.code == 1
+                # SaveFileProcessor should be created with poll_interval=5.0
+                mock_monitor_class.assert_called_once()
+                call_kwargs = mock_monitor_class.call_args.kwargs
+                assert call_kwargs["poll_interval"] == 5.0
 
     @pytest.mark.asyncio
     async def test_main_continuous_mode_with_keyboard_interrupt(self, tmp_path: Path) -> None:
@@ -1168,23 +1049,17 @@ class TestMain:
 
         with patch("sys.argv", ["process-sav", "--file", str(save_file)]):
             with patch(
-                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileConverter"
-            ) as mock_converter_class:
-                with patch(
-                    "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
-                ) as mock_monitor_class:
-                    mock_converter = MagicMock()
-                    mock_converter_class.return_value = mock_converter
+                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
+            ) as mock_monitor_class:
+                mock_monitor = MagicMock()
+                mock_monitor.run = AsyncMock(side_effect=KeyboardInterrupt())
+                mock_monitor.stop = MagicMock()
+                mock_monitor_class.return_value = mock_monitor
 
-                    mock_monitor = MagicMock()
-                    mock_monitor.run = AsyncMock(side_effect=KeyboardInterrupt())
-                    mock_monitor.stop = MagicMock()
-                    mock_monitor_class.return_value = mock_monitor
+                # Should not raise, just handle gracefully
+                await main()
 
-                    # Should not raise, just handle gracefully
-                    await main()
-
-                    mock_monitor.stop.assert_called_once()
+                mock_monitor.stop.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_main_with_config_argument(self, tmp_path: Path) -> None:
@@ -1199,35 +1074,27 @@ class TestMain:
             ["process-sav", "--file", str(save_file), "--config", str(config_file), "--once"],
         ):
             with patch(
-                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileConverter"
-            ) as mock_converter_class:
+                "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
+            ) as mock_monitor_class:
                 with patch(
-                    "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
-                ) as mock_monitor_class:
-                    with patch(
-                        "foxhole_stockpiles.commands.process_sav.process_sav.AppSettings"
-                    ) as mock_app_settings:
-                        with patch(
-                            "foxhole_stockpiles.commands.process_sav.process_sav.setup_logging"
-                        ):
-                            mock_settings_instance = MagicMock()
-                            mock_settings_instance.logging = MagicMock()
-                            mock_settings_instance.logging.log_level = "INFO"
-                            mock_settings_instance.output = MagicMock()
-                            mock_app_settings.return_value = mock_settings_instance
-                            mock_app_settings.model_config = {"env_file": None}
+                    "foxhole_stockpiles.commands.process_sav.process_sav.AppSettings"
+                ) as mock_app_settings:
+                    with patch("foxhole_stockpiles.commands.process_sav.process_sav.setup_logging"):
+                        mock_settings_instance = MagicMock()
+                        mock_settings_instance.logging = MagicMock()
+                        mock_settings_instance.logging.log_level = "INFO"
+                        mock_settings_instance.output = MagicMock()
+                        mock_app_settings.return_value = mock_settings_instance
+                        mock_app_settings.model_config = {"env_file": None}
 
-                            mock_converter = MagicMock()
-                            mock_converter_class.return_value = mock_converter
+                        mock_monitor = MagicMock()
+                        mock_monitor.run_once = AsyncMock()
+                        mock_monitor_class.return_value = mock_monitor
 
-                            mock_monitor = MagicMock()
-                            mock_monitor.run_once = AsyncMock()
-                            mock_monitor_class.return_value = mock_monitor
+                        await main()
 
-                            await main()
-
-                            # AppSettings should have been instantiated
-                            mock_app_settings.assert_called()
+                        # AppSettings should have been instantiated
+                        mock_app_settings.assert_called()
 
     @pytest.mark.asyncio
     async def test_main_auto_detect_finds_file(self, tmp_path: Path) -> None:
@@ -1242,18 +1109,12 @@ class TestMain:
                 mock_get_default.return_value = tmp_path
 
                 with patch(
-                    "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileConverter"
-                ) as mock_converter_class:
-                    with patch(
-                        "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
-                    ) as mock_monitor_class:
-                        mock_converter = MagicMock()
-                        mock_converter_class.return_value = mock_converter
+                    "foxhole_stockpiles.commands.process_sav.process_sav.SaveFileProcessor"
+                ) as mock_monitor_class:
+                    mock_monitor = MagicMock()
+                    mock_monitor.run_once = AsyncMock()
+                    mock_monitor_class.return_value = mock_monitor
 
-                        mock_monitor = MagicMock()
-                        mock_monitor.run_once = AsyncMock()
-                        mock_monitor_class.return_value = mock_monitor
+                    await main()
 
-                        await main()
-
-                        mock_monitor.run_once.assert_called_once()
+                    mock_monitor.run_once.assert_called_once()

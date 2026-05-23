@@ -98,7 +98,6 @@
       "error_loading_settings": "Échec du chargement des paramètres : {error}",
       "error_no_sav_file": "Aucun fichier SAV configuré. Veuillez configurer le chemin du fichier SAV dans Fichier → Configuration → Traitement SAV, ou la détection automatique sera tentée.",
       "error_sav_not_found": "Le fichier SAV configuré n'existe pas.",
-      "error_no_uesave": "Outil uesave introuvable. Veuillez configurer le chemin dans Fichier → Configuration → Outils Externes, ou installez uesave et ajoutez-le à votre PATH.",
       "error_output": "Échec de la création du coordinateur de sortie : {error}",
       "status_scanning": "Scan en cours...",
       "status_monitoring": "Surveillance en cours..."
@@ -568,11 +567,7 @@
     "download": "Télécharger",
     "select_repak": "Sélectionner l'outil d'extraction (repak)",
     "select_umodel": "Sélectionner l'outil de conversion (umodel)",
-    "select_uassetgui": "Sélectionner le convertisseur JSON (UAssetGUI)",
-    "uesave_label": "Convertisseur SAV (uesave) :",
-    "uesave_tooltip": "Chemin vers l'exécutable uesave pour convertir les fichiers de sauvegarde en JSON.\n\nRequis pour la fonction 'Traitement SAV'.\nTélécharger depuis : https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "Chemin vers l'exécutable uesave",
-    "select_uesave": "Sélectionner le convertisseur SAV (uesave)"
+    "select_uassetgui": "Sélectionner le convertisseur JSON (UAssetGUI)"
   },
 
   "database_builder_tab": {

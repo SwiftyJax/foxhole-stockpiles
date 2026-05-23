@@ -98,7 +98,6 @@
       "error_loading_settings": "Error al cargar configuración: {error}",
       "error_no_sav_file": "No hay archivo SAV configurado. Por favor, configure la ruta del archivo SAV en Archivo → Configuración → Procesamiento SAV, o se intentará auto-detectar.",
       "error_sav_not_found": "El archivo SAV configurado no existe.",
-      "error_no_uesave": "Herramienta uesave no encontrada. Por favor, configure la ruta en Archivo → Configuración → Herramientas Externas, o instale uesave y añádalo a su PATH.",
       "error_output": "Error al crear coordinador de salida: {error}",
       "status_scanning": "Escaneando...",
       "status_monitoring": "Monitoreando..."
@@ -565,14 +564,10 @@
     "uassetgui_label": "Convertidor JSON (UAssetGUI):",
     "uassetgui_tooltip": "Ruta al ejecutable UAssetGUI para convertir archivos UAsset a JSON.\n\nRequerido para la función 'Construir catálogo'.\nDescargar de: https://github.com/atenfyr/UAssetGUI",
     "uassetgui_placeholder": "Ruta al ejecutable UAssetGUI",
-    "uesave_label": "Convertidor SAV (uesave):",
-    "uesave_tooltip": "Ruta al ejecutable uesave para convertir archivos de guardado a JSON.\n\nRequerido para la función 'Procesamiento SAV'.\nDescargar de: https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "Ruta al ejecutable uesave",
     "download": "Descargar",
     "select_repak": "Seleccionar herramienta extractora (repak)",
     "select_umodel": "Seleccionar herramienta convertidora (umodel)",
-    "select_uassetgui": "Seleccionar convertidor JSON (UAssetGUI)",
-    "select_uesave": "Seleccionar convertidor SAV (uesave)"
+    "select_uassetgui": "Seleccionar convertidor JSON (UAssetGUI)"
   },
 
   "database_builder_tab": {

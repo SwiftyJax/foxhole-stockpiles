@@ -7,7 +7,7 @@ from pathlib import Path
 
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
-from foxhole_stockpiles.services.savefile_converter import SaveFileConverter
+from foxhole_stockpiles.services.sav_parser import parse_save
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +18,6 @@ class SaveFileProcessor:
     def __init__(
         self,
         file_path: Path,
-        converter: SaveFileConverter,
         output_coordinator: OutputCoordinator,
         poll_interval: float = 1.0,
         emit_all_on_start: bool = False,
@@ -27,21 +26,19 @@ class SaveFileProcessor:
 
         Args:
             file_path (Path): Path to the save file to monitor.
-            converter (SaveFileConverter): Converter instance.
             output_coordinator (OutputCoordinator): Output coordinator for handlers.
             poll_interval (float): Polling interval in seconds.
             emit_all_on_start (bool): Emit all stockpiles on first run.
         """
         self._file_path = file_path
-        self._converter = converter
         self._output_coordinator = output_coordinator
         self._poll_interval = poll_interval
         self._emit_all_on_start = emit_all_on_start
         self._last_mtime: float | None = None
         self._running = False
 
-        # Track stockpiles by key -> raw_timestamp
-        self._stockpile_cache: dict[str, int] = {}
+        # Track stockpiles by key -> timestamp string for change detection
+        self._stockpile_cache: dict[str, str] = {}
 
     @property
     def file_path(self) -> Path:
@@ -102,6 +99,9 @@ class SaveFileProcessor:
     ) -> tuple[list[Stockpile], list[Stockpile], list[str]]:
         """Detect which stockpiles have changed.
 
+        Uses timestamp string comparison for change detection since fs-sav
+        doesn't expose raw UE ticks.
+
         Args:
             stockpiles (list[Stockpile]): Current stockpiles.
 
@@ -115,19 +115,17 @@ class SaveFileProcessor:
         for stockpile in stockpiles:
             key = stockpile.to_key()
             current_keys.add(key)
+            timestamp_str = stockpile.timestamp.isoformat()
             cached_timestamp = self._stockpile_cache.get(key)
 
             if cached_timestamp is None:
                 # New stockpile
                 new.append(stockpile)
-                if stockpile.raw_timestamp is not None:
-                    self._stockpile_cache[key] = stockpile.raw_timestamp
-            elif (
-                stockpile.raw_timestamp is not None and cached_timestamp != stockpile.raw_timestamp
-            ):
+                self._stockpile_cache[key] = timestamp_str
+            elif cached_timestamp != timestamp_str:
                 # Timestamp changed
                 updated.append(stockpile)
-                self._stockpile_cache[key] = stockpile.raw_timestamp
+                self._stockpile_cache[key] = timestamp_str
             # else: unchanged, skip
 
         # Find removed stockpiles
@@ -149,7 +147,7 @@ class SaveFileProcessor:
         logger.info("Processing file...")
 
         try:
-            stockpiles = await asyncio.to_thread(self._converter.convert_file, self._file_path)
+            stockpiles = await asyncio.to_thread(parse_save, self._file_path)
 
             if not stockpiles:
                 logger.info("No stockpiles found in save file.")
@@ -159,8 +157,7 @@ class SaveFileProcessor:
             if is_initial and self._emit_all_on_start:
                 # Initialize cache
                 for stockpile in stockpiles:
-                    if stockpile.raw_timestamp is not None:
-                        self._stockpile_cache[stockpile.to_key()] = stockpile.raw_timestamp
+                    self._stockpile_cache[stockpile.to_key()] = stockpile.timestamp.isoformat()
 
                 logger.info("Initial load: %d stockpile(s)", len(stockpiles))
                 await self._output_results(stockpiles)

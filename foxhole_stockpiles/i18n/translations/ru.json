@@ -98,7 +98,6 @@
       "error_loading_settings": "Ошибка загрузки настроек: {error}",
       "error_no_sav_file": "SAV файл не настроен. Пожалуйста, укажите путь к SAV файлу в Файл → Конфигурация → Обработка SAV, или будет выполнено автоопределение.",
       "error_sav_not_found": "Настроенный SAV файл не существует.",
-      "error_no_uesave": "Инструмент uesave не найден. Пожалуйста, укажите путь в Файл → Конфигурация → Внешние инструменты, или установите uesave и добавьте его в PATH.",
       "error_output": "Ошибка создания координатора вывода: {error}",
       "status_scanning": "Сканирование...",
       "status_monitoring": "Мониторинг..."
@@ -508,11 +507,7 @@
     "download": "Скачать",
     "select_repak": "Выберите инструмент извлечения (repak)",
     "select_umodel": "Выберите инструмент конвертации (umodel)",
-    "select_uassetgui": "Выберите JSON конвертер (UAssetGUI)",
-    "uesave_label": "SAV конвертер (uesave):",
-    "uesave_tooltip": "Путь к исполняемому файлу uesave для конвертации файлов сохранений в JSON.\n\nТребуется для функции 'Обработка SAV'.\nСкачать с: https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "Путь к исполняемому файлу uesave",
-    "select_uesave": "Выберите SAV конвертер (uesave)"
+    "select_uassetgui": "Выберите JSON конвертер (UAssetGUI)"
   },
 
   "ocr_tab": {

@@ -98,7 +98,6 @@
       "error_loading_settings": "加载设置失败：{error}",
       "error_no_sav_file": "未配置 SAV 文件。请在 文件 → 配置 → SAV 处理 中配置 SAV 文件路径，或将尝试自动检测。",
       "error_sav_not_found": "配置的 SAV 文件不存在。",
-      "error_no_uesave": "未找到 uesave 工具。请在 文件 → 配置 → 外部工具 中配置路径，或安装 uesave 并添加到 PATH。",
       "error_output": "创建输出协调器失败：{error}",
       "status_scanning": "扫描中...",
       "status_monitoring": "监视中..."
@@ -508,11 +507,7 @@
     "download": "下载",
     "select_repak": "选择提取工具 (repak)",
     "select_umodel": "选择转换工具 (umodel)",
-    "select_uassetgui": "选择 JSON 转换器 (UAssetGUI)",
-    "uesave_label": "SAV 转换器 (uesave)：",
-    "uesave_tooltip": "uesave 可执行文件的路径，用于将存档文件转换为 JSON。\n\n需要此工具才能使用 'SAV 处理' 功能。\n下载地址：https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "uesave 可执行文件路径",
-    "select_uesave": "选择 SAV 转换器 (uesave)"
+    "select_uassetgui": "选择 JSON 转换器 (UAssetGUI)"
   },
 
   "ocr_tab": {

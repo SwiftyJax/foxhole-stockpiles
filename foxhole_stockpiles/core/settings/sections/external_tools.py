@@ -12,7 +12,6 @@ class ExternalToolsSettings(BaseModel):
     - repak: Used by Database Builder and Catalog Builder for PAK extraction
     - umodel: Used by Database Builder for converting UAsset to PNG
     - uassetgui: Used by Catalog Builder for converting UAsset to JSON
-    - uesave: Used by SAV Processing for converting save files to JSON
     """
 
     repak: Path | None = Field(
@@ -27,10 +26,6 @@ class ExternalToolsSettings(BaseModel):
         description="Path to UAssetGUI executable for converting UAsset files to JSON",
         default=None,
     )
-    uesave: Path | None = Field(
-        description="Path to uesave executable for converting save files to JSON",
-        default=None,
-    )
 
     model_config = ConfigDict(
         extra="forbid",
@@ -39,7 +34,6 @@ class ExternalToolsSettings(BaseModel):
                 "repak": "C:/repak/repak.exe",
                 "umodel": "C:/UModel/umodel.exe",
                 "uassetgui": "C:/UAssetGUI/UAssetGUI.exe",
-                "uesave": "C:/uesave/uesave.exe",
             }
         },
     )

@@ -31,7 +31,6 @@ class ExternalToolsTab(QWidget):
         "repak": "https://github.com/trumank/repak/releases",
         "umodel": "https://www.gildor.org/en/projects/umodel",
         "uassetgui": "https://github.com/atenfyr/UAssetGUI/releases",
-        "uesave": "https://github.com/trumank/uesave-rs/releases",
     }
 
     # Tool descriptions (for programmatic access - tooltips use translations)
@@ -51,11 +50,6 @@ class ExternalToolsTab(QWidget):
             "Required for the 'Build Catalog' feature.\n"
             "Download from: https://github.com/atenfyr/UAssetGUI"
         ),
-        "uesave": (
-            "Path to uesave executable for converting save files to JSON.\n\n"
-            "Required for the 'SAV Processing' feature.\n"
-            "Download from: https://github.com/trumank/uesave-rs"
-        ),
     }
 
     def __init__(
@@ -64,7 +58,6 @@ class ExternalToolsTab(QWidget):
         show_repak: bool = True,
         show_umodel: bool = True,
         show_uassetgui: bool = True,
-        show_uesave: bool = True,
     ) -> None:
         """Initialize the External Tools tab.
 
@@ -73,13 +66,11 @@ class ExternalToolsTab(QWidget):
             show_repak (bool): Whether to show the repak tool. Defaults to True.
             show_umodel (bool): Whether to show the umodel tool. Defaults to True.
             show_uassetgui (bool): Whether to show the uassetgui tool. Defaults to True.
-            show_uesave (bool): Whether to show the uesave tool. Defaults to True.
         """
         super().__init__(parent)
         self.show_repak = show_repak
         self.show_umodel = show_umodel
         self.show_uassetgui = show_uassetgui
-        self.show_uesave = show_uesave
 
         # Input widgets (created in init_ui)
         self.repak_input: QLineEdit | None = None
@@ -94,10 +85,6 @@ class ExternalToolsTab(QWidget):
         self.uassetgui_download_btn: QPushButton | None = None
         self.uassetgui_label: QLabel | None = None
         self.uassetgui_browse_btn: QPushButton | None = None
-        self.uesave_input: QLineEdit | None = None
-        self.uesave_download_btn: QPushButton | None = None
-        self.uesave_label: QLabel | None = None
-        self.uesave_browse_btn: QPushButton | None = None
 
         self.init_ui()
 
@@ -162,24 +149,6 @@ class ExternalToolsTab(QWidget):
             uassetgui_layout.addWidget(self.uassetgui_browse_btn)
             tools_layout.addRow(self.uassetgui_label, uassetgui_layout)
 
-        # uesave tool
-        if self.show_uesave:
-            self.uesave_label = QLabel()
-            uesave_layout = QHBoxLayout()
-            self.uesave_input = QLineEdit()
-            self.uesave_input.textChanged.connect(self._update_download_buttons)
-            uesave_layout.addWidget(self.uesave_input)
-            self.uesave_download_btn = QPushButton()
-            self.uesave_download_btn.setMaximumWidth(80)
-            self.uesave_download_btn.clicked.connect(
-                lambda: self._open_url(self.TOOL_URLS["uesave"])
-            )
-            uesave_layout.addWidget(self.uesave_download_btn)
-            self.uesave_browse_btn = QPushButton()
-            self.uesave_browse_btn.clicked.connect(self._browse_uesave)
-            uesave_layout.addWidget(self.uesave_browse_btn)
-            tools_layout.addRow(self.uesave_label, uesave_layout)
-
         layout.addWidget(self.tools_group)
         layout.addStretch()
 
@@ -232,16 +201,6 @@ class ExternalToolsTab(QWidget):
         if self.uassetgui_browse_btn:
             self.uassetgui_browse_btn.setText(t("common.browse"))
 
-        if self.uesave_label:
-            self.uesave_label.setText(t("external_tools_tab.uesave_label"))
-            self.uesave_label.setToolTip(t("external_tools_tab.uesave_tooltip"))
-        if self.uesave_input:
-            self.uesave_input.setPlaceholderText(t("external_tools_tab.uesave_placeholder"))
-        if self.uesave_download_btn:
-            self.uesave_download_btn.setText(t("external_tools_tab.download"))
-        if self.uesave_browse_btn:
-            self.uesave_browse_btn.setText(t("common.browse"))
-
     def _update_download_buttons(self) -> None:
         """Update visibility of download buttons based on whether fields are empty."""
         if self.repak_download_btn and self.repak_input:
@@ -250,8 +209,6 @@ class ExternalToolsTab(QWidget):
             self.umodel_download_btn.setVisible(not self.umodel_input.text().strip())
         if self.uassetgui_download_btn and self.uassetgui_input:
             self.uassetgui_download_btn.setVisible(not self.uassetgui_input.text().strip())
-        if self.uesave_download_btn and self.uesave_input:
-            self.uesave_download_btn.setVisible(not self.uesave_input.text().strip())
 
     def _open_url(self, url: str) -> None:
         """Open URL in default browser.
@@ -294,17 +251,6 @@ class ExternalToolsTab(QWidget):
         if file_path and self.uassetgui_input:
             self.uassetgui_input.setText(file_path)
 
-    def _browse_uesave(self) -> None:
-        """Open file dialog to select uesave tool."""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            t("external_tools_tab.select_uesave"),
-            "",
-            "All Files (*)",
-        )
-        if file_path and self.uesave_input:
-            self.uesave_input.setText(file_path)
-
     def set_values(self, settings: ExternalToolsSettings) -> None:
         """Set widget values from settings.
 
@@ -318,8 +264,6 @@ class ExternalToolsTab(QWidget):
             self.umodel_input.setText(str(settings.umodel) if settings.umodel else "")
         if self.uassetgui_input:
             self.uassetgui_input.setText(str(settings.uassetgui) if settings.uassetgui else "")
-        if self.uesave_input:
-            self.uesave_input.setText(str(settings.uesave) if settings.uesave else "")
 
         # Update download button visibility
         self._update_download_buttons()
@@ -334,13 +278,11 @@ class ExternalToolsTab(QWidget):
         repak_text = self.repak_input.text().strip() if self.repak_input else ""
         umodel_text = self.umodel_input.text().strip() if self.umodel_input else ""
         uassetgui_text = self.uassetgui_input.text().strip() if self.uassetgui_input else ""
-        uesave_text = self.uesave_input.text().strip() if self.uesave_input else ""
 
         return ExternalToolsSettings(
             repak=Path(repak_text) if repak_text else None,
             umodel=Path(umodel_text) if umodel_text else None,
             uassetgui=Path(uassetgui_text) if uassetgui_text else None,
-            uesave=Path(uesave_text) if uesave_text else None,
         )
 
     def merge_with_existing(self, existing: ExternalToolsSettings) -> ExternalToolsSettings:
@@ -367,7 +309,5 @@ class ExternalToolsTab(QWidget):
             merged_data["umodel"] = current.umodel
         if self.show_uassetgui:
             merged_data["uassetgui"] = current.uassetgui
-        if self.show_uesave:
-            merged_data["uesave"] = current.uesave
 
         return ExternalToolsSettings(**merged_data)

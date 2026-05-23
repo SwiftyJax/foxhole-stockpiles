@@ -6,7 +6,7 @@ from typing import Any
 class ConfigMigrator:
     """Handles migration of configuration data between versions."""
 
-    CURRENT_VERSION = 6
+    CURRENT_VERSION = 7
 
     @classmethod
     def apply_migrations(cls, data: dict[str, Any]) -> dict[str, Any]:
@@ -51,6 +51,11 @@ class ConfigMigrator:
         if version == 5:
             data = cls._migrate_v5_to_v6(data)
             data["config_version"] = 6
+            version = 6
+
+        if version == 6:
+            data = cls._migrate_v6_to_v7(data)
+            data["config_version"] = 7
 
         return data
 
@@ -344,5 +349,26 @@ class ConfigMigrator:
 
         if "town_base" in stockpile_types:
             stockpile_types["town_base_1"] = stockpile_types.pop("town_base")
+
+        return data
+
+    @staticmethod
+    def _migrate_v6_to_v7(data: dict[str, Any]) -> dict[str, Any]:
+        """Migrate from v6 to v7 (remove uesave from external_tools).
+
+        V6 had: external_tools.{repak, umodel, uassetgui, uesave}
+        V7 has: external_tools.{repak, umodel, uassetgui} (uesave removed)
+
+        The uesave tool is no longer needed as SAV parsing is now handled
+        natively by the fs-sav Rust library.
+
+        Args:
+            data: V6 configuration data
+
+        Returns:
+            V7 configuration data
+        """
+        if "external_tools" in data and isinstance(data["external_tools"], dict):
+            data["external_tools"].pop("uesave", None)
 
         return data

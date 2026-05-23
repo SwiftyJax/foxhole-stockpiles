@@ -15,7 +15,6 @@ from foxhole_stockpiles.core.settings.sections.output import (
     OutputSettings,
 )
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
-from foxhole_stockpiles.services.savefile_converter import SaveFileConverter
 from foxhole_stockpiles.services.savefile_processor import SaveFileProcessor
 
 
@@ -170,13 +169,6 @@ async def main() -> None:
         logging_settings.log_level = "DEBUG"
     setup_logging(logging_settings)
 
-    # Initialize converter
-    try:
-        converter = SaveFileConverter()
-    except FileNotFoundError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
-
     # Setup output: --output flag overrides config handlers
     if args.output:
         # Create ad-hoc FileHandler with specified path
@@ -198,7 +190,6 @@ async def main() -> None:
     # Create and run processor
     processor = SaveFileProcessor(
         file_path=save_file,
-        converter=converter,
         output_coordinator=output_coordinator,
         poll_interval=args.poll_interval,
     )

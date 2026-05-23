@@ -324,8 +324,8 @@ class TestStockpileTypesSettings:
 class TestConfigMigration:
     """Test cases for config version migration."""
 
-    def test_migrate_v1_to_v6_with_output_format(self) -> None:
-        """Test migration from v1 (flat output) to v6 (handlers list + in-game codes)."""
+    def test_migrate_v1_to_v7_with_output_format(self) -> None:
+        """Test migration from v1 (flat output) to v7 (handlers list + uesave removed)."""
         # V1 config with old flat structure
         v1_config = {
             "output_format": {
@@ -342,8 +342,8 @@ class TestConfigMigration:
         # Apply migrations
         migrated = ConfigMigrator.apply_migrations(v1_config)
 
-        # Verify migration occurred (v1 -> v2 -> v3 -> v4 -> v5 -> v6)
-        assert migrated["config_version"] == 6
+        # Verify migration occurred (v1 -> v2 -> v3 -> v4 -> v5 -> v6 -> v7)
+        assert migrated["config_version"] == 7
         assert "output_format" not in migrated
         assert "output" in migrated
         assert len(migrated["output"]["handlers"]) == 1
@@ -357,14 +357,14 @@ class TestConfigMigration:
 
         # Verify the migrated config can be loaded
         settings = AppSettings(**migrated)
-        assert settings.config_version == 6
+        assert settings.config_version == 7
         assert len(settings.output.handlers) == 1
         handler = settings.output.handlers[0].handler
         assert isinstance(handler, WebhookHandlerSettings)
         assert handler.url == "https://example.com/webhook"
 
-    def test_v2_config_migrates_to_v6(self) -> None:
-        """Test that v2 configs migrate to v6."""
+    def test_v2_config_migrates_to_v7(self) -> None:
+        """Test that v2 configs migrate to v7."""
         # V2 config with nested structure
         v2_config = {
             "config_version": 2,
@@ -379,8 +379,8 @@ class TestConfigMigration:
         # Apply migrations
         migrated = ConfigMigrator.apply_migrations(v2_config)
 
-        # Should migrate to v6 (v2 -> v3 -> v4 -> v5 -> v6)
-        assert migrated["config_version"] == 6
+        # Should migrate to v7 (v2 -> v3 -> v4 -> v5 -> v6 -> v7)
+        assert migrated["config_version"] == 7
         assert len(migrated["output"]["handlers"]) == 1
         handler_config = migrated["output"]["handlers"][0]
         assert handler_config["handler"]["type"] == "file"
@@ -388,16 +388,16 @@ class TestConfigMigration:
 
         # Verify the migrated config can be loaded
         settings = AppSettings(**migrated)
-        assert settings.config_version == 6
+        assert settings.config_version == 7
         assert len(settings.output.handlers) == 1
         handler = settings.output.handlers[0].handler
         assert isinstance(handler, FileHandlerSettings)
         assert handler.path == "/custom/output.json"
 
-    def test_default_config_is_v6(self) -> None:
-        """Test that default config is version 6."""
+    def test_default_config_is_v7(self) -> None:
+        """Test that default config is version 7."""
         settings = AppSettings()
-        assert settings.config_version == 6
+        assert settings.config_version == 7
 
     def test_migrate_v1_to_v2_with_scanner_fields_cleanup(self) -> None:
         """Test migration removes deprecated scanner fields."""
@@ -418,8 +418,8 @@ class TestConfigMigration:
         # Apply migrations
         migrated = ConfigMigrator.apply_migrations(v1_config)
 
-        # Verify migration occurred (v1 -> v2 -> v3 -> v4 -> v5 -> v6)
-        assert migrated["config_version"] == 6
+        # Verify migration occurred (v1 -> v2 -> v3 -> v4 -> v5 -> v6 -> v7)
+        assert migrated["config_version"] == 7
         # Verify deprecated fields are removed
         assert "confidence_threshold" not in migrated["scanner"]
         assert "confidence_by_resolution" not in migrated["scanner"]
@@ -428,7 +428,7 @@ class TestConfigMigration:
 
         # Verify the migrated config can be loaded
         settings = AppSettings(**migrated)
-        assert settings.config_version == 6
+        assert settings.config_version == 7
         assert settings.scanner.early_exit_threshold == 0.95
 
     def test_migrate_config_with_non_dict_data(self) -> None:
@@ -438,7 +438,7 @@ class TestConfigMigration:
         result = ConfigMigrator.apply_migrations(None)  # type: ignore[arg-type]
         assert result is None
 
-    def test_migrate_v3_to_v6_removes_undefined(self) -> None:
+    def test_migrate_v3_to_v7_removes_undefined(self) -> None:
         """Test migration from v3 removes the undefined field from stockpile_types."""
         v3_config = {
             "config_version": 3,
@@ -450,13 +450,13 @@ class TestConfigMigration:
 
         settings = AppSettings(**v3_config)  # type: ignore[arg-type]
 
-        assert settings.config_version == 6
+        assert settings.config_version == 7
         # custom_alias remains in snake_case field
         assert settings.stockpile_types.seaport == ["custom_alias"]
         # undefined field should not exist on the model
         assert not hasattr(settings.stockpile_types, "undefined")
 
-    def test_migrate_v3_to_v6_filters_default_translations(self) -> None:
+    def test_migrate_v3_to_v7_filters_default_translations(self) -> None:
         """Test migration from v3 filters out default translations, keeping only custom aliases."""
         v3_config = {
             "config_version": 3,
@@ -474,13 +474,13 @@ class TestConfigMigration:
 
         settings = AppSettings(**v3_config)  # type: ignore[arg-type]
 
-        assert settings.config_version == 6
+        assert settings.config_version == 7
         # Only custom aliases should remain (snake_case field names)
         assert settings.stockpile_types.seaport == ["seapon", "5eaport"]
         assert settings.stockpile_types.storage_depot == ["Storage Depo"]
         assert settings.stockpile_types.encampment == []
 
-    def test_migrate_v3_to_v6_keeps_only_custom_aliases(self) -> None:
+    def test_migrate_v3_to_v7_keeps_only_custom_aliases(self) -> None:
         """Test migration preserves only user-added custom aliases."""
         v3_config = {
             "config_version": 3,
@@ -492,10 +492,48 @@ class TestConfigMigration:
 
         settings = AppSettings(**v3_config)  # type: ignore[arg-type]
 
-        assert settings.config_version == 6
+        assert settings.config_version == 7
         # v5->v6 migration renames bunker_base to bunker_base_1, town_base to town_base_1
         assert settings.stockpile_types.bunker_base_1 == ["MyCustomBase"]
         assert settings.stockpile_types.town_base_1 == ["custom_town"]
+
+    def test_migrate_v6_to_v7_removes_uesave(self) -> None:
+        """Test migration from v6 removes uesave from external_tools."""
+        v6_config = {
+            "config_version": 6,
+            "external_tools": {
+                "repak": "/path/to/repak",
+                "umodel": "/path/to/umodel",
+                "uassetgui": "/path/to/uassetgui",
+                "uesave": "/path/to/uesave",  # Should be removed
+            },
+        }
+
+        migrated = ConfigMigrator.apply_migrations(v6_config)
+
+        assert migrated["config_version"] == 7
+        assert "uesave" not in migrated["external_tools"]
+        assert migrated["external_tools"]["repak"] == "/path/to/repak"
+        assert migrated["external_tools"]["umodel"] == "/path/to/umodel"
+        assert migrated["external_tools"]["uassetgui"] == "/path/to/uassetgui"
+
+        # Verify the migrated config can be loaded
+        settings = AppSettings(**migrated)
+        assert settings.config_version == 7
+        assert not hasattr(settings.external_tools, "uesave")
+
+    def test_migrate_v6_to_v7_no_external_tools(self) -> None:
+        """Test migration from v6 works even if external_tools is missing."""
+        v6_config = {
+            "config_version": 6,
+        }
+
+        migrated = ConfigMigrator.apply_migrations(v6_config)
+
+        assert migrated["config_version"] == 7
+        # Should work without error
+        settings = AppSettings(**migrated)
+        assert settings.config_version == 7
 
 
 class TestAppSettings:

@@ -98,7 +98,6 @@
       "error_loading_settings": "Fehler beim Laden der Einstellungen: {error}",
       "error_no_sav_file": "Keine SAV-Datei konfiguriert. Bitte konfigurieren Sie den SAV-Dateipfad in Datei → Konfiguration → SAV Verarbeitung, oder die automatische Erkennung wird versucht.",
       "error_sav_not_found": "Die konfigurierte SAV-Datei existiert nicht.",
-      "error_no_uesave": "uesave-Tool nicht gefunden. Bitte konfigurieren Sie den Pfad in Datei → Konfiguration → Externe Werkzeuge, oder installieren Sie uesave und fügen Sie es zum PATH hinzu.",
       "error_output": "Fehler beim Erstellen des Ausgabekoordinators: {error}",
       "status_scanning": "Scanne...",
       "status_monitoring": "Überwache..."
@@ -568,11 +567,7 @@
     "download": "Herunterladen",
     "select_repak": "Extraktor-Werkzeug (repak) auswählen",
     "select_umodel": "Konverter-Werkzeug (umodel) auswählen",
-    "select_uassetgui": "JSON-Konverter (UAssetGUI) auswählen",
-    "uesave_label": "SAV-Konverter (uesave):",
-    "uesave_tooltip": "Pfad zur uesave-Anwendung zum Konvertieren von Speicherdateien in JSON.\n\nErforderlich für die Funktion 'SAV Verarbeitung'.\nHerunterladen von: https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "Pfad zur uesave-Anwendung",
-    "select_uesave": "SAV-Konverter (uesave) auswählen"
+    "select_uassetgui": "JSON-Konverter (UAssetGUI) auswählen"
   },
 
   "database_builder_tab": {

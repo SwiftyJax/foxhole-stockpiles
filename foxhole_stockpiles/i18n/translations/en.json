@@ -98,7 +98,6 @@
       "error_loading_settings": "Failed to load settings: {error}",
       "error_no_sav_file": "No SAV file configured. Please configure the SAV file path in File → Configuration → SAV Processing, or auto-detect will be attempted.",
       "error_sav_not_found": "The configured SAV file does not exist.",
-      "error_no_uesave": "uesave tool not found. Please configure the path in File → Configuration → External Tools, or install uesave and add it to your PATH.",
       "error_output": "Failed to create output coordinator: {error}",
       "status_scanning": "Scanning...",
       "status_monitoring": "Monitoring..."
@@ -505,14 +504,10 @@
     "uassetgui_label": "JSON Converter (UAssetGUI):",
     "uassetgui_tooltip": "Path to UAssetGUI executable for converting UAsset files to JSON.\n\nRequired for the 'Build Catalog' feature.\nDownload from: https://github.com/atenfyr/UAssetGUI",
     "uassetgui_placeholder": "Path to UAssetGUI executable",
-    "uesave_label": "SAV Converter (uesave):",
-    "uesave_tooltip": "Path to uesave executable for converting save files to JSON.\n\nRequired for the 'SAV Processing' feature.\nDownload from: https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "Path to uesave executable",
     "download": "Download",
     "select_repak": "Select Extractor Tool (repak)",
     "select_umodel": "Select Converter Tool (umodel)",
-    "select_uassetgui": "Select JSON Converter (UAssetGUI)",
-    "select_uesave": "Select SAV Converter (uesave)"
+    "select_uassetgui": "Select JSON Converter (UAssetGUI)"
   },
 
   "ocr_tab": {

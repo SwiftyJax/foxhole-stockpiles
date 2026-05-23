@@ -564,10 +564,9 @@ def test_validate_sav_config_no_settings(qtbot: Any, panel: ServerControlPanel) 
     from foxhole_stockpiles.gui.widgets import server_control_panel
 
     with patch.object(server_control_panel, "AppSettings", side_effect=OSError("Config error")):
-        sav_path, uesave_path, error = panel._validate_sav_config()
+        sav_path, error = panel._validate_sav_config()
 
         assert sav_path is None
-        assert uesave_path is None
         assert error is not None
         assert "Config error" in error
 
@@ -588,10 +587,9 @@ def test_validate_sav_config_no_sav_file(qtbot: Any, panel: ServerControlPanel) 
         mock_settings = mock_settings_class.return_value
         mock_settings.sav_processing.sav_file_path = None
 
-        sav_path, uesave_path, error = panel._validate_sav_config()
+        sav_path, error = panel._validate_sav_config()
 
         assert sav_path is None
-        assert uesave_path is None
         assert error is not None
         assert t("server_panel.sav.error_no_sav_file") in error
 
@@ -614,43 +612,11 @@ def test_validate_sav_config_sav_not_found(
         mock_settings = mock_settings_class.return_value
         mock_settings.sav_processing.sav_file_path = nonexistent_sav
 
-        sav_path, uesave_path, error = panel._validate_sav_config()
+        sav_path, error = panel._validate_sav_config()
 
         assert sav_path is None
-        assert uesave_path is None
         assert error is not None
         assert t("server_panel.sav.error_sav_not_found") in error
-
-
-def test_validate_sav_config_no_uesave(
-    qtbot: Any, panel: ServerControlPanel, tmp_path: Path
-) -> None:
-    """Test _validate_sav_config when uesave is not available.
-
-    Args:
-        qtbot: PyQt test fixture
-        panel (ServerControlPanel): Panel instance
-        tmp_path (Path): Temporary directory path from pytest fixture.
-    """
-    from foxhole_stockpiles.gui.widgets import server_control_panel
-
-    sav_file = tmp_path / "test.sav"
-    sav_file.touch()
-
-    with (
-        patch.object(server_control_panel, "AppSettings") as mock_settings_class,
-        patch.object(server_control_panel, "get_uesave_path", return_value=None),
-    ):
-        mock_settings = mock_settings_class.return_value
-        mock_settings.sav_processing.sav_file_path = sav_file
-        mock_settings.external_tools.uesave = None
-
-        sav_path, uesave_path, error = panel._validate_sav_config()
-
-        assert sav_path is None
-        assert uesave_path is None
-        assert error is not None
-        assert t("server_panel.sav.error_no_uesave") in error
 
 
 def test_validate_sav_config_success(qtbot: Any, panel: ServerControlPanel, tmp_path: Path) -> None:
@@ -665,21 +631,14 @@ def test_validate_sav_config_success(qtbot: Any, panel: ServerControlPanel, tmp_
 
     sav_file = tmp_path / "test.sav"
     sav_file.touch()
-    uesave = tmp_path / "uesave"
-    uesave.touch()
 
-    with (
-        patch.object(server_control_panel, "AppSettings") as mock_settings_class,
-        patch.object(server_control_panel, "get_uesave_path", return_value=uesave),
-    ):
+    with patch.object(server_control_panel, "AppSettings") as mock_settings_class:
         mock_settings = mock_settings_class.return_value
         mock_settings.sav_processing.sav_file_path = sav_file
-        mock_settings.external_tools.uesave = uesave
 
-        sav_path, uesave_path, error = panel._validate_sav_config()
+        sav_path, error = panel._validate_sav_config()
 
         assert sav_path == sav_file
-        assert uesave_path == uesave
         assert error is None
 
 
@@ -691,7 +650,7 @@ def test_scan_sav_file_validation_error(qtbot: Any, panel: ServerControlPanel) -
         panel (ServerControlPanel): Panel instance
     """
     with (
-        patch.object(panel, "_validate_sav_config", return_value=(None, None, "Test error")),
+        patch.object(panel, "_validate_sav_config", return_value=(None, "Test error")),
         patch(
             "foxhole_stockpiles.gui.widgets.server_control_panel.QMessageBox.warning"
         ) as mock_warning,
@@ -717,8 +676,6 @@ def test_scan_sav_file_already_scanning(
 
     sav_file = tmp_path / "test.sav"
     sav_file.touch()
-    uesave = tmp_path / "uesave"
-    uesave.touch()
 
     # Set up a mock running worker
     mock_worker = MagicMock()
@@ -726,7 +683,7 @@ def test_scan_sav_file_already_scanning(
     panel._sav_scan_worker = mock_worker
 
     with (
-        patch.object(panel, "_validate_sav_config", return_value=(sav_file, uesave, None)),
+        patch.object(panel, "_validate_sav_config", return_value=(sav_file, None)),
         patch.object(server_control_panel, "SavScanWorker") as mock_worker_class,
     ):
         panel.scan_sav_file()
@@ -747,11 +704,9 @@ def test_scan_sav_file_output_error(qtbot: Any, panel: ServerControlPanel, tmp_p
 
     sav_file = tmp_path / "test.sav"
     sav_file.touch()
-    uesave = tmp_path / "uesave"
-    uesave.touch()
 
     with (
-        patch.object(panel, "_validate_sav_config", return_value=(sav_file, uesave, None)),
+        patch.object(panel, "_validate_sav_config", return_value=(sav_file, None)),
         patch.object(server_control_panel, "AppSettings", side_effect=OSError("Output error")),
         patch(
             "foxhole_stockpiles.gui.widgets.server_control_panel.QMessageBox.critical"
@@ -816,7 +771,7 @@ def test_start_sav_monitor_validation_error(qtbot: Any, panel: ServerControlPane
         panel (ServerControlPanel): Panel instance
     """
     with (
-        patch.object(panel, "_validate_sav_config", return_value=(None, None, "Validation failed")),
+        patch.object(panel, "_validate_sav_config", return_value=(None, "Validation failed")),
         patch(
             "foxhole_stockpiles.gui.widgets.server_control_panel.QMessageBox.warning"
         ) as mock_warning,
@@ -1073,11 +1028,9 @@ def test_scan_sav_file_success(qtbot: Any, panel: ServerControlPanel, tmp_path: 
 
     sav_file = tmp_path / "test.sav"
     sav_file.touch()
-    uesave = tmp_path / "uesave"
-    uesave.touch()
 
     with (
-        patch.object(panel, "_validate_sav_config", return_value=(sav_file, uesave, None)),
+        patch.object(panel, "_validate_sav_config", return_value=(sav_file, None)),
         patch.object(server_control_panel, "AppSettings") as mock_settings_class,
         patch.object(server_control_panel, "OutputCoordinator"),
         patch.object(server_control_panel, "SavScanWorker") as mock_worker_class,
@@ -1089,11 +1042,10 @@ def test_scan_sav_file_success(qtbot: Any, panel: ServerControlPanel, tmp_path: 
 
         panel.scan_sav_file()
 
-        # Verify worker was created with correct args
+        # Verify worker was created with correct args (no uesave)
         mock_worker_class.assert_called_once()
         args = mock_worker_class.call_args[0]
         assert args[0] == sav_file
-        assert args[1] == uesave
 
         # Verify worker was started
         mock_worker.start.assert_called_once()
@@ -1114,11 +1066,9 @@ def test_start_sav_monitor_success(qtbot: Any, panel: ServerControlPanel, tmp_pa
 
     sav_file = tmp_path / "test.sav"
     sav_file.touch()
-    uesave = tmp_path / "uesave"
-    uesave.touch()
 
     with (
-        patch.object(panel, "_validate_sav_config", return_value=(sav_file, uesave, None)),
+        patch.object(panel, "_validate_sav_config", return_value=(sav_file, None)),
         patch.object(server_control_panel, "AppSettings") as mock_settings_class,
         patch.object(server_control_panel, "OutputCoordinator"),
         patch.object(server_control_panel, "SavMonitorWorker") as mock_worker_class,
@@ -1131,12 +1081,11 @@ def test_start_sav_monitor_success(qtbot: Any, panel: ServerControlPanel, tmp_pa
 
         panel._start_sav_monitor()
 
-        # Verify worker was created with correct args
+        # Verify worker was created with correct args (no uesave)
         mock_worker_class.assert_called_once()
         args = mock_worker_class.call_args[0]
         assert args[0] == sav_file
-        assert args[1] == uesave
-        assert args[3] == 2.0  # poll_interval
+        assert args[2] == 2.0  # poll_interval (second positional arg after output_coordinator)
 
         # Verify worker was started
         mock_worker.start.assert_called_once()
@@ -1160,11 +1109,9 @@ def test_start_sav_monitor_output_error(
 
     sav_file = tmp_path / "test.sav"
     sav_file.touch()
-    uesave = tmp_path / "uesave"
-    uesave.touch()
 
     with (
-        patch.object(panel, "_validate_sav_config", return_value=(sav_file, uesave, None)),
+        patch.object(panel, "_validate_sav_config", return_value=(sav_file, None)),
         patch.object(server_control_panel, "AppSettings", side_effect=OSError("Output error")),
         patch(
             "foxhole_stockpiles.gui.widgets.server_control_panel.QMessageBox.critical"
@@ -1191,22 +1138,17 @@ def test_validate_sav_config_auto_detect_success(
 
     sav_file = tmp_path / "test.sav"
     sav_file.touch()
-    uesave = tmp_path / "uesave"
-    uesave.touch()
 
     with (
         patch.object(server_control_panel, "AppSettings") as mock_settings_class,
         patch.object(server_control_panel, "auto_detect_savefile", return_value=sav_file),
-        patch.object(server_control_panel, "get_uesave_path", return_value=uesave),
     ):
         mock_settings = mock_settings_class.return_value
         mock_settings.sav_processing.sav_file_path = None  # No configured path
-        mock_settings.external_tools.uesave = None
 
-        sav_path, uesave_path, error = panel._validate_sav_config()
+        sav_path, error = panel._validate_sav_config()
 
         assert sav_path == sav_file
-        assert uesave_path == uesave
         assert error is None
 
 

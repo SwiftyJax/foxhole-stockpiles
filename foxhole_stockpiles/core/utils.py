@@ -6,7 +6,6 @@ import json
 import logging
 import os
 import re
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -377,30 +376,3 @@ def auto_detect_savefile() -> Path | None:
     if save_dir:
         return find_mapdata_file(save_dir)
     return None
-
-
-def find_uesave_in_path() -> Path | None:
-    """Find uesave executable in system PATH.
-
-    Returns:
-        Path | None: Path to uesave executable, or None if not found.
-    """
-    for name in ["uesave", "uesave.exe"]:
-        found = shutil.which(name)
-        if found:
-            return Path(found)
-    return None
-
-
-def get_uesave_path(configured_path: Path | None) -> Path | None:
-    """Get uesave path from configuration or PATH.
-
-    Args:
-        configured_path (Path | None): User-configured uesave path.
-
-    Returns:
-        Path | None: Valid uesave path, or None if not found.
-    """
-    if configured_path and configured_path.exists():
-        return configured_path
-    return find_uesave_in_path()

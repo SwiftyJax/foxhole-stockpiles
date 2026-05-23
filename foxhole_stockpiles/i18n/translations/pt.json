@@ -98,7 +98,6 @@
       "error_loading_settings": "Erro ao carregar configurações: {error}",
       "error_no_sav_file": "Nenhum ficheiro SAV configurado. Por favor, configure o caminho do ficheiro SAV em Ficheiro → Configuração → Processamento SAV, ou a auto-deteção será tentada.",
       "error_sav_not_found": "O ficheiro SAV configurado não existe.",
-      "error_no_uesave": "Ferramenta uesave não encontrada. Por favor, configure o caminho em Ficheiro → Configuração → Ferramentas Externas, ou instale o uesave e adicione ao PATH.",
       "error_output": "Erro ao criar coordenador de saída: {error}",
       "status_scanning": "A digitalizar...",
       "status_monitoring": "A monitorizar..."
@@ -568,11 +567,7 @@
     "download": "Descarregar",
     "select_repak": "Selecionar ferramenta extratora (repak)",
     "select_umodel": "Selecionar ferramenta conversora (umodel)",
-    "select_uassetgui": "Selecionar conversor JSON (UAssetGUI)",
-    "uesave_label": "Conversor SAV (uesave):",
-    "uesave_tooltip": "Caminho para o executável uesave para converter ficheiros de salvamento em JSON.\n\nNecessário para a função 'Processamento SAV'.\nTransferir de: https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "Caminho para o executável uesave",
-    "select_uesave": "Selecionar conversor SAV (uesave)"
+    "select_uassetgui": "Selecionar conversor JSON (UAssetGUI)"
   },
 
   "database_builder_tab": {
