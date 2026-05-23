@@ -21,7 +21,7 @@ from foxhole_stockpiles.models.detected_icon_info import DetectedIconInfo
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.scan_result import ScanResult
 from foxhole_stockpiles.models.stockpile import Stockpile
-from foxhole_stockpiles.services.template_database import TemplateDatabase
+from fs_ocr._impl.template_database import TemplateDatabase
 
 
 @pytest.fixture

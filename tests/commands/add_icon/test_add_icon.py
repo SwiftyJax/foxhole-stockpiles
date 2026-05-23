@@ -18,9 +18,9 @@ from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.icon_template import IconTemplate
-from foxhole_stockpiles.services.icon_manager import IconManager
-from foxhole_stockpiles.services.template_database import TemplateDatabase
-from foxhole_stockpiles.services.template_manager import TemplateManager
+from fs_ocr._impl.icon_manager import IconManager
+from fs_ocr._impl.template_database import TemplateDatabase
+from fs_ocr._impl.template_manager import TemplateManager
 
 
 @pytest.fixture

@@ -481,7 +481,7 @@ def test_panel_validation_db_load_exception(qtbot: Any, panel: ServerControlPane
 
         # Mock TemplateManager to raise exception when loading database stats
         with patch(
-            "foxhole_stockpiles.services.template_manager.TemplateManager.get_database_statistics",
+            "fs_ocr._impl.template_manager.TemplateManager.get_database_statistics",
             side_effect=OSError("Database error"),
         ):
             panel._update_validation_state()

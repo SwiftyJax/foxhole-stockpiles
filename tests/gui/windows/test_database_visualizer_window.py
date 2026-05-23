@@ -17,7 +17,7 @@ from foxhole_stockpiles.gui.windows.database_visualizer_window import (
 )
 from foxhole_stockpiles.i18n import t
 from foxhole_stockpiles.models.icon_template import IconTemplate
-from foxhole_stockpiles.services.template_database import TemplateDatabase
+from fs_ocr._impl.template_database import TemplateDatabase
 
 
 @pytest.fixture

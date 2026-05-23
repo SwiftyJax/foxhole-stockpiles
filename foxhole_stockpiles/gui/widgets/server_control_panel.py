@@ -31,7 +31,7 @@ from foxhole_stockpiles.gui.utils.scanner_client import ScannerClient
 from foxhole_stockpiles.gui.utils.server_thread import ServerThread
 from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
-from foxhole_stockpiles.services.template_manager import TemplateManager
+from fs_ocr._impl.template_manager import TemplateManager
 
 logger = logging.getLogger(__name__)
 

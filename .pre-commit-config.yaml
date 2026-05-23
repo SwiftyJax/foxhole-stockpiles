@@ -6,7 +6,7 @@ repos:
   - id: end-of-file-fixer
   - id: check-yaml
   - id: check-added-large-files
-    exclude: ^data/(catalog\.json|.*\.h5)$
+    exclude: ^(data/(catalog\.json|.*\.h5)|fs_ocr/tests/test\.png)$
   - id: debug-statements
 
 - repo: local

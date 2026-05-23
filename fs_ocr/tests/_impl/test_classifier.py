@@ -11,7 +11,7 @@ from foxhole_stockpiles.constants import STOCKPILE_TYPE_TEXTS
 from foxhole_stockpiles.core.settings import AppSettings
 from foxhole_stockpiles.core.settings.sections.stockpile_types import StockpileTypesSettings
 from foxhole_stockpiles.enums.stockpile_type import StockpileType
-from foxhole_stockpiles.services.stockpile_type_classifier import StockpileTypeClassifier
+from fs_ocr._impl.classifier import StockpileTypeClassifier
 
 
 class TestStockpileTypeClassifierInitialization:
@@ -19,7 +19,7 @@ class TestStockpileTypeClassifierInitialization:
 
     def test_init_default(self) -> None:
         """Test initializing StockpileTypeClassifier with default settings."""
-        with patch("foxhole_stockpiles.services.stockpile_type_classifier.get_settings"):
+        with patch("fs_ocr._impl.classifier.get_settings"):
             classifier = StockpileTypeClassifier()
 
             assert classifier._type_translations is not None
@@ -33,7 +33,7 @@ class TestStockpileTypeClassifierInitialization:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -52,7 +52,7 @@ class TestStockpileTypeClassifierInitialization:
         )
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -70,7 +70,7 @@ class TestClassifyFromText:
 
     def test_classify_empty_text(self) -> None:
         """Test classifying empty text returns UNDEFINED."""
-        with patch("foxhole_stockpiles.services.stockpile_type_classifier.get_settings"):
+        with patch("fs_ocr._impl.classifier.get_settings"):
             classifier = StockpileTypeClassifier()
 
             result = classifier.classify_from_text("")
@@ -83,7 +83,7 @@ class TestClassifyFromText:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -98,7 +98,7 @@ class TestClassifyFromText:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -114,7 +114,7 @@ class TestClassifyFromText:
         mock_settings.stockpile_types = StockpileTypesSettings(seaport=["seapon"])
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -129,7 +129,7 @@ class TestClassifyFromText:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -144,7 +144,7 @@ class TestClassifyFromText:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -164,7 +164,7 @@ class TestClassifyFromText:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -183,7 +183,7 @@ class TestFindMatchingType:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -198,7 +198,7 @@ class TestFindMatchingType:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -213,7 +213,7 @@ class TestFindMatchingType:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -234,7 +234,7 @@ class TestFuzzyMatchType:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -250,7 +250,7 @@ class TestFuzzyMatchType:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -269,7 +269,7 @@ class TestFuzzyMatchType:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -310,7 +310,7 @@ class TestRealWorldScenarios:
         mock_settings.stockpile_types = StockpileTypesSettings()
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()
@@ -343,7 +343,7 @@ class TestRealWorldScenarios:
         )
 
         with patch(
-            "foxhole_stockpiles.services.stockpile_type_classifier.get_settings",
+            "fs_ocr._impl.classifier.get_settings",
             return_value=mock_settings,
         ):
             classifier = StockpileTypeClassifier()

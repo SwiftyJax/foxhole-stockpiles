@@ -12,8 +12,8 @@ from PySide6.QtCore import QThread, Signal
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.models.detected_icon_info import DetectedIconInfo
 from foxhole_stockpiles.models.scan_result import ScanResult
-from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
-from foxhole_stockpiles.services.stockpile_detector import StockpileDetector
+from fs_ocr._impl.coordinator import OCRCoordinator
+from fs_ocr._impl.detector import StockpileDetector
 
 logger = logging.getLogger(__name__)
 

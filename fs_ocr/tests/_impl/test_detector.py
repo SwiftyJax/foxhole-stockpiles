@@ -15,7 +15,7 @@ from numpy.typing import NDArray
 
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
-from foxhole_stockpiles.services.stockpile_detector import StockpileDetector
+from fs_ocr._impl.detector import StockpileDetector
 
 
 class TestStockpileDetectorInitialization:

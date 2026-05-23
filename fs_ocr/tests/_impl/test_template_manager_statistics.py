@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from foxhole_stockpiles.models.database_statistics import DatabaseStatistics
-from foxhole_stockpiles.services.template_manager import TemplateManager
+from fs_ocr._impl.template_manager import TemplateManager
 
 
 @pytest.fixture

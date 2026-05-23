@@ -26,7 +26,7 @@ from foxhole_stockpiles.models.mod_import_config import ModImportConfig
 from foxhole_stockpiles.models.mod_import_progress import ModImportProgress
 from foxhole_stockpiles.models.mod_import_result import ModImportResult
 from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
-from foxhole_stockpiles.services.template_manager import TemplateManager
+from fs_ocr._impl.template_manager import TemplateManager
 
 logger = logging.getLogger(__name__)
 

@@ -26,8 +26,8 @@ from foxhole_stockpiles.enums.output_destination import OutputDestination
 from foxhole_stockpiles.enums.output_format import OutputFormat
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.models.stockpile import Stockpile
-from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
+from fs_ocr._impl.coordinator import OCRCoordinator
 
 
 def _create_handler_config_for_destination(

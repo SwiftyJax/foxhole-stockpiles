@@ -24,7 +24,7 @@ from foxhole_stockpiles.api.web.services import IconService
 from foxhole_stockpiles.core.utils import get_bundled_resource_path, is_frozen
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.catalog_service import CatalogService
-from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
+from fs_ocr._impl.coordinator import OCRCoordinator
 
 logger = logging.getLogger(__name__)
 

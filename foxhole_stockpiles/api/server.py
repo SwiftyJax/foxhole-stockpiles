@@ -38,9 +38,9 @@ from foxhole_stockpiles.enums.event_type import EventType
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.services.memory_monitor import MemoryMonitor
-from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
-from foxhole_stockpiles.services.template_manager import TemplateManager
+from fs_ocr._impl.coordinator import OCRCoordinator
+from fs_ocr._impl.template_manager import TemplateManager
 
 # Maximum file upload size (10MB) - sufficient for high-resolution screenshots
 MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024

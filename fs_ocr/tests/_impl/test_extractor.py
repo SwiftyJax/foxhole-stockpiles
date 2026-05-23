@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch
 import numpy as np
 
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
-from foxhole_stockpiles.services.stockpile_text_extractor import StockpileTextExtractor
+from fs_ocr._impl.extractor import StockpileTextExtractor
 
 
 class TestStockpileTextExtractorInitialization:

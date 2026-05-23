@@ -23,8 +23,8 @@ from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
-from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
-from foxhole_stockpiles.services.stockpile_detector import StockpileDetector
+from fs_ocr._impl.coordinator import OCRCoordinator
+from fs_ocr._impl.detector import StockpileDetector
 
 
 def create_test_icon_template(code: str, crated: bool = False) -> IconTemplate:
@@ -255,7 +255,7 @@ class TestExtractIconToFolder:
         mock_icon = np.zeros((35, 35, 3), dtype=np.uint8)
 
         # Mock cv2.imwrite to raise an exception
-        with patch("foxhole_stockpiles.services.ocr_coordinator.cv2.imwrite") as mock_imwrite:
+        with patch("fs_ocr._impl.coordinator.cv2.imwrite") as mock_imwrite:
             mock_imwrite.side_effect = OSError("Simulated write failure")
 
             # Should not raise - exception should be caught and logged
@@ -543,7 +543,7 @@ class TestDetectRegions:
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
-        with patch("foxhole_stockpiles.services.ocr_coordinator.StockpileDetector") as mock_class:
+        with patch("fs_ocr._impl.coordinator.StockpileDetector") as mock_class:
             mock_detector = MagicMock(spec=StockpileDetector)
             mock_detector.scale_factor = 1.0
             mock_detector.quantities = [(100, 100)]
@@ -569,7 +569,7 @@ class TestDetectRegions:
 
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
-        with patch("foxhole_stockpiles.services.ocr_coordinator.StockpileDetector") as mock_class:
+        with patch("fs_ocr._impl.coordinator.StockpileDetector") as mock_class:
             mock_detector = MagicMock(spec=StockpileDetector)
             mock_detector.scale_factor = 1.0
             mock_detector.quantities = [(100, 100)]
@@ -1416,6 +1416,7 @@ class TestMatchIconsAndBuildResult:
             assert result.items[1].quantity == 200
 
             # Should have errors logged
+            assert result.errors is not None
             assert len(result.errors) == 2
             assert "No match found" in result.errors[0]
             assert "Best match: SomeItem" in result.errors[0]
@@ -1892,6 +1893,7 @@ class TestCheckForDuplicates:
         assert stockpile.items[1].code == "Rifle"
 
         # Verify error message includes best match information
+        assert stockpile.errors is not None
         assert len(stockpile.errors) > 0
         error_message = stockpile.errors[0]
         assert "Best match: Bandages (crated)" in error_message
@@ -2127,7 +2129,7 @@ class TestDetectRegionsCriticalException:
         mock_image = np.zeros((1080, 1920, 3), dtype=np.uint8)
 
         # Mock StockpileDetector to raise an exception during analysis
-        with patch("foxhole_stockpiles.services.ocr_coordinator.StockpileDetector") as mock_class:
+        with patch("fs_ocr._impl.coordinator.StockpileDetector") as mock_class:
             mock_detector = MagicMock(spec=StockpileDetector)
             # Simulate detector.analize() raising an exception
             mock_detector.analize.side_effect = RuntimeError("Simulated detector failure")
@@ -2162,7 +2164,7 @@ class TestDetectRegionsCriticalException:
         )
 
         # Mock cv2.imwrite to raise an exception
-        with patch("foxhole_stockpiles.services.ocr_coordinator.cv2.imwrite") as mock_imwrite:
+        with patch("fs_ocr._impl.coordinator.cv2.imwrite") as mock_imwrite:
             mock_imwrite.side_effect = OSError("Simulated write failure")
 
             # Should not raise - exception should be caught and logged
@@ -2404,11 +2406,11 @@ class TestFrozenBundlePath:
         # Mock is_frozen to return True
         with (
             patch(
-                "foxhole_stockpiles.services.ocr_coordinator.is_frozen",
+                "fs_ocr._impl.coordinator.is_frozen",
                 return_value=True,
             ),
             patch(
-                "foxhole_stockpiles.services.ocr_coordinator.get_bundled_resource_path",
+                "fs_ocr._impl.coordinator.get_bundled_resource_path",
                 return_value=Path("/bundled/tessdata"),
             ),
         ):

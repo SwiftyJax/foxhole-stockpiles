@@ -28,10 +28,10 @@ from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
-from foxhole_stockpiles.services.stockpile_detector import StockpileDetector
-from foxhole_stockpiles.services.stockpile_text_extractor import StockpileTextExtractor
-from foxhole_stockpiles.services.stockpile_type_classifier import StockpileTypeClassifier
-from foxhole_stockpiles.services.template_manager import TemplateManager
+from fs_ocr._impl.classifier import StockpileTypeClassifier
+from fs_ocr._impl.detector import StockpileDetector
+from fs_ocr._impl.extractor import StockpileTextExtractor
+from fs_ocr._impl.template_manager import TemplateManager
 
 
 class OCRCoordinator:
