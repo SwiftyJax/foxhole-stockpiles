@@ -237,7 +237,13 @@
       "client_auth_placeholder": "e.g., Authorization",
       "client_auth_tooltip": "Name of the Authorization header to forward from API client to webhook.\n\nUseful when the webhook needs to know who initiated the scan.\n\nRequired when auth type is 'forward'.",
       "file_path_required": "File path is required.",
-      "webhook_url_required": "Webhook URL is required."
+      "webhook_url_required": "Webhook URL is required.",
+      "creds_path": "OAuth Credentials Path:",
+      "creds_path_placeholder": ".../creds.json",
+      "spreadsheet_url": "Spreadsheet URL:",
+      "spreadsheet_url_placeholder": "https://docs.google.com/spreadsheets/d/...",
+      "sheet_id": "Sheet ID:",
+      "sheet_id_placeholder": "Sheet1"
     },
     "remove_handler_title": "Remove Handler",
     "remove_handler_message": "Are you sure you want to remove '{name}'?"

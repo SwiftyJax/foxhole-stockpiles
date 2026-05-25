@@ -26,6 +26,7 @@ from foxhole_stockpiles.core.settings.sections.output import (
     OutputHandlerConfig,
     OutputSettings,
     ReturnHandlerSettings,
+    SheetsHandlerSettings,
     WebhookHandlerSettings,
 )
 from foxhole_stockpiles.enums.auth_type import AuthType
@@ -71,7 +72,7 @@ class OutputHandlerDialog(QDialog):
 
         self.handler_type_label = QLabel()
         self.handler_type_input = QComboBox()
-        self.handler_type_input.addItems(["return", "file", "webhook", "console"])
+        self.handler_type_input.addItems(["return", "file", "webhook", "console", "google sheets"])
         self.handler_type_input.currentTextChanged.connect(self._on_handler_type_changed)
         basic_layout.addRow(self.handler_type_label, self.handler_type_input)
 
@@ -123,6 +124,25 @@ class OutputHandlerDialog(QDialog):
         webhook_layout.addRow(self.client_auth_label, self.webhook_client_auth_input)
 
         layout.addWidget(self.webhook_group)
+
+        # Spreadsheet Settings Group
+        self.sheets_group = QGroupBox()
+        sheets_layout = QFormLayout()
+        self.sheets_group.setLayout(sheets_layout)
+
+        self.creds_path_label = QLabel()
+        self.creds_path_input = QLineEdit()
+        sheets_layout.addRow(self.creds_path_label, self.creds_path_input)
+
+        self.spreadsheet_url_label = QLabel()
+        self.spreadsheet_url_input = QLineEdit()
+        sheets_layout.addRow(self.spreadsheet_url_label, self.spreadsheet_url_input)
+
+        self.sheet_id_label = QLabel()
+        self.sheet_id_input = QLineEdit()
+        sheets_layout.addRow(self.sheet_id_label, self.sheet_id_input)
+
+        layout.addWidget(self.sheets_group)
 
         # Button box
         button_box = QDialogButtonBox(
@@ -195,11 +215,24 @@ class OutputHandlerDialog(QDialog):
             t("output_tab.handler_dialog.client_auth_placeholder")
         )
 
+        # Sheets Settings
+        self.creds_path_label.setText(t("output_tab.handler_dialog.creds_path"))
+        self.creds_path_input.setPlaceholderText(
+            t("output_tab.handler_dialog.creds_path_placeholder")
+        )
+        self.spreadsheet_url_label.setText(t("output_tab.handler_dialog.spreadsheet_url"))
+        self.spreadsheet_url_input.setPlaceholderText(
+            t("output_tab.handler_dialog.spreadsheet_url_placeholder")
+        )
+        self.sheet_id_label.setText(t("output_tab.handler_dialog.sheet_id"))
+        self.sheet_id_input.setPlaceholderText(t("output_tab.handler_dialog.sheet_id_placeholder"))
+
     def _on_handler_type_changed(self) -> None:
         """Handle handler type change to show/hide relevant sections."""
         handler_type = self.handler_type_input.currentText()
         self.file_group.setVisible(handler_type == "file")
         self.webhook_group.setVisible(handler_type == "webhook")
+        self.sheets_group.setVisible(handler_type == "google sheets")
         # Show format selection only for file handler (webhook/return are JSON-only)
         show_format = handler_type == "file"
         self.format_label.setVisible(show_format)
@@ -257,6 +290,10 @@ class OutputHandlerDialog(QDialog):
             self.webhook_auth_type_input.setCurrentText(handler.auth_type or "null")
             self.webhook_token_input.setText(handler.token or "")
             self.webhook_client_auth_input.setText(handler.client_auth_header or "")
+        elif isinstance(handler, SheetsHandlerSettings):
+            self.creds_path_input.setText(handler.creds_path or "")
+            self.spreadsheet_url_input.setText(handler.spreadsheet_url or "")
+            self.sheet_id_input.setText(handler.spreadsheet_sheet_id or "")
 
         self._on_handler_type_changed()
         self._on_webhook_auth_changed()
@@ -287,6 +324,8 @@ class OutputHandlerDialog(QDialog):
                 self.webhook_url_input.setFocus()
                 return
 
+        # TODO: Add validation
+
         self.accept()
 
     def get_handler_config(self) -> OutputHandlerConfig:
@@ -314,6 +353,7 @@ class OutputHandlerDialog(QDialog):
             | FileHandlerSettings
             | WebhookHandlerSettings
             | ConsoleHandlerSettings
+            | SheetsHandlerSettings
         )
         if handler_type == OutputHandlerType.FILE:
             handler_settings = FileHandlerSettings(path=self.file_path_input.text() or "output")
@@ -336,6 +376,14 @@ class OutputHandlerDialog(QDialog):
             handler_settings = ConsoleHandlerSettings()
             if not name:
                 name = "Console"
+        elif handler_type == OutputHandlerType.SHEETS:
+            handler_settings = SheetsHandlerSettings(
+                creds_path=self.creds_path_input.text(),
+                spreadsheet_url=self.spreadsheet_url_input.text(),
+                spreadsheet_sheet_id=self.sheet_id_input.text(),
+            )
+            if not name:
+                name = "Append rows (Google Sheets)"
         else:  # RETURN
             handler_settings = ReturnHandlerSettings()
             if not name:
