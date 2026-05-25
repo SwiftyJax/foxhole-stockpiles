@@ -404,7 +404,6 @@ cp docs/examples/fs_config.docker .fs_config
 
 For more details, see:
 - [Configuration Examples](docs/examples/README.md) - Ready-to-use config files for different scenarios
-- [API Server Documentation](foxhole_stockpiles/commands/api_server/README.md)
 - [API Usage Guide](docs/api-usage.md)
 
 ### Notifications
@@ -657,19 +656,23 @@ Test coverage includes:
 
 ### Command-Line Tools
 
-Each CLI tool has detailed documentation in its directory:
+The main `fs` command (Typer-based) exposes these subcommands — run `fs <command> --help` for options:
 
-- [Catalog Builder](foxhole_stockpiles/commands/catalog_builder/README.md) - Build catalog.json from PAK files
-- [Asset Extractor](foxhole_stockpiles/commands/uasset_extractor/README.md) - Extract icons from PAK files
-- [Template Generator](foxhole_stockpiles/commands/generate_templates/README.md) - Generate resolution-specific templates
-- [Database Builder](foxhole_stockpiles/commands/database_builder/README.md) - Build optimized template databases
-- [Scanner](foxhole_stockpiles/commands/stockpile_scanner/README.md) - Analyze stockpile screenshots
-- [Inspector](foxhole_stockpiles/commands/candidate_inspector/README.md) - Debug and validate databases
-- [API Server](foxhole_stockpiles/commands/api_server/README.md) - HTTP API server
-- [Add Icon](foxhole_stockpiles/commands/add_icon/README.md) - Add individual icons to databases
-- [Add Mod](foxhole_stockpiles/commands/add_mod/README.md) - Add mod icons to databases
-- [Update Config](foxhole_stockpiles/commands/update_config/README.md) - Migrate configuration files
-- [GUI](foxhole_stockpiles/commands/gui/README.md) - Graphical user interface
+- `fs scan` (alias `scanner`) - Analyze stockpile screenshots
+- `fs serve` (aliases `server`, `api`) - Run the HTTP API server
+- `fs sav` (alias `process-sav`) - Process Foxhole save files
+- `fs gui` (aliases `ui`, `app`) - Launch the graphical user interface
+- `fs update-config` (alias `update`) - Migrate configuration files
+
+The asset/database tooling lives in the separate `fs-tools` command, with detailed documentation in each tool's directory:
+
+- [Catalog Builder](fs_tools/commands/catalog_builder/README.md) - Build catalog.json from PAK files
+- [Asset Extractor](fs_tools/commands/uasset_extractor/README.md) - Extract icons from PAK files
+- [Template Generator](fs_tools/commands/generate_templates/README.md) - Generate resolution-specific templates
+- [Database Builder](fs_tools/commands/database_builder/README.md) - Build optimized template databases
+- [Inspector](fs_tools/commands/candidate_inspector/README.md) - Debug and validate databases
+- [Add Icon](fs_tools/commands/add_icon/README.md) - Add individual icons to databases
+- [Add Mod](fs_tools/commands/add_mod/README.md) - Add mod icons to databases
 
 ### Guides
 

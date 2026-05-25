@@ -25,7 +25,7 @@ class CommandInfo(BaseModel):
         json_schema_extra={
             "example": {
                 "description": "Scan stockpile screenshots to identify items",
-                "module": "foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner",
+                "module": "foxhole_stockpiles.cli.commands.scan",
                 "function": "main",
                 "aliases": ["scan", "stockpile-scanner"],
             }

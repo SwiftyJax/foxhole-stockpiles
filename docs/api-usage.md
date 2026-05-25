@@ -20,7 +20,7 @@ fs server --host 0.0.0.0 --port 8000 --workers 4
 fs server --reload --log-level debug
 ```
 
-See [API Server Command Documentation](../foxhole_stockpiles/commands/api_server/README.md) for all options.
+Run `fs serve --help` (aliases: `fs server`, `fs api`) for all options.
 
 ### Alternative Methods
 

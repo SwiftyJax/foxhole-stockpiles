@@ -211,4 +211,4 @@ Multiple output destinations:
 2. `/foxhole_stockpiles/services/ocr_coordinator.py` - Core pipeline
 3. `/foxhole_stockpiles/models/stockpile.py` - Output model
 4. `/foxhole_stockpiles/core/settings/app_settings.py` - Configuration
-5. `/foxhole_stockpiles/commands/fs/fs.py` - CLI dispatcher
+5. `/foxhole_stockpiles/cli/app.py` - Typer CLI application (the `fs` command)

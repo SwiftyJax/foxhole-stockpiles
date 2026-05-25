@@ -395,9 +395,7 @@ FS_API_SERVER__WORKERS=4
 ## Command to Start Server
 
 ```bash
-fs server
-# or directly:
-python -m foxhole_stockpiles.commands.api_server.api_server
+fs serve
 # or with uvicorn:
 uvicorn foxhole_stockpiles.api.server:app --host 0.0.0.0 --port 8000 --workers 4
 ```

@@ -57,17 +57,15 @@ def get_hidden_imports() -> list[str]:
         "foxhole_stockpiles.api.web",
         "foxhole_stockpiles.api.web.routes",
         "foxhole_stockpiles.api.web.services",
-        # All command modules
-        "foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner",
-        "foxhole_stockpiles.commands.database_builder.database_builder",
-        "foxhole_stockpiles.commands.generate_templates.generate_templates",
-        "foxhole_stockpiles.commands.uasset_extractor.uasset_extractor",
-        "foxhole_stockpiles.commands.candidate_inspector.candidate_inspector",
-        "foxhole_stockpiles.commands.api_server.api_server",
-        "foxhole_stockpiles.commands.gui.gui",
-        "foxhole_stockpiles.commands.add_icon.add_icon",
-        "foxhole_stockpiles.commands.add_mod.add_mod",
-        "foxhole_stockpiles.commands.update_config.update_config",
+        # Typer CLI application and command modules
+        "foxhole_stockpiles.cli",
+        "foxhole_stockpiles.cli.app",
+        "foxhole_stockpiles.cli._console",
+        "foxhole_stockpiles.cli.commands.scan",
+        "foxhole_stockpiles.cli.commands.sav",
+        "foxhole_stockpiles.cli.commands.serve",
+        "foxhole_stockpiles.cli.commands.gui",
+        "foxhole_stockpiles.cli.commands.config_cmd",
         # PySide6 dependencies (for GUI)
         "PySide6",
         "PySide6.QtCore",
@@ -164,7 +162,7 @@ def build_executable(project_root: Path) -> bool:
         cmd.extend(["--exclude-module", module])
 
     # Add the main script
-    cmd.append("foxhole_stockpiles/commands/fs/fs.py")
+    cmd.append("foxhole_stockpiles/__main__.py")
 
     print(f"Building with {len(hidden_imports)} hidden imports...")
 

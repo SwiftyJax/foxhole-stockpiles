@@ -123,6 +123,11 @@ select = [
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.flake8-bugbear]
+# Typer relies on calling Option/Argument in parameter defaults; these are
+# effectively immutable sentinels, so B008 should not flag them.
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests", "fs_ocr/tests", "fs_tools/tests"]
 python_files = ["test_*.py"]
@@ -152,7 +157,7 @@ exclude_lines = [
 directory = "htmlcov"
 
 [project.scripts]
-fs = "foxhole_stockpiles.commands.fs.fs:main"
+fs = "foxhole_stockpiles.cli.app:main"
 fs-ocr = "fs_ocr.cli:main"
 fs-tools = "fs_tools.cli:main"
 
