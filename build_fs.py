@@ -65,7 +65,6 @@ def get_hidden_imports() -> list[str]:
         "foxhole_stockpiles.cli.commands.sav",
         "foxhole_stockpiles.cli.commands.serve",
         "foxhole_stockpiles.cli.commands.gui",
-        "foxhole_stockpiles.cli.commands.config_cmd",
         # PySide6 dependencies (for GUI)
         "PySide6",
         "PySide6.QtCore",

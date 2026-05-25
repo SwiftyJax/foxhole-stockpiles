@@ -1272,9 +1272,10 @@ class TestDebugImageWindowSettings:
         Args:
             debug_window: Window fixture.
         """
-        from foxhole_stockpiles.core.settings import get_settings
-
-        scanner_settings = get_settings().scanner
+        from fs_ocr._impl.template_manager import (
+            DEFAULT_MAX_NCC_CANDIDATES,
+            DEFAULT_PHASH_THRESHOLD,
+        )
 
         widget = debug_window._create_settings_widget()
         # Keep widget reference to prevent Qt from deleting it
@@ -1282,8 +1283,8 @@ class TestDebugImageWindowSettings:
 
         assert debug_window.phash_spinbox is not None
         assert debug_window.ncc_spinbox is not None
-        assert debug_window.phash_spinbox.value() == scanner_settings.phash_threshold
-        assert debug_window.ncc_spinbox.value() == scanner_settings.max_ncc_candidates
+        assert debug_window.phash_spinbox.value() == DEFAULT_PHASH_THRESHOLD
+        assert debug_window.ncc_spinbox.value() == DEFAULT_MAX_NCC_CANDIDATES
 
     def test_create_settings_widget_custom_values(
         self,

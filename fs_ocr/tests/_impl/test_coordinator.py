@@ -23,7 +23,7 @@ from foxhole_stockpiles.models.match_result import MatchResult
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
 from foxhole_stockpiles.models.stockpile_item import StockpileItem
-from fs_ocr._impl.coordinator import OCRCoordinator
+from fs_ocr._impl.coordinator import DEFAULT_CUSTOM_MODEL, OCRCoordinator
 from fs_ocr._impl.detector import StockpileDetector
 
 
@@ -84,8 +84,8 @@ class TestOCRCoordinatorInitialization:
         assert coordinator._template_manager is not None
         assert coordinator._stockpile_type_classifier is not None
 
-    def test_init_with_custom_model(self, tmp_path: Path) -> None:
-        """Test initializing OCRCoordinator with custom OCR model.
+    def test_init_uses_default_model(self, tmp_path: Path) -> None:
+        """Test that OCRCoordinator uses the fixed default OCR model.
 
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
@@ -93,15 +93,11 @@ class TestOCRCoordinatorInitialization:
         db_path = tmp_path / "test.h5"
         db_path.touch()
 
-        config = ScannerSettings(
-            database_path=db_path,
-            custom_model="custom_model",
-            tessdata_path="/path/to/tessdata",
-        )
+        config = ScannerSettings(database_path=db_path)
 
         coordinator = OCRCoordinator(config)
 
-        assert coordinator._text_extractor.custom_model == "custom_model"
+        assert coordinator._text_extractor.custom_model == DEFAULT_CUSTOM_MODEL
 
 
 class TestExtractIconToFolder:
@@ -2398,10 +2394,7 @@ class TestFrozenBundlePath:
         db_path = tmp_path / "test.h5"
         db_path.touch()
 
-        config = ScannerSettings(
-            database_path=db_path,
-            tessdata_path="tessdata",
-        )
+        config = ScannerSettings(database_path=db_path)
 
         # Mock is_frozen to return True
         with (

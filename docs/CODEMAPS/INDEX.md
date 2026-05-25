@@ -88,7 +88,6 @@ Unified CLI dispatcher with subcommands:
 - **add_icon/add_icon.py** - `fs add-icon` - add single icon
 - **candidate_inspector/candidate_inspector.py** - `fs inspect` - debug matching
 - **gui/gui.py** - `fs-gui` - launch PySide6 desktop application
-- **update_config/update_config.py** - `fs config` - config management
 
 ### 4. **models/** - Data Models (Pydantic v2)
 Request/response and internal models:

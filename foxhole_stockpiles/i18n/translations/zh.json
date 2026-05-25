@@ -1,7 +1,6 @@
 {
   "language_name": "中文",
   "language_code": "zh",
-
   "common": {
     "cancel": "取消",
     "save": "保存",
@@ -26,7 +25,6 @@
     },
     "image_filter": "图片 (*.png *.jpg *.jpeg);;所有文件 (*)"
   },
-
   "main_window": {
     "title": "FS (Foxhole Stockpiles) - v{version}",
     "menu": {
@@ -48,7 +46,6 @@
       "no_database_message": "未配置数据库。请先在设置中配置数据库路径。"
     }
   },
-
   "about": {
     "title": "关于 FS",
     "app_name": "FS (Foxhole Stockpiles)",
@@ -64,7 +61,6 @@
     "copyright": "版权所有 © 2024 Xurxogr",
     "license": "根据 MIT 许可证授权"
   },
-
   "server_panel": {
     "sav_group_title": "SAV 处理",
     "server_group_title": "服务器",
@@ -97,7 +93,6 @@
       "status_monitoring": "监视中..."
     }
   },
-
   "config_window": {
     "title": "配置",
     "tip_hover": "提示：将鼠标悬停在标签上获取帮助",
@@ -105,8 +100,6 @@
       "api_server": "API 服务器",
       "scanner": "扫描器",
       "output": "输出",
-      "ocr": "OCR",
-      "templates": "模板",
       "stockpile_types": "仓库类型",
       "notifications": "通知",
       "sav_processing": "SAV 处理",
@@ -125,7 +118,6 @@
       "saved_successfully": "配置保存成功！"
     }
   },
-
   "api_server_tab": {
     "server_settings": "服务器设置",
     "host": "主机：",
@@ -158,7 +150,6 @@
     "token": "令牌：",
     "token_tooltip": "API 身份验证所需的密钥令牌。\n此令牌应妥善保管并在 Authorization 头中发送。"
   },
-
   "scanner_tab": {
     "database_path": "数据库路径：",
     "database_path_placeholder": "模板数据库路径（.h5 文件）",
@@ -172,27 +163,15 @@
     "screenshots_folder": "截图文件夹：",
     "screenshots_folder_placeholder": "可选：保存截图的文件夹",
     "screenshots_folder_tooltip": "自动保存已处理截图的可选文件夹。\n\n设置后，扫描的图像将保存到按日期命名的子文件夹（YYYY-MM-DD）\n格式：日期_时间_存储类型_名称_分辨率.png\n\n留空以禁用截图归档。",
-    "max_ncc": "最大 NCC 候选数：",
-    "max_ncc_tooltip": "使用 NCC（归一化互相关）评估的模板候选项最大数量。\n\n在感知哈希预过滤后，这限制了详细匹配。\n较高的值更准确但更慢。推荐：25。",
-    "phash_threshold": "pHash 阈值：",
-    "phash_tooltip": "用于模板预过滤的感知哈希距离阈值。\n\n较低的值（0-10）更严格，较高的值（10-20）更宽松。\n太低可能会遗漏有效物品，太高会减慢匹配速度。\n推荐：12 以平衡速度和准确性。",
-    "tiebreaker_threshold": "NCC 平局决胜阈值：",
-    "tiebreaker_tooltip": "当最佳 NCC 匹配在此置信度阈值内时，使用平均像素差异作为平局决胜。\n\n帮助区分视觉上相似的物品（例如，组装材料 V 与 VIII）。\n设置为 0.0 以禁用平局决胜。\n推荐：0.002。",
     "debug_mode": "调试模式：",
     "debug_mode_checkbox": "扫描时保存调试图像",
     "debug_mode_tooltip": "保存显示检测过程的调试图像。\n\n保存到当前目录：\n- stockpile_detection_result.png - 带检测框的原始图像\n- stockpile_quantities_result.png - 数量合成图像\n- stockpile_name_region.png - 提取的名称区域\n- stockpile_type_region.png - 提取的类型区域\n- stockpile_shard.png - 提取的分片区域\n\n对排除检测问题很有用。",
     "extract_icons": "提取图标：",
     "extract_icons_checkbox": "保存检测到的物品图标",
     "extract_icons_tooltip": "将每个检测到的物品图标保存为单独的图像文件。\n\n图标保存到 './icons/' 文件夹，格式：'XXX_代码.png'\n其中 XXX 是图标索引（000、001 等），代码是检测到的物品。\n\n开发设置 - 对创建新模板或调试检测很有用。",
-    "custom_model": "自定义 OCR 模型：",
-    "custom_model_tooltip": "关键：用于数字识别的自定义 Tesseract OCR 模型。\n\n默认：'renner_numbers'（针对 Foxhole 仓库数字优化）。\n更改此设置可能导致数字识别完全失败。",
-    "tessdata_path": "Tessdata 路径：",
-    "tessdata_tooltip": "关键：Tesseract OCR 数据文件目录的路径。\n\n默认：'./tessdata'（与应用程序捆绑）。\n错误的路径将导致 OCR 文本识别失败。",
     "select_database": "选择模板数据库",
-    "select_tessdata": "选择 Tessdata 目录",
     "select_screenshots": "选择截图目录"
   },
-
   "output_tab": {
     "description": "配置扫描结果的输出处理器。\n您可以添加多个处理器将结果发送到不同的目的地。",
     "handlers_group": "输出处理器",
@@ -233,7 +212,6 @@
     "remove_handler_title": "移除处理器",
     "remove_handler_message": "您确定要移除 '{name}' 吗？"
   },
-
   "notifications_tab": {
     "description": "配置 Discord webhook 以接收有关仓库扫描和服务器事件的通知。\n您可以添加具有不同设置的多个通知器。",
     "enable_notifications": "启用通知",
@@ -274,7 +252,6 @@
     "remove_notifier_title": "移除通知器",
     "remove_notifier_message": "您确定要移除 '{name}' 吗？"
   },
-
   "gui_tab": {
     "config_level_group": "配置级别",
     "level": "级别：",
@@ -291,7 +268,6 @@
     "language": "语言：",
     "language_tooltip": "选择界面语言。"
   },
-
   "logging_tab": {
     "root_level": "根日志级别：",
     "root_level_tooltip": "所有日志记录器的全局默认日志级别。\n\n低于此级别的消息将被过滤，除非\n自定义日志记录器覆盖它。",
@@ -310,67 +286,11 @@
     "logger_placeholder": "例如：uvicorn.access",
     "select_log_file": "选择日志文件"
   },
-
-  "ocr_tab": {
-    "warning_header": "⚠️ <b>高级设置：</b>OCR 设置定义了仓库检测的布局尺寸。这些从 2160p 基准分辨率缩放。<b style='color: #d32f2f;'>错误的值将导致检测完全失败。</b>",
-    "reset_all": "全部重置为默认值",
-    "reset_title": "重置 OCR 设置",
-    "reset_message": "将所有 OCR 设置重置为默认值？\n\n这将恢复布局检测的出厂默认值。",
-    "base_height": "基准高度：",
-    "base_height_tooltip": "用于布局计算的基准屏幕分辨率高度。\n\n所有布局尺寸都从此基准（2160p）缩放。\n默认：2160（用于 4K 截图）。",
-    "box_width": "框宽度：",
-    "box_width_tooltip": "仓库网格中每个数量框的宽度。\n\n以基准分辨率的像素为单位测量。\n错误的值将导致检测失败。",
-    "box_height": "框高度：",
-    "box_height_tooltip": "仓库网格中每个数量框的高度。\n\n以基准分辨率的像素为单位测量。\n错误的值将导致检测失败。",
-    "column_offset": "列偏移：",
-    "column_offset_tooltip": "仓库网格中列之间的水平间距。\n\n以基准分辨率的像素为单位测量。\n影响扫描器从一列移动到下一列的方式。",
-    "row_offset": "行偏移：",
-    "row_offset_tooltip": "仓库网格中行之间的垂直间距。\n\n以基准分辨率的像素为单位测量。\n影响扫描器从一行移动到下一行的方式。",
-    "group_offset": "组偏移：",
-    "group_offset_tooltip": "仓库组之间的垂直间距。\n\n以基准分辨率的像素为单位测量。\n当多个仓库部分垂直堆叠时使用。",
-    "title_margin": "标题边距：",
-    "title_margin_tooltip": "仓库标题文本周围的边距。\n\n用于检测和提取仓库名称。\n影响标题区域边界检测。",
-    "title_min_width": "标题最小宽度：",
-    "title_min_width_tooltip": "有效标题区域的最小宽度。\n\n帮助过滤掉错误的标题检测。\n太低可能包含噪声，太高可能跳过短标题。",
-    "title_height": "标题高度：",
-    "title_height_tooltip": "仓库标题文本的预期高度。\n\n用于标题区域提取。\n应与基准分辨率下游戏的标题字体大小匹配。",
-    "icon_to_quantity_offset": "图标到数量偏移：",
-    "icon_to_quantity_tooltip": "从数量框到物品图标的水平偏移（图标在左侧）。\n\n以基准分辨率的像素为单位测量。\n用于定位物品图标相对于其数量框的位置。",
-    "gray_lower": "灰度下限阈值：",
-    "gray_lower_tooltip": "数量框检测的灰度下限阈值（0-255）。\n\n取决于用户的屏幕伽马设置。\n典型范围：15-98。如果数量框检测不正确，请调整。",
-    "gray_upper": "灰度上限阈值：",
-    "gray_upper_tooltip": "数量框检测的灰度上限阈值（0-255）。\n\n取决于用户的屏幕伽马设置。\n典型范围：15-98。如果数量框检测不正确，请调整。",
-    "pixel_diff_tolerance": "像素差异容差：",
-    "pixel_diff_tooltip": "任何检测计算的允许像素变化。\n\n考虑不同分辨率下的轻微位置偏移。\n示例：图标列对齐可能因分辨率而异 1-2 像素。"
-  },
-
-  "template_tab": {
-    "warning_header": "⚠️ <b>高级设置：</b>模板设置配置箱子叠加颜色转换。这些值在生成物品图标的装箱版本时使用。<b style='color: #d32f2f;'>错误的值将破坏模板生成。</b>",
-    "reset_all": "全部重置为默认值",
-    "reset_title": "重置模板设置",
-    "reset_message": "将所有模板设置重置为默认值？\n\n这将恢复箱子颜色转换的出厂默认值。",
-    "multipliers_group": "RGB 乘数 (0-255)",
-    "offsets_group": "RGB 偏移 (0-255)",
-    "red_mult": "红色乘数：",
-    "red_mult_tooltip": "箱子叠加颜色转换的红色通道乘数。\n\n值 0-255，处理时将除以 255。\n控制装箱物品图标中保留多少红色通道。",
-    "green_mult": "绿色乘数：",
-    "green_mult_tooltip": "箱子叠加颜色转换的绿色通道乘数。\n\n值 0-255，处理时将除以 255。\n控制装箱物品图标中保留多少绿色通道。",
-    "blue_mult": "蓝色乘数：",
-    "blue_mult_tooltip": "箱子叠加颜色转换的蓝色通道乘数。\n\n值 0-255，处理时将除以 255。\n控制装箱物品图标中保留多少蓝色通道。",
-    "red_offset": "红色偏移：",
-    "red_offset_tooltip": "乘法后添加的红色通道偏移。\n\n值 0-255。调整装箱物品图标的基准红色级别。\n用于匹配棕色箱子叠加颜色。",
-    "green_offset": "绿色偏移：",
-    "green_offset_tooltip": "乘法后添加的绿色通道偏移。\n\n值 0-255。调整装箱物品图标的基准绿色级别。\n用于匹配棕色箱子叠加颜色。",
-    "blue_offset": "蓝色偏移：",
-    "blue_offset_tooltip": "乘法后添加的蓝色通道偏移。\n\n值 0-255。调整装箱物品图标的基准蓝色级别。\n用于匹配棕色箱子叠加颜色。"
-  },
-
   "stockpile_types_tab": {
     "description": "为仓库类型名称添加自定义别名以处理 OCR 错误。\n输入逗号分隔的值（例如 'seapon, Seapont, 5eaport'）。\n默认翻译已内置，无需在此添加。",
     "aliases_group": "附加别名",
     "alias_placeholder": "输入逗号分隔的别名..."
   },
-
   "sav_processing_tab": {
     "sav_file_label": "SAV 文件路径：",
     "sav_file_tooltip": "要处理的 Foxhole 存档文件 (.sav) 的路径。\n\n此文件通常位于：\nWindows：%LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL：/mnt/c/Users/<用户名>/AppData/Local/Foxhole/Saved/SaveGames/\n\n查找名为 *_MapData.sav 的文件",

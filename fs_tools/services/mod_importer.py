@@ -15,6 +15,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from foxhole_stockpiles.core.settings import AppSettings
+from foxhole_stockpiles.core.settings.sections.templates import TemplateSettings
 from foxhole_stockpiles.core.utils import load_catalog
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.mod_import_config import ModImportConfig
@@ -713,5 +714,5 @@ def create_config_from_settings(
         converter_tool=external_tools.umodel,
         database_path=settings.scanner.database_path,
         target_resolutions=db_builder.target_resolutions,
-        template_settings=settings.templates,
+        template_settings=TemplateSettings(),
     )

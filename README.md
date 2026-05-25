@@ -100,9 +100,6 @@ Manually adds individual icons to existing template databases without rebuilding
 ### fs add-mod
 Adds all icons from a mod's PAK file(s) to the template database in one command. Runs the complete pipeline: extracting assets, generating templates, and merging into the database.
 
-### fs update-config
-Updates `.fs_config` configuration files to the latest format version with automatic migration.
-
 ### fs gui / fs-gui
 Launches the PySide6 graphical user interface for managing configurations and running scans. Provides a user-friendly interface for non-technical users.
 
@@ -662,7 +659,8 @@ The main `fs` command (Typer-based) exposes these subcommands — run `fs <comma
 - `fs serve` (aliases `server`, `api`) - Run the HTTP API server
 - `fs sav` (alias `process-sav`) - Process Foxhole save files
 - `fs gui` (aliases `ui`, `app`) - Launch the graphical user interface
-- `fs update-config` (alias `update`) - Migrate configuration files
+
+Configuration files are migrated to the latest format automatically whenever settings are loaded; no manual migration step is required.
 
 The asset/database tooling lives in the separate `fs-tools` command, with detailed documentation in each tool's directory:
 

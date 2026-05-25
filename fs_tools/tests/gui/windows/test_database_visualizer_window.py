@@ -922,13 +922,13 @@ class TestDatabaseVisualizerWindowReplaceIcon:
         mock_pil_image.mode = "RGB"
         mock_pil_image.size = (32, 32)
 
-        # Mock get_settings to return proper OCR settings
+        # Mock OCRSettings to return proper OCR settings
         mock_settings = MagicMock()
-        mock_settings.ocr.box_height = 64
-        mock_settings.ocr.height = 2160
+        mock_settings.box_height = 64
+        mock_settings.height = 2160
 
         with patch(
-            "fs_tools.gui.windows.database_visualizer_window.get_settings",
+            "fs_tools.gui.windows.database_visualizer_window.OCRSettings",
             return_value=mock_settings,
         ):
             with patch(
@@ -985,13 +985,13 @@ class TestDatabaseVisualizerWindowReplaceIcon:
 
         mock_background = MagicMock()
 
-        # Mock get_settings to return proper OCR settings
+        # Mock OCRSettings to return proper OCR settings
         mock_settings = MagicMock()
-        mock_settings.ocr.box_height = 64
-        mock_settings.ocr.height = 2160
+        mock_settings.box_height = 64
+        mock_settings.height = 2160
 
         with patch(
-            "fs_tools.gui.windows.database_visualizer_window.get_settings",
+            "fs_tools.gui.windows.database_visualizer_window.OCRSettings",
             return_value=mock_settings,
         ):
             with patch(
@@ -1052,13 +1052,13 @@ class TestDatabaseVisualizerWindowReplaceIcon:
         mock_converted.size = (32, 32)
         mock_pil_image.convert.return_value = mock_converted
 
-        # Mock get_settings to return proper OCR settings
+        # Mock OCRSettings to return proper OCR settings
         mock_settings = MagicMock()
-        mock_settings.ocr.box_height = 64
-        mock_settings.ocr.height = 2160
+        mock_settings.box_height = 64
+        mock_settings.height = 2160
 
         with patch(
-            "fs_tools.gui.windows.database_visualizer_window.get_settings",
+            "fs_tools.gui.windows.database_visualizer_window.OCRSettings",
             return_value=mock_settings,
         ):
             with patch(
@@ -1116,13 +1116,13 @@ class TestDatabaseVisualizerWindowReplaceIcon:
         mock_resized.size = (32, 32)
         mock_pil_image.resize.return_value = mock_resized
 
-        # Mock get_settings to return proper OCR settings
+        # Mock OCRSettings to return proper OCR settings
         mock_settings = MagicMock()
-        mock_settings.ocr.box_height = 64
-        mock_settings.ocr.height = 2160
+        mock_settings.box_height = 64
+        mock_settings.height = 2160
 
         with patch(
-            "fs_tools.gui.windows.database_visualizer_window.get_settings",
+            "fs_tools.gui.windows.database_visualizer_window.OCRSettings",
             return_value=mock_settings,
         ):
             with patch(
@@ -1175,13 +1175,13 @@ class TestDatabaseVisualizerWindowReplaceIcon:
         mock_pil_image.mode = "RGB"
         mock_pil_image.size = (32, 32)
 
-        # Mock get_settings to return proper OCR settings
+        # Mock OCRSettings to return proper OCR settings
         mock_settings = MagicMock()
-        mock_settings.ocr.box_height = 64
-        mock_settings.ocr.height = 2160
+        mock_settings.box_height = 64
+        mock_settings.height = 2160
 
         with patch(
-            "fs_tools.gui.windows.database_visualizer_window.get_settings",
+            "fs_tools.gui.windows.database_visualizer_window.OCRSettings",
             return_value=mock_settings,
         ):
             with patch(
@@ -1443,13 +1443,13 @@ class TestDatabaseVisualizerWindowDeleteIcon:
         visualizer_window.all_databases = {SupportedResolution.R_1080: mock_database}
         visualizer_window.database = mock_database
 
-        # Mock get_settings to return proper OCR settings
+        # Mock OCRSettings to return proper OCR settings
         mock_settings = MagicMock()
-        mock_settings.ocr.box_height = 64
-        mock_settings.ocr.height = 2160
+        mock_settings.box_height = 64
+        mock_settings.height = 2160
 
         with patch(
-            "fs_tools.gui.windows.database_visualizer_window.get_settings",
+            "fs_tools.gui.windows.database_visualizer_window.OCRSettings",
             return_value=mock_settings,
         ):
             with patch(
@@ -1484,13 +1484,13 @@ class TestDatabaseVisualizerWindowDeleteIcon:
         visualizer_window.database_path = "/tmp/test.h5"
         visualizer_window.all_databases = {SupportedResolution.R_1080: MagicMock()}
 
-        # Mock get_settings to return proper OCR settings
+        # Mock OCRSettings to return proper OCR settings
         mock_settings = MagicMock()
-        mock_settings.ocr.box_height = 64
-        mock_settings.ocr.height = 2160
+        mock_settings.box_height = 64
+        mock_settings.height = 2160
 
         with patch(
-            "fs_tools.gui.windows.database_visualizer_window.get_settings",
+            "fs_tools.gui.windows.database_visualizer_window.OCRSettings",
             return_value=mock_settings,
         ):
             with patch(

@@ -257,8 +257,6 @@ async def main() -> dict[str, Any] | None:
             crated=crated_filter,
             code=code_filter,
             excluded_codes=excluded_codes_filter,
-            phash_threshold=scanner_settings.phash_threshold,
-            max_ncc_candidates=scanner_settings.max_ncc_candidates,
             early_exit_threshold=scanner_settings.early_exit_threshold,
             top_n=args.top,
         )

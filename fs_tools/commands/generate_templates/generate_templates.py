@@ -755,7 +755,7 @@ async def main() -> None:
             assets_path=args.assets,
             template_path=args.templates,
             filter_name=args.filter,
-            template_settings=settings.templates,
+            template_settings=TemplateSettings(),
         )
 
         success = await generator.generate_all_templates()

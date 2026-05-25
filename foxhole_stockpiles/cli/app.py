@@ -11,7 +11,7 @@ import typer
 
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.cli._console import attach_console
-from foxhole_stockpiles.cli.commands import config_cmd, gui, sav, scan, serve
+from foxhole_stockpiles.cli.commands import gui, sav, scan, serve
 
 # Subcommand names that launch the GUI; the console is not attached for these.
 _GUI_COMMANDS = frozenset({"gui", "ui", "app"})
@@ -39,10 +39,6 @@ app.add_typer(serve.app, name="api", hidden=True)
 app.add_typer(gui.app, name="gui")
 app.add_typer(gui.app, name="ui", hidden=True)
 app.add_typer(gui.app, name="app", hidden=True)
-
-# update-config (canonical) + update (alias)
-app.add_typer(config_cmd.app, name="update-config")
-app.add_typer(config_cmd.app, name="update", hidden=True)
 
 
 @app.callback(invoke_without_command=True)

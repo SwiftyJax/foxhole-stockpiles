@@ -15,6 +15,7 @@ from pathlib import Path
 
 from foxhole_stockpiles.core.logging import setup_logging
 from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.core.settings.sections.templates import TemplateSettings
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.models.mod_import_config import ModImportConfig
 from foxhole_stockpiles.models.mod_import_progress import ModImportProgress
@@ -292,7 +293,7 @@ Prerequisites:
         converter_tool=converter_tool,
         database_path=database_path,
         target_resolutions=target_resolutions,
-        template_settings=settings.templates,
+        template_settings=TemplateSettings(),
         database_workers=workers,
         extract_dir=args.extract_dir,
         extract_only=args.extract_only,

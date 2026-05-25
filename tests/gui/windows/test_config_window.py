@@ -16,12 +16,10 @@ from foxhole_stockpiles.core.settings.sections import (
     ExternalToolsSettings,
     LoggingSettings,
     NotificationsSettings,
-    OCRSettings,
     OutputSettings,
     SavProcessingSettings,
     ScannerSettings,
     StockpileTypesSettings,
-    TemplateSettings,
 )
 from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.config_level import ConfigLevel
@@ -59,8 +57,6 @@ def mock_config_manager() -> Any:
         default_settings.api_auth = APIAuthSettings()
         default_settings.scanner = ScannerSettings()
         default_settings.output = OutputSettings()
-        default_settings.ocr = OCRSettings()
-        default_settings.templates = TemplateSettings()
         default_settings.external_tools = ExternalToolsSettings()
         default_settings.database_builder = DatabaseBuilderSettings()
         default_settings.logging = LoggingSettings()
@@ -110,8 +106,6 @@ def test_config_window_has_all_tabs(config_window: ConfigWindow) -> None:
     assert config_window.api_server_tab is not None
     assert config_window.scanner_tab is not None
     assert config_window.output_tab is not None
-    assert config_window.ocr_tab is not None
-    assert config_window.template_tab is not None
     assert config_window.logging_tab is not None
 
 
@@ -154,13 +148,13 @@ def test_config_window_config_level_tabs(qtbot: Any, mock_config_manager: MagicM
     qtbot.addWidget(window2)
     assert window2.tab_widget.count() == 8
 
-    # Test DEVELOPER level (10 tabs: + OCR, Templates)
+    # Test DEVELOPER level (8 tabs: same sections as ADVANCED)
     settings.gui = GUISettings(config_level=ConfigLevel.DEVELOPER)
     mock_config_manager.load_config.return_value = settings
 
     window3 = ConfigWindow()
     qtbot.addWidget(window3)
-    assert window3.tab_widget.count() == 10
+    assert window3.tab_widget.count() == 8
     assert window3.tab_widget.tabText(0) == t("config_window.tabs.api_server")
 
 
@@ -309,8 +303,7 @@ def test_config_window_collect_settings_preserves_types(config_window: ConfigWin
 
     # Should return AppSettings instance with proper types
     assert isinstance(settings, AppSettings)
-    assert isinstance(settings.ocr, OCRSettings)
-    assert isinstance(settings.templates, TemplateSettings)
+    assert isinstance(settings.scanner, ScannerSettings)
     assert isinstance(settings.logging, LoggingSettings)
 
 
@@ -329,8 +322,6 @@ def test_config_window_collect_settings_all_sections(config_window: ConfigWindow
     assert isinstance(settings.api_auth, APIAuthSettings)
     assert isinstance(settings.scanner, ScannerSettings)
     assert isinstance(settings.output, OutputSettings)
-    assert isinstance(settings.ocr, OCRSettings)
-    assert isinstance(settings.templates, TemplateSettings)
     assert isinstance(settings.database_builder, DatabaseBuilderSettings)
     assert isinstance(settings.logging, LoggingSettings)
 

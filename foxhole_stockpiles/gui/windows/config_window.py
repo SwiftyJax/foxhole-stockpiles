@@ -25,12 +25,10 @@ from foxhole_stockpiles.gui.widgets.config_tabs.api_server_tab import APIServerT
 from foxhole_stockpiles.gui.widgets.config_tabs.gui_tab import GUITab
 from foxhole_stockpiles.gui.widgets.config_tabs.logging_tab import LoggingTab
 from foxhole_stockpiles.gui.widgets.config_tabs.notifications_tab import NotificationsTab
-from foxhole_stockpiles.gui.widgets.config_tabs.ocr_tab import OCRTab
 from foxhole_stockpiles.gui.widgets.config_tabs.output_tab import OutputTab
 from foxhole_stockpiles.gui.widgets.config_tabs.sav_processing_tab import SavProcessingTab
 from foxhole_stockpiles.gui.widgets.config_tabs.scanner_tab import ScannerTab
 from foxhole_stockpiles.gui.widgets.config_tabs.stockpile_types_tab import StockpileTypesTab
-from foxhole_stockpiles.gui.widgets.config_tabs.template_tab import TemplateTab
 from foxhole_stockpiles.i18n import (
     get_translator,
     off_language_changed,
@@ -87,8 +85,6 @@ class ConfigWindow(QMainWindow):
         self.api_server_tab = APIServerTab()
         self.scanner_tab = ScannerTab()
         self.output_tab = OutputTab()
-        self.ocr_tab = OCRTab()
-        self.template_tab = TemplateTab()
         self.logging_tab = LoggingTab()
         self.gui_tab = GUITab()
         self.stockpile_types_tab = StockpileTypesTab()
@@ -138,11 +134,6 @@ class ConfigWindow(QMainWindow):
         self.tab_widget.addTab(self.scanner_tab, t("config_window.tabs.scanner"))
         self.tab_widget.addTab(self.output_tab, t("config_window.tabs.output"))
 
-        # Developer-only tabs
-        if level.is_at_least(ConfigLevel.DEVELOPER):
-            self.tab_widget.addTab(self.ocr_tab, t("config_window.tabs.ocr"))
-            self.tab_widget.addTab(self.template_tab, t("config_window.tabs.templates"))
-
         # Advanced and Developer tabs
         if level.is_at_least(ConfigLevel.ADVANCED):
             self.tab_widget.addTab(
@@ -191,8 +182,6 @@ class ConfigWindow(QMainWindow):
         self.api_server_tab.set_values(self.settings.api_server, self.settings.api_auth)
         self.scanner_tab.set_values(self.settings.scanner)
         self.output_tab.set_values(self.settings.output)
-        self.ocr_tab.set_values(self.settings.ocr)
-        self.template_tab.set_values(self.settings.templates)
         self.logging_tab.set_values(self.settings.logging)
         self.gui_tab.set_values(self.settings.gui)
         self.stockpile_types_tab.set_values(self.settings.stockpile_types)
@@ -215,8 +204,6 @@ class ConfigWindow(QMainWindow):
             api_auth=self.api_server_tab.get_auth_values(),
             scanner=self.scanner_tab.get_values(),
             output=self.output_tab.get_values(),
-            ocr=self.ocr_tab.get_values(),
-            templates=self.template_tab.get_values(),
             external_tools=defaults.external_tools,
             database_builder=defaults.database_builder,
             logging=self.logging_tab.get_values(),

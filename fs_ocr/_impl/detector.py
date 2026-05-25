@@ -6,7 +6,6 @@ import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.models.stockpile_image_regions import StockpileImageRegions
 
@@ -25,7 +24,7 @@ class StockpileDetector:
             image: Image data as numpy array (RGB format)
             settings: OCR settings or None
         """
-        self._settings = settings if settings else get_settings().ocr
+        self._settings = settings if settings else OCRSettings()
 
         self._logger = logging.getLogger(__name__)
 

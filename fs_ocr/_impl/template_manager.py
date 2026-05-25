@@ -26,6 +26,12 @@ from fs_ocr._impl.template_database import DATABASE_VERSION, TemplateDatabase
 
 logger = logging.getLogger(__name__)
 
+# Icon-matching tuning defaults. These are no longer user-configurable via
+# settings; they are fixed here and reused by every caller of match_icon.
+DEFAULT_PHASH_THRESHOLD = 15
+DEFAULT_MAX_NCC_CANDIDATES = 50
+DEFAULT_NCC_TIEBREAKER_THRESHOLD = 0.003
+
 
 def _prepare_resolution_data(
     resolution: SupportedResolution, database: TemplateDatabase
@@ -558,11 +564,11 @@ class TemplateManager:
         crated: bool | None = None,
         code: str | None = None,
         excluded_codes: list[str] | None = None,
-        phash_threshold: int = 12,
-        max_ncc_candidates: int = 25,
+        phash_threshold: int = DEFAULT_PHASH_THRESHOLD,
+        max_ncc_candidates: int = DEFAULT_MAX_NCC_CANDIDATES,
         early_exit_threshold: float = 0.0,
         confidence_gap: float = 0.0,
-        ncc_tiebreaker_threshold: float = 0.0,
+        ncc_tiebreaker_threshold: float = DEFAULT_NCC_TIEBREAKER_THRESHOLD,
         top_n: int = 5,
     ) -> MatchResult:
         """Get candidates and optionally perform icon matching.

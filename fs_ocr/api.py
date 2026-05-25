@@ -82,8 +82,6 @@ class OCRScanner:
         # Convert to ScannerSettings for the coordinator
         scanner_settings = ScannerSettings(
             database_path=config.database_path,
-            tessdata_path=config.tessdata_path,
-            custom_model=config.custom_model,
             template_cache_size=config.template_cache_size,
             early_exit_threshold=config.early_exit_threshold,
             confidence_gap=config.confidence_gap,

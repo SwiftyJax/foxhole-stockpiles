@@ -14,7 +14,6 @@ from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections.database_builder import DatabaseBuilderSettings
 from foxhole_stockpiles.core.settings.sections.external_tools import ExternalToolsSettings
 from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
-from foxhole_stockpiles.core.settings.sections.templates import TemplateSettings
 from foxhole_stockpiles.models.mod_import_progress import ModImportProgress
 from foxhole_stockpiles.models.mod_import_result import ModImportResult
 from fs_tools.gui.utils.icon_import_worker import IconImportWorker
@@ -53,7 +52,6 @@ def mock_settings(tmp_path: Path) -> AppSettings:
         scanner=ScannerSettings(
             database_path=database_path,
         ),
-        templates=TemplateSettings(),
     )
 
 

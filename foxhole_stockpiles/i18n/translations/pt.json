@@ -1,7 +1,6 @@
 {
   "language_name": "Português",
   "language_code": "pt",
-
   "common": {
     "cancel": "Cancelar",
     "save": "Guardar",
@@ -26,7 +25,6 @@
     },
     "image_filter": "Imagens (*.png *.jpg *.jpeg);;Todos os ficheiros (*)"
   },
-
   "main_window": {
     "title": "FS (Foxhole Stockpiles) - v{version}",
     "menu": {
@@ -48,7 +46,6 @@
       "no_database_message": "Nenhuma base de dados configurada. Por favor, configure primeiro um caminho de base de dados nas definições."
     }
   },
-
   "about": {
     "title": "Sobre o FS",
     "app_name": "FS (Foxhole Stockpiles)",
@@ -64,7 +61,6 @@
     "copyright": "Copyright © 2024 Xurxogr",
     "license": "Licenciado sob a Licença MIT"
   },
-
   "server_panel": {
     "sav_group_title": "Processamento SAV",
     "server_group_title": "Servidor",
@@ -97,7 +93,6 @@
       "status_monitoring": "A monitorizar..."
     }
   },
-
   "config_window": {
     "title": "Configuração",
     "tip_hover": "Dica: Passe o rato sobre as etiquetas para obter ajuda",
@@ -105,8 +100,6 @@
       "api_server": "Servidor API",
       "scanner": "Digitalizador",
       "output": "Saída",
-      "ocr": "OCR",
-      "templates": "Modelos",
       "stockpile_types": "Tipos de armazém",
       "notifications": "Notificações",
       "sav_processing": "Processamento SAV",
@@ -125,7 +118,6 @@
       "saved_successfully": "Configuração guardada com sucesso!"
     }
   },
-
   "api_server_tab": {
     "server_settings": "Definições do servidor",
     "host": "Anfitrião:",
@@ -158,7 +150,6 @@
     "token": "Token:",
     "token_tooltip": "Token secreto necessário para autenticação da API.\nEste token deve ser mantido seguro e enviado no cabeçalho Authorization."
   },
-
   "scanner_tab": {
     "database_path": "Caminho da base de dados:",
     "database_path_placeholder": "Caminho para a base de dados de modelos (ficheiro .h5)",
@@ -172,27 +163,15 @@
     "screenshots_folder": "Pasta de capturas:",
     "screenshots_folder_placeholder": "Opcional: pasta para guardar capturas",
     "screenshots_folder_tooltip": "Pasta opcional para guardar automaticamente capturas processadas.\n\nQuando definido, as imagens digitalizadas são guardadas em subpastas diárias (AAAA-MM-DD)\ncom formato: Data_Hora_TipoArmazém_Nome_Resolução.png\n\nDeixe vazio para desativar o arquivo de capturas.",
-    "max_ncc": "Máx. candidatos NCC:",
-    "max_ncc_tooltip": "Número máximo de candidatos de modelos a avaliar com NCC (Correlação Cruzada Normalizada).\n\nApós a pré-filtragem por hash percetual, isto limita a correspondência detalhada.\nValores mais altos são mais precisos mas mais lentos. Recomendado: 25.",
-    "phash_threshold": "Limiar pHash:",
-    "phash_tooltip": "Limiar de distância de hash percetual para pré-filtragem de modelos.\n\nValores mais baixos (0-10) são mais rigorosos, valores mais altos (10-20) são mais permissivos.\nMuito baixo pode perder objetos válidos, muito alto abranda a correspondência.\nRecomendado: 12 para equilíbrio entre velocidade e precisão.",
-    "tiebreaker_threshold": "Limiar de desempate NCC:",
-    "tiebreaker_tooltip": "Quando as melhores correspondências NCC estão dentro deste limiar de confiança, usa a diferença média de píxeis como desempate.\n\nAjuda a distinguir objetos visualmente semelhantes (ex., Materiais de Montagem V vs VIII).\nDefina 0.0 para desativar o desempate.\nRecomendado: 0.002.",
     "debug_mode": "Modo de depuração:",
     "debug_mode_checkbox": "Guardar imagens de depuração durante digitalização",
     "debug_mode_tooltip": "Guardar imagens de depuração mostrando o processo de deteção.\n\nGuarda no diretório atual:\n- stockpile_detection_result.png - Imagem original com caixas de deteção\n- stockpile_quantities_result.png - Imagem composta de quantidades\n- stockpile_name_region.png - Região do nome extraída\n- stockpile_type_region.png - Região do tipo extraída\n- stockpile_shard.png - Região do shard extraída\n\nÚtil para resolver problemas de deteção.",
     "extract_icons": "Extrair ícones:",
     "extract_icons_checkbox": "Guardar imagens de ícones detetados",
     "extract_icons_tooltip": "Guardar cada ícone de objeto detetado como ficheiro de imagem separado.\n\nOs ícones são guardados na pasta './icons/' com formato: 'XXX_CÓDIGO.png'\nonde XXX é o índice do ícone (000, 001, etc.) e CÓDIGO é o objeto detetado.\n\nConfiguração de desenvolvimento - útil para criar novos modelos ou depurar deteção.",
-    "custom_model": "Modelo OCR personalizado:",
-    "custom_model_tooltip": "CRÍTICO: Modelo Tesseract OCR personalizado para reconhecimento de números.\n\nPredefinição: 'renner_numbers' (otimizado para números de armazéns Foxhole).\nAlterar isto pode causar falha completa no reconhecimento de números.",
-    "tessdata_path": "Caminho Tessdata:",
-    "tessdata_tooltip": "CRÍTICO: Caminho para o diretório de ficheiros de dados Tesseract OCR.\n\nPredefinição: './tessdata' (incluído com a aplicação).\nCaminho incorreto causará falha no reconhecimento de texto OCR.",
     "select_database": "Selecionar base de dados de modelos",
-    "select_tessdata": "Selecionar diretório Tessdata",
     "select_screenshots": "Selecionar diretório de capturas"
   },
-
   "output_tab": {
     "description": "Configure handlers de saída para resultados de digitalização.\nPode adicionar múltiplos handlers para enviar resultados para diferentes destinos.",
     "handlers_group": "Handlers de saída",
@@ -233,7 +212,6 @@
     "remove_handler_title": "Remover handler",
     "remove_handler_message": "Tem a certeza de que deseja remover '{name}'?"
   },
-
   "notifications_tab": {
     "description": "Configure webhooks do Discord para receber notificações sobre digitalizações de armazéns\ne eventos do servidor. Pode adicionar múltiplos notificadores com diferentes configurações.",
     "enable_notifications": "Ativar notificações",
@@ -274,7 +252,6 @@
     "remove_notifier_title": "Remover notificador",
     "remove_notifier_message": "Tem a certeza de que deseja remover '{name}'?"
   },
-
   "gui_tab": {
     "config_level_group": "Nível de configuração",
     "level": "Nível:",
@@ -291,7 +268,6 @@
     "language": "Idioma:",
     "language_tooltip": "Selecione o idioma da interface."
   },
-
   "logging_tab": {
     "root_level": "Nível de registo raiz:",
     "root_level_tooltip": "Nível de registo global predefinido para todos os registadores.\n\nMensagens abaixo deste nível são filtradas a menos que\num registador personalizado o sobrescreva.",
@@ -310,67 +286,11 @@
     "logger_placeholder": "ex., uvicorn.access",
     "select_log_file": "Selecionar ficheiro de registo"
   },
-
-  "ocr_tab": {
-    "warning_header": "⚠️ <b>Configuração avançada:</b> As configurações OCR definem as dimensões de layout para deteção de armazéns. Estas são escaladas a partir da resolução base de 2160p. <b style='color: #d32f2f;'>Valores incorretos causarão falha completa na deteção.</b>",
-    "reset_all": "Repor tudo para valores predefinidos",
-    "reset_title": "Repor configuração OCR",
-    "reset_message": "Repor toda a configuração OCR para valores predefinidos?\n\nIsto restaurará os valores de fábrica para deteção de layout.",
-    "base_height": "Altura base:",
-    "base_height_tooltip": "Altura da resolução de ecrã base para cálculos de layout.\n\nTodas as dimensões de layout são escaladas a partir desta base (2160p).\nPredefinição: 2160 (para capturas 4K).",
-    "box_width": "Largura da caixa:",
-    "box_width_tooltip": "Largura de cada caixa de quantidade na grelha do armazém.\n\nMedido em píxeis à resolução base.\nValores incorretos causarão falha na deteção.",
-    "box_height": "Altura da caixa:",
-    "box_height_tooltip": "Altura de cada caixa de quantidade na grelha do armazém.\n\nMedido em píxeis à resolução base.\nValores incorretos causarão falha na deteção.",
-    "column_offset": "Deslocamento de coluna:",
-    "column_offset_tooltip": "Espaçamento horizontal entre colunas na grelha do armazém.\n\nMedido em píxeis à resolução base.\nAfeta como o digitalizador se move de uma coluna para a seguinte.",
-    "row_offset": "Deslocamento de linha:",
-    "row_offset_tooltip": "Espaçamento vertical entre linhas na grelha do armazém.\n\nMedido em píxeis à resolução base.\nAfeta como o digitalizador se move de uma linha para a seguinte.",
-    "group_offset": "Deslocamento de grupo:",
-    "group_offset_tooltip": "Espaçamento vertical entre grupos de armazém.\n\nMedido em píxeis à resolução base.\nUsado quando múltiplas secções de armazém estão empilhadas verticalmente.",
-    "title_margin": "Margem do título:",
-    "title_margin_tooltip": "Margem à volta do texto do título do armazém.\n\nUsado para detetar e extrair nomes de armazéns.\nAfeta a deteção de limites da região do título.",
-    "title_min_width": "Largura mínima do título:",
-    "title_min_width_tooltip": "Largura mínima para uma região de título válida.\n\nAjuda a filtrar deteções falsas de títulos.\nMuito baixo pode incluir ruído, muito alto pode saltar títulos curtos.",
-    "title_height": "Altura do título:",
-    "title_height_tooltip": "Altura esperada do texto do título do armazém.\n\nUsado para extração da região do título.\nDeve corresponder ao tamanho da fonte do título do jogo à resolução base.",
-    "icon_to_quantity_offset": "Deslocamento de ícone para quantidade:",
-    "icon_to_quantity_tooltip": "Deslocamento horizontal da caixa de quantidade para o ícone do objeto (o ícone está à esquerda).\n\nMedido em píxeis à resolução base.\nUsado para localizar o ícone do objeto relativo à sua caixa de quantidade.",
-    "gray_lower": "Limiar inferior de cinza:",
-    "gray_lower_tooltip": "Limiar inferior de escala de cinzentos para deteção de caixa de quantidade (0-255).\n\nDepende das definições de gama do ecrã do utilizador.\nIntervalo típico: 15-98. Ajuste se as caixas de quantidade não forem detetadas corretamente.",
-    "gray_upper": "Limiar superior de cinza:",
-    "gray_upper_tooltip": "Limiar superior de escala de cinzentos para deteção de caixa de quantidade (0-255).\n\nDepende das definições de gama do ecrã do utilizador.\nIntervalo típico: 15-98. Ajuste se as caixas de quantidade não forem detetadas corretamente.",
-    "pixel_diff_tolerance": "Tolerância de diferença de píxeis:",
-    "pixel_diff_tooltip": "Variação de píxeis permitida para qualquer cálculo de deteção.\n\nCompensa pequenas mudanças de posição em diferentes resoluções.\nExemplo: O alinhamento de coluna de ícones pode variar 1-2 píxeis dependendo da resolução."
-  },
-
-  "template_tab": {
-    "warning_header": "⚠️ <b>Configuração avançada:</b> A configuração de modelos configura a transformação de cor de sobreposição de caixa. Estes valores são usados ao gerar versões em caixa de ícones de objetos. <b style='color: #d32f2f;'>Valores incorretos quebrarão a geração de modelos.</b>",
-    "reset_all": "Repor tudo para valores predefinidos",
-    "reset_title": "Repor configuração de modelos",
-    "reset_message": "Repor toda a configuração de modelos para valores predefinidos?\n\nIsto restaurará os valores de fábrica para transformação de cor de caixa.",
-    "multipliers_group": "Multiplicadores RGB (0-255)",
-    "offsets_group": "Deslocamentos RGB (0-255)",
-    "red_mult": "Multiplicador vermelho:",
-    "red_mult_tooltip": "Multiplicador do canal vermelho para transformação de cor de sobreposição de caixa.\n\nValor 0-255, será dividido por 255 durante o processamento.\nControla quanto do canal vermelho é retido em ícones de objetos em caixa.",
-    "green_mult": "Multiplicador verde:",
-    "green_mult_tooltip": "Multiplicador do canal verde para transformação de cor de sobreposição de caixa.\n\nValor 0-255, será dividido por 255 durante o processamento.\nControla quanto do canal verde é retido em ícones de objetos em caixa.",
-    "blue_mult": "Multiplicador azul:",
-    "blue_mult_tooltip": "Multiplicador do canal azul para transformação de cor de sobreposição de caixa.\n\nValor 0-255, será dividido por 255 durante o processamento.\nControla quanto do canal azul é retido em ícones de objetos em caixa.",
-    "red_offset": "Deslocamento vermelho:",
-    "red_offset_tooltip": "Deslocamento do canal vermelho adicionado após multiplicação.\n\nValor 0-255. Ajusta o nível base de vermelho de ícones de objetos em caixa.\nUsado para corresponder à cor castanha de sobreposição de caixa.",
-    "green_offset": "Deslocamento verde:",
-    "green_offset_tooltip": "Deslocamento do canal verde adicionado após multiplicação.\n\nValor 0-255. Ajusta o nível base de verde de ícones de objetos em caixa.\nUsado para corresponder à cor castanha de sobreposição de caixa.",
-    "blue_offset": "Deslocamento azul:",
-    "blue_offset_tooltip": "Deslocamento do canal azul adicionado após multiplicação.\n\nValor 0-255. Ajusta o nível base de azul de ícones de objetos em caixa.\nUsado para corresponder à cor castanha de sobreposição de caixa."
-  },
-
   "stockpile_types_tab": {
     "description": "Adicione pseudónimos personalizados para nomes de tipos de armazém para lidar com erros de OCR.\nIntroduza valores separados por vírgulas (ex., 'seapon, Seapont, 5eaport').\nAs traduções predefinidas já estão incorporadas e não precisam de ser adicionadas aqui.",
     "aliases_group": "Pseudónimos adicionais",
     "alias_placeholder": "Introduza pseudónimos separados por vírgulas..."
   },
-
   "sav_processing_tab": {
     "sav_file_label": "Caminho do ficheiro SAV:",
     "sav_file_tooltip": "Caminho para o ficheiro de salvamento Foxhole (.sav) a processar.\n\nEste ficheiro normalmente está localizado em:\nWindows: %LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL: /mnt/c/Users/<utilizador>/AppData/Local/Foxhole/Saved/SaveGames/\n\nProcure ficheiros com nome *_MapData.sav",

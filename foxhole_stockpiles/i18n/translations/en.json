@@ -1,7 +1,6 @@
 {
   "language_name": "English",
   "language_code": "en",
-
   "common": {
     "cancel": "Cancel",
     "save": "Save",
@@ -26,7 +25,6 @@
     },
     "image_filter": "Images (*.png *.jpg *.jpeg);;All Files (*)"
   },
-
   "main_window": {
     "title": "FS (Foxhole Stockpiles) - v{version}",
     "menu": {
@@ -48,7 +46,6 @@
       "no_database_message": "No database is configured. Please configure a database path in settings first."
     }
   },
-
   "about": {
     "title": "About FS",
     "app_name": "FS (Foxhole Stockpiles)",
@@ -64,7 +61,6 @@
     "copyright": "Copyright © 2024 Xurxogr",
     "license": "Licensed under the MIT License"
   },
-
   "server_panel": {
     "sav_group_title": "SAV Processing",
     "server_group_title": "Server",
@@ -97,7 +93,6 @@
       "status_monitoring": "Monitoring..."
     }
   },
-
   "config_window": {
     "title": "Configuration",
     "tip_hover": "Tip: Hover over labels for help",
@@ -105,8 +100,6 @@
       "api_server": "API Server",
       "scanner": "Scanner",
       "output": "Output",
-      "ocr": "OCR",
-      "templates": "Templates",
       "stockpile_types": "Stockpile Types",
       "notifications": "Notifications",
       "sav_processing": "SAV Processing",
@@ -125,7 +118,6 @@
       "saved_successfully": "Configuration saved successfully!"
     }
   },
-
   "api_server_tab": {
     "server_settings": "Server Settings",
     "host": "Host:",
@@ -158,7 +150,6 @@
     "token": "Token:",
     "token_tooltip": "Secret token required for API authentication.\nThis token should be kept secure and sent in the Authorization header."
   },
-
   "scanner_tab": {
     "database_path": "Database Path:",
     "database_path_placeholder": "Path to template database (.h5 file)",
@@ -172,27 +163,15 @@
     "screenshots_folder": "Screenshots Folder:",
     "screenshots_folder_placeholder": "Optional: folder to save screenshots",
     "screenshots_folder_tooltip": "Optional folder to automatically save processed screenshots.\n\nWhen set, scanned images are saved to daily subfolders (YYYY-MM-DD)\nwith format: Date_Time_StorageType_Name_Resolution.png\n\nLeave empty to disable screenshot archiving.",
-    "max_ncc": "Max NCC Candidates:",
-    "max_ncc_tooltip": "Maximum number of template candidates to evaluate with NCC (Normalized Cross-Correlation).\n\nAfter perceptual hash pre-filtering, this limits detailed matching.\nHigher values are more accurate but slower. Recommended: 25.",
-    "phash_threshold": "pHash Threshold:",
-    "phash_tooltip": "Perceptual hash distance threshold for template pre-filtering.\n\nLower values (0-10) are stricter, higher values (10-20) are more lenient.\nToo low may miss valid items, too high slows down matching.\nRecommended: 12 for balanced speed and accuracy.",
-    "tiebreaker_threshold": "NCC Tiebreaker Threshold:",
-    "tiebreaker_tooltip": "When top NCC matches are within this confidence threshold, use mean pixel difference as a tiebreaker.\n\nHelps distinguish visually similar items (e.g., Assembly Materials V vs VIII).\nSet to 0.0 to disable tiebreaker.\nRecommended: 0.002.",
     "debug_mode": "Debug Mode:",
     "debug_mode_checkbox": "Save debug images during scanning",
     "debug_mode_tooltip": "Save debug images showing the detection process.\n\nSaves to current directory:\n- stockpile_detection_result.png - Original image with detection boxes\n- stockpile_quantities_result.png - Composite quantities image\n- stockpile_name_region.png - Extracted name region\n- stockpile_type_region.png - Extracted type region\n- stockpile_shard.png - Extracted shard region\n\nUseful for troubleshooting detection issues.",
     "extract_icons": "Extract Icons:",
     "extract_icons_checkbox": "Save detected icon images",
     "extract_icons_tooltip": "Save each detected item icon as a separate image file.\n\nIcons are saved to './icons/' folder with format: 'XXX_CODE.png'\nwhere XXX is the icon index (000, 001, etc.) and CODE is the detected item.\n\nDevelopment setting - useful for creating new templates or debugging detection.",
-    "custom_model": "Custom OCR Model:",
-    "custom_model_tooltip": "CRITICAL: Custom Tesseract OCR model for number recognition.\n\nDefault: 'renner_numbers' (optimized for Foxhole stockpile numbers).\nChanging this may cause number recognition to fail completely.",
-    "tessdata_path": "Tessdata Path:",
-    "tessdata_tooltip": "CRITICAL: Path to Tesseract OCR data files directory.\n\nDefault: './tessdata' (bundled with the application).\nIncorrect path will cause OCR text recognition to fail.",
     "select_database": "Select Template Database",
-    "select_tessdata": "Select Tessdata Directory",
     "select_screenshots": "Select Screenshots Directory"
   },
-
   "output_tab": {
     "description": "Configure output handlers for scan results.\nYou can add multiple handlers to send results to different destinations.",
     "handlers_group": "Output Handlers",
@@ -233,7 +212,6 @@
     "remove_handler_title": "Remove Handler",
     "remove_handler_message": "Are you sure you want to remove '{name}'?"
   },
-
   "notifications_tab": {
     "description": "Configure Discord webhooks to receive notifications about stockpile scans\nand server events. You can add multiple notifiers with different settings.",
     "enable_notifications": "Enable Notifications",
@@ -274,7 +252,6 @@
     "remove_notifier_title": "Remove Notifier",
     "remove_notifier_message": "Are you sure you want to remove '{name}'?"
   },
-
   "gui_tab": {
     "config_level_group": "Configuration Level",
     "level": "Level:",
@@ -291,7 +268,6 @@
     "language": "Language:",
     "language_tooltip": "Select the language for the GUI."
   },
-
   "logging_tab": {
     "root_level": "Root Log Level:",
     "root_level_tooltip": "Global default log level for all loggers.\n\nMessages below this level are filtered out unless\na custom logger overrides it.",
@@ -310,67 +286,11 @@
     "logger_placeholder": "e.g., uvicorn.access",
     "select_log_file": "Select Log File"
   },
-
-  "ocr_tab": {
-    "warning_header": "⚠️ <b>Advanced Settings:</b> OCR settings define the layout dimensions for stockpile detection. These are scaled from 2160p base resolution. <b style='color: #d32f2f;'>Incorrect values will cause detection to fail completely.</b>",
-    "reset_all": "Reset All to Defaults",
-    "reset_title": "Reset OCR Settings",
-    "reset_message": "Reset all OCR settings to default values?\n\nThis will restore the factory defaults for layout detection.",
-    "base_height": "Base Height:",
-    "base_height_tooltip": "Base screen resolution height for layout calculations.\n\nAll layout dimensions are scaled from this base (2160p).\nDefault: 2160 (for 4K screenshots).",
-    "box_width": "Box Width:",
-    "box_width_tooltip": "Width of each quantity box in the stockpile grid.\n\nMeasured in pixels at base resolution.\nIncorrect values will cause detection to fail.",
-    "box_height": "Box Height:",
-    "box_height_tooltip": "Height of each quantity box in the stockpile grid.\n\nMeasured in pixels at base resolution.\nIncorrect values will cause detection to fail.",
-    "column_offset": "Column Offset:",
-    "column_offset_tooltip": "Horizontal spacing between columns in the stockpile grid.\n\nMeasured in pixels at base resolution.\nAffects how the scanner moves from one column to the next.",
-    "row_offset": "Row Offset:",
-    "row_offset_tooltip": "Vertical spacing between rows in the stockpile grid.\n\nMeasured in pixels at base resolution.\nAffects how the scanner moves from one row to the next.",
-    "group_offset": "Group Offset:",
-    "group_offset_tooltip": "Vertical spacing between stockpile groups.\n\nMeasured in pixels at base resolution.\nUsed when multiple stockpile sections are stacked vertically.",
-    "title_margin": "Title Margin:",
-    "title_margin_tooltip": "Margin around stockpile title text.\n\nUsed for detecting and extracting stockpile names.\nAffects title region boundary detection.",
-    "title_min_width": "Title Min Width:",
-    "title_min_width_tooltip": "Minimum width for a valid title region.\n\nHelps filter out false title detections.\nToo low may include noise, too high may skip short titles.",
-    "title_height": "Title Height:",
-    "title_height_tooltip": "Expected height of stockpile title text.\n\nUsed for title region extraction.\nShould match the game's title font size at base resolution.",
-    "icon_to_quantity_offset": "Icon to Quantity Offset:",
-    "icon_to_quantity_tooltip": "Horizontal offset from quantity box to item icon (icon is to the left).\n\nMeasured in pixels at base resolution.\nUsed to locate the item icon relative to its quantity box.",
-    "gray_lower": "Gray Lower Threshold:",
-    "gray_lower_tooltip": "Lower grayscale threshold for quantity box detection (0-255).\n\nDepends on user's screen gamma settings.\nTypical range: 15-98. Adjust if quantity boxes aren't detected properly.",
-    "gray_upper": "Gray Upper Threshold:",
-    "gray_upper_tooltip": "Upper grayscale threshold for quantity box detection (0-255).\n\nDepends on user's screen gamma settings.\nTypical range: 15-98. Adjust if quantity boxes aren't detected properly.",
-    "pixel_diff_tolerance": "Pixel Diff Tolerance:",
-    "pixel_diff_tooltip": "Allowed pixel variation for any detection calculation.\n\nAccounts for minor position shifts across different resolutions.\nExample: Icon column alignment may vary by 1-2 pixels depending on resolution."
-  },
-
-  "template_tab": {
-    "warning_header": "⚠️ <b>Advanced Settings:</b> Template settings configure crate overlay color transformation. These values are used when generating crated versions of item icons. <b style='color: #d32f2f;'>Incorrect values will break template generation.</b>",
-    "reset_all": "Reset All to Defaults",
-    "reset_title": "Reset Template Settings",
-    "reset_message": "Reset all template settings to default values?\n\nThis will restore the factory defaults for crate color transformation.",
-    "multipliers_group": "RGB Multipliers (0-255)",
-    "offsets_group": "RGB Offsets (0-255)",
-    "red_mult": "Red Multiplier:",
-    "red_mult_tooltip": "Red channel multiplier for crate overlay color transformation.\n\nValue 0-255, will be divided by 255 during processing.\nControls how much of the red channel is retained in crated item icons.",
-    "green_mult": "Green Multiplier:",
-    "green_mult_tooltip": "Green channel multiplier for crate overlay color transformation.\n\nValue 0-255, will be divided by 255 during processing.\nControls how much of the green channel is retained in crated item icons.",
-    "blue_mult": "Blue Multiplier:",
-    "blue_mult_tooltip": "Blue channel multiplier for crate overlay color transformation.\n\nValue 0-255, will be divided by 255 during processing.\nControls how much of the blue channel is retained in crated item icons.",
-    "red_offset": "Red Offset:",
-    "red_offset_tooltip": "Red channel offset added after multiplication.\n\nValue 0-255. Adjusts the base red level of crated item icons.\nUsed to match the brownish crate overlay color.",
-    "green_offset": "Green Offset:",
-    "green_offset_tooltip": "Green channel offset added after multiplication.\n\nValue 0-255. Adjusts the base green level of crated item icons.\nUsed to match the brownish crate overlay color.",
-    "blue_offset": "Blue Offset:",
-    "blue_offset_tooltip": "Blue channel offset added after multiplication.\n\nValue 0-255. Adjusts the base blue level of crated item icons.\nUsed to match the brownish crate overlay color."
-  },
-
   "stockpile_types_tab": {
     "description": "Add custom aliases for stockpile type names to handle OCR errors.\nEnter comma-separated values (e.g., 'seapon, Seapont, 5eaport').\nThe default translations are already built-in and don't need to be added here.",
     "aliases_group": "Additional Aliases",
     "alias_placeholder": "Enter comma-separated aliases..."
   },
-
   "sav_processing_tab": {
     "sav_file_label": "SAV File Path:",
     "sav_file_tooltip": "Path to the Foxhole save file (.sav) to process.\n\nThis file is typically located at:\nWindows: %LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL: /mnt/c/Users/<user>/AppData/Local/Foxhole/Saved/SaveGames/\n\nLook for files named *_MapData.sav",

@@ -6,7 +6,7 @@ from typing import Any
 class ConfigMigrator:
     """Handles migration of configuration data between versions."""
 
-    CURRENT_VERSION = 7
+    CURRENT_VERSION = 8
 
     @classmethod
     def apply_migrations(cls, data: dict[str, Any]) -> dict[str, Any]:
@@ -56,6 +56,11 @@ class ConfigMigrator:
         if version == 6:
             data = cls._migrate_v6_to_v7(data)
             data["config_version"] = 7
+            version = 7
+
+        if version == 7:
+            data = cls._migrate_v7_to_v8(data)
+            data["config_version"] = 8
 
         return data
 
@@ -370,5 +375,43 @@ class ConfigMigrator:
         """
         if "external_tools" in data and isinstance(data["external_tools"], dict):
             data["external_tools"].pop("uesave", None)
+
+        return data
+
+    @staticmethod
+    def _migrate_v7_to_v8(data: dict[str, Any]) -> dict[str, Any]:
+        """Migrate from v7 to v8 (drop OCR/template/advanced-scanner settings).
+
+        These values are no longer user-configurable: the OCR geometry and
+        template-generation settings now use fixed model defaults, and the
+        custom model name, tessdata path, and icon-matching thresholds are
+        hardcoded. Any stored values are removed so they no longer linger in
+        ``.fs_config``.
+
+        V7 had: top-level ``ocr`` and ``templates`` sections, plus
+            ``scanner.{custom_model, tessdata_path, max_ncc_candidates,
+            phash_threshold, ncc_tiebreaker_threshold}``.
+        V8 has: none of the above.
+
+        Args:
+            data (dict[str, Any]): V7 configuration data.
+
+        Returns:
+            dict[str, Any]: V8 configuration data.
+        """
+        # Remove top-level sections that are no longer part of settings.
+        data.pop("ocr", None)
+        data.pop("templates", None)
+
+        # Remove scanner fields that are now fixed defaults.
+        if "scanner" in data and isinstance(data["scanner"], dict):
+            for field_name in (
+                "custom_model",
+                "tessdata_path",
+                "max_ncc_candidates",
+                "phash_threshold",
+                "ncc_tiebreaker_threshold",
+            ):
+                data["scanner"].pop(field_name, None)
 
         return data

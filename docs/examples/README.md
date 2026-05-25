@@ -15,10 +15,8 @@ This directory contains example configuration files for different deployment sce
    - Configure webhook URLs
    - Adjust paths for your environment
 
-3. **Verify configuration** with the update-config command:
-   ```bash
-   fs update-config
-   ```
+3. **Run the app** — older config files are migrated to the latest format
+   automatically the first time settings are loaded; no manual step is needed.
 
 ## Available Examples
 

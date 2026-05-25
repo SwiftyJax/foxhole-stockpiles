@@ -47,8 +47,6 @@ class ScannerSettings(BaseModel):
         ge=0.0,
         le=1.0,
     )
-    custom_model: str = Field(description="Custom OCR model name", default="renner_numbers")
-    tessdata_path: str = Field(description="Path to tessdata directory", default="./tessdata")
     debug_mode: bool = Field(description="Enable debug mode to save debug images", default=False)
     extract_icons: bool = Field(
         description="Extract detected icons to 'icons' folder for debugging (<index>_<code>.png)",
@@ -57,28 +55,6 @@ class ScannerSettings(BaseModel):
     screenshots_folder: str = Field(
         description="Folder to save screenshots before processing. Empty string disables saving.",
         default="",
-    )
-
-    max_ncc_candidates: int = Field(
-        description="Maximum number of NCC candidates to consider for matching",
-        default=25,
-        ge=1,
-    )
-    phash_threshold: int = Field(
-        description="Maximum Hamming distance for pHash filtering",
-        default=12,
-        ge=0,
-    )
-    ncc_tiebreaker_threshold: float = Field(
-        description=(
-            "When top NCC matches are within this confidence threshold, "
-            "use mean pixel difference as a tiebreaker to select the best match. "
-            "Helps distinguish visually similar items (e.g., Assembly Materials V vs VIII). "
-            "Set to 0.0 to disable tiebreaker."
-        ),
-        default=0.0015,
-        ge=0.0,
-        le=0.1,
     )
 
     model_config = ConfigDict(
@@ -91,14 +67,9 @@ class ScannerSettings(BaseModel):
                 "template_cache_size": 16,
                 "early_exit_threshold": 0.0,
                 "confidence_gap": 0.0,
-                "custom_model": "custom",
-                "tessdata_path": "./tessdata",
                 "debug_mode": False,
                 "extract_icons": False,
                 "screenshots_folder": "screenshots",
-                "max_ncc_candidates": 25,
-                "phash_threshold": 12,
-                "ncc_tiebreaker_threshold": 0.0015,
             }
         },
     )

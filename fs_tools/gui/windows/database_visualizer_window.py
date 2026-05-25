@@ -30,7 +30,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from foxhole_stockpiles.core.settings import get_settings
+from foxhole_stockpiles.core.settings.sections.ocr import OCRSettings
 from foxhole_stockpiles.enums.item_category import ItemCategory
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
@@ -798,7 +798,7 @@ class DatabaseVisualizerWindow(QDialog):
             return
 
         # Calculate expected icon size for this resolution
-        ocr_settings = get_settings().ocr
+        ocr_settings = OCRSettings()
         expected_size = int(
             ocr_settings.box_height * int(self.current_resolution.value) / ocr_settings.height
         )
@@ -833,7 +833,7 @@ class DatabaseVisualizerWindow(QDialog):
 
         # Replace the icon in the database
         try:
-            ocr = get_settings().ocr
+            ocr = OCRSettings()
             manager = IconManager(
                 database_path=Path(self.database_path),
                 databases=self.all_databases,
@@ -929,7 +929,7 @@ class DatabaseVisualizerWindow(QDialog):
 
         # Delete the icon from the database
         try:
-            ocr = get_settings().ocr
+            ocr = OCRSettings()
             manager = IconManager(
                 database_path=Path(self.database_path),
                 databases=self.all_databases,

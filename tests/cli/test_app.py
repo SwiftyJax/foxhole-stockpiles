@@ -22,7 +22,7 @@ class TestRootHelp:
         result = runner.invoke(app, ["--help"])
 
         assert result.exit_code == 0
-        for command in ("scan", "sav", "serve", "gui", "update-config"):
+        for command in ("scan", "sav", "serve", "gui"):
             assert command in result.output
 
     def test_help_hides_aliases(self) -> None:

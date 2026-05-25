@@ -25,7 +25,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.core.utils import compute_icon_phash
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
 from foxhole_stockpiles.gui.utils.image_scan_worker import ImageScanWorker
@@ -34,7 +33,12 @@ from foxhole_stockpiles.models.detected_icon_info import DetectedIconInfo
 from foxhole_stockpiles.models.icon_template import IconTemplate
 from foxhole_stockpiles.models.scan_result import ScanResult
 from fs_ocr._impl.template_database import TemplateDatabase
-from fs_ocr._impl.template_manager import TemplateManager
+from fs_ocr._impl.template_manager import (
+    DEFAULT_MAX_NCC_CANDIDATES,
+    DEFAULT_NCC_TIEBREAKER_THRESHOLD,
+    DEFAULT_PHASH_THRESHOLD,
+    TemplateManager,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -422,13 +426,12 @@ class DebugImageWindow(QDialog):
         Args:
             icon_info (DetectedIconInfo): The selected icon information.
         """
-        # Preserve current settings before clearing (use app settings as defaults)
-        scanner_settings = get_settings().scanner
+        # Preserve current spinbox values before clearing (use fixed defaults otherwise)
         phash_threshold = (
-            self.phash_spinbox.value() if self.phash_spinbox else scanner_settings.phash_threshold
+            self.phash_spinbox.value() if self.phash_spinbox else DEFAULT_PHASH_THRESHOLD
         )
         max_ncc_candidates = (
-            self.ncc_spinbox.value() if self.ncc_spinbox else scanner_settings.max_ncc_candidates
+            self.ncc_spinbox.value() if self.ncc_spinbox else DEFAULT_MAX_NCC_CANDIDATES
         )
 
         self._clear_comparison()
@@ -467,7 +470,7 @@ class DebugImageWindow(QDialog):
         candidates.sort(key=lambda x: x[0], reverse=True)  # Sort by NCC (highest first)
 
         # Apply tiebreaker (same logic as scanner)
-        ncc_tiebreaker_threshold = scanner_settings.ncc_tiebreaker_threshold
+        ncc_tiebreaker_threshold = DEFAULT_NCC_TIEBREAKER_THRESHOLD
         matched_code = "Unknown"
         if candidates:
             best_ncc = candidates[0][0]
@@ -541,18 +544,17 @@ class DebugImageWindow(QDialog):
         """Create a widget with pHash and NCC settings spinboxes.
 
         Args:
-            phash_value (int | None): Initial pHash threshold value. Uses app settings if None.
-            ncc_value (int | None): Initial max NCC candidates value. Uses app settings if None.
+            phash_value (int | None): Initial pHash threshold value. Uses the default if None.
+            ncc_value (int | None): Initial max NCC candidates value. Uses the default if None.
 
         Returns:
             QWidget: Widget containing the settings controls.
         """
-        # Use app settings as defaults
-        scanner_settings = get_settings().scanner
+        # Use the fixed matching defaults when no explicit value is provided
         if phash_value is None:
-            phash_value = scanner_settings.phash_threshold
+            phash_value = DEFAULT_PHASH_THRESHOLD
         if ncc_value is None:
-            ncc_value = scanner_settings.max_ncc_candidates
+            ncc_value = DEFAULT_MAX_NCC_CANDIDATES
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(10, 5, 10, 5)

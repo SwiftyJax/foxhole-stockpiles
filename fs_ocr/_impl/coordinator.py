@@ -33,6 +33,11 @@ from fs_ocr._impl.detector import StockpileDetector
 from fs_ocr._impl.extractor import StockpileTextExtractor
 from fs_ocr._impl.template_manager import TemplateManager
 
+# OCR model defaults. These are no longer user-configurable via settings; the
+# bundled custom Tesseract model and its tessdata directory are fixed.
+DEFAULT_CUSTOM_MODEL = "renner_numbers"
+DEFAULT_TESSDATA_PATH = "./tessdata"
+
 
 class OCRCoordinator:
     """Coordinates the entire stockpile detection and analysis process."""
@@ -57,13 +62,13 @@ class OCRCoordinator:
         self.logger = logging.getLogger(__name__)
 
         # Resolve tessdata path for PyInstaller bundles
-        tessdata_path = config.tessdata_path
-        if is_frozen() and tessdata_path in ("./tessdata", "tessdata"):
+        tessdata_path = DEFAULT_TESSDATA_PATH
+        if is_frozen():
             tessdata_path = str(get_bundled_resource_path("tessdata"))
 
         # Initialize services
         self._text_extractor = StockpileTextExtractor(
-            custom_model=config.custom_model,
+            custom_model=DEFAULT_CUSTOM_MODEL,
             tessdata_path=tessdata_path,
         )
         self._template_manager = TemplateManager(
@@ -1249,9 +1254,6 @@ class OCRCoordinator:
             icon_image=image,
             early_exit_threshold=self.config.early_exit_threshold,
             confidence_gap=self.config.confidence_gap,
-            max_ncc_candidates=self.config.max_ncc_candidates,
-            phash_threshold=self.config.phash_threshold,
-            ncc_tiebreaker_threshold=self.config.ncc_tiebreaker_threshold,
             faction=faction,
             category=category,
             crated=crated,
