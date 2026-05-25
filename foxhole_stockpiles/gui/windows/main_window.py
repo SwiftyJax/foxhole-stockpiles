@@ -40,7 +40,7 @@ class MainWindow(QMainWindow):
         # Connect to language changes with cleanup on destruction
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(lambda cb=self._language_callback: off_language_changed(cb))
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event.
