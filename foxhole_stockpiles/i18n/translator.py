@@ -28,13 +28,34 @@ def _get_exe_dir() -> Path:
         return Path.cwd()
 
 
+# Resource path (relative to the project root / PyInstaller bundle root) of the
+# translation catalog to load. Each self-contained app owns its own catalog and
+# registers it via set_translations_resource() before the first get_translator()
+# call. Defaults to the main foxhole_stockpiles app catalog.
+_translations_resource = "foxhole_stockpiles/i18n/translations"
+
+
+def set_translations_resource(resource: str) -> None:
+    """Select which bundled translation catalog the translator loads from.
+
+    Self-contained apps (e.g. fs-tools) call this at startup so each executable
+    bundles and loads only its own strings.
+
+    Args:
+        resource (str): Path to the catalog directory relative to the project
+            root / PyInstaller bundle root (e.g. "fs_tools/i18n/translations").
+    """
+    global _translations_resource
+    _translations_resource = resource
+
+
 def _get_bundled_translations_dir() -> Path:
     """Get the bundled translations directory.
 
     Returns:
         Path: Directory path for bundled translations.
     """
-    return get_bundled_resource_path("foxhole_stockpiles/i18n/translations")
+    return get_bundled_resource_path(_translations_resource)
 
 
 def _get_user_translations_dir() -> Path:

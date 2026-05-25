@@ -22,8 +22,6 @@ from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.utils.config_manager import ConfigManager
 from foxhole_stockpiles.gui.widgets.config_tabs.api_server_tab import APIServerTab
-from foxhole_stockpiles.gui.widgets.config_tabs.database_builder_tab import DatabaseBuilderTab
-from foxhole_stockpiles.gui.widgets.config_tabs.external_tools_tab import ExternalToolsTab
 from foxhole_stockpiles.gui.widgets.config_tabs.gui_tab import GUITab
 from foxhole_stockpiles.gui.widgets.config_tabs.logging_tab import LoggingTab
 from foxhole_stockpiles.gui.widgets.config_tabs.notifications_tab import NotificationsTab
@@ -91,8 +89,6 @@ class ConfigWindow(QMainWindow):
         self.output_tab = OutputTab()
         self.ocr_tab = OCRTab()
         self.template_tab = TemplateTab()
-        self.external_tools_tab = ExternalToolsTab()
-        self.database_builder_tab = DatabaseBuilderTab()
         self.logging_tab = LoggingTab()
         self.gui_tab = GUITab()
         self.stockpile_types_tab = StockpileTypesTab()
@@ -153,10 +149,6 @@ class ConfigWindow(QMainWindow):
                 self.stockpile_types_tab, t("config_window.tabs.stockpile_types")
             )
             self.tab_widget.addTab(self.notifications_tab, t("config_window.tabs.notifications"))
-            self.tab_widget.addTab(self.external_tools_tab, t("config_window.tabs.external_tools"))
-            self.tab_widget.addTab(
-                self.database_builder_tab, t("config_window.tabs.database_builder")
-            )
             self.tab_widget.addTab(self.sav_processing_tab, t("config_window.tabs.sav_processing"))
 
         # Always visible tabs (continued)
@@ -201,8 +193,6 @@ class ConfigWindow(QMainWindow):
         self.output_tab.set_values(self.settings.output)
         self.ocr_tab.set_values(self.settings.ocr)
         self.template_tab.set_values(self.settings.templates)
-        self.external_tools_tab.set_values(self.settings.external_tools)
-        self.database_builder_tab.set_values(self.settings.database_builder)
         self.logging_tab.set_values(self.settings.logging)
         self.gui_tab.set_values(self.settings.gui)
         self.stockpile_types_tab.set_values(self.settings.stockpile_types)
@@ -212,9 +202,14 @@ class ConfigWindow(QMainWindow):
     def collect_settings(self) -> AppSettings:
         """Collect settings from all tabs.
 
+        The external_tools and database_builder sections are not edited in the
+        scanner app (their UI lives in fs_tools), so their values are preserved
+        from the currently loaded settings rather than read from a tab.
+
         Returns:
             AppSettings: AppSettings instance with current values from tabs
         """
+        defaults = self.settings or AppSettings()
         return AppSettings(
             api_server=self.api_server_tab.get_server_values(),
             api_auth=self.api_server_tab.get_auth_values(),
@@ -222,8 +217,8 @@ class ConfigWindow(QMainWindow):
             output=self.output_tab.get_values(),
             ocr=self.ocr_tab.get_values(),
             templates=self.template_tab.get_values(),
-            external_tools=self.external_tools_tab.get_values(),
-            database_builder=self.database_builder_tab.get_values(),
+            external_tools=defaults.external_tools,
+            database_builder=defaults.database_builder,
             logging=self.logging_tab.get_values(),
             gui=self.gui_tab.get_values(),
             notifications=self.notifications_tab.get_values(),

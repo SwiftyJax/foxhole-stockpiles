@@ -112,8 +112,6 @@ def test_config_window_has_all_tabs(config_window: ConfigWindow) -> None:
     assert config_window.output_tab is not None
     assert config_window.ocr_tab is not None
     assert config_window.template_tab is not None
-    assert config_window.external_tools_tab is not None
-    assert config_window.database_builder_tab is not None
     assert config_window.logging_tab is not None
 
 
@@ -148,21 +146,21 @@ def test_config_window_config_level_tabs(qtbot: Any, mock_config_manager: MagicM
     assert window.tab_widget.count() == 5
 
     # Test ADVANCED level
-    # (10 tabs: + Stockpile Types, Notifications, External Tools, DB Builder, SAV Processing)
+    # (8 tabs: + Stockpile Types, Notifications, SAV Processing)
     settings.gui = GUISettings(config_level=ConfigLevel.ADVANCED)
     mock_config_manager.load_config.return_value = settings
 
     window2 = ConfigWindow()
     qtbot.addWidget(window2)
-    assert window2.tab_widget.count() == 10
+    assert window2.tab_widget.count() == 8
 
-    # Test DEVELOPER level (12 tabs: + OCR, Templates)
+    # Test DEVELOPER level (10 tabs: + OCR, Templates)
     settings.gui = GUISettings(config_level=ConfigLevel.DEVELOPER)
     mock_config_manager.load_config.return_value = settings
 
     window3 = ConfigWindow()
     qtbot.addWidget(window3)
-    assert window3.tab_widget.count() == 12
+    assert window3.tab_widget.count() == 10
     assert window3.tab_widget.tabText(0) == t("config_window.tabs.api_server")
 
 
@@ -774,7 +772,7 @@ class TestSaveSettingsConfigLevelChange:
         config_window.save_settings()
 
         # Tabs should be rebuilt with more tabs
-        assert config_window.tab_widget.count() == 10
+        assert config_window.tab_widget.count() == 8
 
 
 class TestRetranslate:

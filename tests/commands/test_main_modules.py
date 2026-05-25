@@ -48,9 +48,9 @@ class TestMainModules:
         assert "usage" in result.stdout.lower() or "Scanner" in result.stdout
 
     def test_database_builder_main_module(self) -> None:
-        """Test that foxhole_stockpiles.commands.database_builder can be run as module."""
+        """Test that fs_tools.commands.database_builder can be run as module."""
         result = subprocess.run(
-            [sys.executable, "-m", "foxhole_stockpiles.commands.database_builder", "--help"],
+            [sys.executable, "-m", "fs_tools.commands.database_builder", "--help"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -59,9 +59,9 @@ class TestMainModules:
         assert "usage" in result.stdout.lower() or "Database" in result.stdout
 
     def test_generate_templates_main_module(self) -> None:
-        """Test that foxhole_stockpiles.commands.generate_templates can be run as module."""
+        """Test that fs_tools.commands.generate_templates can be run as module."""
         result = subprocess.run(
-            [sys.executable, "-m", "foxhole_stockpiles.commands.generate_templates", "--help"],
+            [sys.executable, "-m", "fs_tools.commands.generate_templates", "--help"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -70,9 +70,9 @@ class TestMainModules:
         assert "usage" in result.stdout.lower() or "template" in result.stdout.lower()
 
     def test_uasset_extractor_main_module(self) -> None:
-        """Test that foxhole_stockpiles.commands.uasset_extractor can be run as module."""
+        """Test that fs_tools.commands.uasset_extractor can be run as module."""
         result = subprocess.run(
-            [sys.executable, "-m", "foxhole_stockpiles.commands.uasset_extractor", "--help"],
+            [sys.executable, "-m", "fs_tools.commands.uasset_extractor", "--help"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -81,12 +81,12 @@ class TestMainModules:
         assert "usage" in result.stdout.lower() or "extract" in result.stdout.lower()
 
     def test_candidate_inspector_main_module(self) -> None:
-        """Test that foxhole_stockpiles.commands.candidate_inspector can be run as module."""
+        """Test that fs_tools.commands.candidate_inspector can be run as module."""
         result = subprocess.run(
             [
                 sys.executable,
                 "-m",
-                "foxhole_stockpiles.commands.candidate_inspector",
+                "fs_tools.commands.candidate_inspector",
                 "--help",
             ],
             capture_output=True,
@@ -97,9 +97,9 @@ class TestMainModules:
         assert "usage" in result.stdout.lower() or "inspect" in result.stdout.lower()
 
     def test_add_icon_main_module(self) -> None:
-        """Test that foxhole_stockpiles.commands.add_icon can be run as module."""
+        """Test that fs_tools.commands.add_icon can be run as module."""
         result = subprocess.run(
-            [sys.executable, "-m", "foxhole_stockpiles.commands.add_icon", "--help"],
+            [sys.executable, "-m", "fs_tools.commands.add_icon", "--help"],
             capture_output=True,
             text=True,
             timeout=10,
@@ -144,7 +144,7 @@ class TestMainModuleImports:
 
     def test_database_builder_main_import(self) -> None:
         """Test importing database_builder __main__ module."""
-        from foxhole_stockpiles.commands.database_builder import (
+        from fs_tools.commands.database_builder import (
             __main__ as database_builder_main,
         )
 
@@ -152,7 +152,7 @@ class TestMainModuleImports:
 
     def test_generate_templates_main_import(self) -> None:
         """Test importing generate_templates __main__ module."""
-        from foxhole_stockpiles.commands.generate_templates import (
+        from fs_tools.commands.generate_templates import (
             __main__ as generate_templates_main,
         )
 
@@ -160,7 +160,7 @@ class TestMainModuleImports:
 
     def test_uasset_extractor_main_import(self) -> None:
         """Test importing uasset_extractor __main__ module."""
-        from foxhole_stockpiles.commands.uasset_extractor import (
+        from fs_tools.commands.uasset_extractor import (
             __main__ as uasset_extractor_main,
         )
 
@@ -168,7 +168,7 @@ class TestMainModuleImports:
 
     def test_candidate_inspector_main_import(self) -> None:
         """Test importing candidate_inspector __main__ module."""
-        from foxhole_stockpiles.commands.candidate_inspector import (
+        from fs_tools.commands.candidate_inspector import (
             __main__ as candidate_inspector_main,
         )
 
@@ -176,7 +176,7 @@ class TestMainModuleImports:
 
     def test_add_icon_main_import(self) -> None:
         """Test importing add_icon __main__ module."""
-        from foxhole_stockpiles.commands.add_icon import __main__ as add_icon_main
+        from fs_tools.commands.add_icon import __main__ as add_icon_main
 
         assert hasattr(add_icon_main, "main")
 
@@ -196,11 +196,11 @@ class TestMainModuleFiles:
             "foxhole_stockpiles/commands/fs/__main__.py",
             "foxhole_stockpiles/commands/api_server/__main__.py",
             "foxhole_stockpiles/commands/stockpile_scanner/__main__.py",
-            "foxhole_stockpiles/commands/database_builder/__main__.py",
-            "foxhole_stockpiles/commands/generate_templates/__main__.py",
-            "foxhole_stockpiles/commands/uasset_extractor/__main__.py",
-            "foxhole_stockpiles/commands/candidate_inspector/__main__.py",
-            "foxhole_stockpiles/commands/add_icon/__main__.py",
+            "fs_tools/commands/database_builder/__main__.py",
+            "fs_tools/commands/generate_templates/__main__.py",
+            "fs_tools/commands/uasset_extractor/__main__.py",
+            "fs_tools/commands/candidate_inspector/__main__.py",
+            "fs_tools/commands/add_icon/__main__.py",
             "foxhole_stockpiles/commands/update_config/__main__.py",
         ],
     )
@@ -223,11 +223,11 @@ class TestMainModuleFiles:
             "foxhole_stockpiles/commands/fs/__main__.py",
             "foxhole_stockpiles/commands/api_server/__main__.py",
             "foxhole_stockpiles/commands/stockpile_scanner/__main__.py",
-            "foxhole_stockpiles/commands/database_builder/__main__.py",
-            "foxhole_stockpiles/commands/generate_templates/__main__.py",
-            "foxhole_stockpiles/commands/uasset_extractor/__main__.py",
-            "foxhole_stockpiles/commands/candidate_inspector/__main__.py",
-            "foxhole_stockpiles/commands/add_icon/__main__.py",
+            "fs_tools/commands/database_builder/__main__.py",
+            "fs_tools/commands/generate_templates/__main__.py",
+            "fs_tools/commands/uasset_extractor/__main__.py",
+            "fs_tools/commands/candidate_inspector/__main__.py",
+            "fs_tools/commands/add_icon/__main__.py",
             "foxhole_stockpiles/commands/update_config/__main__.py",
         ],
     )

@@ -79,7 +79,8 @@ Repository = "https://github.com/xurxogr/foxhole-stockpiles"
 version = {attr = "foxhole_stockpiles.__version__"}
 
 [tool.setuptools.packages.find]
-include = ["foxhole_stockpiles*", "fs_ocr*"]
+include = ["foxhole_stockpiles*", "fs_ocr*", "fs_tools*"]
+exclude = ["fs_tools.tests*"]
 
 # Remove package-dir since we're using flat layout
 [tool.mypy]
@@ -123,7 +124,7 @@ select = [
 convention = "google"
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "fs_ocr/tests"]
+testpaths = ["tests", "fs_ocr/tests", "fs_tools/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
@@ -153,6 +154,8 @@ directory = "htmlcov"
 [project.scripts]
 fs = "foxhole_stockpiles.commands.fs.fs:main"
 fs-ocr = "fs_ocr.cli:main"
+fs-tools = "fs_tools.cli:main"
 
 [project.gui-scripts]
 fs-gui = "foxhole_stockpiles.gui.app:launch_gui"
+fs-tools-gui = "fs_tools.gui:run_gui"

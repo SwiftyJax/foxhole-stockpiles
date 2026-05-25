@@ -38,12 +38,21 @@ class TestCLIDispatcherInitialization:
         """Test that all expected commands are available."""
         dispatcher = CLIDispatcher()
 
-        # Verify core commands exist
+        # Verify core scanner commands exist
         assert "scanner" in dispatcher._commands
-        assert "database-builder" in dispatcher._commands
-        assert "generate-templates" in dispatcher._commands
-        assert "extract-assets" in dispatcher._commands
-        assert "inspect" in dispatcher._commands
+        assert "server" in dispatcher._commands
+        assert "update-config" in dispatcher._commands
+        assert "gui" in dispatcher._commands
+        assert "process-sav" in dispatcher._commands
+
+        # Database/template tooling moved to the fs-tools app and must be gone
+        assert "database-builder" not in dispatcher._commands
+        assert "generate-templates" not in dispatcher._commands
+        assert "extract-assets" not in dispatcher._commands
+        assert "inspect" not in dispatcher._commands
+        assert "add-icon" not in dispatcher._commands
+        assert "add-mod" not in dispatcher._commands
+        assert "catalog" not in dispatcher._commands
 
 
 class TestCLIDispatcherAliases:
@@ -118,7 +127,7 @@ class TestCLIDispatcherHelp:
 
         assert "Foxhole Stockpiles" in help_text
         assert "scanner" in help_text
-        assert "database-builder" in help_text
+        assert "process-sav" in help_text
         assert "Usage:" in help_text
 
     async def test_get_help_includes_aliases(self) -> None:

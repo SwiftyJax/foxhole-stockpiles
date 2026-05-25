@@ -220,7 +220,6 @@ class TestTranslationFile:
         translator = Translator("en")
 
         assert translator.get("main_window.menu.file") == "&File"
-        assert translator.get("main_window.menu.database") == "&Database"
         assert translator.get("main_window.menu.help") == "&Help"
 
 
@@ -249,7 +248,6 @@ class TestSpanishTranslations:
         """Test Spanish menu strings."""
         translator = Translator("es")
         assert translator.get("main_window.menu.file") == "&Archivo"
-        assert translator.get("main_window.menu.database") == "&Base de datos"
         assert translator.get("main_window.menu.help") == "A&yuda"
 
     def test_spanish_format_parameters(self) -> None:

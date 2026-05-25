@@ -78,40 +78,10 @@ class CLIDispatcher:
                 module="foxhole_stockpiles.commands.stockpile_scanner.stockpile_scanner",
                 aliases=["scan"],
             ),
-            "database-builder": CommandInfo(
-                description="Build optimized template databases",
-                module="foxhole_stockpiles.commands.database_builder.database_builder",
-                aliases=["build"],
-            ),
-            "generate-templates": CommandInfo(
-                description="Generate resolution-specific templates",
-                module="foxhole_stockpiles.commands.generate_templates.generate_templates",
-                aliases=["generate"],
-            ),
-            "extract-assets": CommandInfo(
-                description="Extract assets from Foxhole PAK files",
-                module="foxhole_stockpiles.commands.uasset_extractor.uasset_extractor",
-                aliases=["extract"],
-            ),
-            "inspect": CommandInfo(
-                description="Inspect and debug template databases",
-                module="foxhole_stockpiles.commands.candidate_inspector.candidate_inspector",
-                aliases=["debug"],
-            ),
             "server": CommandInfo(
                 description="Start the API server",
                 module="foxhole_stockpiles.commands.api_server.api_server",
                 aliases=["api"],
-            ),
-            "add-icon": CommandInfo(
-                description="Add individual icons to template database",
-                module="foxhole_stockpiles.commands.add_icon.add_icon",
-                aliases=["add"],
-            ),
-            "add-mod": CommandInfo(
-                description="Add a mod to the template database (full pipeline)",
-                module="foxhole_stockpiles.commands.add_mod.add_mod",
-                aliases=["mod"],
             ),
             "update-config": CommandInfo(
                 description="Update .fs_config to the latest version",
@@ -122,11 +92,6 @@ class CLIDispatcher:
                 description="Launch the GUI application",
                 module="foxhole_stockpiles.commands.gui.gui",
                 aliases=["ui", "app"],
-            ),
-            "catalog": CommandInfo(
-                description="Build item catalog from game PAK files",
-                module="foxhole_stockpiles.commands.catalog_builder.catalog_builder",
-                aliases=["catalog-builder"],
             ),
             "process-sav": CommandInfo(
                 description="Process Foxhole save files for stockpile data",
@@ -194,8 +159,10 @@ class CLIDispatcher:
         lines.append("Examples:")
         lines.append("  fs scanner --database db.h5 --image screenshot.png")
         lines.append("  fs scan --help")
-        lines.append("  fs database-builder --catalog catalog.json --templates templates/")
-        lines.append("  fs extract-assets --catalog catalog.json --pak game.pak")
+        lines.append("  fs server --host 0.0.0.0 --port 8000")
+        lines.append("  fs process-sav --input save.sav")
+        lines.append("")
+        lines.append("Database/template tooling now lives in the separate 'fs-tools' app.")
         lines.append("")
         lines.append("For help with a specific command:")
         lines.append("  fs <command> --help")

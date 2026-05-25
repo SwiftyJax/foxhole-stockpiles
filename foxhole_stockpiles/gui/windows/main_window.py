@@ -2,7 +2,6 @@
 
 import logging
 
-from pydantic import ValidationError
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QAction, QCloseEvent, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import (
@@ -18,12 +17,7 @@ from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 from foxhole_stockpiles.gui.widgets.server_control_panel import ServerControlPanel
-from foxhole_stockpiles.gui.windows.catalog_builder_window import CatalogBuilderWindow
 from foxhole_stockpiles.gui.windows.config_window import ConfigWindow
-from foxhole_stockpiles.gui.windows.database_info_window import DatabaseInfoWindow
-from foxhole_stockpiles.gui.windows.database_visualizer_window import DatabaseVisualizerWindow
-from foxhole_stockpiles.gui.windows.debug_image_window import DebugImageWindow
-from foxhole_stockpiles.gui.windows.icon_import_window import IconImportWindow
 from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 
 logger = logging.getLogger(__name__)
@@ -94,37 +88,12 @@ class MainWindow(QMainWindow):
         self.scan_action = self.file_menu.addAction("")
         self.scan_action.triggered.connect(self.scan_screenshot)
 
-        # Build Catalog - hidden at Basic config level
-        self.file_menu.addSeparator()
-        self.build_catalog_action = self.file_menu.addAction("")
-        self.build_catalog_action.triggered.connect(self.show_catalog_builder)
-        self._advanced_menu_actions.append(self.build_catalog_action)
-
         self.file_menu.addSeparator()
 
         self.exit_action = self.file_menu.addAction("")
         self.exit_action.triggered.connect(self.quit_application)
 
-        # Database menu
-        self.database_menu = menu_bar.addMenu("")
-
-        # Build Database - hidden at Basic config level
-        self.build_database_action = self.database_menu.addAction("")
-        self.build_database_action.triggered.connect(self.show_icon_import)
-        self._advanced_menu_actions.append(self.build_database_action)
-
-        self.info_database_action = self.database_menu.addAction("")
-        self.info_database_action.triggered.connect(self.show_database_info)
-
-        # Visualizer - hidden at Basic config level
-        self.visualizer_action = self.database_menu.addAction("")
-        self.visualizer_action.triggered.connect(self.show_database_visualizer)
-        self._advanced_menu_actions.append(self.visualizer_action)
-
-        # Debug Image Viewer - hidden at Basic config level
-        self.debug_viewer_action = self.database_menu.addAction("")
-        self.debug_viewer_action.triggered.connect(self.show_debug_viewer)
-        self._advanced_menu_actions.append(self.debug_viewer_action)
+        # Database/template tooling lives in the separate 'fs-tools' app.
 
         # Help menu
         self.help_menu = menu_bar.addMenu("")
@@ -258,133 +227,6 @@ class MainWindow(QMainWindow):
         self._apply_config_level_to_menus()
         logger.info(f"Config reloaded - minimize_to_tray: {self.minimize_to_tray}")
 
-    def show_icon_import(self) -> None:
-        """Show icon import window as modal dialog centered on main window."""
-        import_window = IconImportWindow(self)
-        import_window.setWindowModality(Qt.WindowModality.ApplicationModal)
-
-        # Connect signal to handle database updates
-        import_window.database_updated.connect(self.server_panel.on_database_updated)
-
-        # Center the import window on the main window
-        main_geometry = self.geometry()
-        import_geometry = import_window.geometry()
-
-        center_x = main_geometry.x() + (main_geometry.width() - import_geometry.width()) // 2
-        center_y = main_geometry.y() + (main_geometry.height() - import_geometry.height()) // 2
-
-        import_window.move(center_x, center_y)
-        import_window.show()
-
-    def show_catalog_builder(self) -> None:
-        """Show catalog builder window as modal dialog centered on main window."""
-        catalog_window = CatalogBuilderWindow(self)
-        catalog_window.setWindowModality(Qt.WindowModality.ApplicationModal)
-
-        # Center the catalog window on the main window
-        main_geometry = self.geometry()
-        catalog_geometry = catalog_window.geometry()
-
-        center_x = main_geometry.x() + (main_geometry.width() - catalog_geometry.width()) // 2
-        center_y = main_geometry.y() + (main_geometry.height() - catalog_geometry.height()) // 2
-
-        catalog_window.move(center_x, center_y)
-        catalog_window.show()
-
-    def show_database_info(self) -> None:
-        """Show database information window."""
-        # Try to get configured database path
-        initial_db_path = None
-        try:
-            settings = AppSettings()
-            if settings.scanner.database_path:
-                initial_db_path = str(settings.scanner.database_path)
-        except (ValidationError, OSError, ValueError):
-            # ValidationError: invalid config values
-            # OSError: config file read error
-            # ValueError: JSON decode error or invalid data
-            pass
-
-        info_window = DatabaseInfoWindow(self, initial_db_path=initial_db_path)
-
-        # Center the info window on the main window
-        main_geometry = self.geometry()
-        info_geometry = info_window.geometry()
-
-        center_x = main_geometry.x() + (main_geometry.width() - info_geometry.width()) // 2
-        center_y = main_geometry.y() + (main_geometry.height() - info_geometry.height()) // 2
-
-        info_window.move(center_x, center_y)
-        info_window.exec()
-
-    def show_database_visualizer(self) -> None:
-        """Show database visualizer window."""
-        # Try to get configured database path
-        database_path = None
-        try:
-            settings = AppSettings()
-            if settings.scanner.database_path:
-                database_path = str(settings.scanner.database_path)
-        except (ValidationError, OSError, ValueError):
-            # ValidationError: invalid config values
-            # OSError: config file read error
-            # ValueError: JSON decode error or invalid data
-            pass
-
-        if not database_path:
-            QMessageBox.warning(
-                self,
-                t("main_window.dialogs.no_database_title"),
-                t("main_window.dialogs.no_database_message"),
-            )
-            return
-
-        visualizer_window = DatabaseVisualizerWindow(self, database_path=database_path)
-
-        # Center the visualizer window on the main window
-        main_geometry = self.geometry()
-        visualizer_geometry = visualizer_window.geometry()
-
-        center_x = main_geometry.x() + (main_geometry.width() - visualizer_geometry.width()) // 2
-        center_y = main_geometry.y() + (main_geometry.height() - visualizer_geometry.height()) // 2
-
-        visualizer_window.move(center_x, center_y)
-        visualizer_window.exec()
-
-    def show_debug_viewer(self) -> None:
-        """Show debug image viewer window."""
-        # Try to get configured database path
-        database_path = None
-        try:
-            settings = AppSettings()
-            if settings.scanner.database_path:
-                database_path = str(settings.scanner.database_path)
-        except (ValidationError, OSError, ValueError):
-            # ValidationError: invalid config values
-            # OSError: config file read error
-            # ValueError: JSON decode error or invalid data
-            pass
-
-        if not database_path:
-            QMessageBox.warning(
-                self,
-                t("main_window.dialogs.no_database_title"),
-                t("main_window.dialogs.no_database_message"),
-            )
-            return
-
-        debug_window = DebugImageWindow(self, database_path=database_path)
-
-        # Center the debug window on the main window
-        main_geometry = self.geometry()
-        debug_geometry = debug_window.geometry()
-
-        center_x = main_geometry.x() + (main_geometry.width() - debug_geometry.width()) // 2
-        center_y = main_geometry.y() + (main_geometry.height() - debug_geometry.height()) // 2
-
-        debug_window.move(center_x, center_y)
-        debug_window.exec()
-
     def show_about(self) -> None:
         """Show about dialog."""
         QMessageBox.about(
@@ -478,15 +320,7 @@ class MainWindow(QMainWindow):
         self.file_menu.setTitle(t("main_window.menu.file"))
         self.config_action.setText(t("main_window.menu.configuration"))
         self.scan_action.setText(t("main_window.menu.scan_screenshot"))
-        self.build_catalog_action.setText(t("main_window.menu.build_catalog"))
         self.exit_action.setText(t("main_window.menu.exit"))
-
-        # Database menu
-        self.database_menu.setTitle(t("main_window.menu.database"))
-        self.build_database_action.setText(t("main_window.menu.build"))
-        self.info_database_action.setText(t("main_window.menu.information"))
-        self.visualizer_action.setText(t("main_window.menu.visualizer"))
-        self.debug_viewer_action.setText(t("main_window.menu.debug_viewer"))
 
         # Help menu
         self.help_menu.setTitle(t("main_window.menu.help"))

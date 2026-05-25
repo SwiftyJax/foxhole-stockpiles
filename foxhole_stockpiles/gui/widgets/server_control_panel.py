@@ -346,7 +346,7 @@ class ServerControlPanel(QWidget):
             self,
             t("server_panel.select_screenshot"),
             "",
-            t("server_panel.image_filter"),
+            t("common.image_filter"),
         )
         if filepath:
             self.process_screenshot(filepath)
@@ -484,10 +484,10 @@ class ServerControlPanel(QWidget):
         # Log table headers
         self.log_display.setHorizontalHeaderLabels(
             [
-                t("server_panel.log_columns.time"),
-                t("server_panel.log_columns.level"),
-                t("server_panel.log_columns.module"),
-                t("server_panel.log_columns.message"),
+                t("common.log_columns.time"),
+                t("common.log_columns.level"),
+                t("common.log_columns.module"),
+                t("common.log_columns.message"),
             ]
         )
 
