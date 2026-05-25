@@ -8,10 +8,8 @@ This service orchestrates the full pipeline for adding a mod to the database:
 """
 
 import logging
-import os
 import re
 import shutil
-import subprocess
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
@@ -27,6 +25,7 @@ from fs_ocr._impl.template_manager import TemplateManager
 from fs_tools.commands.database_builder.database_builder import DatabaseBuilder
 from fs_tools.commands.generate_templates.generate_templates import TemplateGenerator
 from fs_tools.commands.uasset_extractor.uasset_extractor import PakExtractor
+from fs_tools.services import external_tools
 
 logger = logging.getLogger(__name__)
 
@@ -201,58 +200,13 @@ class ModImporter:
     def get_wsl_temp_dir() -> str | None:
         """Get Windows-accessible temp directory when running in WSL.
 
+        Delegates to the shared implementation in
+        :mod:`fs_tools.services.external_tools`.
+
         Returns:
             str | None: Path to Windows temp directory, or None if not in WSL
         """
-        # Check if running in WSL
-        try:
-            with open("/proc/version") as f:
-                version_info = f.read().lower()
-                if "microsoft" not in version_info:
-                    logger.debug("Not running in WSL, using default temp directory")
-                    return None
-        except Exception as e:
-            logger.debug("Could not detect WSL: %s", e)
-            return None
-
-        logger.info("Detected WSL environment, using Windows temp directory for compatibility")
-
-        # Try to get Windows TEMP directory
-        try:
-            result = subprocess.run(
-                ["powershell.exe", "-Command", "Write-Host $env:TEMP"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=5,
-            )
-            windows_temp = result.stdout.strip()
-            logger.debug("Windows TEMP from PowerShell: %s", windows_temp)
-
-            if not windows_temp:
-                raise ValueError("Empty TEMP path from PowerShell")
-
-            # Convert Windows path to WSL path
-            result = subprocess.run(
-                ["wslpath", "-u", windows_temp],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=5,
-            )
-            wsl_temp_path = result.stdout.strip()
-            logger.debug("WSL temp path: %s", wsl_temp_path)
-
-            # Verify it exists and is writable
-            if os.path.exists(wsl_temp_path) and os.access(wsl_temp_path, os.W_OK):
-                logger.info("Using Windows temp directory: %s", wsl_temp_path)
-                return wsl_temp_path
-            else:
-                logger.warning("Windows temp path not accessible: %s", wsl_temp_path)
-        except Exception as e:
-            logger.warning("Failed to get Windows temp directory: %s", e)
-
-        return None
+        return external_tools.get_wsl_temp_dir()
 
     async def run(self) -> ModImportResult:
         """Run the complete mod import pipeline.

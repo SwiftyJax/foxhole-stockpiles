@@ -12,7 +12,8 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-from foxhole_stockpiles.core.utils import get_subprocess_kwargs, validate_tool_path
+from foxhole_stockpiles.core.utils import validate_tool_path
+from fs_tools.services import external_tools
 
 
 class BlueprintExtractor:
@@ -207,16 +208,10 @@ class BlueprintExtractor:
             ]
 
             try:
-                process = await asyncio.create_subprocess_exec(
-                    *command,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    **get_subprocess_kwargs(),
-                )
-                stdout, stderr = await process.communicate()
+                returncode, _stdout, stderr = await external_tools.run_tool(command)
 
-                if process.returncode != 0:
-                    self.logger.error("Failed to extract %s: %s", directory, stderr.decode())
+                if returncode != 0:
+                    self.logger.error("Failed to extract %s: %s", directory, stderr)
                     raise RuntimeError(f"repak extraction failed for {directory}")
 
                 self.logger.info("Extracted: %s", directory)
@@ -256,23 +251,16 @@ class BlueprintExtractor:
 
         try:
             self.logger.debug("Converting %s", uasset_path.name)
-            process = await asyncio.create_subprocess_exec(
-                *command,
-                stdout=asyncio.subprocess.PIPE,
-                stderr=asyncio.subprocess.PIPE,
-                **get_subprocess_kwargs(),
-            )
+            returncode, _stdout, stderr = await external_tools.run_tool(command)
 
-            stdout, stderr = await process.communicate()
-
-            if process.returncode == 0:
+            if returncode == 0:
                 self.logger.debug("✓ Converted: %s", uasset_path.name)
                 return True, "success"
             else:
                 self.logger.warning(
                     "✗ Failed to convert %s: %s",
                     uasset_path.name,
-                    stderr.decode().strip(),
+                    stderr.strip(),
                 )
                 return False, "failed"
 

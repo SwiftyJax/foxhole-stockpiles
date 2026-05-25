@@ -9,9 +9,7 @@ import argparse
 import asyncio
 import logging
 import multiprocessing
-import os
 import shutil
-import subprocess
 import tempfile
 from collections.abc import Callable
 from copy import copy
@@ -26,6 +24,7 @@ from foxhole_stockpiles.core.utils import (
 )
 from foxhole_stockpiles.models.catalog_item import CatalogItem
 from foxhole_stockpiles.models.pak_validation_result import PakValidationResult
+from fs_tools.services import external_tools
 
 DEFAULT_CATALOG = "catalog.json"
 DEFAULT_PAK_FILES = (
@@ -176,21 +175,15 @@ class PakExtractor:
                 command = [str(extractor_path), "list", str(pak_path)]
                 logger.debug("Listing files in PAK: %s", pak_path)
 
-                process = await asyncio.create_subprocess_exec(
-                    *command,
-                    stdout=asyncio.subprocess.PIPE,
-                    stderr=asyncio.subprocess.PIPE,
-                    **get_subprocess_kwargs(),
-                )
-                stdout, stderr = await process.communicate()
+                returncode, stdout, stderr = await external_tools.run_tool(command)
 
-                if process.returncode == 0:
+                if returncode == 0:
                     # Parse the file list (one file per line)
-                    files = stdout.decode().strip().split("\n")
+                    files = stdout.strip().split("\n")
                     all_files.update(f.strip() for f in files if f.strip())
                     logger.debug("Found %d files in %s", len(files), pak_path.name)
                 else:
-                    logger.warning("Failed to list files in %s: %s", pak_path, stderr.decode())
+                    logger.warning("Failed to list files in %s: %s", pak_path, stderr)
 
             except Exception as e:
                 logger.error("Error listing files in %s: %s", pak_file, e)
@@ -251,13 +244,8 @@ class PakExtractor:
         Returns:
             tuple[bool, bool]: (extractor_is_windows, converter_is_windows)
         """
-        # Check if tools have .exe extension or are in Windows paths
-        extractor_is_windows = str(self.extractor_tool).lower().endswith(".exe") or str(
-            self.extractor_tool
-        ).startswith("/mnt/")
-        converter_is_windows = str(self.converter_tool).lower().endswith(".exe") or str(
-            self.converter_tool
-        ).startswith("/mnt/")
+        extractor_is_windows = external_tools.tool_is_windows(self.extractor_tool)
+        converter_is_windows = external_tools.tool_is_windows(self.converter_tool)
 
         if extractor_is_windows:
             self._logger.info(
@@ -279,56 +267,20 @@ class PakExtractor:
     def _get_wsl_temp_dir() -> str | None:
         """Get Windows-accessible temp directory when running in WSL.
 
+        Delegates to the shared implementation in
+        :mod:`fs_tools.services.external_tools`.
+
         Returns:
             str | None: Path to Windows temp directory, or None if not in WSL or failed
         """
-        # Check if running in WSL
-        try:
-            with open("/proc/version") as f:
-                version_info = f.read().lower()
-                if "microsoft" not in version_info:
-                    return None
-        except OSError:
-            # File doesn't exist or can't be read - not running on Linux/WSL
-            return None
-
-        # Try to get Windows TEMP directory
-        try:
-            # Use powershell.exe to get Windows TEMP variable
-            result = subprocess.run(
-                ["powershell.exe", "-Command", "Write-Host $env:TEMP"],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=5,
-            )
-            windows_temp = result.stdout.strip()
-
-            if not windows_temp:
-                return None
-
-            # Convert Windows path to WSL path using wslpath
-            result = subprocess.run(
-                ["wslpath", "-u", windows_temp],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=5,
-            )
-            wsl_temp_path = result.stdout.strip()
-
-            # Verify it exists and is writable
-            if os.path.exists(wsl_temp_path) and os.access(wsl_temp_path, os.W_OK):
-                return wsl_temp_path
-        except (subprocess.SubprocessError, subprocess.TimeoutExpired, OSError):
-            # Subprocess failed, timed out, or path operations failed
-            pass
-
-        return None
+        return external_tools.get_wsl_temp_dir()
 
     @staticmethod
     def _convert_wsl_path_to_windows(path: str | Path) -> str:
         """Convert WSL path to Windows path for Windows executables.
+
+        Delegates to the shared implementation in
+        :mod:`fs_tools.services.external_tools`.
 
         Args:
             path (str | Path): Path to convert (may be WSL or already Windows)
@@ -336,41 +288,7 @@ class PakExtractor:
         Returns:
             str: Windows-compatible path
         """
-        path_str = str(path)
-
-        # Check if running in WSL
-        is_wsl = (
-            os.path.exists("/proc/version") and "microsoft" in open("/proc/version").read().lower()
-        )
-
-        if not is_wsl:
-            # Not in WSL, return as-is
-            return path_str
-
-        # If path starts with /mnt/, convert it
-        if path_str.startswith("/mnt/"):
-            # Extract drive letter and rest of path
-            parts = path_str[5:].split("/", 1)
-            if len(parts) >= 1:
-                drive_letter = parts[0].upper()
-                rest_of_path = parts[1] if len(parts) > 1 else ""
-                # Convert to Windows path
-                windows_path = f"{drive_letter}:\\" + rest_of_path.replace("/", "\\")
-                return windows_path
-
-        # If it's a relative or other path, try using wslpath command
-        try:
-            result = subprocess.run(
-                ["wslpath", "-w", path_str],
-                capture_output=True,
-                text=True,
-                check=True,
-                timeout=5,
-            )
-            return result.stdout.strip()
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-            # wslpath failed or not available, return original
-            return path_str
+        return external_tools.convert_wsl_path_to_windows(path)
 
     async def extract_single_file(self, file_path: str, temp_dir: str) -> bool:
         """Extract a single file from the PAK files to temporary directory.

@@ -1635,12 +1635,12 @@ class TestWSLPathConversion:
         result = PakExtractor._get_wsl_temp_dir()
         assert result is None
 
-    @patch("os.path.exists", return_value=False)
-    def test_convert_wsl_path_not_in_wsl(self, mock_exists: Mock) -> None:
+    @patch("builtins.open", side_effect=FileNotFoundError)
+    def test_convert_wsl_path_not_in_wsl(self, mock_open: Mock) -> None:
         """Test _convert_wsl_path_to_windows when not in WSL.
 
         Args:
-            mock_exists (Mock): Mocked os.path.exists function.
+            mock_open (Mock): Mocked open used by the WSL detection check.
         """
         path = "/home/user/file.txt"
         result = PakExtractor._convert_wsl_path_to_windows(path)
