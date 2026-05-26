@@ -2,7 +2,6 @@
   "language_name": "Español",
   "language_code": "es",
   "common": {
-    "cancel": "Cancelar",
     "save": "Guardar",
     "close": "Cerrar",
     "browse": "Examinar...",
@@ -10,11 +9,7 @@
     "edit": "Editar",
     "remove": "Eliminar",
     "clear": "Limpiar",
-    "clear_all": "Limpiar todo",
-    "reset": "Restablecer",
     "name": "Nombre",
-    "all": "Todos",
-    "configure": "Configurar...",
     "clear_logs": "Limpiar registros",
     "validation_error": "Error de validación",
     "log_columns": {
@@ -41,10 +36,7 @@
       "quit": "Salir",
       "configuration": "Configuración..."
     },
-    "dialogs": {
-      "no_database_title": "Sin base de datos",
-      "no_database_message": "No hay base de datos configurada. Por favor, configure una ruta de base de datos en los ajustes primero."
-    }
+    "dialogs": {}
   },
   "about": {
     "title": "Acerca de FS",

@@ -2,7 +2,6 @@
   "language_name": "English",
   "language_code": "en",
   "common": {
-    "cancel": "Cancel",
     "save": "Save",
     "close": "Close",
     "browse": "Browse...",
@@ -10,11 +9,7 @@
     "edit": "Edit",
     "remove": "Remove",
     "clear": "Clear",
-    "clear_all": "Clear All",
-    "reset": "Reset",
     "name": "Name",
-    "all": "All",
-    "configure": "Configure...",
     "clear_logs": "Clear Logs",
     "validation_error": "Validation Error",
     "log_columns": {
@@ -41,10 +36,7 @@
       "quit": "Quit",
       "configuration": "Configuration..."
     },
-    "dialogs": {
-      "no_database_title": "No Database",
-      "no_database_message": "No database is configured. Please configure a database path in settings first."
-    }
+    "dialogs": {}
   },
   "about": {
     "title": "About FS",

@@ -1,19 +1,12 @@
 {
   "language_name": "English",
   "language_code": "en",
-
   "common": {
     "cancel": "Cancel",
-    "save": "Save",
     "close": "Close",
     "browse": "Browse...",
-    "add": "Add",
-    "edit": "Edit",
-    "remove": "Remove",
     "clear": "Clear",
     "clear_all": "Clear All",
-    "reset": "Reset",
-    "name": "Name",
     "all": "All",
     "configure": "Configure...",
     "clear_logs": "Clear Logs",
@@ -26,7 +19,6 @@
     },
     "image_filter": "Images (*.png *.jpg *.jpeg);;All Files (*)"
   },
-
   "external_tools_tab": {
     "title": "External Tools",
     "repak_label": "Extractor Tool (repak):",
@@ -43,7 +35,6 @@
     "select_umodel": "Select Converter Tool (umodel)",
     "select_uassetgui": "Select JSON Converter (UAssetGUI)"
   },
-
   "database_builder_tab": {
     "settings_group": "Database Builder Settings",
     "catalog_file": "Catalog File (catalog.json):",
@@ -58,7 +49,6 @@
     "status_note": "<b>Note:</b> The catalog file and external tools (repak, umodel) must be configured for the 'Build Database' feature to work.",
     "select_catalog": "Select Catalog File (catalog.json)"
   },
-
   "tools_window": {
     "title": "FS Tools - v{version}",
     "menu": {
@@ -86,7 +76,6 @@
     "no_database_title": "No database configured",
     "no_database_message": "No template database is configured. Set one in the fs configuration first."
   },
-
   "settings_dialog": {
     "title": "FS Tools Configuration",
     "info": "Configure the database path, external tools and database builder settings used by FS Tools. Changes are saved to the shared configuration file.",
@@ -99,7 +88,6 @@
     "database_placeholder": "Path to template database (.h5)",
     "select_database": "Select Template Database File"
   },
-
   "catalog_builder": {
     "title": "Build Catalog",
     "pak_group": "PAK File",
@@ -133,12 +121,10 @@
     "pak_filter": "PAK Files (*.pak);;All Files (*)",
     "json_filter": "JSON Files (*.json);;All Files (*)"
   },
-
   "catalog_builder_settings": {
     "title": "Catalog Builder Settings",
     "info": "Configure the tools required for building the item catalog from PAK files."
   },
-
   "database_builder": {
     "title": "Build Database",
     "vanilla_group": "Vanilla PAK File (Required)",
@@ -195,12 +181,10 @@
     "select_database": "Select Database File",
     "pak_filter": "PAK Files (*.pak);;All Files (*)"
   },
-
   "database_builder_settings": {
     "title": "Database Builder Settings",
     "info": "Configure the tools and settings required for building the template database."
   },
-
   "database_info_window": {
     "title": "Database Information",
     "database_file": "Database File",
@@ -219,7 +203,6 @@
     "select_database": "Select Database File",
     "database_filter": "HDF5 Database (*.h5);;All Files (*)"
   },
-
   "database_visualizer": {
     "title": "Template Database Visualizer",
     "title_with_resolution": "Template Database Visualizer - {resolution}p",
@@ -283,7 +266,6 @@
     "delete_error_title": "Delete Failed",
     "delete_error_message": "Failed to delete icon: {error}"
   },
-
   "debug_viewer": {
     "title": "Debug Image Viewer",
     "select_screenshot": "Select a screenshot to analyze",
@@ -292,7 +274,6 @@
     "icon_comparison": "Icon Comparison",
     "icon_comparison_tooltip": "Shows detected icon and all DB candidates that pass pHash threshold, sorted by NCC score",
     "detected": "Detected",
-    "scaled": "(scaled)",
     "scan_error_title": "Scan Error",
     "database_error_title": "Database Error",
     "unknown": "Unknown",

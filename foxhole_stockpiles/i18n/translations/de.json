@@ -2,7 +2,6 @@
   "language_name": "Deutsch",
   "language_code": "de",
   "common": {
-    "cancel": "Abbrechen",
     "save": "Speichern",
     "close": "Schließen",
     "browse": "Durchsuchen...",
@@ -10,11 +9,7 @@
     "edit": "Bearbeiten",
     "remove": "Entfernen",
     "clear": "Löschen",
-    "clear_all": "Alles löschen",
-    "reset": "Zurücksetzen",
     "name": "Name",
-    "all": "Alle",
-    "configure": "Konfigurieren...",
     "clear_logs": "Protokolle löschen",
     "validation_error": "Validierungsfehler",
     "log_columns": {
@@ -41,10 +36,7 @@
       "quit": "Beenden",
       "configuration": "Konfiguration..."
     },
-    "dialogs": {
-      "no_database_title": "Keine Datenbank",
-      "no_database_message": "Keine Datenbank konfiguriert. Bitte konfigurieren Sie zuerst einen Datenbankpfad in den Einstellungen."
-    }
+    "dialogs": {}
   },
   "about": {
     "title": "Über FS",

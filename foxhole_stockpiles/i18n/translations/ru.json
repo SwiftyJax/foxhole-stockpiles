@@ -2,7 +2,6 @@
   "language_name": "Русский",
   "language_code": "ru",
   "common": {
-    "cancel": "Отмена",
     "save": "Сохранить",
     "close": "Закрыть",
     "browse": "Обзор...",
@@ -10,11 +9,7 @@
     "edit": "Редактировать",
     "remove": "Удалить",
     "clear": "Очистить",
-    "clear_all": "Очистить всё",
-    "reset": "Сбросить",
     "name": "Имя",
-    "all": "Все",
-    "configure": "Настроить...",
     "clear_logs": "Очистить журнал",
     "validation_error": "Ошибка проверки",
     "log_columns": {
@@ -41,10 +36,7 @@
       "quit": "Выход",
       "configuration": "Конфигурация..."
     },
-    "dialogs": {
-      "no_database_title": "Нет базы данных",
-      "no_database_message": "База данных не настроена. Пожалуйста, сначала укажите путь к базе данных в настройках."
-    }
+    "dialogs": {}
   },
   "about": {
     "title": "О программе FS",

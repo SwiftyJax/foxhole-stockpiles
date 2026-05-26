@@ -1,19 +1,12 @@
 {
   "language_name": "Deutsch",
   "language_code": "de",
-
   "common": {
     "cancel": "Abbrechen",
-    "save": "Speichern",
     "close": "Schließen",
     "browse": "Durchsuchen...",
-    "add": "Hinzufügen",
-    "edit": "Bearbeiten",
-    "remove": "Entfernen",
     "clear": "Löschen",
     "clear_all": "Alles löschen",
-    "reset": "Zurücksetzen",
-    "name": "Name",
     "all": "Alle",
     "configure": "Konfigurieren...",
     "clear_logs": "Protokolle löschen",
@@ -26,7 +19,6 @@
     },
     "image_filter": "Bilder (*.png *.jpg *.jpeg);;Alle Dateien (*)"
   },
-
   "external_tools_tab": {
     "title": "Externe Werkzeuge",
     "repak_label": "Extraktor-Werkzeug (repak):",
@@ -43,7 +35,6 @@
     "select_umodel": "Konverter-Werkzeug (umodel) auswählen",
     "select_uassetgui": "JSON-Konverter (UAssetGUI) auswählen"
   },
-
   "database_builder_tab": {
     "settings_group": "Datenbank-Builder-Einstellungen",
     "catalog_file": "Katalogdatei (catalog.json):",
@@ -58,7 +49,6 @@
     "status_note": "<b>Hinweis:</b> Die Katalogdatei und externe Werkzeuge (repak, umodel) müssen konfiguriert sein damit die 'Datenbank erstellen'-Funktion funktioniert.",
     "select_catalog": "Katalogdatei (catalog.json) auswählen"
   },
-
   "tools_window": {
     "title": "FS Tools - v{version}",
     "menu": {
@@ -86,7 +76,6 @@
     "no_database_title": "Keine Datenbank konfiguriert",
     "no_database_message": "Keine Vorlagendatenbank konfiguriert. Bitte konfigurieren Sie zuerst eine in der fs-Konfiguration."
   },
-
   "settings_dialog": {
     "title": "FS Tools-Konfiguration",
     "info": "Konfigurieren Sie den Datenbankpfad, externe Tools und die Datenbank-Builder-Einstellungen, die von FS Tools verwendet werden. Änderungen werden in der gemeinsamen Konfigurationsdatei gespeichert.",
@@ -99,7 +88,6 @@
     "database_placeholder": "Pfad zur Vorlagendatenbank (.h5)",
     "select_database": "Vorlagendatenbankdatei auswählen"
   },
-
   "catalog_builder": {
     "title": "Katalog erstellen",
     "pak_group": "PAK-Datei",
@@ -133,12 +121,10 @@
     "pak_filter": "PAK-Dateien (*.pak);;Alle Dateien (*)",
     "json_filter": "JSON-Dateien (*.json);;Alle Dateien (*)"
   },
-
   "catalog_builder_settings": {
     "title": "Katalog-Builder-Einstellungen",
     "info": "Konfigurieren Sie die Werkzeuge die für den Aufbau des Objektkatalogs aus PAK-Dateien erforderlich sind."
   },
-
   "database_builder": {
     "title": "Datenbank erstellen",
     "vanilla_group": "Vanilla PAK-Datei (Erforderlich)",
@@ -195,12 +181,10 @@
     "select_database": "Datenbankdatei auswählen",
     "pak_filter": "PAK-Dateien (*.pak);;Alle Dateien (*)"
   },
-
   "database_builder_settings": {
     "title": "Datenbank-Builder-Einstellungen",
     "info": "Konfigurieren Sie die Werkzeuge und Einstellungen die für den Aufbau der Vorlagen-Datenbank erforderlich sind."
   },
-
   "database_info_window": {
     "title": "Datenbankinformationen",
     "database_file": "Datenbankdatei",
@@ -219,7 +203,6 @@
     "select_database": "Datenbankdatei auswählen",
     "database_filter": "HDF5-Datenbank (*.h5);;Alle Dateien (*)"
   },
-
   "database_visualizer": {
     "title": "Vorlagen-Datenbank-Visualisierer",
     "title_with_resolution": "Vorlagen-Datenbank-Visualisierer - {resolution}p",
@@ -283,7 +266,6 @@
     "delete_error_title": "Löschen fehlgeschlagen",
     "delete_error_message": "Fehler beim Löschen des Symbols: {error}"
   },
-
   "debug_viewer": {
     "title": "Debug-Bildanzeige",
     "select_screenshot": "Wählen Sie einen Screenshot zur Analyse",
@@ -292,7 +274,6 @@
     "icon_comparison": "Icon-Vergleich",
     "icon_comparison_tooltip": "Zeigt erkanntes Icon und alle DB-Kandidaten, die den pHash-Schwellwert überschreiten, sortiert nach NCC-Score",
     "detected": "Erkannt",
-    "scaled": "(skaliert)",
     "scan_error_title": "Scanfehler",
     "database_error_title": "Datenbankfehler",
     "unknown": "Unbekannt",

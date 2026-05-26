@@ -2,7 +2,6 @@
   "language_name": "Português",
   "language_code": "pt",
   "common": {
-    "cancel": "Cancelar",
     "save": "Guardar",
     "close": "Fechar",
     "browse": "Procurar...",
@@ -10,11 +9,7 @@
     "edit": "Editar",
     "remove": "Remover",
     "clear": "Limpar",
-    "clear_all": "Limpar tudo",
-    "reset": "Repor",
     "name": "Nome",
-    "all": "Todos",
-    "configure": "Configurar...",
     "clear_logs": "Limpar registos",
     "validation_error": "Erro de validação",
     "log_columns": {
@@ -41,10 +36,7 @@
       "quit": "Sair",
       "configuration": "Configuração..."
     },
-    "dialogs": {
-      "no_database_title": "Sem base de dados",
-      "no_database_message": "Nenhuma base de dados configurada. Por favor, configure primeiro um caminho de base de dados nas definições."
-    }
+    "dialogs": {}
   },
   "about": {
     "title": "Sobre o FS",

@@ -50,8 +50,8 @@ class TestTranslator:
     def test_get_nested_key(self) -> None:
         """Test getting a nested translation key."""
         translator = Translator("en")
-        result = translator.get("common.cancel")
-        assert result == "Cancel"
+        result = translator.get("common.close")
+        assert result == "Close"
 
     def test_get_deeply_nested_key(self) -> None:
         """Test getting a deeply nested translation key."""
@@ -81,7 +81,7 @@ class TestTranslator:
     def test_call_is_shorthand_for_get(self) -> None:
         """Test that __call__ is a shorthand for get."""
         translator = Translator("en")
-        assert translator("common.cancel") == translator.get("common.cancel")
+        assert translator("common.close") == translator.get("common.close")
         assert translator("main_window.title", version="2.0") == translator.get(
             "main_window.title", version="2.0"
         )
@@ -122,8 +122,8 @@ class TestGlobalTranslator:
 
     def test_t_function(self) -> None:
         """Test the convenience t() function."""
-        result = t("common.cancel")
-        assert result == "Cancel"
+        result = t("common.close")
+        assert result == "Close"
 
     def test_t_function_with_params(self) -> None:
         """Test the t() function with format parameters."""
@@ -210,7 +210,6 @@ class TestTranslationFile:
         """Test that common section has basic strings."""
         translator = Translator("en")
 
-        assert translator.get("common.cancel") == "Cancel"
         assert translator.get("common.save") == "Save"
         assert translator.get("common.close") == "Close"
         assert translator.get("common.browse") == "Browse..."
@@ -240,7 +239,6 @@ class TestSpanishTranslations:
     def test_spanish_common_strings(self) -> None:
         """Test Spanish common strings."""
         translator = Translator("es")
-        assert translator.get("common.cancel") == "Cancelar"
         assert translator.get("common.save") == "Guardar"
         assert translator.get("common.close") == "Cerrar"
 

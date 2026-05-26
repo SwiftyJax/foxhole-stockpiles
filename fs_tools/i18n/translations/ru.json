@@ -1,19 +1,12 @@
 {
   "language_name": "Русский",
   "language_code": "ru",
-
   "common": {
     "cancel": "Отмена",
-    "save": "Сохранить",
     "close": "Закрыть",
     "browse": "Обзор...",
-    "add": "Добавить",
-    "edit": "Редактировать",
-    "remove": "Удалить",
     "clear": "Очистить",
     "clear_all": "Очистить всё",
-    "reset": "Сбросить",
-    "name": "Имя",
     "all": "Все",
     "configure": "Настроить...",
     "clear_logs": "Очистить журнал",
@@ -26,7 +19,6 @@
     },
     "image_filter": "Изображения (*.png *.jpg *.jpeg);;Все файлы (*)"
   },
-
   "external_tools_tab": {
     "title": "Внешние инструменты",
     "repak_label": "Инструмент извлечения (repak):",
@@ -43,7 +35,6 @@
     "select_umodel": "Выберите инструмент конвертации (umodel)",
     "select_uassetgui": "Выберите JSON конвертер (UAssetGUI)"
   },
-
   "database_builder_tab": {
     "settings_group": "Настройки сборщика базы данных",
     "catalog_file": "Файл каталога (catalog.json):",
@@ -58,7 +49,6 @@
     "status_note": "<b>Примечание:</b> Файл каталога и внешние инструменты (repak, umodel) должны быть настроены для работы функции 'Создание базы данных'.",
     "select_catalog": "Выберите файл каталога (catalog.json)"
   },
-
   "tools_window": {
     "title": "FS Tools - v{version}",
     "menu": {
@@ -86,7 +76,6 @@
     "no_database_title": "База данных не настроена",
     "no_database_message": "База данных шаблонов не настроена. Сначала укажите её в конфигурации fs."
   },
-
   "settings_dialog": {
     "title": "Настройки FS Tools",
     "info": "Настройте путь к базе данных, внешние инструменты и параметры конструктора базы данных, используемые FS Tools. Изменения сохраняются в общий файл конфигурации.",
@@ -99,7 +88,6 @@
     "database_placeholder": "Путь к базе данных шаблонов (.h5)",
     "select_database": "Выбрать файл базы данных шаблонов"
   },
-
   "catalog_builder": {
     "title": "Создание каталога",
     "pak_group": "PAK файл",
@@ -133,12 +121,10 @@
     "pak_filter": "PAK файлы (*.pak);;Все файлы (*)",
     "json_filter": "JSON файлы (*.json);;Все файлы (*)"
   },
-
   "catalog_builder_settings": {
     "title": "Настройки сборщика каталога",
     "info": "Настройте инструменты, необходимые для создания каталога предметов из PAK файлов."
   },
-
   "database_builder": {
     "title": "Создание базы данных",
     "vanilla_group": "Ванильный PAK файл (обязательно)",
@@ -195,12 +181,10 @@
     "select_database": "Выберите файл базы данных",
     "pak_filter": "PAK файлы (*.pak);;Все файлы (*)"
   },
-
   "database_builder_settings": {
     "title": "Настройки сборщика базы данных",
     "info": "Настройте инструменты и параметры, необходимые для создания базы данных шаблонов."
   },
-
   "database_info_window": {
     "title": "Информация о базе данных",
     "database_file": "Файл базы данных",
@@ -219,7 +203,6 @@
     "select_database": "Выберите файл базы данных",
     "database_filter": "База данных HDF5 (*.h5);;Все файлы (*)"
   },
-
   "database_visualizer": {
     "title": "Визуализатор базы данных шаблонов",
     "title_with_resolution": "Визуализатор базы данных шаблонов - {resolution}p",
@@ -283,7 +266,6 @@
     "delete_error_title": "Ошибка удаления",
     "delete_error_message": "Не удалось удалить иконку: {error}"
   },
-
   "debug_viewer": {
     "title": "Просмотр отладочного изображения",
     "select_screenshot": "Выберите скриншот для анализа",
@@ -292,7 +274,6 @@
     "icon_comparison": "Сравнение иконок",
     "icon_comparison_tooltip": "Показывает обнаруженную иконку и всех кандидатов из БД, прошедших порог pHash, отсортированных по оценке NCC",
     "detected": "Обнаружено",
-    "scaled": "(масштабировано)",
     "scan_error_title": "Ошибка сканирования",
     "database_error_title": "Ошибка базы данных",
     "unknown": "Неизвестно",

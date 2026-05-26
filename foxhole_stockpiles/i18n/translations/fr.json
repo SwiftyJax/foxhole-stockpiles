@@ -2,7 +2,6 @@
   "language_name": "Français",
   "language_code": "fr",
   "common": {
-    "cancel": "Annuler",
     "save": "Enregistrer",
     "close": "Fermer",
     "browse": "Parcourir...",
@@ -10,11 +9,7 @@
     "edit": "Modifier",
     "remove": "Supprimer",
     "clear": "Effacer",
-    "clear_all": "Tout effacer",
-    "reset": "Réinitialiser",
     "name": "Nom",
-    "all": "Tous",
-    "configure": "Configurer...",
     "clear_logs": "Effacer les journaux",
     "validation_error": "Erreur de validation",
     "log_columns": {
@@ -41,10 +36,7 @@
       "quit": "Quitter",
       "configuration": "Configuration..."
     },
-    "dialogs": {
-      "no_database_title": "Aucune base de données",
-      "no_database_message": "Aucune base de données configurée. Veuillez d'abord configurer un chemin de base de données dans les paramètres."
-    }
+    "dialogs": {}
   },
   "about": {
     "title": "À propos de FS",
