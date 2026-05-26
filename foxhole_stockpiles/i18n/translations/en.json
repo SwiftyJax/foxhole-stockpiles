@@ -240,6 +240,7 @@
       "webhook_url_required": "Webhook URL is required.",
       "creds_path": "OAuth Credentials Path:",
       "creds_path_placeholder": ".../creds.json",
+      "select_creds": "Select Credentials File",
       "spreadsheet_url": "Spreadsheet URL:",
       "spreadsheet_url_placeholder": "https://docs.google.com/spreadsheets/d/...",
       "sheet_id": "Sheet ID:",

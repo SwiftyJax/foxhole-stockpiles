@@ -135,7 +135,15 @@ class OutputHandlerDialog(QDialog):
 
         self.creds_path_label = QLabel()
         self.creds_path_input = QLineEdit()
-        sheets_layout.addRow(self.creds_path_label, self.creds_path_input)
+
+        creds_layout_widget = QWidget()
+        creds_layout = QHBoxLayout(creds_layout_widget)
+        creds_layout.setContentsMargins(0, 0, 0, 0)
+        self.creds_browse = QPushButton()
+        self.creds_browse.clicked.connect(self.browse_credentials)
+        creds_layout.addWidget(self.creds_path_input)
+        creds_layout.addWidget(self.creds_browse)
+        sheets_layout.addRow(self.creds_path_label, creds_layout_widget)
 
         self.spreadsheet_url_label = QLabel()
         self.spreadsheet_url_input = QLineEdit()
@@ -223,6 +231,7 @@ class OutputHandlerDialog(QDialog):
         self.creds_path_input.setPlaceholderText(
             t("output_tab.handler_dialog.creds_path_placeholder")
         )
+        self.creds_browse.setText(t("common.browse"))
         self.spreadsheet_url_label.setText(t("output_tab.handler_dialog.spreadsheet_url"))
         self.spreadsheet_url_input.setPlaceholderText(
             t("output_tab.handler_dialog.spreadsheet_url_placeholder")
@@ -454,6 +463,17 @@ class OutputHandlerDialog(QDialog):
             format=format_settings,
             handler=handler_settings,
         )
+
+    def browse_credentials(self) -> None:
+        """Open file dialog for credentials path."""
+        filepath, _ = QFileDialog.getOpenFileName(
+            self,
+            t("output_tab.handler_dialog.select_creds"),
+            "",
+            "JSON (*.json);;All Files (*)",
+        )
+        if filepath:
+            self.creds_path_input.setText(filepath)
 
 
 class OutputTab(QWidget):
