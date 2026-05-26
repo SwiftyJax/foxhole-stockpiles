@@ -1,5 +1,7 @@
 """Output settings tab."""
 
+import re
+
 from PyQt6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -324,7 +326,30 @@ class OutputHandlerDialog(QDialog):
                 self.webhook_url_input.setFocus()
                 return
 
-        # TODO: Add validation
+        elif handler_type == "google sheets":
+            id_match = re.search(
+                r"(?<=https://docs.google.com/spreadsheets/d/).*(?=/)",
+                self.spreadsheet_url_input.text(),
+            )
+
+            if id_match is None:
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.spreadsheet_url_invalid"),
+                )
+                self.spreadsheet_url_input.setFocus()
+                return
+
+            sheet_id = self.sheet_id_input.text().strip()
+
+            if not sheet_id:
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.sheet_id_invalid"),
+                )
+                return
 
         self.accept()
 

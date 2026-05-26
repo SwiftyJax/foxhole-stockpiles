@@ -1,8 +1,6 @@
 """Sheets handler settings."""
 
-from typing import Self
-
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field
 
 from foxhole_stockpiles.enums.output_handler_type import OutputHandlerType
 
@@ -21,16 +19,3 @@ class SheetsHandlerSettings(BaseModel):
     )
 
     model_config = ConfigDict(extra="forbid")
-
-    @model_validator(mode="after")
-    def validate_auth_consistency(self) -> Self:
-        """Validate that the OAuth credentials, spreadsheet URL and sheet ID are valid.
-
-        Returns:
-            Self: The validated instance.
-
-        Raises:
-            TBD
-        """
-        # TODO: Implement validation
-        return self

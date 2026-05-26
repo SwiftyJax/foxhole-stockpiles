@@ -32,7 +32,7 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
         self._spreadsheet_url = sheets_settings.spreadsheet_url
         self._spreadsheet_sheet_id = sheets_settings.spreadsheet_sheet_id
 
-    async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> None:
+    async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> dict[str, Any]:
         """Append stockpile data to sheets spreadsheet in FIR format.
 
         Args:
@@ -40,11 +40,9 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
             **kwargs: Additional parameters:
                 - None
 
-        Raises:
-            HttpError: Appending failed due to API/Auth error
+        Returns:
+            dict[str, Any]: Append response data
         """
-        # TODO: add expections
-
         auth_scopes = ["https://www.googleapis.com/auth/spreadsheets"]  # Needed scopes to append
 
         creds = None
@@ -66,8 +64,12 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
             with open(Path("~/.fs_token").expanduser(), "w") as token:
                 token.write(creds.to_json())
 
+        if creds is None:
+            return {"message": "Credentials invalid or authorization failed"}
+            raise ConnectionError()
+
         if self._spreadsheet_url is None:
-            raise ValueError("Spreadsheet URL not set")
+            return {"message": "Spreadsheet URL missing"}
 
         spreadsheet_id_match: Match[str] | None = search(
             pattern=r"(?<=https://docs.google.com/spreadsheets/d/).*(?=/)",
@@ -75,44 +77,44 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
         )  # Get spreadsheet ID from URL (needs tidying up)
 
         if spreadsheet_id_match is None:
-            raise ValueError("Spreadsheet URL invalid")
+            return {"message": "Spreadsheet URL invalid"}
 
         spreadsheet_id = spreadsheet_id_match.group()
 
-        if self._spreadsheet_sheet_id is None:
-            raise ValueError("Spreadsheet sheet invalid")
+        if self._spreadsheet_sheet_id is None or self._spreadsheet_sheet_id.strip() == "":
+            return {"message": "Sheet ID missing"}
+
         self.logger.debug(
             "Appending to spreadsheet (Spreadsheet ID: %s, Sheet: %s)",
             spreadsheet_id,
             self._spreadsheet_sheet_id,
         )
 
+        catalog_service = CatalogService()  # temp hack to get display names working
+        catalog_service._catalog_path = Path("./data/catalog.json")
+
+        # TODO: check is_reserve flag being not set with .sav export
         rows = []
+        for stockpile in stockpiles:
+            for item in stockpile.items:
+                rows.append(
+                    [
+                        str(stockpile.timestamp),
+                        stockpile.type,
+                        stockpile.name if stockpile.is_reserve else "Public",
+                        "NONE",  # no image info provided, value ignored anyway
+                        item.code,
+                        catalog_service.get_display_name(item.code),
+                        item.quantity,
+                        item.crated,
+                    ]
+                )
         try:
             service = build("sheets", "v4", credentials=creds)
 
-            catalog_service = CatalogService()  # temp hack to get display names working
-            catalog_service._catalog_path = Path("./data/catalog.json")
-
-            # TODO: check is_reserve flag being not set with .sav export
-            for stockpile in stockpiles:
-                for item in stockpile.items:
-                    rows.append(
-                        [
-                            str(stockpile.timestamp),
-                            stockpile.type,
-                            "Public" if not stockpile.is_reserve else stockpile.name,
-                            "NONE",  # no image info provided, value ignored anyway
-                            item.code,
-                            catalog_service.get_display_name(item.code),
-                            item.quantity,
-                            item.crated,
-                        ]
-                    )
-
             # Call the Sheets API
             body = {"values": rows}
-            result = (
+            result = await (
                 service.spreadsheets()
                 .values()
                 .append(
@@ -124,6 +126,6 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
                 .execute()
             )
             self.logger.debug("Append result: %s", result)
-
-        except HttpError as err:
-            print(err)
+            return {"status": "ok"}
+        except HttpError:
+            return {"message": "Appending failed"}
