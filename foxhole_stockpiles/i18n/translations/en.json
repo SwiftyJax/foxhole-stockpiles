@@ -243,7 +243,13 @@
       "spreadsheet_url": "Spreadsheet URL:",
       "spreadsheet_url_placeholder": "https://docs.google.com/spreadsheets/d/...",
       "sheet_id": "Sheet ID:",
-      "sheet_id_placeholder": "Sheet1"
+      "sheet_id_placeholder": "Sheet1",
+      "creds_path_required": "Credentials path required",
+      "spreadsheet_url_required": "Spreadsheet URL required",
+      "sheet_id_required": "Sheet ID required",
+      "creds_path_invalid": "Credentials path invalid",
+      "spreadsheet_url_invalid": "Spreadsheet URL invalid",
+      "sheet_url_invalid": "Sheet ID invalid"
     },
     "remove_handler_title": "Remove Handler",
     "remove_handler_message": "Are you sure you want to remove '{name}'?"

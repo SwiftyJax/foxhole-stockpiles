@@ -17,7 +17,7 @@ def sheets_settings() -> SheetsHandlerSettings:
     return SheetsHandlerSettings(
         creds_path="C:/example/creds.json",
         spreadsheet_url="https://docs.google.com/spreadsheets/d/12345/edit?gid=0#gid=0",
-        spreadsheet_sheet_id="Sheet1",
+        sheet_id="Sheet1",
     )
 
 
@@ -76,7 +76,7 @@ class TestSheetsOutputHandlerHandle:
         """Test handling with no URL configured returns message."""
         settings = SheetsHandlerSettings(
             spreadsheet_url="https://docs.google.com/spreadsheets/d/1234/edit?gid=0#gid=0",
-            spreadsheet_sheet_id="",
+            sheet_id="",
         )
         handler = SheetsOutputHandler(settings)
 

@@ -30,7 +30,7 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
         self.logger = logging.getLogger(__name__)
         self._creds_path = sheets_settings.creds_path
         self._spreadsheet_url = sheets_settings.spreadsheet_url
-        self._spreadsheet_sheet_id = sheets_settings.spreadsheet_sheet_id
+        self._spreadsheet_sheet_id = sheets_settings.sheet_id
 
     async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> dict[str, Any]:
         """Append stockpile data to sheets spreadsheet in FIR format.

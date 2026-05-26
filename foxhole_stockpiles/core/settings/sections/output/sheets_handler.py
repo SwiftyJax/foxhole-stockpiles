@@ -14,8 +14,6 @@ class SheetsHandlerSettings(BaseModel):
     )
 
     spreadsheet_url: str | None = Field(description="Spreadsheet to append data to", default=None)
-    spreadsheet_sheet_id: str | None = Field(
-        description="Target sheet id for appending data", default=None
-    )
+    sheet_id: str | None = Field(description="Target sheet id for appending data", default=None)
 
     model_config = ConfigDict(extra="forbid")

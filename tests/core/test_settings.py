@@ -685,11 +685,11 @@ class TestSheetsHandlerSettings:
         settings = SheetsHandlerSettings(
             creds_path="C:/example/creds.json",
             spreadsheet_url="https://docs.google.com/spreadsheets/d/12345/edit?gid=0#gid=0",
-            spreadsheet_sheet_id="Sheet1",
+            sheet_id="Sheet1",
         )
         assert settings.creds_path == "C:/example/creds.json"
         assert (
             settings.spreadsheet_url
             == "https://docs.google.com/spreadsheets/d/12345/edit?gid=0#gid=0"
         )
-        assert settings.spreadsheet_sheet_id == "Sheet1"
+        assert settings.sheet_id == "Sheet1"

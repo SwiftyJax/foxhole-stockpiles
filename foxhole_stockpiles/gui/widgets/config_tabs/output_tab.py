@@ -1,5 +1,6 @@
 """Output settings tab."""
 
+import os
 import re
 
 from PyQt6.QtWidgets import (
@@ -295,7 +296,7 @@ class OutputHandlerDialog(QDialog):
         elif isinstance(handler, SheetsHandlerSettings):
             self.creds_path_input.setText(handler.creds_path or "")
             self.spreadsheet_url_input.setText(handler.spreadsheet_url or "")
-            self.sheet_id_input.setText(handler.spreadsheet_sheet_id or "")
+            self.sheet_id_input.setText(handler.sheet_id or "")
 
         self._on_handler_type_changed()
         self._on_webhook_auth_changed()
@@ -327,6 +328,40 @@ class OutputHandlerDialog(QDialog):
                 return
 
         elif handler_type == "google sheets":
+            if self.creds_path_input.text().strip() == "":
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.creds_path_required"),
+                )
+                self.creds_path_input.setFocus()
+                return
+            if self.spreadsheet_url_input.text().strip() == "":
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.spreadsheet_url_required"),
+                )
+                self.spreadsheet_url_input.setFocus()
+                return
+            if self.sheet_id_input.text().strip() == "":
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.sheet_id_required"),
+                )
+                self.sheet_id_input.setFocus()
+                return
+
+            if not os.path.exists(self.creds_path_input.text()):
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.creds_path_invalid"),
+                )
+                self.spreadsheet_url_input.setFocus()
+                return
+
             id_match = re.search(
                 r"(?<=https://docs.google.com/spreadsheets/d/).*(?=/)",
                 self.spreadsheet_url_input.text(),
@@ -405,7 +440,7 @@ class OutputHandlerDialog(QDialog):
             handler_settings = SheetsHandlerSettings(
                 creds_path=self.creds_path_input.text(),
                 spreadsheet_url=self.spreadsheet_url_input.text(),
-                spreadsheet_sheet_id=self.sheet_id_input.text(),
+                sheet_id=self.sheet_id_input.text(),
             )
             if not name:
                 name = "Append rows (Google Sheets)"
