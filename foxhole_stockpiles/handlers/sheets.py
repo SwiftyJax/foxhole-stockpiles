@@ -1,11 +1,21 @@
-"""Webhook output handler - sends data to webhook endpoint."""
+"""Sheets output handler - appends data to Google Sheets spreadsheet."""
 
 import logging
+import os
+from pathlib import Path
+from re import Match, search
 from typing import Any
 
-from foxhole_stockpiles.core.settings.sections.output import SheetsHandlerSettings
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
+
+from foxhole_stockpiles.core.settings.sections.output.sheets_handler import SheetsHandlerSettings
 from foxhole_stockpiles.handlers.base_handler import BaseOutputDestinationHandler
 from foxhole_stockpiles.models.stockpile import Stockpile
+from foxhole_stockpiles.services.catalog_service import CatalogService
 
 
 class SheetsOutputHandler(BaseOutputDestinationHandler):
@@ -23,15 +33,97 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
         self._spreadsheet_sheet_id = sheets_settings.spreadsheet_sheet_id
 
     async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> None:
-        """Append stockpile data to sheets spreadsheet.
+        """Append stockpile data to sheets spreadsheet in FIR format.
 
         Args:
-            TODO: REWRITE
             stockpiles (list[Stockpile]): The stockpile data to send
             **kwargs: Additional parameters:
-                - token (str | None): Optional auth token to override configured token
+                - None
 
-        Returns:
-            dict[str, Any]: Webhook response data
+        Raises:
+            HttpError: Appending failed due to API/Auth error
         """
-        print("NYI")
+        # TODO: add expections
+
+        auth_scopes = ["https://www.googleapis.com/auth/spreadsheets"]  # Needed scopes to append
+
+        creds = None
+        # Try to find saved token, if it doesn't exist or is invalid, prompt reauth using creds json
+        # Unsure if it should be saved in home directory
+        # might probably move it to temp dir or delete after appending
+        if os.path.exists(Path("~/.fs_token").expanduser()):
+            # ignoring mypy error since it's a import issue
+            creds = Credentials.from_authorized_user_file(  # type: ignore [no-untyped-call]
+                str(Path("~/.fs_token").expanduser()), auth_scopes
+            )
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                flow = InstalledAppFlow.from_client_secrets_file(self._creds_path, auth_scopes)
+                creds = flow.run_local_server(port=0)
+            # Save the credentials for the next run
+            with open(Path("~/.fs_token").expanduser(), "w") as token:
+                token.write(creds.to_json())
+
+        if self._spreadsheet_url is None:
+            raise ValueError("Spreadsheet URL not set")
+
+        spreadsheet_id_match: Match[str] | None = search(
+            pattern=r"(?<=https://docs.google.com/spreadsheets/d/).*(?=/)",
+            string=self._spreadsheet_url,
+        )  # Get spreadsheet ID from URL (needs tidying up)
+
+        if spreadsheet_id_match is None:
+            raise ValueError("Spreadsheet URL invalid")
+
+        spreadsheet_id = spreadsheet_id_match.group()
+
+        if self._spreadsheet_sheet_id is None:
+            raise ValueError("Spreadsheet sheet invalid")
+        self.logger.debug(
+            "Appending to spreadsheet (Spreadsheet ID: %s, Sheet: %s)",
+            spreadsheet_id,
+            self._spreadsheet_sheet_id,
+        )
+
+        rows = []
+        try:
+            service = build("sheets", "v4", credentials=creds)
+
+            catalog_service = CatalogService()  # temp hack to get display names working
+            catalog_service._catalog_path = Path("./data/catalog.json")
+
+            # TODO: check is_reserve flag being not set with .sav export
+            for stockpile in stockpiles:
+                for item in stockpile.items:
+                    rows.append(
+                        [
+                            str(stockpile.timestamp),
+                            stockpile.type,
+                            "Public" if not stockpile.is_reserve else stockpile.name,
+                            "NONE",  # no image info provided, value ignored anyway
+                            item.code,
+                            catalog_service.get_display_name(item.code),
+                            item.quantity,
+                            item.crated,
+                        ]
+                    )
+
+            # Call the Sheets API
+            body = {"values": rows}
+            result = (
+                service.spreadsheets()
+                .values()
+                .append(
+                    spreadsheetId=spreadsheet_id,
+                    range=self._spreadsheet_sheet_id + "!A1",
+                    valueInputOption="USER_ENTERED",
+                    body=body,
+                )
+                .execute()
+            )
+            self.logger.debug("Append result: %s", result)
+
+        except HttpError as err:
+            print(err)

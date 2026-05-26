@@ -90,7 +90,7 @@ disallow_incomplete_defs = true
 plugins = ["pydantic.mypy"]
 
 [[tool.mypy.overrides]]
-module = "pytesseract.*"
+module = ["pytesseract.*", "google_auth_oauthlib.*", "googleapiclient.*"]
 ignore_missing_imports = true
 
 [tool.pydantic-mypy]
