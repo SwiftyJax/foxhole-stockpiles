@@ -114,7 +114,7 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
 
             # Call the Sheets API
             body = {"values": rows}
-            result = await (
+            result = (
                 service.spreadsheets()
                 .values()
                 .append(
