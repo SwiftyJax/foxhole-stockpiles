@@ -61,15 +61,43 @@
 
   "tools_window": {
     "title": "FS Tools - v{version}",
+    "menu": {
+      "file": "Ficheiro"
+    },
+    "sections": {
+      "build": "Construir",
+      "inspect": "Inspecionar"
+    },
     "buttons": {
       "icon_import": "Construtor de base de dados (importar ícones)",
       "catalog_builder": "Construtor de catálogo",
       "visualizer": "Visualizador de base de dados",
       "debug_viewer": "Visualizador de imagem de depuração",
-      "database_info": "Informações da base de dados"
+      "database_info": "Informações da base de dados",
+      "configuration": "Configuração"
+    },
+    "descriptions": {
+      "icon_import": "Constrói a base de dados de modelos de ícones a partir de ficheiros PAK.",
+      "catalog_builder": "Gera catalog.json com todos os itens do jogo a partir de um ficheiro PAK.",
+      "visualizer": "Explorar, comparar e gerir os modelos de ícones na base de dados.",
+      "debug_viewer": "Analisar uma captura para inspecionar a deteção e correspondência de itens.",
+      "database_info": "Ver a contagem de modelos por mod e resolução."
     },
     "no_database_title": "Sem base de dados configurada",
     "no_database_message": "Nenhuma base de dados de modelos está configurada. Configure uma primeiro na configuração do fs."
+  },
+
+  "settings_dialog": {
+    "title": "Configuração do FS Tools",
+    "info": "Configure o caminho da base de dados, as ferramentas externas e as definições do construtor de base de dados usadas pelo FS Tools. As alterações são guardadas no ficheiro de configuração partilhado.",
+    "language_group": "Idioma",
+    "language": "Idioma:",
+    "language_tooltip": "Selecione o idioma da interface.",
+    "database_group": "Base de dados de modelos",
+    "database_path": "Ficheiro de base de dados:",
+    "database_tooltip": "Caminho para a base de dados de modelos HDF5 usada pelo Visualizador, Visualizador de depuração e Informações da base de dados.",
+    "database_placeholder": "Caminho para a base de dados de modelos (.h5)",
+    "select_database": "Selecionar ficheiro de base de dados de modelos"
   },
 
   "catalog_builder": {

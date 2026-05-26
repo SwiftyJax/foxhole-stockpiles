@@ -61,15 +61,43 @@
 
   "tools_window": {
     "title": "FS Tools - v{version}",
+    "menu": {
+      "file": "文件"
+    },
+    "sections": {
+      "build": "构建",
+      "inspect": "检查"
+    },
     "buttons": {
       "icon_import": "数据库构建器（图标导入）",
       "catalog_builder": "目录构建器",
       "visualizer": "数据库可视化器",
       "debug_viewer": "调试图像查看器",
-      "database_info": "数据库信息"
+      "database_info": "数据库信息",
+      "configuration": "配置"
+    },
+    "descriptions": {
+      "icon_import": "从 PAK 文件构建图标模板数据库。",
+      "catalog_builder": "从 PAK 文件生成包含所有游戏物品的 catalog.json。",
+      "visualizer": "浏览、比较和管理数据库中的图标模板。",
+      "debug_viewer": "分析截图以检查物品检测与匹配。",
+      "database_info": "查看每个 mod 和分辨率的模板数量。"
     },
     "no_database_title": "未配置数据库",
     "no_database_message": "未配置模板数据库。请先在 fs 配置中设置一个。"
+  },
+
+  "settings_dialog": {
+    "title": "FS Tools 配置",
+    "info": "配置 FS Tools 使用的数据库路径、外部工具和数据库构建器设置。更改将保存到共享配置文件。",
+    "language_group": "语言",
+    "language": "语言：",
+    "language_tooltip": "选择界面语言。",
+    "database_group": "模板数据库",
+    "database_path": "数据库文件：",
+    "database_tooltip": "可视化器、调试查看器和数据库信息工具使用的 HDF5 模板数据库的路径。",
+    "database_placeholder": "模板数据库路径 (.h5)",
+    "select_database": "选择模板数据库文件"
   },
 
   "catalog_builder": {

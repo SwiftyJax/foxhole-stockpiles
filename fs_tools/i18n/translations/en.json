@@ -61,15 +61,43 @@
 
   "tools_window": {
     "title": "FS Tools - v{version}",
+    "menu": {
+      "file": "File"
+    },
+    "sections": {
+      "build": "Build",
+      "inspect": "Inspect"
+    },
     "buttons": {
       "icon_import": "Database Builder (Icon Import)",
       "catalog_builder": "Catalog Builder",
       "visualizer": "Database Visualizer",
       "debug_viewer": "Debug Image Viewer",
-      "database_info": "Database Info"
+      "database_info": "Database Info",
+      "configuration": "Configuration"
+    },
+    "descriptions": {
+      "icon_import": "Build the icon template database from PAK files.",
+      "catalog_builder": "Generate catalog.json with all game items from a PAK file.",
+      "visualizer": "Browse, compare and manage icon templates in the database.",
+      "debug_viewer": "Analyze a screenshot to inspect item detection and matching.",
+      "database_info": "View template counts per mod and resolution."
     },
     "no_database_title": "No database configured",
     "no_database_message": "No template database is configured. Set one in the fs configuration first."
+  },
+
+  "settings_dialog": {
+    "title": "FS Tools Configuration",
+    "info": "Configure the database path, external tools and database builder settings used by FS Tools. Changes are saved to the shared configuration file.",
+    "language_group": "Language",
+    "language": "Language:",
+    "language_tooltip": "Select the language for the interface.",
+    "database_group": "Template Database",
+    "database_path": "Database File:",
+    "database_tooltip": "Path to the HDF5 template database used by the Visualizer, Debug Viewer and Database Info tools.",
+    "database_placeholder": "Path to template database (.h5)",
+    "select_database": "Select Template Database File"
   },
 
   "catalog_builder": {

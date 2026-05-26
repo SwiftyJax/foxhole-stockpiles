@@ -72,6 +72,14 @@ def test_show_debug_viewer_with_config(window: ToolsMainWindow) -> None:
             mock_cls.return_value.show.assert_called_once()
 
 
+def test_show_settings(window: ToolsMainWindow) -> None:
+    """Opening the settings dialog instantiates and executes it."""
+    with patch("fs_tools.gui.main_window.SettingsDialog") as mock_cls:
+        window.show_settings()
+        mock_cls.assert_called_once_with(window)
+        mock_cls.return_value.exec.assert_called_once()
+
+
 def test_show_database_info(window: ToolsMainWindow) -> None:
     """The database info dialog opens with the configured path."""
     with patch.object(window, "_configured_database_path", return_value="/db.h5"):

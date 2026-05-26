@@ -61,15 +61,43 @@
 
   "tools_window": {
     "title": "FS Tools - v{version}",
+    "menu": {
+      "file": "Archivo"
+    },
+    "sections": {
+      "build": "Crear",
+      "inspect": "Inspeccionar"
+    },
     "buttons": {
       "icon_import": "Constructor de base de datos (importar iconos)",
       "catalog_builder": "Constructor de catálogo",
       "visualizer": "Visualizador de base de datos",
       "debug_viewer": "Visor de imagen de depuración",
-      "database_info": "Información de base de datos"
+      "database_info": "Información de base de datos",
+      "configuration": "Configuración"
+    },
+    "descriptions": {
+      "icon_import": "Construye la base de datos de plantillas de iconos desde archivos PAK.",
+      "catalog_builder": "Genera catalog.json con todos los objetos del juego desde un archivo PAK.",
+      "visualizer": "Explora, compara y gestiona las plantillas de iconos de la base de datos.",
+      "debug_viewer": "Analiza una captura para inspeccionar la detección y coincidencia de objetos.",
+      "database_info": "Muestra el número de plantillas por mod y resolución."
     },
     "no_database_title": "Sin base de datos configurada",
     "no_database_message": "No hay ninguna base de datos de plantillas configurada. Configúrela primero en la configuración de fs."
+  },
+
+  "settings_dialog": {
+    "title": "Configuración de FS Tools",
+    "info": "Configura la ruta de la base de datos, las herramientas externas y los ajustes del constructor de base de datos que usa FS Tools. Los cambios se guardan en el archivo de configuración compartido.",
+    "language_group": "Idioma",
+    "language": "Idioma:",
+    "language_tooltip": "Selecciona el idioma de la interfaz.",
+    "database_group": "Base de datos de plantillas",
+    "database_path": "Archivo de base de datos:",
+    "database_tooltip": "Ruta a la base de datos de plantillas HDF5 usada por el Visualizador, el Visor de depuración y la Información de base de datos.",
+    "database_placeholder": "Ruta a la base de datos de plantillas (.h5)",
+    "select_database": "Seleccionar archivo de base de datos de plantillas"
   },
 
   "catalog_builder": {

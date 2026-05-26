@@ -93,7 +93,7 @@ class DatabaseBuilderTab(QWidget):
         resolutions_layout.addWidget(self.resolutions_info)
 
         self.resolution_list = QListWidget()
-        self.resolution_list.setMaximumHeight(200)
+        self.resolution_list.setMaximumHeight(100)
 
         # Add "All" option first (will be translated in retranslate)
         all_item = self.resolution_list.addItem("")

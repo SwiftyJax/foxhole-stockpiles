@@ -61,15 +61,43 @@
 
   "tools_window": {
     "title": "FS Tools - v{version}",
+    "menu": {
+      "file": "Datei"
+    },
+    "sections": {
+      "build": "Erstellen",
+      "inspect": "Untersuchen"
+    },
     "buttons": {
       "icon_import": "Datenbank-Builder (Icon-Import)",
       "catalog_builder": "Katalog-Builder",
       "visualizer": "Datenbank-Visualisierer",
       "debug_viewer": "Debug-Bildanzeige",
-      "database_info": "Datenbankinformationen"
+      "database_info": "Datenbankinformationen",
+      "configuration": "Konfiguration"
+    },
+    "descriptions": {
+      "icon_import": "Erstellt die Icon-Vorlagendatenbank aus PAK-Dateien.",
+      "catalog_builder": "Erzeugt catalog.json mit allen Spielobjekten aus einer PAK-Datei.",
+      "visualizer": "Vorlagen in der Datenbank durchsuchen, vergleichen und verwalten.",
+      "debug_viewer": "Screenshot analysieren, um Erkennung und Abgleich zu prüfen.",
+      "database_info": "Vorlagenanzahl pro Mod und Auflösung anzeigen."
     },
     "no_database_title": "Keine Datenbank konfiguriert",
     "no_database_message": "Keine Vorlagendatenbank konfiguriert. Bitte konfigurieren Sie zuerst eine in der fs-Konfiguration."
+  },
+
+  "settings_dialog": {
+    "title": "FS Tools-Konfiguration",
+    "info": "Konfigurieren Sie den Datenbankpfad, externe Tools und die Datenbank-Builder-Einstellungen, die von FS Tools verwendet werden. Änderungen werden in der gemeinsamen Konfigurationsdatei gespeichert.",
+    "language_group": "Sprache",
+    "language": "Sprache:",
+    "language_tooltip": "Sprache für die Oberfläche auswählen.",
+    "database_group": "Vorlagendatenbank",
+    "database_path": "Datenbankdatei:",
+    "database_tooltip": "Pfad zur HDF5-Vorlagendatenbank, die von Visualisierer, Debug-Anzeige und Datenbankinformationen verwendet wird.",
+    "database_placeholder": "Pfad zur Vorlagendatenbank (.h5)",
+    "select_database": "Vorlagendatenbankdatei auswählen"
   },
 
   "catalog_builder": {
