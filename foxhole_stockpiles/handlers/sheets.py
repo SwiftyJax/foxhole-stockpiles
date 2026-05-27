@@ -104,6 +104,7 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
                         get_catalog_service().get_display_name(item.code),
                         item.quantity,
                         item.crated,
+                        stockpile.timestamp.timestamp(),
                     ]
                 )
         try:
