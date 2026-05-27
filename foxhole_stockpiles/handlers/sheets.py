@@ -15,7 +15,6 @@ from googleapiclient.errors import HttpError
 from foxhole_stockpiles.core.settings.sections.output.sheets_handler import SheetsHandlerSettings
 from foxhole_stockpiles.handlers.base_handler import BaseOutputDestinationHandler
 from foxhole_stockpiles.models.stockpile import Stockpile
-from foxhole_stockpiles.services.catalog_service import CatalogService
 
 
 class SheetsOutputHandler(BaseOutputDestinationHandler):
@@ -43,6 +42,8 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
         Returns:
             dict[str, Any]: Append response data
         """
+        from foxhole_stockpiles.api.dependencies import get_catalog_service
+
         auth_scopes = ["https://www.googleapis.com/auth/spreadsheets"]  # Needed scopes to append
 
         creds = None
@@ -74,7 +75,7 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
         spreadsheet_id_match: Match[str] | None = search(
             pattern=r"(?<=https://docs.google.com/spreadsheets/d/).*(?=/)",
             string=self._spreadsheet_url,
-        )  # Get spreadsheet ID from URL (needs tidying up)
+        )  # Get spreadsheet ID from URL
 
         if spreadsheet_id_match is None:
             return {"message": "Spreadsheet URL invalid"}
@@ -90,9 +91,6 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
             self._spreadsheet_sheet_id,
         )
 
-        catalog_service = CatalogService()  # temp hack to get display names working
-        catalog_service._catalog_path = Path("./data/catalog.json")
-
         rows = []
         for stockpile in stockpiles:
             for item in stockpile.items:
@@ -103,7 +101,7 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
                         stockpile.name if stockpile.is_reserve else "Public",
                         "NONE",  # no image info provided, value ignored anyway
                         item.code,
-                        catalog_service.get_display_name(item.code),
+                        get_catalog_service().get_display_name(item.code),
                         item.quantity,
                         item.crated,
                     ]
