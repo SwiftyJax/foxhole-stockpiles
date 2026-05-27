@@ -93,7 +93,6 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
         catalog_service = CatalogService()  # temp hack to get display names working
         catalog_service._catalog_path = Path("./data/catalog.json")
 
-        # TODO: check is_reserve flag being not set with .sav export
         rows = []
         for stockpile in stockpiles:
             for item in stockpile.items:
