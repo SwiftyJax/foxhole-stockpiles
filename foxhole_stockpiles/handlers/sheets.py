@@ -1,5 +1,6 @@
 """Sheets output handler - appends data to Google Sheets spreadsheet."""
 
+import asyncio
 import logging
 import os
 from pathlib import Path
@@ -48,8 +49,6 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
 
         creds = None
         # Try to find saved token, if it doesn't exist or is invalid, prompt reauth using creds json
-        # Unsure if it should be saved in home directory
-        # might probably move it to temp dir or delete after appending
         if os.path.exists(Path("~/.fs_token").expanduser()):
             # ignoring mypy error since it's a import issue
             creds = Credentials.from_authorized_user_file(  # type: ignore [no-untyped-call]
@@ -57,13 +56,16 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
             )
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
+                await asyncio.to_thread(creds.refresh, Request())
             else:
+                if self._creds_path is None or not os.path.exists(self._creds_path):
+                    return {"message": "Credentials missing"}
                 flow = InstalledAppFlow.from_client_secrets_file(self._creds_path, auth_scopes)
-                creds = flow.run_local_server(port=0)
+                creds = await asyncio.to_thread(flow.run_local_server, port=0)
             # Save the credentials for the next run
             with open(Path("~/.fs_token").expanduser(), "w") as token:
-                token.write(creds.to_json())
+                if creds:
+                    token.write(creds.to_json())
 
         if creds is None:
             return {"message": "Credentials invalid or authorization failed"}
@@ -103,7 +105,7 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
 
             # Call the Sheets API
             body = {"values": rows}
-            result = (
+            result = await asyncio.to_thread(
                 service.spreadsheets()
                 .values()
                 .append(
@@ -112,8 +114,9 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
                     valueInputOption="USER_ENTERED",
                     body=body,
                 )
-                .execute()
+                .execute
             )
+
             self.logger.debug("Append result: %s", result)
             return {"status": "ok"}
         except HttpError:
@@ -171,6 +174,8 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
                             row.append(item.quantity)
                         case "item_crated":
                             row.append(item.crated)
+                        case "NONE":
+                            row.append(None)
 
                 values.append(row)
 
