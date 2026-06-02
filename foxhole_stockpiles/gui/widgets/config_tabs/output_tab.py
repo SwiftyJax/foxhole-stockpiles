@@ -153,6 +153,14 @@ class OutputHandlerDialog(QDialog):
         self.sheet_id_input = QLineEdit()
         sheets_layout.addRow(self.sheet_id_label, self.sheet_id_input)
 
+        self.start_cell_label = QLabel()
+        self.start_cell_input = QLineEdit()
+        sheets_layout.addRow(self.start_cell_label, self.start_cell_input)
+
+        self.row_format_label = QLabel()
+        self.row_format_input = QLineEdit()
+        sheets_layout.addRow(self.row_format_label, self.row_format_input)
+
         layout.addWidget(self.sheets_group)
 
         # Button box
@@ -239,6 +247,17 @@ class OutputHandlerDialog(QDialog):
         self.sheet_id_label.setText(t("output_tab.handler_dialog.sheet_id"))
         self.sheet_id_input.setPlaceholderText(t("output_tab.handler_dialog.sheet_id_placeholder"))
 
+        self.start_cell_label.setText(t("output_tab.handler_dialog.start_cell"))
+        self.start_cell_input.setPlaceholderText(
+            t("output_tab.handler_dialog.start_cell_placeholder")
+        )
+
+        self.row_format_label.setText(t("output_tab.handler_dialog.row_format"))
+        self.row_format_input.setPlaceholderText(
+            t("output_tab.handler_dialog.row_format_placeholder")
+        )
+        self.row_format_input.setToolTip(t("output_tab.handler_dialog.row_format_tooltip"))
+
     def _on_handler_type_changed(self) -> None:
         """Handle handler type change to show/hide relevant sections."""
         handler_type = self.handler_type_input.currentText()
@@ -306,6 +325,8 @@ class OutputHandlerDialog(QDialog):
             self.creds_path_input.setText(handler.creds_path or "")
             self.spreadsheet_url_input.setText(handler.spreadsheet_url or "")
             self.sheet_id_input.setText(handler.sheet_id or "")
+            self.start_cell_input.setText(handler.start_cell or "")
+            self.row_format_input.setText(handler.row_format or "")
 
         self._on_handler_type_changed()
         self._on_webhook_auth_changed()
@@ -395,6 +416,22 @@ class OutputHandlerDialog(QDialog):
                 )
                 return
 
+            if not bool(re.search("[a-zA-Z]+[1-9][0-9]*", self.start_cell_input.text())):
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.start_cell_invalid"),
+                )
+                return
+
+            if self.row_format_input.text().strip() == "":
+                QMessageBox.warning(
+                    self,
+                    t("common.validation_error"),
+                    t("output_tab.handler_dialog.row_format_missing"),
+                )
+                return
+
         self.accept()
 
     def get_handler_config(self) -> OutputHandlerConfig:
@@ -450,6 +487,8 @@ class OutputHandlerDialog(QDialog):
                 creds_path=self.creds_path_input.text(),
                 spreadsheet_url=self.spreadsheet_url_input.text(),
                 sheet_id=self.sheet_id_input.text(),
+                start_cell=self.start_cell_input.text(),
+                row_format=self.row_format_input.text(),
             )
             if not name:
                 name = "Append rows (Google Sheets)"

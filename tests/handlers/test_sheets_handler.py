@@ -45,7 +45,7 @@ class TestSheetsOutputHandlerInit:
             handler._spreadsheet_url
             == "https://docs.google.com/spreadsheets/d/12345/edit?gid=0#gid=0"
         )
-        assert handler._spreadsheet_sheet_id == "Sheet1"
+        assert handler._sheet_id == "Sheet1"
 
 
 class TestSheetsOutputHandlerHandle:

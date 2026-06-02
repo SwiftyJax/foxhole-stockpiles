@@ -15,5 +15,7 @@ class SheetsHandlerSettings(BaseModel):
 
     spreadsheet_url: str | None = Field(description="Spreadsheet to append data to", default=None)
     sheet_id: str | None = Field(description="Target sheet id for appending data", default=None)
+    start_cell: str | None = Field(description="Top-Left cell of append area", default=None)
+    row_format: str | None = Field(description="Row formatting", default=None)
 
     model_config = ConfigDict(extra="forbid")

@@ -250,7 +250,14 @@
       "sheet_id_required": "Sheet ID required",
       "creds_path_invalid": "Credentials path invalid",
       "spreadsheet_url_invalid": "Spreadsheet URL invalid",
-      "sheet_url_invalid": "Sheet ID invalid"
+      "sheet_url_invalid": "Sheet ID invalid",
+      "start_cell": "Start cell",
+      "start_cell_placeholder": "A1",
+      "row_format": "Row formatting",
+      "row_format_placeholder": "timestamp_datetime,structure_type,stockpile_name,item_code_name,item_display_name,item_quantity,item_crated,timestamp,region,structure_x,structure_y",
+      "row_format_tooltip": "Row output format, comma separated\n\nAvailable parameters:\n timestamp - last update timestamp, expressed as number of seconds since 1/1/1970\n timestamp_datetime - last update timestamp, expressed in a human-readable format\n structure_type - code name of structure in which the current item is located in \n region - stockpile region code name \n structure_x - normalized structure x coordinate \n structure_y - normalized structure y coordinate \n stockpile_name - reserve stockpile name, this parameter will be \"Public\" if the item is not in a reserve stockpile\n item_code_name - code name of current item\n item_display_name - display name of current item\n item_quantity - quantity of current item \n item_crated - TRUE if current item is crated, FALSE otherwise",
+      "start_cell_invalid": "Start cell invalid or missing",
+      "row_format_missing": "Row format missing"
     },
     "remove_handler_title": "Remove Handler",
     "remove_handler_message": "Are you sure you want to remove '{name}'?"

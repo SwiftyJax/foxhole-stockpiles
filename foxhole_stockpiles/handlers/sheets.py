@@ -29,7 +29,9 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
         self.logger = logging.getLogger(__name__)
         self._creds_path = sheets_settings.creds_path
         self._spreadsheet_url = sheets_settings.spreadsheet_url
-        self._spreadsheet_sheet_id = sheets_settings.sheet_id
+        self._sheet_id = sheets_settings.sheet_id
+        self._start_cell = sheets_settings.start_cell
+        self._row_format = sheets_settings.row_format
 
     async def handle(self, stockpiles: list[Stockpile], **kwargs: Any) -> dict[str, Any]:
         """Append stockpile data to sheets spreadsheet in FIR format.
@@ -42,8 +44,6 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
         Returns:
             dict[str, Any]: Append response data
         """
-        from foxhole_stockpiles.api.dependencies import get_catalog_service
-
         auth_scopes = ["https://www.googleapis.com/auth/spreadsheets"]  # Needed scopes to append
 
         creds = None
@@ -67,7 +67,6 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
 
         if creds is None:
             return {"message": "Credentials invalid or authorization failed"}
-            raise ConnectionError()
 
         if self._spreadsheet_url is None:
             return {"message": "Spreadsheet URL missing"}
@@ -82,31 +81,23 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
 
         spreadsheet_id = spreadsheet_id_match.group()
 
-        if self._spreadsheet_sheet_id is None or self._spreadsheet_sheet_id.strip() == "":
+        if self._sheet_id is None or self._sheet_id.strip() == "":
             return {"message": "Sheet ID missing"}
+
+        if self._start_cell is None or self._start_cell.strip() == "":
+            return {"message": "Start cell missing"}
+
+        if self._row_format is None or self._row_format.strip() == "":
+            return {"message": "Row format missing"}
 
         self.logger.debug(
             "Appending to spreadsheet (Spreadsheet ID: %s, Sheet: %s)",
             spreadsheet_id,
-            self._spreadsheet_sheet_id,
+            self._sheet_id,
         )
 
-        rows = []
-        for stockpile in stockpiles:
-            for item in stockpile.items:
-                rows.append(
-                    [
-                        str(stockpile.timestamp),
-                        stockpile.type,
-                        stockpile.name if stockpile.is_reserve else "Public",
-                        "NONE",  # no image info provided, value ignored anyway
-                        item.code,
-                        get_catalog_service().get_display_name(item.code),
-                        item.quantity,
-                        item.crated,
-                        stockpile.timestamp.timestamp(),
-                    ]
-                )
+        rows = self.stockpiles_to_rows(stockpiles)
+
         try:
             service = build("sheets", "v4", credentials=creds)
 
@@ -117,7 +108,7 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
                 .values()
                 .append(
                     spreadsheetId=spreadsheet_id,
-                    range=self._spreadsheet_sheet_id + "!A1",
+                    range=self._sheet_id + "!" + self._start_cell,
                     valueInputOption="USER_ENTERED",
                     body=body,
                 )
@@ -127,3 +118,60 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
             return {"status": "ok"}
         except HttpError:
             return {"message": "Appending failed"}
+
+    def stockpiles_to_rows(self, stockpiles: list[Stockpile]) -> list[Any] | None:
+        """Transform stockpile data into cell format, for usage in CSV and spreadsheet export.
+
+        Args:
+            stockpiles (list[Stockpile]): Stockpile data
+        Returns:
+            list[Any]: Stockpiles in cell format
+            None: On failure
+        """
+        from foxhole_stockpiles.api.dependencies import get_catalog_service
+
+        if self._row_format is None or self._row_format.strip() == "":
+            return None
+
+        row_params = self._row_format.split(",")
+
+        values = []
+
+        for stockpile in stockpiles:
+            for item in stockpile.items:
+                row: list[Any] = []
+
+                for row_param in row_params:
+                    match row_param:
+                        case "timestamp":
+                            row.append(stockpile.timestamp.timestamp())
+                        case "timestamp_datetime":
+                            row.append(str(stockpile.timestamp))
+                        case "structure_type":
+                            row.append(stockpile.type)
+                        case "region":
+                            row.append(stockpile.hex)
+                        case "structure_x":
+                            if stockpile.coords is None:
+                                row.append(0)
+                            else:
+                                row.append(stockpile.coords.x)
+                        case "structure_y":
+                            if stockpile.coords is None:
+                                row.append(0)
+                            else:
+                                row.append(stockpile.coords.y)
+                        case "stockpile_name":
+                            row.append(stockpile.name if stockpile.is_reserve else "Public")
+                        case "item_code_name":
+                            row.append(item.code)
+                        case "item_display_name":
+                            row.append(get_catalog_service().get_display_name(item.code))
+                        case "item_quantity":
+                            row.append(item.quantity)
+                        case "item_crated":
+                            row.append(item.crated)
+
+                values.append(row)
+
+        return values
