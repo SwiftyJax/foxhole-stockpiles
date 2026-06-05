@@ -52,9 +52,20 @@ class TestSheetsOutputHandlerHandle:
     """Test suite for SheetsOutputHandler.handle method."""
 
     @pytest.mark.asyncio
-    async def test_handle_no_url(self, sample_stockpile: Stockpile) -> None:
+    async def test_handle_no_creds(self, sample_stockpile: Stockpile) -> None:
         """Test handling with no URL configured returns message."""
         settings = SheetsHandlerSettings(spreadsheet_url=None)
+
+        handler = SheetsOutputHandler(settings)
+
+        result = await handler.handle([sample_stockpile])
+
+        assert result == {"message": "Credentials missing"}
+
+    @pytest.mark.asyncio
+    async def test_handle_no_url(self, sample_stockpile: Stockpile) -> None:
+        """Test handling with no URL configured returns message."""
+        settings = SheetsHandlerSettings(spreadsheet_url=None, creds_path="mock")
         handler = SheetsOutputHandler(settings)
 
         result = await handler.handle([sample_stockpile])
@@ -64,7 +75,7 @@ class TestSheetsOutputHandlerHandle:
     @pytest.mark.asyncio
     async def test_handle_bad_url(self, sample_stockpile: Stockpile) -> None:
         """Test handling with no URL configured returns message."""
-        settings = SheetsHandlerSettings(spreadsheet_url="abcd")
+        settings = SheetsHandlerSettings(spreadsheet_url="abcd", creds_path="mock")
         handler = SheetsOutputHandler(settings)
 
         result = await handler.handle([sample_stockpile])
@@ -77,6 +88,7 @@ class TestSheetsOutputHandlerHandle:
         settings = SheetsHandlerSettings(
             spreadsheet_url="https://docs.google.com/spreadsheets/d/1234/edit?gid=0#gid=0",
             sheet_id="",
+            creds_path="mock",
         )
         handler = SheetsOutputHandler(settings)
 
