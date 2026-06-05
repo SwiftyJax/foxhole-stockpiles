@@ -110,7 +110,7 @@ class SheetsOutputHandler(BaseOutputDestinationHandler):
                 .values()
                 .append(
                     spreadsheetId=spreadsheet_id,
-                    range=self._sheet_id + "!" + self._start_cell,
+                    range=f"'{self._sheet_id}'!{self._start_cell}",
                     valueInputOption="USER_ENTERED",
                     body=body,
                 )
