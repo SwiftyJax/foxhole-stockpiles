@@ -15,7 +15,7 @@ from foxhole_stockpiles.models.stockpile_item import StockpileItem
 def sheets_settings() -> SheetsHandlerSettings:
     """Create sheets settings for testing."""
     return SheetsHandlerSettings(
-        creds_path="C:/example/creds.json",
+        creds_path="mock",
         spreadsheet_url="https://docs.google.com/spreadsheets/d/12345/edit?gid=0#gid=0",
         sheet_id="Sheet1",
     )
@@ -40,7 +40,7 @@ class TestSheetsOutputHandlerInit:
     def test_init_with_settings(self, sheets_settings: SheetsHandlerSettings) -> None:
         """Test initialization with settings."""
         handler = SheetsOutputHandler(sheets_settings)
-        assert handler._creds_path == "C:/example/creds.json"
+        assert handler._creds_path == "mock"
         assert (
             handler._spreadsheet_url
             == "https://docs.google.com/spreadsheets/d/12345/edit?gid=0#gid=0"
@@ -52,9 +52,20 @@ class TestSheetsOutputHandlerHandle:
     """Test suite for SheetsOutputHandler.handle method."""
 
     @pytest.mark.asyncio
-    async def test_handle_no_url(self, sample_stockpile: Stockpile) -> None:
+    async def test_handle_no_creds(self, sample_stockpile: Stockpile) -> None:
         """Test handling with no URL configured returns message."""
         settings = SheetsHandlerSettings(spreadsheet_url=None)
+
+        handler = SheetsOutputHandler(settings)
+
+        result = await handler.handle([sample_stockpile])
+
+        assert result == {"message": "Credentials missing"}
+
+    @pytest.mark.asyncio
+    async def test_handle_no_url(self, sample_stockpile: Stockpile) -> None:
+        """Test handling with no URL configured returns message."""
+        settings = SheetsHandlerSettings(spreadsheet_url=None, creds_path="mock")
         handler = SheetsOutputHandler(settings)
 
         result = await handler.handle([sample_stockpile])
@@ -64,7 +75,7 @@ class TestSheetsOutputHandlerHandle:
     @pytest.mark.asyncio
     async def test_handle_bad_url(self, sample_stockpile: Stockpile) -> None:
         """Test handling with no URL configured returns message."""
-        settings = SheetsHandlerSettings(spreadsheet_url="abcd")
+        settings = SheetsHandlerSettings(spreadsheet_url="abcd", creds_path="mock")
         handler = SheetsOutputHandler(settings)
 
         result = await handler.handle([sample_stockpile])
@@ -77,6 +88,7 @@ class TestSheetsOutputHandlerHandle:
         settings = SheetsHandlerSettings(
             spreadsheet_url="https://docs.google.com/spreadsheets/d/1234/edit?gid=0#gid=0",
             sheet_id="",
+            creds_path="mock",
         )
         handler = SheetsOutputHandler(settings)
 
