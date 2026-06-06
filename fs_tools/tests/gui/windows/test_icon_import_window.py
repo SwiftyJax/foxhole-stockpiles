@@ -579,6 +579,7 @@ def test_validate_inputs_valid(configured_window: IconImportWindow) -> None:
     """
     configured_window.mod_pak_files = ["test.pak"]
     configured_window.mod_name_input.setText("test_mod")
+    configured_window.db_path_input.setText("/tmp/test.h5")
 
     is_valid, error_msg = configured_window.validate_inputs()
 
@@ -616,6 +617,7 @@ def test_start_import_success(
     """
     configured_window.mod_pak_files = ["test.pak"]
     configured_window.mod_name_input.setText("test_mod")
+    configured_window.db_path_input.setText("/tmp/test.h5")
 
     with patch("fs_tools.gui.windows.icon_import_window.IconImportWorker") as mock_worker_class:
         mock_worker = MagicMock(spec=IconImportWorker)
@@ -642,6 +644,7 @@ def test_start_import_no_catalog(qtbot: Any, configured_window: IconImportWindow
     """
     configured_window.mod_pak_files = ["test.pak"]
     configured_window.mod_name_input.setText("test_mod")
+    configured_window.db_path_input.setText("/tmp/test.h5")
     configured_window.settings.database_builder.catalog_file = None
 
     with patch(
@@ -947,6 +950,7 @@ def test_start_import_invalid_mod_name(qtbot: Any, configured_window: IconImport
     """
     configured_window.mod_pak_files = ["test.pak"]
     configured_window.mod_name_input.setText("invalid/mod<name>")  # Invalid characters
+    configured_window.db_path_input.setText("/tmp/test.h5")  # pass earlier validation
 
     with patch("fs_tools.gui.windows.icon_import_window.QMessageBox.critical") as mock_critical:
         configured_window.start_import()
@@ -1715,6 +1719,7 @@ def test_validate_inputs_vanilla_required_and_provided(
 
     configured_window.mod_pak_files = ["test.pak"]
     configured_window.mod_name_input.setText("test_mod")
+    configured_window.db_path_input.setText("/tmp/test.h5")
 
     # Mod PAK validation shows missing assets
     mod_result = PakValidationResult()

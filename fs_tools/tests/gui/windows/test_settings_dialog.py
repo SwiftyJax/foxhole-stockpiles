@@ -130,8 +130,12 @@ def test_save_and_accept_persists_and_applies_language(qtbot: Any) -> None:
     Args:
         qtbot: pytest-qt fixture.
     """
+    base = AppSettings()
+    spanish_settings = base.model_copy(
+        update={"gui": base.gui.model_copy(update={"language": "es"})}
+    )
     with patch("fs_tools.gui.windows.settings_dialog.get_settings") as mock_get_settings:
-        mock_get_settings.return_value = AppSettings()  # default language "es"
+        mock_get_settings.return_value = spanish_settings  # start from "es" so "en" is a change
         with patch("fs_tools.gui.windows.settings_dialog.ConfigManager") as mock_config_class:
             with patch("fs_tools.gui.windows.settings_dialog.set_language") as mock_set_language:
                 mock_config = mock_config_class.return_value

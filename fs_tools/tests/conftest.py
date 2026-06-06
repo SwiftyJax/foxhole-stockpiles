@@ -5,8 +5,10 @@ moved fs_tools tests keep access to them.
 """
 
 from collections.abc import Iterator
+from unittest.mock import patch
 
 import pytest
+from PySide6.QtWidgets import QFileDialog, QMessageBox
 
 from foxhole_stockpiles.i18n import get_translator, set_translations_resource
 from tests.conftest import (  # noqa: F401
@@ -22,6 +24,32 @@ from tests.conftest import (  # noqa: F401
 
 _MAIN_TRANSLATIONS = "foxhole_stockpiles/i18n/translations"
 _TOOLS_TRANSLATIONS = "fs_tools/i18n/translations"
+
+
+@pytest.fixture(autouse=True)
+def block_native_dialogs() -> Iterator[None]:
+    """Stub out blocking native dialogs so tests never pop a real window.
+
+    GUI code calls ``QMessageBox`` / ``QFileDialog`` static methods that open
+    modal, blocking dialogs. Without this, any test that exercises such a path
+    without explicitly patching the call would hang waiting for user input.
+    Defaults model a "cancelled / no" interaction; tests that need a specific
+    result patch the call locally, which overrides these stubs.
+
+    Yields:
+        None: Control to the test while the dialog stubs are active.
+    """
+    with (
+        patch.object(QMessageBox, "warning", return_value=QMessageBox.StandardButton.Ok),
+        patch.object(QMessageBox, "critical", return_value=QMessageBox.StandardButton.Ok),
+        patch.object(QMessageBox, "information", return_value=QMessageBox.StandardButton.Ok),
+        patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.No),
+        patch.object(QFileDialog, "getOpenFileName", return_value=("", "")),
+        patch.object(QFileDialog, "getOpenFileNames", return_value=([], "")),
+        patch.object(QFileDialog, "getSaveFileName", return_value=("", "")),
+        patch.object(QFileDialog, "getExistingDirectory", return_value=""),
+    ):
+        yield
 
 
 @pytest.fixture(autouse=True)
