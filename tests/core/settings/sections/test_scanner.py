@@ -25,13 +25,8 @@ class TestScannerSettingsInitialization:
 
         assert config.database_path is None
         assert config.early_exit_threshold == 0.0
-        assert config.custom_model == "renner_numbers"
-        assert config.tessdata_path == "./tessdata"
         assert config.debug_mode is False
         assert config.screenshots_folder == ""
-        assert config.max_ncc_candidates == 25
-        assert config.phash_threshold == 12
-        assert config.ncc_tiebreaker_threshold == 0.0015
 
     def test_initialization_with_custom_values(self, tmp_path: Path) -> None:
         """Test initialization with custom values.
@@ -44,24 +39,14 @@ class TestScannerSettingsInitialization:
         config = ScannerSettings(
             database_path=db_file,
             early_exit_threshold=0.98,
-            custom_model="my_model",
-            tessdata_path="/custom/tessdata",
             debug_mode=True,
             screenshots_folder="screenshots",
-            max_ncc_candidates=50,
-            phash_threshold=15,
-            ncc_tiebreaker_threshold=0.005,
         )
 
         assert config.database_path == db_file
         assert config.early_exit_threshold == 0.98
-        assert config.custom_model == "my_model"
-        assert config.tessdata_path == "/custom/tessdata"
         assert config.debug_mode is True
         assert config.screenshots_folder == "screenshots"
-        assert config.max_ncc_candidates == 50
-        assert config.phash_threshold == 15
-        assert config.ncc_tiebreaker_threshold == 0.005
 
 
 class TestDatabasePath:
@@ -116,20 +101,6 @@ class TestFieldConstraints:
 
         assert "less than or equal to 1" in str(exc_info.value)
 
-    def test_max_ncc_candidates_below_minimum(self) -> None:
-        """Test max_ncc_candidates validation fails below 1."""
-        with pytest.raises(ValidationError) as exc_info:
-            ScannerSettings(max_ncc_candidates=0)
-
-        assert "greater than or equal to 1" in str(exc_info.value)
-
-    def test_phash_threshold_below_minimum(self) -> None:
-        """Test phash_threshold validation fails below 0."""
-        with pytest.raises(ValidationError) as exc_info:
-            ScannerSettings(phash_threshold=-1)
-
-        assert "greater than or equal to 0" in str(exc_info.value)
-
     def test_confidence_gap_below_minimum(self) -> None:
         """Test that confidence_gap below minimum (< 0.0) raises validation error."""
         with pytest.raises(ValidationError) as exc_info:
@@ -156,32 +127,6 @@ class TestFieldConstraints:
         config_max = ScannerSettings(confidence_gap=1.0)
         assert config_max.confidence_gap == 1.0
 
-    def test_ncc_tiebreaker_threshold_below_minimum(self) -> None:
-        """Test ncc_tiebreaker_threshold validation fails below 0.0."""
-        with pytest.raises(ValidationError) as exc_info:
-            ScannerSettings(ncc_tiebreaker_threshold=-0.001)
-
-        assert "greater than or equal to 0" in str(exc_info.value)
-
-    def test_ncc_tiebreaker_threshold_above_maximum(self) -> None:
-        """Test ncc_tiebreaker_threshold validation fails above 0.1."""
-        with pytest.raises(ValidationError) as exc_info:
-            ScannerSettings(ncc_tiebreaker_threshold=0.15)
-
-        assert "less than or equal to 0.1" in str(exc_info.value)
-
-    def test_ncc_tiebreaker_threshold_valid_values(self) -> None:
-        """Test that valid ncc_tiebreaker_threshold values are accepted."""
-        # Test boundary values
-        config_min = ScannerSettings(ncc_tiebreaker_threshold=0.0)
-        assert config_min.ncc_tiebreaker_threshold == 0.0
-
-        config_default = ScannerSettings(ncc_tiebreaker_threshold=0.002)
-        assert config_default.ncc_tiebreaker_threshold == 0.002
-
-        config_max = ScannerSettings(ncc_tiebreaker_threshold=0.1)
-        assert config_max.ncc_tiebreaker_threshold == 0.1
-
 
 class TestModelConfigSettings:
     """Test suite for model configuration settings.
@@ -192,9 +137,9 @@ class TestModelConfigSettings:
 
     def test_str_strip_whitespace(self) -> None:
         """Test that string fields have whitespace stripped."""
-        config = ScannerSettings(custom_model="  my_model  ")
+        config = ScannerSettings(screenshots_folder="  screenshots  ")
 
-        assert config.custom_model == "my_model"
+        assert config.screenshots_folder == "screenshots"
 
     def test_extra_fields_forbidden(self) -> None:
         """Test that extra fields are forbidden."""

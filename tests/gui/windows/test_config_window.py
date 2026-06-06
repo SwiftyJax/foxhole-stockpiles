@@ -4,9 +4,9 @@ from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QCloseEvent, QKeyEvent
-from PyQt6.QtWidgets import QMessageBox, QPushButton
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QCloseEvent, QKeyEvent
+from PySide6.QtWidgets import QMessageBox
 
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
 from foxhole_stockpiles.core.settings.sections import (
@@ -16,12 +16,10 @@ from foxhole_stockpiles.core.settings.sections import (
     ExternalToolsSettings,
     LoggingSettings,
     NotificationsSettings,
-    OCRSettings,
     OutputSettings,
     SavProcessingSettings,
     ScannerSettings,
     StockpileTypesSettings,
-    TemplateSettings,
 )
 from foxhole_stockpiles.enums.auth_type import AuthType
 from foxhole_stockpiles.enums.config_level import ConfigLevel
@@ -59,8 +57,6 @@ def mock_config_manager() -> Any:
         default_settings.api_auth = APIAuthSettings()
         default_settings.scanner = ScannerSettings()
         default_settings.output = OutputSettings()
-        default_settings.ocr = OCRSettings()
-        default_settings.templates = TemplateSettings()
         default_settings.external_tools = ExternalToolsSettings()
         default_settings.database_builder = DatabaseBuilderSettings()
         default_settings.logging = LoggingSettings()
@@ -110,10 +106,6 @@ def test_config_window_has_all_tabs(config_window: ConfigWindow) -> None:
     assert config_window.api_server_tab is not None
     assert config_window.scanner_tab is not None
     assert config_window.output_tab is not None
-    assert config_window.ocr_tab is not None
-    assert config_window.template_tab is not None
-    assert config_window.external_tools_tab is not None
-    assert config_window.database_builder_tab is not None
     assert config_window.logging_tab is not None
 
 
@@ -148,21 +140,21 @@ def test_config_window_config_level_tabs(qtbot: Any, mock_config_manager: MagicM
     assert window.tab_widget.count() == 5
 
     # Test ADVANCED level
-    # (10 tabs: + Stockpile Types, Notifications, External Tools, DB Builder, SAV Processing)
+    # (8 tabs: + Stockpile Types, Notifications, SAV Processing)
     settings.gui = GUISettings(config_level=ConfigLevel.ADVANCED)
     mock_config_manager.load_config.return_value = settings
 
     window2 = ConfigWindow()
     qtbot.addWidget(window2)
-    assert window2.tab_widget.count() == 10
+    assert window2.tab_widget.count() == 8
 
-    # Test DEVELOPER level (12 tabs: + OCR, Templates)
+    # Test DEVELOPER level (8 tabs: same sections as ADVANCED)
     settings.gui = GUISettings(config_level=ConfigLevel.DEVELOPER)
     mock_config_manager.load_config.return_value = settings
 
     window3 = ConfigWindow()
     qtbot.addWidget(window3)
-    assert window3.tab_widget.count() == 12
+    assert window3.tab_widget.count() == 8
     assert window3.tab_widget.tabText(0) == t("config_window.tabs.api_server")
 
 
@@ -311,8 +303,7 @@ def test_config_window_collect_settings_preserves_types(config_window: ConfigWin
 
     # Should return AppSettings instance with proper types
     assert isinstance(settings, AppSettings)
-    assert isinstance(settings.ocr, OCRSettings)
-    assert isinstance(settings.templates, TemplateSettings)
+    assert isinstance(settings.scanner, ScannerSettings)
     assert isinstance(settings.logging, LoggingSettings)
 
 
@@ -331,8 +322,6 @@ def test_config_window_collect_settings_all_sections(config_window: ConfigWindow
     assert isinstance(settings.api_auth, APIAuthSettings)
     assert isinstance(settings.scanner, ScannerSettings)
     assert isinstance(settings.output, OutputSettings)
-    assert isinstance(settings.ocr, OCRSettings)
-    assert isinstance(settings.templates, TemplateSettings)
     assert isinstance(settings.database_builder, DatabaseBuilderSettings)
     assert isinstance(settings.logging, LoggingSettings)
 
@@ -376,18 +365,9 @@ def test_config_window_close_button_closes_window(qtbot: Any, config_window: Con
         qtbot: PyQt test fixture
         config_window: ConfigWindow instance
     """
-    # Find close button
-    buttons = config_window.findChildren(QPushButton)
-    close_button = None
-    for btn in buttons:
-        if btn.text() == "Close":
-            close_button = btn
-            break
-
-    assert close_button is not None
-
-    # Verify button is connected to close slot
-    # The button should trigger close when clicked
+    # close_button is a named attribute on ConfigWindow
+    assert config_window.close_button is not None
+    assert config_window.close_button.text() == t("common.close")
 
 
 def test_config_window_preserves_notifications_settings(config_window: ConfigWindow) -> None:
@@ -449,8 +429,9 @@ def test_config_window_gui_tab_exists(config_window: ConfigWindow) -> None:
 
     # GUI tab should be in the tab widget
     gui_tab_index = -1
+    expected_text = t("config_window.tabs.gui")
     for i in range(config_window.tab_widget.count()):
-        if config_window.tab_widget.tabText(i) == "GUI":
+        if config_window.tab_widget.tabText(i) == expected_text:
             gui_tab_index = i
             break
     assert gui_tab_index >= 0
@@ -782,7 +763,7 @@ class TestSaveSettingsConfigLevelChange:
         config_window.save_settings()
 
         # Tabs should be rebuilt with more tabs
-        assert config_window.tab_widget.count() == 10
+        assert config_window.tab_widget.count() == 8
 
 
 class TestRetranslate:

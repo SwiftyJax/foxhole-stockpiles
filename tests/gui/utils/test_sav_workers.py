@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Any
 from unittest.mock import MagicMock, patch
 
-from PyQt6.QtCore import QThread
+from PySide6.QtCore import QThread
 
 from foxhole_stockpiles.gui.utils.sav_workers import SavMonitorWorker, SavScanWorker
 from foxhole_stockpiles.models.stockpile import Stockpile
@@ -16,39 +16,22 @@ class TestSavScanWorker:
     def test_initialization(self) -> None:
         """Test SavScanWorker initialization."""
         sav_path = Path("/test/file.sav")
-        uesave_path = Path("/test/uesave")
         output_coordinator = MagicMock()
 
-        worker = SavScanWorker(sav_path, uesave_path, output_coordinator)
+        worker = SavScanWorker(sav_path, output_coordinator)
 
         assert worker._sav_path == sav_path
-        assert worker._uesave_path == uesave_path
         assert worker._output_coordinator == output_coordinator
         assert isinstance(worker, QThread)
-
-    def test_initialization_none_uesave(self) -> None:
-        """Test SavScanWorker initialization with None uesave path."""
-        sav_path = Path("/test/file.sav")
-        output_coordinator = MagicMock()
-
-        worker = SavScanWorker(sav_path, None, output_coordinator)
-
-        assert worker._sav_path == sav_path
-        assert worker._uesave_path is None
-        assert worker._output_coordinator == output_coordinator
 
     def test_run_success(self) -> None:
         """Test successful SAV scan."""
         sav_path = Path("/test/file.sav")
-        uesave_path = Path("/test/uesave")
         output_coordinator = MagicMock()
 
         mock_stockpiles = [MagicMock(spec=Stockpile)]
 
         with (
-            patch(
-                "foxhole_stockpiles.gui.utils.sav_workers.SaveFileConverter"
-            ) as mock_converter_class,
             patch(
                 "foxhole_stockpiles.gui.utils.sav_workers.SaveFileProcessor"
             ) as mock_processor_class,
@@ -56,7 +39,7 @@ class TestSavScanWorker:
         ):
             mock_asyncio_run.return_value = mock_stockpiles
 
-            worker = SavScanWorker(sav_path, uesave_path, output_coordinator)
+            worker = SavScanWorker(sav_path, output_coordinator)
 
             # Collect emitted signals
             finished_spy: list[bool] = []
@@ -67,11 +50,12 @@ class TestSavScanWorker:
             # Run the worker directly (not in thread for testing)
             worker.run()
 
-            # Verify converter was created
-            mock_converter_class.assert_called_once_with(uesave_path=uesave_path)
-
-            # Verify processor was created
-            mock_processor_class.assert_called_once()
+            # Verify processor was created with correct arguments
+            mock_processor_class.assert_called_once_with(
+                file_path=sav_path,
+                output_coordinator=output_coordinator,
+                emit_all_on_start=True,
+            )
 
             # Verify asyncio.run was called
             mock_asyncio_run.assert_called_once()
@@ -82,16 +66,16 @@ class TestSavScanWorker:
             assert len(finished_spy) == 1
             assert finished_spy[0] is True
 
-    def test_run_file_not_found(self) -> None:
-        """Test SAV scan with file not found error."""
+    def test_run_runtime_error(self) -> None:
+        """Test SAV scan with runtime error."""
         sav_path = Path("/nonexistent/file.sav")
         output_coordinator = MagicMock()
 
         with patch(
-            "foxhole_stockpiles.gui.utils.sav_workers.SaveFileConverter",
-            side_effect=FileNotFoundError("File not found"),
+            "foxhole_stockpiles.gui.utils.sav_workers.SaveFileProcessor",
+            side_effect=RuntimeError("Parse failed"),
         ):
-            worker = SavScanWorker(sav_path, None, output_coordinator)
+            worker = SavScanWorker(sav_path, output_coordinator)
 
             error_spy: list[str] = []
             finished_spy: list[bool] = []
@@ -101,7 +85,7 @@ class TestSavScanWorker:
             worker.run()
 
             assert len(error_spy) == 1
-            assert "File not found" in error_spy[0]
+            assert "Parse failed" in error_spy[0]
             assert len(finished_spy) == 1
             assert finished_spy[0] is False
 
@@ -111,10 +95,10 @@ class TestSavScanWorker:
         output_coordinator = MagicMock()
 
         with patch(
-            "foxhole_stockpiles.gui.utils.sav_workers.SaveFileConverter",
-            side_effect=RuntimeError("Unexpected error"),
+            "foxhole_stockpiles.gui.utils.sav_workers.SaveFileProcessor",
+            side_effect=ValueError("Unexpected error"),
         ):
-            worker = SavScanWorker(sav_path, None, output_coordinator)
+            worker = SavScanWorker(sav_path, output_coordinator)
 
             error_spy: list[str] = []
             finished_spy: list[bool] = []
@@ -136,14 +120,12 @@ class TestSavMonitorWorker:
     def test_initialization(self) -> None:
         """Test SavMonitorWorker initialization."""
         sav_path = Path("/test/file.sav")
-        uesave_path = Path("/test/uesave")
         output_coordinator = MagicMock()
         poll_interval = 2.5
 
-        worker = SavMonitorWorker(sav_path, uesave_path, output_coordinator, poll_interval)
+        worker = SavMonitorWorker(sav_path, output_coordinator, poll_interval)
 
         assert worker._sav_path == sav_path
-        assert worker._uesave_path == uesave_path
         assert worker._output_coordinator == output_coordinator
         assert worker._poll_interval == poll_interval
         assert worker._should_stop is False
@@ -155,7 +137,7 @@ class TestSavMonitorWorker:
         sav_path = Path("/test/file.sav")
         output_coordinator = MagicMock()
 
-        worker = SavMonitorWorker(sav_path, None, output_coordinator)
+        worker = SavMonitorWorker(sav_path, output_coordinator)
 
         assert worker._poll_interval == 1.0
 
@@ -164,7 +146,7 @@ class TestSavMonitorWorker:
         sav_path = Path("/test/file.sav")
         output_coordinator = MagicMock()
 
-        worker = SavMonitorWorker(sav_path, None, output_coordinator)
+        worker = SavMonitorWorker(sav_path, output_coordinator)
         mock_processor = MagicMock()
         worker._processor = mock_processor
 
@@ -178,23 +160,23 @@ class TestSavMonitorWorker:
         sav_path = Path("/test/file.sav")
         output_coordinator = MagicMock()
 
-        worker = SavMonitorWorker(sav_path, None, output_coordinator)
+        worker = SavMonitorWorker(sav_path, output_coordinator)
 
         # Should not raise
         worker.stop()
 
         assert worker._should_stop is True
 
-    def test_run_file_not_found(self) -> None:
-        """Test monitor run with file not found error."""
+    def test_run_runtime_error(self) -> None:
+        """Test monitor run with runtime error."""
         sav_path = Path("/nonexistent/file.sav")
         output_coordinator = MagicMock()
 
         with patch(
-            "foxhole_stockpiles.gui.utils.sav_workers.SaveFileConverter",
-            side_effect=FileNotFoundError("uesave not found"),
+            "foxhole_stockpiles.gui.utils.sav_workers.SaveFileProcessor",
+            side_effect=RuntimeError("Processor init failed"),
         ):
-            worker = SavMonitorWorker(sav_path, None, output_coordinator)
+            worker = SavMonitorWorker(sav_path, output_coordinator)
 
             error_spy: list[str] = []
             finished_spy: list[bool] = []
@@ -204,7 +186,7 @@ class TestSavMonitorWorker:
             worker.run()
 
             assert len(error_spy) == 1
-            assert "uesave not found" in error_spy[0]
+            assert "Processor init failed" in error_spy[0]
             assert len(finished_spy) == 1
             assert finished_spy[0] is False
 
@@ -214,10 +196,10 @@ class TestSavMonitorWorker:
         output_coordinator = MagicMock()
 
         with patch(
-            "foxhole_stockpiles.gui.utils.sav_workers.SaveFileConverter",
-            side_effect=RuntimeError("Init error"),
+            "foxhole_stockpiles.gui.utils.sav_workers.SaveFileProcessor",
+            side_effect=ValueError("Init error"),
         ):
-            worker = SavMonitorWorker(sav_path, None, output_coordinator)
+            worker = SavMonitorWorker(sav_path, output_coordinator)
 
             error_spy: list[str] = []
             finished_spy: list[bool] = []
@@ -239,25 +221,24 @@ class TestSavMonitorWorker:
 
         with (
             patch(
-                "foxhole_stockpiles.gui.utils.sav_workers.SaveFileConverter"
-            ) as mock_converter_class,
-            patch(
                 "foxhole_stockpiles.gui.utils.sav_workers.SaveFileProcessor"
             ) as mock_processor_class,
             patch("foxhole_stockpiles.gui.utils.sav_workers.asyncio.run") as mock_asyncio_run,
         ):
-            worker = SavMonitorWorker(sav_path, None, output_coordinator)
+            worker = SavMonitorWorker(sav_path, output_coordinator)
 
             finished_spy: list[bool] = []
             worker.finished.connect(lambda success: finished_spy.append(success))
 
             worker.run()
 
-            # Verify converter was created
-            mock_converter_class.assert_called_once()
-
-            # Verify processor was created
-            mock_processor_class.assert_called_once()
+            # Verify processor was created with correct arguments
+            mock_processor_class.assert_called_once_with(
+                file_path=sav_path,
+                output_coordinator=output_coordinator,
+                poll_interval=1.0,
+                emit_all_on_start=False,
+            )
 
             # Verify asyncio.run was called with _run_monitor coroutine
             mock_asyncio_run.assert_called_once()

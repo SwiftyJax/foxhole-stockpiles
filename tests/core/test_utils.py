@@ -17,13 +17,11 @@ from foxhole_stockpiles.core.utils import (
     compute_icon_phash,
     extract_day_and_hour,
     find_mapdata_file,
-    find_uesave_in_path,
     force_memory_release,
     get_bundled_resource_path,
     get_default_savefile_dir,
     get_subprocess_kwargs,
     get_tesseract_version,
-    get_uesave_path,
     is_frozen,
     load_catalog,
     malloc_trim,
@@ -920,94 +918,4 @@ class TestAutoDetectSavefile:
 
         with patch("foxhole_stockpiles.core.utils.get_default_savefile_dir", return_value=save_dir):
             result = auto_detect_savefile()
-            assert result is None
-
-
-class TestFindUesaveInPath:
-    """Test suite for the find_uesave_in_path function."""
-
-    def test_find_uesave(self, tmp_path: Path) -> None:
-        """Test finding uesave in PATH.
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        uesave_path = tmp_path / "uesave"
-        uesave_path.touch()
-
-        with patch("shutil.which", return_value=str(uesave_path)):
-            result = find_uesave_in_path()
-            assert result == uesave_path
-
-    def test_find_uesave_exe(self, tmp_path: Path) -> None:
-        """Test finding uesave.exe in PATH (Windows).
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        uesave_path = tmp_path / "uesave.exe"
-        uesave_path.touch()
-
-        def mock_which(name: str) -> str | None:
-            if name == "uesave.exe":
-                return str(uesave_path)
-            return None
-
-        with patch("shutil.which", side_effect=mock_which):
-            result = find_uesave_in_path()
-            assert result == uesave_path
-
-    def test_uesave_not_found(self) -> None:
-        """Test when uesave is not in PATH."""
-        with patch("shutil.which", return_value=None):
-            result = find_uesave_in_path()
-            assert result is None
-
-
-class TestGetUesavePath:
-    """Test suite for the get_uesave_path function."""
-
-    def test_configured_path_exists(self, tmp_path: Path) -> None:
-        """Test with valid configured path.
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        uesave_path = tmp_path / "uesave"
-        uesave_path.touch()
-
-        result = get_uesave_path(uesave_path)
-        assert result == uesave_path
-
-    def test_configured_path_not_exists(self, tmp_path: Path) -> None:
-        """Test with configured path that doesn't exist.
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        nonexistent = tmp_path / "nonexistent"
-        fallback = tmp_path / "uesave_fallback"
-        fallback.touch()
-
-        with patch("foxhole_stockpiles.core.utils.find_uesave_in_path", return_value=fallback):
-            result = get_uesave_path(nonexistent)
-            assert result == fallback
-
-    def test_no_configured_path(self, tmp_path: Path) -> None:
-        """Test with no configured path, fallback to PATH.
-
-        Args:
-            tmp_path (Path): Temporary directory path from pytest fixture.
-        """
-        fallback = tmp_path / "uesave"
-        fallback.touch()
-
-        with patch("foxhole_stockpiles.core.utils.find_uesave_in_path", return_value=fallback):
-            result = get_uesave_path(None)
-            assert result == fallback
-
-    def test_no_configured_no_path(self) -> None:
-        """Test with no configured path and not in PATH."""
-        with patch("foxhole_stockpiles.core.utils.find_uesave_in_path", return_value=None):
-            result = get_uesave_path(None)
             assert result is None

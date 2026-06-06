@@ -1,9 +1,7 @@
 {
   "language_name": "中文",
   "language_code": "zh",
-
   "common": {
-    "cancel": "取消",
     "save": "保存",
     "close": "关闭",
     "browse": "浏览...",
@@ -11,29 +9,25 @@
     "edit": "编辑",
     "remove": "移除",
     "clear": "清除",
-    "clear_all": "全部清除",
-    "reset": "重置",
     "name": "名称",
-    "all": "全部",
-    "configure": "配置...",
     "clear_logs": "清除日志",
-    "validation_error": "验证错误"
+    "validation_error": "验证错误",
+    "log_columns": {
+      "time": "时间",
+      "level": "级别",
+      "module": "模块",
+      "message": "消息"
+    },
+    "image_filter": "图片 (*.png *.jpg *.jpeg);;所有文件 (*)"
   },
-
   "main_window": {
     "title": "FS (Foxhole Stockpiles) - v{version}",
     "menu": {
       "file": "文件(&F)",
-      "database": "数据库(&D)",
       "help": "帮助(&H)",
       "configuration": "配置(&C)...",
       "scan_screenshot": "扫描截图(&S)...",
-      "build_catalog": "构建目录(&C)...",
       "exit": "退出(&X)",
-      "build": "构建(&B)...",
-      "information": "信息(&I)...",
-      "visualizer": "可视化器(&V)...",
-      "debug_viewer": "调试图像查看器(&D)...",
       "about": "关于(&A)"
     },
     "tray": {
@@ -42,12 +36,8 @@
       "quit": "退出",
       "configuration": "配置..."
     },
-    "dialogs": {
-      "no_database_title": "无数据库",
-      "no_database_message": "未配置数据库。请先在设置中配置数据库路径。"
-    }
+    "dialogs": {}
   },
-
   "about": {
     "title": "关于 FS",
     "app_name": "FS (Foxhole Stockpiles)",
@@ -63,7 +53,6 @@
     "copyright": "版权所有 © 2024 Xurxogr",
     "license": "根据 MIT 许可证授权"
   },
-
   "server_panel": {
     "sav_group_title": "SAV 处理",
     "server_group_title": "服务器",
@@ -71,14 +60,7 @@
     "stop_server": "停止服务器",
     "status_running": "状态：运行中",
     "status_stopped": "状态：已停止",
-    "log_columns": {
-      "time": "时间",
-      "level": "级别",
-      "module": "模块",
-      "message": "消息"
-    },
     "select_screenshot": "选择要扫描的截图",
-    "image_filter": "图片 (*.png *.jpg *.jpeg);;所有文件 (*)",
     "errors": {
       "config_incomplete_title": "配置不完整",
       "config_incomplete_message": "请在<br><b>文件 → 配置</b>中配置数据库路径",
@@ -98,13 +80,11 @@
       "error_loading_settings": "加载设置失败：{error}",
       "error_no_sav_file": "未配置 SAV 文件。请在 文件 → 配置 → SAV 处理 中配置 SAV 文件路径，或将尝试自动检测。",
       "error_sav_not_found": "配置的 SAV 文件不存在。",
-      "error_no_uesave": "未找到 uesave 工具。请在 文件 → 配置 → 外部工具 中配置路径，或安装 uesave 并添加到 PATH。",
       "error_output": "创建输出协调器失败：{error}",
       "status_scanning": "扫描中...",
       "status_monitoring": "监视中..."
     }
   },
-
   "config_window": {
     "title": "配置",
     "tip_hover": "提示：将鼠标悬停在标签上获取帮助",
@@ -112,12 +92,8 @@
       "api_server": "API 服务器",
       "scanner": "扫描器",
       "output": "输出",
-      "ocr": "OCR",
-      "templates": "模板",
       "stockpile_types": "仓库类型",
       "notifications": "通知",
-      "external_tools": "外部工具",
-      "database_builder": "数据库构建器",
       "sav_processing": "SAV 处理",
       "logging": "日志",
       "gui": "界面"
@@ -134,7 +110,6 @@
       "saved_successfully": "配置保存成功！"
     }
   },
-
   "api_server_tab": {
     "server_settings": "服务器设置",
     "host": "主机：",
@@ -167,7 +142,6 @@
     "token": "令牌：",
     "token_tooltip": "API 身份验证所需的密钥令牌。\n此令牌应妥善保管并在 Authorization 头中发送。"
   },
-
   "scanner_tab": {
     "database_path": "数据库路径：",
     "database_path_placeholder": "模板数据库路径（.h5 文件）",
@@ -181,27 +155,15 @@
     "screenshots_folder": "截图文件夹：",
     "screenshots_folder_placeholder": "可选：保存截图的文件夹",
     "screenshots_folder_tooltip": "自动保存已处理截图的可选文件夹。\n\n设置后，扫描的图像将保存到按日期命名的子文件夹（YYYY-MM-DD）\n格式：日期_时间_存储类型_名称_分辨率.png\n\n留空以禁用截图归档。",
-    "max_ncc": "最大 NCC 候选数：",
-    "max_ncc_tooltip": "使用 NCC（归一化互相关）评估的模板候选项最大数量。\n\n在感知哈希预过滤后，这限制了详细匹配。\n较高的值更准确但更慢。推荐：25。",
-    "phash_threshold": "pHash 阈值：",
-    "phash_tooltip": "用于模板预过滤的感知哈希距离阈值。\n\n较低的值（0-10）更严格，较高的值（10-20）更宽松。\n太低可能会遗漏有效物品，太高会减慢匹配速度。\n推荐：12 以平衡速度和准确性。",
-    "tiebreaker_threshold": "NCC 平局决胜阈值：",
-    "tiebreaker_tooltip": "当最佳 NCC 匹配在此置信度阈值内时，使用平均像素差异作为平局决胜。\n\n帮助区分视觉上相似的物品（例如，组装材料 V 与 VIII）。\n设置为 0.0 以禁用平局决胜。\n推荐：0.002。",
     "debug_mode": "调试模式：",
     "debug_mode_checkbox": "扫描时保存调试图像",
     "debug_mode_tooltip": "保存显示检测过程的调试图像。\n\n保存到当前目录：\n- stockpile_detection_result.png - 带检测框的原始图像\n- stockpile_quantities_result.png - 数量合成图像\n- stockpile_name_region.png - 提取的名称区域\n- stockpile_type_region.png - 提取的类型区域\n- stockpile_shard.png - 提取的分片区域\n\n对排除检测问题很有用。",
     "extract_icons": "提取图标：",
     "extract_icons_checkbox": "保存检测到的物品图标",
     "extract_icons_tooltip": "将每个检测到的物品图标保存为单独的图像文件。\n\n图标保存到 './icons/' 文件夹，格式：'XXX_代码.png'\n其中 XXX 是图标索引（000、001 等），代码是检测到的物品。\n\n开发设置 - 对创建新模板或调试检测很有用。",
-    "custom_model": "自定义 OCR 模型：",
-    "custom_model_tooltip": "关键：用于数字识别的自定义 Tesseract OCR 模型。\n\n默认：'renner_numbers'（针对 Foxhole 仓库数字优化）。\n更改此设置可能导致数字识别完全失败。",
-    "tessdata_path": "Tessdata 路径：",
-    "tessdata_tooltip": "关键：Tesseract OCR 数据文件目录的路径。\n\n默认：'./tessdata'（与应用程序捆绑）。\n错误的路径将导致 OCR 文本识别失败。",
     "select_database": "选择模板数据库",
-    "select_tessdata": "选择 Tessdata 目录",
     "select_screenshots": "选择截图目录"
   },
-
   "output_tab": {
     "description": "配置扫描结果的输出处理器。\n您可以添加多个处理器将结果发送到不同的目的地。",
     "handlers_group": "输出处理器",
@@ -242,7 +204,6 @@
     "remove_handler_title": "移除处理器",
     "remove_handler_message": "您确定要移除 '{name}' 吗？"
   },
-
   "notifications_tab": {
     "description": "配置 Discord webhook 以接收有关仓库扫描和服务器事件的通知。\n您可以添加具有不同设置的多个通知器。",
     "enable_notifications": "启用通知",
@@ -283,7 +244,6 @@
     "remove_notifier_title": "移除通知器",
     "remove_notifier_message": "您确定要移除 '{name}' 吗？"
   },
-
   "gui_tab": {
     "config_level_group": "配置级别",
     "level": "级别：",
@@ -300,181 +260,6 @@
     "language": "语言：",
     "language_tooltip": "选择界面语言。"
   },
-
-  "database_info_window": {
-    "title": "数据库信息",
-    "database_file": "数据库文件",
-    "select_placeholder": "选择一个数据库文件...",
-    "statistics_group": "数据库统计",
-    "statistics_info": "数字表示每个模组和分辨率的模板总数（装箱 + 未装箱）",
-    "mod_column": "模组",
-    "status_column": "状态",
-    "no_database": "未加载数据库",
-    "click_browse": "点击「浏览...」选择数据库文件",
-    "no_file_selected": "未选择文件",
-    "select_first": "请先选择一个数据库文件",
-    "file_not_found": "文件未找到",
-    "file_not_exist": "数据库文件不存在：{path}",
-    "error_loading": "加载数据库时出错",
-    "select_database": "选择数据库文件",
-    "database_filter": "HDF5 数据库 (*.h5);;所有文件 (*)"
-  },
-
-  "database_visualizer": {
-    "title": "模板数据库可视化器",
-    "title_with_resolution": "模板数据库可视化器 - {resolution}p",
-    "database_group": "数据库",
-    "select_database": "选择数据库文件",
-    "database_filter": "HDF5 数据库 (*.h5);;所有文件 (*)",
-    "filters_group": "过滤器",
-    "resolution": "分辨率：",
-    "code": "代码：",
-    "code_placeholder": "输入物品代码...",
-    "faction": "阵营：",
-    "category": "类别：",
-    "mod": "模组：",
-    "crated": "装箱：",
-    "crated_all": "全部",
-    "crated_normal": "普通",
-    "crated_crated": "装箱",
-    "clear_filters": "清除过滤器",
-    "loading_databases": "正在加载所有数据库...",
-    "no_database_path": "未配置数据库路径",
-    "error_loading": "加载数据库时出错：{error}",
-    "showing_results": "显示 {filtered} / {total} 个模板",
-    "select_template": "选择一个模板查看详情",
-    "template_comparison": "模板比较（大小匹配）",
-    "current_resolution": "当前分辨率",
-    "current_resolution_scale": "当前分辨率 ({resolution}p - {scale}x)",
-    "highest_resolution": "最高分辨率",
-    "highest_resolution_found": "最高分辨率 ({resolution}p - 4x)",
-    "highest_resolution_not_found": "最高分辨率（未找到）",
-    "no_image_selected": "未选择图片",
-    "template_not_found": "在最高分辨率中\n未找到模板",
-    "info": {
-      "code": "代码：",
-      "faction": "阵营：",
-      "category": "类别：",
-      "mod": "模组：",
-      "crated": "装箱：",
-      "current_resolution": "当前分辨率：",
-      "current_shape": "当前形状：",
-      "database_index": "数据库索引：",
-      "highest_res_available": "可用最高分辨率：",
-      "highest_res_not_found": "最高分辨率：在 {resolution}px 中未找到"
-    },
-    "save_icon": "保存图标",
-    "save_icon_dialog": "图标另存为",
-    "save_success_title": "图标已保存",
-    "save_success_message": "图标已保存到：{path}",
-    "save_error_title": "保存失败",
-    "save_error_message": "保存图标失败：{error}",
-    "replace_icon": "替换图标",
-    "select_replacement_icon": "选择替换图标",
-    "replace_success_title": "图标已替换",
-    "replace_success_message": "'{code}' 的图标已成功替换",
-    "replace_error_title": "替换失败",
-    "replace_error_message": "替换图标失败：{error}",
-    "delete_icon": "删除图标",
-    "delete_confirm_title": "确认删除",
-    "delete_confirm_message": "您确定要删除 '{code}' 在 {resolution}p 分辨率下的图标吗？\n\n此操作无法撤销。",
-    "delete_success_title": "图标已删除",
-    "delete_success_message": "'{code}' 的图标已成功删除",
-    "delete_error_title": "删除失败",
-    "delete_error_message": "删除图标失败：{error}"
-  },
-
-  "database_builder": {
-    "title": "构建数据库",
-    "vanilla_group": "原版 PAK 文件（必需）",
-    "vanilla_warning": "选定的模组 PAK 文件缺少必需资源（箱子图标、子图标）。请选择原版游戏 PAK 文件 (War-WindowsNoEditor.pak)。",
-    "vanilla_warning_missing": "选定的模组 PAK 文件缺少必需资源 ({missing})。请选择原版游戏 PAK 文件 (War-WindowsNoEditor.pak)。",
-    "no_vanilla_selected": "未选择原版 PAK",
-    "mod_pak_group": "模组 PAK 文件",
-    "mod_pak_warning": "只选择一个模组的 PAK 文件。不要混合不同模组的 PAK 文件（例如原版 + 其他模组）- 这会产生不正确的结果。",
-    "add_pak_files": "添加 PAK 文件...",
-    "remove_selected": "移除选中项",
-    "configuration_group": "配置",
-    "mod_name": "模组名称：",
-    "mod_name_placeholder": "例如：vanilla、mymod",
-    "overwrite": "覆盖现有数据",
-    "overwrite_tooltip": "如果选中，具有相同物品-分辨率的现有模板将被覆盖",
-    "destination_database": "目标数据库：",
-    "destination_placeholder": "选择数据库文件 (.h5)",
-    "destination_tooltip": "保存模板的数据库文件",
-    "workers": "工作进程：",
-    "workers_tooltip": "数据库构建的并行进程数。\n设置为 1 禁用多进程处理。",
-    "cores_detected": "（检测到 {cores} 个核心）",
-    "process_logs": "进程日志",
-    "start_import": "开始导入",
-    "validation": {
-      "validating_pak": "正在验证 PAK 文件...",
-      "validating_vanilla": "正在验证原版 PAK...",
-      "all_assets_found": "所有必需资源已找到",
-      "missing_assets": "缺少必需资源",
-      "invalid_vanilla": "无效的原版 PAK",
-      "wait_validation": "请等待模组 PAK 文件验证完成",
-      "wait_vanilla_validation": "请等待原版 PAK 文件验证完成",
-      "add_pak_file": "请至少添加一个模组 PAK 文件",
-      "enter_mod_name": "请输入模组名称",
-      "select_database": "请选择目标数据库文件",
-      "mod_missing_assets": "模组 PAK 文件缺少必需资源。请选择原版游戏 PAK 文件。",
-      "vanilla_invalid": "选定的原版 PAK 文件不包含必需资源。请选择正确的原版游戏 PAK 文件 (War-WindowsNoEditor.pak)。"
-    },
-    "config_required_title": "需要配置",
-    "config_required_message": "数据库构建器未正确配置。",
-    "config_required_intro": "要使用数据库构建功能，您需要配置：",
-    "config_required_extractor": "提取工具 (repak.exe) - 用于提取 PAK 文件",
-    "config_required_converter": "转换工具 (umodel.exe) - 用于转换 UAsset 文件",
-    "config_required_catalog": "目录文件 (catalog.json) - 定义所有游戏物品",
-    "invalid_vanilla_title": "无效的原版 PAK",
-    "invalid_vanilla_message": "选定的 PAK 文件不包含必需资源 ({missing})。\n\n请选择正确的原版游戏 PAK 文件：\nWar-WindowsNoEditor.pak\n\n此文件通常位于：\nSteam/steamapps/common/Foxhole/War/Content/Paks/",
-    "invalid_mod_name_title": "无效的模组名称",
-    "import_completed": "导入成功完成！",
-    "import_cancelled": "导入已取消",
-    "import_error": "导入错误：{error}",
-    "import_in_progress_title": "导入进行中",
-    "import_in_progress_message": "导入正在运行。您确定要关闭吗？",
-    "select_vanilla_pak": "选择原版 PAK 文件",
-    "select_mod_pak": "选择模组 PAK 文件",
-    "select_database": "选择数据库文件",
-    "pak_filter": "PAK 文件 (*.pak);;所有文件 (*)"
-  },
-
-  "catalog_builder": {
-    "title": "构建目录",
-    "pak_group": "PAK 文件",
-    "pak_info": "选择 Foxhole PAK 文件 (War-WindowsNoEditor.pak) 来构建目录。",
-    "no_pak_selected": "未选择 PAK 文件",
-    "output_group": "输出",
-    "catalog_file": "目录文件：",
-    "catalog_placeholder": "输出 catalog.json 的路径",
-    "workers": "工作进程：",
-    "workers_tooltip": "uasset 转换的并行进程数。",
-    "cores_detected": "（检测到 {cores} 个核心）",
-    "process_logs": "进程日志",
-    "build_catalog": "构建目录",
-    "validation": {
-      "select_pak": "请选择 PAK 文件",
-      "pak_not_exist": "选定的 PAK 文件不存在",
-      "specify_output": "请指定目录的输出路径"
-    },
-    "config_required_title": "需要配置",
-    "config_required_message": "目录构建器未正确配置。",
-    "config_required_intro": "要使用目录构建功能，您需要配置：",
-    "config_required_extractor": "提取工具 (repak) - 用于提取 PAK 文件",
-    "config_required_converter": "JSON 转换器 (UAssetGUI) - 用于将 UAsset 文件转换为 JSON",
-    "build_completed": "目录构建成功完成！",
-    "build_cancelled": "构建已取消",
-    "build_error": "构建错误：{error}",
-    "build_in_progress_title": "构建进行中",
-    "build_in_progress_message": "构建正在运行。您确定要关闭吗？",
-    "select_pak": "选择 PAK 文件",
-    "select_output": "选择输出目录文件",
-    "pak_filter": "PAK 文件 (*.pak);;所有文件 (*)",
-    "json_filter": "JSON 文件 (*.json);;所有文件 (*)"
-  },
-
   "logging_tab": {
     "root_level": "根日志级别：",
     "root_level_tooltip": "所有日志记录器的全局默认日志级别。\n\n低于此级别的消息将被过滤，除非\n自定义日志记录器覆盖它。",
@@ -493,131 +278,11 @@
     "logger_placeholder": "例如：uvicorn.access",
     "select_log_file": "选择日志文件"
   },
-
-  "external_tools_tab": {
-    "title": "外部工具",
-    "repak_label": "提取工具 (repak)：",
-    "repak_tooltip": "用于提取 PAK 文件的 repak 可执行文件路径。\n\n从 PAK 文件提取游戏资源所必需。\n下载：https://github.com/trumank/repak",
-    "repak_placeholder": "repak 可执行文件路径",
-    "umodel_label": "转换工具 (umodel)：",
-    "umodel_tooltip": "用于将 UAsset 文件转换为 PNG 的 umodel 可执行文件路径。\n\n「构建数据库」功能所必需。\n下载：https://www.gildor.org/en/projects/umodel",
-    "umodel_placeholder": "umodel 可执行文件路径",
-    "uassetgui_label": "JSON 转换器 (UAssetGUI)：",
-    "uassetgui_tooltip": "用于将 UAsset 文件转换为 JSON 的 UAssetGUI 可执行文件路径。\n\n「构建目录」功能所必需。\n下载：https://github.com/atenfyr/UAssetGUI",
-    "uassetgui_placeholder": "UAssetGUI 可执行文件路径",
-    "download": "下载",
-    "select_repak": "选择提取工具 (repak)",
-    "select_umodel": "选择转换工具 (umodel)",
-    "select_uassetgui": "选择 JSON 转换器 (UAssetGUI)",
-    "uesave_label": "SAV 转换器 (uesave)：",
-    "uesave_tooltip": "uesave 可执行文件的路径，用于将存档文件转换为 JSON。\n\n需要此工具才能使用 'SAV 处理' 功能。\n下载地址：https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "uesave 可执行文件路径",
-    "select_uesave": "选择 SAV 转换器 (uesave)"
-  },
-
-  "ocr_tab": {
-    "warning_header": "⚠️ <b>高级设置：</b>OCR 设置定义了仓库检测的布局尺寸。这些从 2160p 基准分辨率缩放。<b style='color: #d32f2f;'>错误的值将导致检测完全失败。</b>",
-    "reset_all": "全部重置为默认值",
-    "reset_title": "重置 OCR 设置",
-    "reset_message": "将所有 OCR 设置重置为默认值？\n\n这将恢复布局检测的出厂默认值。",
-    "base_height": "基准高度：",
-    "base_height_tooltip": "用于布局计算的基准屏幕分辨率高度。\n\n所有布局尺寸都从此基准（2160p）缩放。\n默认：2160（用于 4K 截图）。",
-    "box_width": "框宽度：",
-    "box_width_tooltip": "仓库网格中每个数量框的宽度。\n\n以基准分辨率的像素为单位测量。\n错误的值将导致检测失败。",
-    "box_height": "框高度：",
-    "box_height_tooltip": "仓库网格中每个数量框的高度。\n\n以基准分辨率的像素为单位测量。\n错误的值将导致检测失败。",
-    "column_offset": "列偏移：",
-    "column_offset_tooltip": "仓库网格中列之间的水平间距。\n\n以基准分辨率的像素为单位测量。\n影响扫描器从一列移动到下一列的方式。",
-    "row_offset": "行偏移：",
-    "row_offset_tooltip": "仓库网格中行之间的垂直间距。\n\n以基准分辨率的像素为单位测量。\n影响扫描器从一行移动到下一行的方式。",
-    "group_offset": "组偏移：",
-    "group_offset_tooltip": "仓库组之间的垂直间距。\n\n以基准分辨率的像素为单位测量。\n当多个仓库部分垂直堆叠时使用。",
-    "title_margin": "标题边距：",
-    "title_margin_tooltip": "仓库标题文本周围的边距。\n\n用于检测和提取仓库名称。\n影响标题区域边界检测。",
-    "title_min_width": "标题最小宽度：",
-    "title_min_width_tooltip": "有效标题区域的最小宽度。\n\n帮助过滤掉错误的标题检测。\n太低可能包含噪声，太高可能跳过短标题。",
-    "title_height": "标题高度：",
-    "title_height_tooltip": "仓库标题文本的预期高度。\n\n用于标题区域提取。\n应与基准分辨率下游戏的标题字体大小匹配。",
-    "icon_to_quantity_offset": "图标到数量偏移：",
-    "icon_to_quantity_tooltip": "从数量框到物品图标的水平偏移（图标在左侧）。\n\n以基准分辨率的像素为单位测量。\n用于定位物品图标相对于其数量框的位置。",
-    "gray_lower": "灰度下限阈值：",
-    "gray_lower_tooltip": "数量框检测的灰度下限阈值（0-255）。\n\n取决于用户的屏幕伽马设置。\n典型范围：15-98。如果数量框检测不正确，请调整。",
-    "gray_upper": "灰度上限阈值：",
-    "gray_upper_tooltip": "数量框检测的灰度上限阈值（0-255）。\n\n取决于用户的屏幕伽马设置。\n典型范围：15-98。如果数量框检测不正确，请调整。",
-    "pixel_diff_tolerance": "像素差异容差：",
-    "pixel_diff_tooltip": "任何检测计算的允许像素变化。\n\n考虑不同分辨率下的轻微位置偏移。\n示例：图标列对齐可能因分辨率而异 1-2 像素。"
-  },
-
-  "template_tab": {
-    "warning_header": "⚠️ <b>高级设置：</b>模板设置配置箱子叠加颜色转换。这些值在生成物品图标的装箱版本时使用。<b style='color: #d32f2f;'>错误的值将破坏模板生成。</b>",
-    "reset_all": "全部重置为默认值",
-    "reset_title": "重置模板设置",
-    "reset_message": "将所有模板设置重置为默认值？\n\n这将恢复箱子颜色转换的出厂默认值。",
-    "multipliers_group": "RGB 乘数 (0-255)",
-    "offsets_group": "RGB 偏移 (0-255)",
-    "red_mult": "红色乘数：",
-    "red_mult_tooltip": "箱子叠加颜色转换的红色通道乘数。\n\n值 0-255，处理时将除以 255。\n控制装箱物品图标中保留多少红色通道。",
-    "green_mult": "绿色乘数：",
-    "green_mult_tooltip": "箱子叠加颜色转换的绿色通道乘数。\n\n值 0-255，处理时将除以 255。\n控制装箱物品图标中保留多少绿色通道。",
-    "blue_mult": "蓝色乘数：",
-    "blue_mult_tooltip": "箱子叠加颜色转换的蓝色通道乘数。\n\n值 0-255，处理时将除以 255。\n控制装箱物品图标中保留多少蓝色通道。",
-    "red_offset": "红色偏移：",
-    "red_offset_tooltip": "乘法后添加的红色通道偏移。\n\n值 0-255。调整装箱物品图标的基准红色级别。\n用于匹配棕色箱子叠加颜色。",
-    "green_offset": "绿色偏移：",
-    "green_offset_tooltip": "乘法后添加的绿色通道偏移。\n\n值 0-255。调整装箱物品图标的基准绿色级别。\n用于匹配棕色箱子叠加颜色。",
-    "blue_offset": "蓝色偏移：",
-    "blue_offset_tooltip": "乘法后添加的蓝色通道偏移。\n\n值 0-255。调整装箱物品图标的基准蓝色级别。\n用于匹配棕色箱子叠加颜色。"
-  },
-
   "stockpile_types_tab": {
     "description": "为仓库类型名称添加自定义别名以处理 OCR 错误。\n输入逗号分隔的值（例如 'seapon, Seapont, 5eaport'）。\n默认翻译已内置，无需在此添加。",
     "aliases_group": "附加别名",
     "alias_placeholder": "输入逗号分隔的别名..."
   },
-
-  "debug_viewer": {
-    "title": "调试图像查看器",
-    "select_screenshot": "选择要分析的截图",
-    "detected_items": "检测到的物品",
-    "screenshot": "截图",
-    "icon_comparison": "图标对比",
-    "icon_comparison_tooltip": "显示检测到的图标和所有通过pHash阈值的数据库候选项，按NCC分数排序",
-    "detected": "检测到",
-    "scaled": "（缩放）",
-    "scan_error_title": "扫描错误",
-    "database_error_title": "数据库错误",
-    "unknown": "未知",
-    "summary_type": "类型",
-    "summary_name": "名称",
-    "summary_shard": "分片",
-    "summary_time": "时间"
-  },
-
-  "database_builder_settings": {
-    "title": "数据库构建器设置",
-    "info": "配置构建模板数据库所需的工具和设置。"
-  },
-
-  "catalog_builder_settings": {
-    "title": "目录构建器设置",
-    "info": "配置从 PAK 文件构建物品目录所需的工具。"
-  },
-
-  "database_builder_tab": {
-    "settings_group": "数据库构建器设置",
-    "catalog_file": "目录文件 (catalog.json)：",
-    "catalog_placeholder": "catalog.json 的路径",
-    "catalog_tooltip": "定义所有游戏物品的 catalog.json 文件路径。\n\n「构建数据库」功能所必需。\n此文件将物品代码映射到其图标路径。\n\n下载：https://github.com/xurxogr/foxhole-stockpiles/tree/main/data",
-    "workers": "工作进程：",
-    "workers_tooltip": "数据库构建的并行进程数。\n\n设置为 0 自动检测（使用 CPU 数量）。\n设置为 1 禁用多进程处理。",
-    "workers_hint": "（0 = 自动检测，最大 {cores} 核心）",
-    "resolutions_group": "目标分辨率",
-    "resolutions_info": "选择导入图标时要生成的分辨率。选中「所有分辨率」以生成所有支持的分辨率。",
-    "all_resolutions": "所有分辨率",
-    "status_note": "<b>注意：</b>必须配置目录文件和外部工具（repak、umodel）才能使「构建数据库」功能正常工作。",
-    "select_catalog": "选择目录文件 (catalog.json)"
-  },
-
   "sav_processing_tab": {
     "sav_file_label": "SAV 文件路径：",
     "sav_file_tooltip": "要处理的 Foxhole 存档文件 (.sav) 的路径。\n\n此文件通常位于：\nWindows：%LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL：/mnt/c/Users/<用户名>/AppData/Local/Foxhole/Saved/SaveGames/\n\n查找名为 *_MapData.sav 的文件",

@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 import pytest
-from PyQt6.QtCore import QObject
+from PySide6.QtCore import QObject
 
 from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 

@@ -4,7 +4,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from PyQt6.QtWidgets import QDialog, QMessageBox
+from PySide6.QtWidgets import QDialog, QMessageBox
 
 from foxhole_stockpiles.core.settings.sections.notifications import (
     DiscordNotifierSettings,

@@ -1,9 +1,7 @@
 {
   "language_name": "Français",
   "language_code": "fr",
-
   "common": {
-    "cancel": "Annuler",
     "save": "Enregistrer",
     "close": "Fermer",
     "browse": "Parcourir...",
@@ -11,29 +9,25 @@
     "edit": "Modifier",
     "remove": "Supprimer",
     "clear": "Effacer",
-    "clear_all": "Tout effacer",
-    "reset": "Réinitialiser",
     "name": "Nom",
-    "all": "Tous",
-    "configure": "Configurer...",
     "clear_logs": "Effacer les journaux",
-    "validation_error": "Erreur de validation"
+    "validation_error": "Erreur de validation",
+    "log_columns": {
+      "time": "Heure",
+      "level": "Niveau",
+      "module": "Module",
+      "message": "Message"
+    },
+    "image_filter": "Images (*.png *.jpg *.jpeg);;Tous les fichiers (*)"
   },
-
   "main_window": {
     "title": "FS (Foxhole Stockpiles) - v{version}",
     "menu": {
       "file": "&Fichier",
-      "database": "&Base de données",
       "help": "&Aide",
       "configuration": "&Configuration...",
       "scan_screenshot": "&Scanner une capture...",
-      "build_catalog": "Construire le &catalogue...",
       "exit": "&Quitter",
-      "build": "&Construire...",
-      "information": "&Informations...",
-      "visualizer": "&Visualiseur...",
-      "debug_viewer": "&Visionneuse d'image de débogage...",
       "about": "À &propos"
     },
     "tray": {
@@ -42,12 +36,8 @@
       "quit": "Quitter",
       "configuration": "Configuration..."
     },
-    "dialogs": {
-      "no_database_title": "Aucune base de données",
-      "no_database_message": "Aucune base de données configurée. Veuillez d'abord configurer un chemin de base de données dans les paramètres."
-    }
+    "dialogs": {}
   },
-
   "about": {
     "title": "À propos de FS",
     "app_name": "FS (Foxhole Stockpiles)",
@@ -63,7 +53,6 @@
     "copyright": "Copyright © 2024 Xurxogr",
     "license": "Sous licence MIT"
   },
-
   "server_panel": {
     "sav_group_title": "Traitement SAV",
     "server_group_title": "Serveur",
@@ -71,14 +60,7 @@
     "stop_server": "Arrêter le serveur",
     "status_running": "Statut : En cours",
     "status_stopped": "Statut : Arrêté",
-    "log_columns": {
-      "time": "Heure",
-      "level": "Niveau",
-      "module": "Module",
-      "message": "Message"
-    },
     "select_screenshot": "Sélectionner une capture à scanner",
-    "image_filter": "Images (*.png *.jpg *.jpeg);;Tous les fichiers (*)",
     "errors": {
       "config_incomplete_title": "Configuration incomplète",
       "config_incomplete_message": "Veuillez configurer le chemin de la base de données dans<br><b>Fichier → Configuration</b>",
@@ -98,13 +80,11 @@
       "error_loading_settings": "Échec du chargement des paramètres : {error}",
       "error_no_sav_file": "Aucun fichier SAV configuré. Veuillez configurer le chemin du fichier SAV dans Fichier → Configuration → Traitement SAV, ou la détection automatique sera tentée.",
       "error_sav_not_found": "Le fichier SAV configuré n'existe pas.",
-      "error_no_uesave": "Outil uesave introuvable. Veuillez configurer le chemin dans Fichier → Configuration → Outils Externes, ou installez uesave et ajoutez-le à votre PATH.",
       "error_output": "Échec de la création du coordinateur de sortie : {error}",
       "status_scanning": "Scan en cours...",
       "status_monitoring": "Surveillance en cours..."
     }
   },
-
   "config_window": {
     "title": "Configuration",
     "tip_hover": "Astuce : Survolez les étiquettes pour obtenir de l'aide",
@@ -112,12 +92,8 @@
       "api_server": "Serveur API",
       "scanner": "Scanner",
       "output": "Sortie",
-      "ocr": "OCR",
-      "templates": "Modèles",
       "stockpile_types": "Types de stock",
       "notifications": "Notifications",
-      "external_tools": "Outils externes",
-      "database_builder": "Constructeur de BD",
       "sav_processing": "Traitement SAV",
       "logging": "Journaux",
       "gui": "Interface"
@@ -134,7 +110,6 @@
       "saved_successfully": "Configuration enregistrée avec succès !"
     }
   },
-
   "api_server_tab": {
     "server_settings": "Paramètres du serveur",
     "host": "Hôte :",
@@ -167,7 +142,6 @@
     "token": "Token :",
     "token_tooltip": "Token secret requis pour l'authentification API.\nCe token doit être gardé sécurisé et envoyé dans l'en-tête Authorization."
   },
-
   "scanner_tab": {
     "database_path": "Chemin base de données :",
     "database_path_placeholder": "Chemin vers la base de données de modèles (fichier .h5)",
@@ -181,27 +155,15 @@
     "screenshots_folder": "Dossier captures :",
     "screenshots_folder_placeholder": "Optionnel : dossier pour sauvegarder les captures",
     "screenshots_folder_tooltip": "Dossier optionnel pour sauvegarder automatiquement les captures traitées.\n\nLorsque défini, les images scannées sont sauvegardées dans des sous-dossiers quotidiens (YYYY-MM-DD)\navec format : Date_Heure_TypeStock_Nom_Résolution.png\n\nLaisser vide pour désactiver l'archivage des captures.",
-    "max_ncc": "Max candidats NCC :",
-    "max_ncc_tooltip": "Nombre maximum de candidats de modèles à évaluer avec NCC (Corrélation Croisée Normalisée).\n\nAprès le pré-filtrage par hash perceptuel, ceci limite la correspondance détaillée.\nDes valeurs plus élevées sont plus précises mais plus lentes. Recommandé : 25.",
-    "phash_threshold": "Seuil pHash :",
-    "phash_tooltip": "Seuil de distance de hash perceptuel pour le pré-filtrage des modèles.\n\nDes valeurs plus basses (0-10) sont plus strictes, des valeurs plus hautes (10-20) sont plus permissives.\nTrop bas peut manquer des objets valides, trop haut ralentit la correspondance.\nRecommandé : 12 pour un équilibre entre vitesse et précision.",
-    "tiebreaker_threshold": "Seuil départage NCC :",
-    "tiebreaker_tooltip": "Lorsque les meilleures correspondances NCC sont dans ce seuil de confiance, utilise la différence moyenne de pixels comme départage.\n\nAide à distinguer les objets visuellement similaires (ex., Matériaux d'assemblage V vs VIII).\nDéfinir à 0.0 pour désactiver le départage.\nRecommandé : 0.002.",
     "debug_mode": "Mode débogage :",
     "debug_mode_checkbox": "Sauvegarder les images de débogage pendant le scan",
     "debug_mode_tooltip": "Sauvegarder les images de débogage montrant le processus de détection.\n\nSauvegarde dans le répertoire courant :\n- stockpile_detection_result.png - Image originale avec cadres de détection\n- stockpile_quantities_result.png - Image composite des quantités\n- stockpile_name_region.png - Région du nom extraite\n- stockpile_type_region.png - Région du type extraite\n- stockpile_shard.png - Région du shard extraite\n\nUtile pour résoudre les problèmes de détection.",
     "extract_icons": "Extraire icônes :",
     "extract_icons_checkbox": "Sauvegarder les images d'icônes détectées",
     "extract_icons_tooltip": "Sauvegarder chaque icône d'objet détectée comme fichier image séparé.\n\nLes icônes sont sauvegardées dans le dossier './icons/' avec format : 'XXX_CODE.png'\noù XXX est l'index de l'icône (000, 001, etc.) et CODE est l'objet détecté.\n\nParamètre de développement - utile pour créer de nouveaux modèles ou déboguer la détection.",
-    "custom_model": "Modèle OCR personnalisé :",
-    "custom_model_tooltip": "CRITIQUE : Modèle Tesseract OCR personnalisé pour la reconnaissance des nombres.\n\nPar défaut : 'renner_numbers' (optimisé pour les nombres de stocks Foxhole).\nChanger ceci peut faire échouer complètement la reconnaissance des nombres.",
-    "tessdata_path": "Chemin Tessdata :",
-    "tessdata_tooltip": "CRITIQUE : Chemin vers le répertoire des fichiers de données Tesseract OCR.\n\nPar défaut : './tessdata' (fourni avec l'application).\nUn chemin incorrect fera échouer la reconnaissance de texte OCR.",
     "select_database": "Sélectionner la base de données de modèles",
-    "select_tessdata": "Sélectionner le répertoire Tessdata",
     "select_screenshots": "Sélectionner le répertoire des captures"
   },
-
   "output_tab": {
     "description": "Configurez les gestionnaires de sortie pour les résultats de scan.\nVous pouvez ajouter plusieurs gestionnaires pour envoyer les résultats vers différentes destinations.",
     "handlers_group": "Gestionnaires de sortie",
@@ -242,7 +204,6 @@
     "remove_handler_title": "Supprimer le gestionnaire",
     "remove_handler_message": "Êtes-vous sûr de vouloir supprimer '{name}' ?"
   },
-
   "notifications_tab": {
     "description": "Configurez les webhooks Discord pour recevoir des notifications sur les scans de stocks\net événements du serveur. Vous pouvez ajouter plusieurs notificateurs avec différents paramètres.",
     "enable_notifications": "Activer les notifications",
@@ -283,7 +244,6 @@
     "remove_notifier_title": "Supprimer le notificateur",
     "remove_notifier_message": "Êtes-vous sûr de vouloir supprimer '{name}' ?"
   },
-
   "gui_tab": {
     "config_level_group": "Niveau de configuration",
     "level": "Niveau :",
@@ -300,181 +260,6 @@
     "language": "Langue :",
     "language_tooltip": "Sélectionnez la langue de l'interface."
   },
-
-  "database_info_window": {
-    "title": "Informations sur la base de données",
-    "database_file": "Fichier de base de données",
-    "select_placeholder": "Sélectionnez un fichier de base de données...",
-    "statistics_group": "Statistiques de la base de données",
-    "statistics_info": "Les nombres représentent le total des modèles (en caisse + hors caisse) par mod et résolution",
-    "mod_column": "Mod",
-    "status_column": "Statut",
-    "no_database": "Aucune base de données chargée",
-    "click_browse": "Cliquez sur 'Parcourir...' pour sélectionner un fichier de base de données",
-    "no_file_selected": "Aucun fichier sélectionné",
-    "select_first": "Veuillez d'abord sélectionner un fichier de base de données",
-    "file_not_found": "Fichier introuvable",
-    "file_not_exist": "Le fichier de base de données n'existe pas : {path}",
-    "error_loading": "Erreur de chargement de la base de données",
-    "select_database": "Sélectionner un fichier de base de données",
-    "database_filter": "Base de données HDF5 (*.h5);;Tous les fichiers (*)"
-  },
-
-  "database_visualizer": {
-    "title": "Visualiseur de base de données de modèles",
-    "title_with_resolution": "Visualiseur de base de données de modèles - {resolution}p",
-    "database_group": "Base de données",
-    "select_database": "Sélectionner le fichier de base de données",
-    "database_filter": "Base de données HDF5 (*.h5);;Tous les fichiers (*)",
-    "filters_group": "Filtres",
-    "resolution": "Résolution :",
-    "code": "Code :",
-    "code_placeholder": "Entrez le code de l'objet...",
-    "faction": "Faction :",
-    "category": "Catégorie :",
-    "mod": "Mod :",
-    "crated": "En caisse :",
-    "crated_all": "Tous",
-    "crated_normal": "Normal",
-    "crated_crated": "En caisse",
-    "clear_filters": "Effacer les filtres",
-    "loading_databases": "Chargement de toutes les bases de données...",
-    "no_database_path": "Aucun chemin de base de données configuré",
-    "error_loading": "Erreur de chargement de la base de données : {error}",
-    "showing_results": "Affichage de {filtered} sur {total} modèles",
-    "select_template": "Sélectionnez un modèle pour voir les détails",
-    "template_comparison": "Comparaison de modèles (Taille adaptée)",
-    "current_resolution": "Résolution actuelle",
-    "current_resolution_scale": "Résolution actuelle ({resolution}p - {scale}x)",
-    "highest_resolution": "Résolution maximale",
-    "highest_resolution_found": "Résolution maximale ({resolution}p - 4x)",
-    "highest_resolution_not_found": "Résolution maximale (Non trouvée)",
-    "no_image_selected": "Aucune image sélectionnée",
-    "template_not_found": "Modèle non trouvé\nen résolution maximale",
-    "info": {
-      "code": "Code :",
-      "faction": "Faction :",
-      "category": "Catégorie :",
-      "mod": "Mod :",
-      "crated": "En caisse :",
-      "current_resolution": "Résolution actuelle :",
-      "current_shape": "Forme actuelle :",
-      "database_index": "Index dans la BD :",
-      "highest_res_available": "Résolution max disponible :",
-      "highest_res_not_found": "Rés. max : Non trouvée en {resolution}px"
-    },
-    "save_icon": "Enregistrer l'icône",
-    "save_icon_dialog": "Enregistrer l'icône sous",
-    "save_success_title": "Icône enregistrée",
-    "save_success_message": "Icône enregistrée dans : {path}",
-    "save_error_title": "Échec de l'enregistrement",
-    "save_error_message": "Échec de l'enregistrement de l'icône : {error}",
-    "replace_icon": "Remplacer l'icône",
-    "select_replacement_icon": "Sélectionner l'icône de remplacement",
-    "replace_success_title": "Icône remplacée",
-    "replace_success_message": "Icône remplacée avec succès pour '{code}'",
-    "replace_error_title": "Échec du remplacement",
-    "replace_error_message": "Échec du remplacement de l'icône : {error}",
-    "delete_icon": "Supprimer l'icône",
-    "delete_confirm_title": "Confirmer la suppression",
-    "delete_confirm_message": "Êtes-vous sûr de vouloir supprimer l'icône de '{code}' en résolution {resolution}p ?\n\nCette action est irréversible.",
-    "delete_success_title": "Icône supprimée",
-    "delete_success_message": "Icône supprimée avec succès pour '{code}'",
-    "delete_error_title": "Échec de la suppression",
-    "delete_error_message": "Échec de la suppression de l'icône : {error}"
-  },
-
-  "database_builder": {
-    "title": "Construire la base de données",
-    "vanilla_group": "Fichier PAK vanilla (Requis)",
-    "vanilla_warning": "Les fichiers PAK du mod sélectionnés manquent des ressources requises (icône de caisse, sous-icônes). Veuillez sélectionner le fichier PAK du jeu vanilla (War-WindowsNoEditor.pak).",
-    "vanilla_warning_missing": "Les fichiers PAK du mod sélectionnés manquent des ressources requises ({missing}). Veuillez sélectionner le fichier PAK du jeu vanilla (War-WindowsNoEditor.pak).",
-    "no_vanilla_selected": "Aucun PAK vanilla sélectionné",
-    "mod_pak_group": "Fichiers PAK de mod",
-    "mod_pak_warning": "Sélectionnez les fichiers PAK d'UN SEUL mod. Ne mélangez pas les fichiers PAK de différents mods (ex. vanilla + autre mod) - cela produira des résultats incorrects.",
-    "add_pak_files": "Ajouter des fichiers PAK...",
-    "remove_selected": "Supprimer la sélection",
-    "configuration_group": "Configuration",
-    "mod_name": "Nom du mod :",
-    "mod_name_placeholder": "ex. vanilla, monmod",
-    "overwrite": "Écraser les données existantes",
-    "overwrite_tooltip": "Si coché, les modèles existants avec le même objet-résolution seront écrasés",
-    "destination_database": "Base de données de destination :",
-    "destination_placeholder": "Sélectionner un fichier de base de données (.h5)",
-    "destination_tooltip": "Fichier de base de données où les modèles seront enregistrés",
-    "workers": "Workers :",
-    "workers_tooltip": "Nombre de processus parallèles pour la construction de la base de données.\nMettez 1 pour désactiver le multitraitement.",
-    "cores_detected": "({cores} cœurs détectés)",
-    "process_logs": "Journaux du processus",
-    "start_import": "Démarrer l'importation",
-    "validation": {
-      "validating_pak": "Validation des fichiers PAK...",
-      "validating_vanilla": "Validation du PAK vanilla...",
-      "all_assets_found": "Toutes les ressources requises trouvées",
-      "missing_assets": "Ressources requises manquantes",
-      "invalid_vanilla": "PAK vanilla invalide",
-      "wait_validation": "Veuillez attendre la fin de la validation des fichiers PAK du mod",
-      "wait_vanilla_validation": "Veuillez attendre la fin de la validation du fichier PAK vanilla",
-      "add_pak_file": "Veuillez ajouter au moins un fichier PAK de mod",
-      "enter_mod_name": "Veuillez entrer un nom de mod",
-      "select_database": "Veuillez sélectionner un fichier de base de données de destination",
-      "mod_missing_assets": "Les fichiers PAK du mod manquent des ressources requises. Veuillez sélectionner le fichier PAK du jeu vanilla.",
-      "vanilla_invalid": "Le fichier PAK vanilla sélectionné ne contient pas les ressources requises. Veuillez sélectionner le fichier PAK vanilla correct (War-WindowsNoEditor.pak)."
-    },
-    "config_required_title": "Configuration requise",
-    "config_required_message": "Le Constructeur de Base de Données n'est pas correctement configuré.",
-    "config_required_intro": "Pour utiliser la fonction Constructeur de Base de Données, vous devez configurer :",
-    "config_required_extractor": "Outil d'extraction (repak.exe) - pour extraire les fichiers PAK",
-    "config_required_converter": "Outil de conversion (umodel.exe) - pour convertir les fichiers UAsset",
-    "config_required_catalog": "Fichier catalogue (catalog.json) - définit tous les objets du jeu",
-    "invalid_vanilla_title": "PAK vanilla invalide",
-    "invalid_vanilla_message": "Le fichier PAK sélectionné ne contient pas les ressources requises ({missing}).\n\nVeuillez sélectionner le fichier PAK vanilla correct du jeu :\nWar-WindowsNoEditor.pak\n\nCe fichier se trouve généralement dans :\nSteam/steamapps/common/Foxhole/War/Content/Paks/",
-    "invalid_mod_name_title": "Nom de mod invalide",
-    "import_completed": "Importation terminée avec succès !",
-    "import_cancelled": "L'importation a été annulée",
-    "import_error": "Erreur d'importation : {error}",
-    "import_in_progress_title": "Importation en cours",
-    "import_in_progress_message": "Une importation est en cours. Êtes-vous sûr de vouloir fermer ?",
-    "select_vanilla_pak": "Sélectionner le fichier PAK vanilla",
-    "select_mod_pak": "Sélectionner les fichiers PAK de mod",
-    "select_database": "Sélectionner le fichier de base de données",
-    "pak_filter": "Fichiers PAK (*.pak);;Tous les fichiers (*)"
-  },
-
-  "catalog_builder": {
-    "title": "Construire le catalogue",
-    "pak_group": "Fichier PAK",
-    "pak_info": "Sélectionnez le fichier PAK de Foxhole (War-WindowsNoEditor.pak) pour construire le catalogue.",
-    "no_pak_selected": "Aucun fichier PAK sélectionné",
-    "output_group": "Sortie",
-    "catalog_file": "Fichier catalogue :",
-    "catalog_placeholder": "Chemin pour le catalog.json de sortie",
-    "workers": "Workers :",
-    "workers_tooltip": "Nombre de processus parallèles pour la conversion uasset.",
-    "cores_detected": "({cores} cœurs détectés)",
-    "process_logs": "Journaux du processus",
-    "build_catalog": "Construire le catalogue",
-    "validation": {
-      "select_pak": "Veuillez sélectionner un fichier PAK",
-      "pak_not_exist": "Le fichier PAK sélectionné n'existe pas",
-      "specify_output": "Veuillez spécifier un chemin de sortie pour le catalogue"
-    },
-    "config_required_title": "Configuration requise",
-    "config_required_message": "Le Constructeur de Catalogue n'est pas correctement configuré.",
-    "config_required_intro": "Pour utiliser la fonction Constructeur de Catalogue, vous devez configurer :",
-    "config_required_extractor": "Outil d'extraction (repak) - pour extraire les fichiers PAK",
-    "config_required_converter": "Convertisseur JSON (UAssetGUI) - pour convertir les fichiers UAsset en JSON",
-    "build_completed": "Construction du catalogue terminée avec succès !",
-    "build_cancelled": "La construction a été annulée",
-    "build_error": "Erreur de construction : {error}",
-    "build_in_progress_title": "Construction en cours",
-    "build_in_progress_message": "Une construction est en cours. Êtes-vous sûr de vouloir fermer ?",
-    "select_pak": "Sélectionner le fichier PAK",
-    "select_output": "Sélectionner le fichier catalogue de sortie",
-    "pak_filter": "Fichiers PAK (*.pak);;Tous les fichiers (*)",
-    "json_filter": "Fichiers JSON (*.json);;Tous les fichiers (*)"
-  },
-
   "logging_tab": {
     "root_level": "Niveau de journal racine :",
     "root_level_tooltip": "Niveau de journal global par défaut pour tous les loggers.\n\nLes messages en dessous de ce niveau sont filtrés sauf si\nun logger personnalisé le remplace.",
@@ -493,131 +278,11 @@
     "logger_placeholder": "ex., uvicorn.access",
     "select_log_file": "Sélectionner le fichier de journal"
   },
-
-  "ocr_tab": {
-    "warning_header": "⚠️ <b>Paramètres avancés :</b> Les paramètres OCR définissent les dimensions de mise en page pour la détection des stocks. Ceux-ci sont mis à l'échelle depuis la résolution de base 2160p. <b style='color: #d32f2f;'>Des valeurs incorrectes feront échouer complètement la détection.</b>",
-    "reset_all": "Réinitialiser tout aux valeurs par défaut",
-    "reset_title": "Réinitialiser les paramètres OCR",
-    "reset_message": "Réinitialiser tous les paramètres OCR aux valeurs par défaut ?\n\nCeci restaurera les valeurs d'usine pour la détection de mise en page.",
-    "base_height": "Hauteur de base :",
-    "base_height_tooltip": "Hauteur de résolution d'écran de base pour les calculs de mise en page.\n\nToutes les dimensions de mise en page sont mises à l'échelle depuis cette base (2160p).\nPar défaut : 2160 (pour les captures 4K).",
-    "box_width": "Largeur de boîte :",
-    "box_width_tooltip": "Largeur de chaque boîte de quantité dans la grille du stock.\n\nMesuré en pixels à la résolution de base.\nDes valeurs incorrectes feront échouer la détection.",
-    "box_height": "Hauteur de boîte :",
-    "box_height_tooltip": "Hauteur de chaque boîte de quantité dans la grille du stock.\n\nMesuré en pixels à la résolution de base.\nDes valeurs incorrectes feront échouer la détection.",
-    "column_offset": "Décalage de colonne :",
-    "column_offset_tooltip": "Espacement horizontal entre les colonnes dans la grille du stock.\n\nMesuré en pixels à la résolution de base.\nAffecte comment le scanner passe d'une colonne à la suivante.",
-    "row_offset": "Décalage de ligne :",
-    "row_offset_tooltip": "Espacement vertical entre les lignes dans la grille du stock.\n\nMesuré en pixels à la résolution de base.\nAffecte comment le scanner passe d'une ligne à la suivante.",
-    "group_offset": "Décalage de groupe :",
-    "group_offset_tooltip": "Espacement vertical entre les groupes de stock.\n\nMesuré en pixels à la résolution de base.\nUtilisé quand plusieurs sections de stock sont empilées verticalement.",
-    "title_margin": "Marge de titre :",
-    "title_margin_tooltip": "Marge autour du texte du titre du stock.\n\nUtilisé pour détecter et extraire les noms de stocks.\nAffecte la détection des limites de la région du titre.",
-    "title_min_width": "Largeur min du titre :",
-    "title_min_width_tooltip": "Largeur minimale pour une région de titre valide.\n\nAide à filtrer les fausses détections de titres.\nTrop bas peut inclure du bruit, trop haut peut sauter les titres courts.",
-    "title_height": "Hauteur du titre :",
-    "title_height_tooltip": "Hauteur attendue du texte du titre du stock.\n\nUtilisé pour l'extraction de la région du titre.\nDoit correspondre à la taille de police du titre du jeu à la résolution de base.",
-    "icon_to_quantity_offset": "Décalage icône vers quantité :",
-    "icon_to_quantity_tooltip": "Décalage horizontal de la boîte de quantité vers l'icône de l'objet (l'icône est à gauche).\n\nMesuré en pixels à la résolution de base.\nUtilisé pour localiser l'icône de l'objet par rapport à sa boîte de quantité.",
-    "gray_lower": "Seuil gris inférieur :",
-    "gray_lower_tooltip": "Seuil de niveaux de gris inférieur pour la détection des boîtes de quantité (0-255).\n\nDépend des paramètres gamma de l'écran de l'utilisateur.\nPlage typique : 15-98. Ajuster si les boîtes de quantité ne sont pas correctement détectées.",
-    "gray_upper": "Seuil gris supérieur :",
-    "gray_upper_tooltip": "Seuil de niveaux de gris supérieur pour la détection des boîtes de quantité (0-255).\n\nDépend des paramètres gamma de l'écran de l'utilisateur.\nPlage typique : 15-98. Ajuster si les boîtes de quantité ne sont pas correctement détectées.",
-    "pixel_diff_tolerance": "Tolérance de différence de pixels :",
-    "pixel_diff_tooltip": "Variation de pixels autorisée pour tout calcul de détection.\n\nCompense les légers décalages de position à différentes résolutions.\nExemple : L'alignement des colonnes d'icônes peut varier de 1-2 pixels selon la résolution."
-  },
-
-  "template_tab": {
-    "warning_header": "⚠️ <b>Paramètres avancés :</b> Les paramètres des modèles configurent la transformation de couleur de l'overlay caisse. Ces valeurs sont utilisées lors de la génération des versions en caisse des icônes d'objets. <b style='color: #d32f2f;'>Des valeurs incorrectes casseront la génération de modèles.</b>",
-    "reset_all": "Réinitialiser tout aux valeurs par défaut",
-    "reset_title": "Réinitialiser les paramètres des modèles",
-    "reset_message": "Réinitialiser tous les paramètres des modèles aux valeurs par défaut ?\n\nCeci restaurera les valeurs d'usine pour la transformation de couleur des caisses.",
-    "multipliers_group": "Multiplicateurs RGB (0-255)",
-    "offsets_group": "Décalages RGB (0-255)",
-    "red_mult": "Multiplicateur rouge :",
-    "red_mult_tooltip": "Multiplicateur du canal rouge pour la transformation de couleur de l'overlay caisse.\n\nValeur 0-255, sera divisée par 255 lors du traitement.\nContrôle la quantité du canal rouge conservée dans les icônes d'objets en caisse.",
-    "green_mult": "Multiplicateur vert :",
-    "green_mult_tooltip": "Multiplicateur du canal vert pour la transformation de couleur de l'overlay caisse.\n\nValeur 0-255, sera divisée par 255 lors du traitement.\nContrôle la quantité du canal vert conservée dans les icônes d'objets en caisse.",
-    "blue_mult": "Multiplicateur bleu :",
-    "blue_mult_tooltip": "Multiplicateur du canal bleu pour la transformation de couleur de l'overlay caisse.\n\nValeur 0-255, sera divisée par 255 lors du traitement.\nContrôle la quantité du canal bleu conservée dans les icônes d'objets en caisse.",
-    "red_offset": "Décalage rouge :",
-    "red_offset_tooltip": "Décalage du canal rouge ajouté après la multiplication.\n\nValeur 0-255. Ajuste le niveau de base du rouge des icônes d'objets en caisse.\nUtilisé pour correspondre à la couleur brunâtre de l'overlay caisse.",
-    "green_offset": "Décalage vert :",
-    "green_offset_tooltip": "Décalage du canal vert ajouté après la multiplication.\n\nValeur 0-255. Ajuste le niveau de base du vert des icônes d'objets en caisse.\nUtilisé pour correspondre à la couleur brunâtre de l'overlay caisse.",
-    "blue_offset": "Décalage bleu :",
-    "blue_offset_tooltip": "Décalage du canal bleu ajouté après la multiplication.\n\nValeur 0-255. Ajuste le niveau de base du bleu des icônes d'objets en caisse.\nUtilisé pour correspondre à la couleur brunâtre de l'overlay caisse."
-  },
-
   "stockpile_types_tab": {
     "description": "Ajoutez des alias personnalisés pour les noms de types de stock pour gérer les erreurs OCR.\nEntrez des valeurs séparées par des virgules (ex., 'seapon, Seapont, 5eaport').\nLes traductions par défaut sont déjà intégrées et n'ont pas besoin d'être ajoutées ici.",
     "aliases_group": "Alias supplémentaires",
     "alias_placeholder": "Entrez des alias séparés par des virgules..."
   },
-
-  "external_tools_tab": {
-    "title": "Outils externes",
-    "repak_label": "Outil d'extraction (repak) :",
-    "repak_tooltip": "Chemin vers l'exécutable repak pour extraire les fichiers PAK.\n\nRequis pour extraire les ressources du jeu des fichiers PAK.\nTélécharger depuis : https://github.com/trumank/repak",
-    "repak_placeholder": "Chemin vers l'exécutable repak",
-    "umodel_label": "Outil de conversion (umodel) :",
-    "umodel_tooltip": "Chemin vers l'exécutable umodel pour convertir les fichiers UAsset en PNG.\n\nRequis pour la fonction 'Construire la base de données'.\nTélécharger depuis : https://www.gildor.org/en/projects/umodel",
-    "umodel_placeholder": "Chemin vers l'exécutable umodel",
-    "uassetgui_label": "Convertisseur JSON (UAssetGUI) :",
-    "uassetgui_tooltip": "Chemin vers l'exécutable UAssetGUI pour convertir les fichiers UAsset en JSON.\n\nRequis pour la fonction 'Construire le catalogue'.\nTélécharger depuis : https://github.com/atenfyr/UAssetGUI",
-    "uassetgui_placeholder": "Chemin vers l'exécutable UAssetGUI",
-    "download": "Télécharger",
-    "select_repak": "Sélectionner l'outil d'extraction (repak)",
-    "select_umodel": "Sélectionner l'outil de conversion (umodel)",
-    "select_uassetgui": "Sélectionner le convertisseur JSON (UAssetGUI)",
-    "uesave_label": "Convertisseur SAV (uesave) :",
-    "uesave_tooltip": "Chemin vers l'exécutable uesave pour convertir les fichiers de sauvegarde en JSON.\n\nRequis pour la fonction 'Traitement SAV'.\nTélécharger depuis : https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "Chemin vers l'exécutable uesave",
-    "select_uesave": "Sélectionner le convertisseur SAV (uesave)"
-  },
-
-  "database_builder_tab": {
-    "settings_group": "Paramètres du Constructeur de Base de Données",
-    "catalog_file": "Fichier catalogue (catalog.json) :",
-    "catalog_placeholder": "Chemin vers catalog.json",
-    "catalog_tooltip": "Chemin vers le fichier catalog.json qui définit tous les objets du jeu.\n\nRequis pour la fonction 'Construire la base de données'.\nCe fichier fait correspondre les codes d'objets à leurs chemins d'icônes.\n\nTélécharger depuis : https://github.com/xurxogr/foxhole-stockpiles/tree/main/data",
-    "workers": "Workers :",
-    "workers_tooltip": "Nombre de processus parallèles pour la construction de la base de données.\n\nMettez 0 pour auto-détection (utilise le nombre de CPU).\nMettez 1 pour désactiver le multitraitement.",
-    "workers_hint": "(0 = auto-détection, max {cores} cœurs)",
-    "resolutions_group": "Résolutions cibles",
-    "resolutions_info": "Sélectionnez quelles résolutions générer lors de l'importation des icônes. Cochez 'Toutes les résolutions' pour générer toutes les résolutions supportées.",
-    "all_resolutions": "Toutes les résolutions",
-    "status_note": "<b>Note :</b> Le fichier catalogue et les outils externes (repak, umodel) doivent être configurés pour que la fonction 'Construire la base de données' fonctionne.",
-    "select_catalog": "Sélectionner le fichier catalogue (catalog.json)"
-  },
-
-  "debug_viewer": {
-    "title": "Visionneuse d'image de débogage",
-    "select_screenshot": "Sélectionnez une capture d'écran à analyser",
-    "detected_items": "Objets détectés",
-    "screenshot": "Capture d'écran",
-    "icon_comparison": "Comparaison d'icônes",
-    "icon_comparison_tooltip": "Affiche l'icône détectée et tous les candidats BD passant le seuil pHash, triés par score NCC",
-    "detected": "Détecté",
-    "scaled": "(mis à l'échelle)",
-    "scan_error_title": "Erreur de scan",
-    "database_error_title": "Erreur de base de données",
-    "unknown": "Inconnu",
-    "summary_type": "Type",
-    "summary_name": "Nom",
-    "summary_shard": "Shard",
-    "summary_time": "Heure"
-  },
-
-  "database_builder_settings": {
-    "title": "Paramètres du Constructeur de Base de Données",
-    "info": "Configurez les outils et paramètres requis pour construire la base de données de modèles."
-  },
-
-  "catalog_builder_settings": {
-    "title": "Paramètres du Constructeur de Catalogue",
-    "info": "Configurez les outils requis pour construire le catalogue d'objets depuis les fichiers PAK."
-  },
-
   "sav_processing_tab": {
     "sav_file_label": "Chemin du fichier SAV :",
     "sav_file_tooltip": "Chemin vers le fichier de sauvegarde Foxhole (.sav) à traiter.\n\nCe fichier se trouve généralement dans :\nWindows : %LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL : /mnt/c/Users/<utilisateur>/AppData/Local/Foxhole/Saved/SaveGames/\n\nRecherchez les fichiers nommés *_MapData.sav",

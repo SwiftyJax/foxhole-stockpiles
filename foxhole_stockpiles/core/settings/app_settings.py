@@ -20,12 +20,10 @@ from foxhole_stockpiles.core.settings.sections import (
     GUISettings,
     LoggingSettings,
     NotificationsSettings,
-    OCRSettings,
     OutputSettings,
     SavProcessingSettings,
     ScannerSettings,
     StockpileTypesSettings,
-    TemplateSettings,
 )
 
 
@@ -48,16 +46,12 @@ class AppSettings(BaseSettings):
     logging: LoggingSettings = Field(
         description="Logging settings", default_factory=LoggingSettings
     )
-    ocr: OCRSettings = Field(description="OCR settings", default_factory=OCRSettings)
     output: OutputSettings = Field(description="Output settings", default_factory=OutputSettings)
     scanner: ScannerSettings = Field(
         description="Stockpile scanner settings", default_factory=ScannerSettings
     )
     stockpile_types: StockpileTypesSettings = Field(
         description="Stockpile types settings", default_factory=StockpileTypesSettings
-    )
-    templates: TemplateSettings = Field(
-        description="Template generation settings", default_factory=TemplateSettings
     )
     database_builder: DatabaseBuilderSettings = Field(
         description="Database builder settings", default_factory=DatabaseBuilderSettings

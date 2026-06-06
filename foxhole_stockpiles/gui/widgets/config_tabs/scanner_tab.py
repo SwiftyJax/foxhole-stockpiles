@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from PyQt6.QtWidgets import (
+from PySide6.QtWidgets import (
     QCheckBox,
     QDoubleSpinBox,
     QFileDialog,
@@ -100,32 +100,6 @@ class ScannerTab(QWidget):
 
         # === ADVANCED LEVEL OPTIONS ===
 
-        # Max NCC Candidates - ADVANCED
-        self._ncc_label = QLabel()
-        self.max_ncc_input = QSpinBox()
-        self.max_ncc_input.setRange(1, 100)
-        self.max_ncc_input.setValue(25)
-        self._form_layout.addRow(self._ncc_label, self.max_ncc_input)
-        self._advanced_widgets.extend([self._ncc_label, self.max_ncc_input])
-
-        # pHash Threshold - ADVANCED
-        self._phash_label = QLabel()
-        self.phash_threshold_input = QSpinBox()
-        self.phash_threshold_input.setRange(0, 64)
-        self.phash_threshold_input.setValue(12)
-        self._form_layout.addRow(self._phash_label, self.phash_threshold_input)
-        self._advanced_widgets.extend([self._phash_label, self.phash_threshold_input])
-
-        # NCC Tiebreaker Threshold - ADVANCED
-        self._tiebreaker_label = QLabel()
-        self.tiebreaker_threshold_input = QDoubleSpinBox()
-        self.tiebreaker_threshold_input.setRange(0.0, 0.1)
-        self.tiebreaker_threshold_input.setSingleStep(0.001)
-        self.tiebreaker_threshold_input.setDecimals(3)
-        self.tiebreaker_threshold_input.setValue(0.002)
-        self._form_layout.addRow(self._tiebreaker_label, self.tiebreaker_threshold_input)
-        self._advanced_widgets.extend([self._tiebreaker_label, self.tiebreaker_threshold_input])
-
         # Debug Mode - ADVANCED
         self._debug_label = QLabel()
         self.debug_mode_input = QCheckBox()
@@ -138,48 +112,13 @@ class ScannerTab(QWidget):
         self._form_layout.addRow(self._extract_label, self.extract_icons_input)
         self._advanced_widgets.extend([self._extract_label, self.extract_icons_input])
 
-        # === DEVELOPER LEVEL OPTIONS ===
-
-        # Custom Model - DEVELOPER
-        self._custom_model_label = QLabel()
-        self._custom_model_label.setStyleSheet("QLabel { color: #d32f2f; font-weight: bold; }")
-        self._custom_model_widget = QWidget()
-        custom_model_layout = QHBoxLayout(self._custom_model_widget)
-        custom_model_layout.setContentsMargins(0, 0, 0, 0)
-        self.custom_model_input = QLineEdit()
-        self.custom_model_input.setPlaceholderText("renner_numbers")
-        self.custom_model_reset = QPushButton(t("common.reset"))
-        self.custom_model_reset.clicked.connect(self.reset_custom_model)
-        custom_model_layout.addWidget(self.custom_model_input)
-        custom_model_layout.addWidget(self.custom_model_reset)
-        self._form_layout.addRow(self._custom_model_label, self._custom_model_widget)
-        self._developer_widgets.extend([self._custom_model_label, self._custom_model_widget])
-
-        # Tessdata Path - DEVELOPER
-        self._tessdata_label = QLabel()
-        self._tessdata_label.setStyleSheet("QLabel { color: #d32f2f; font-weight: bold; }")
-        self._tessdata_widget = QWidget()
-        tessdata_layout = QHBoxLayout(self._tessdata_widget)
-        tessdata_layout.setContentsMargins(0, 0, 0, 0)
-        self.tessdata_path_input = QLineEdit()
-        self.tessdata_path_input.setPlaceholderText("./tessdata")
-        self.tessdata_browse = QPushButton()
-        self.tessdata_browse.clicked.connect(self.browse_tessdata)
-        self.tessdata_reset = QPushButton(t("common.reset"))
-        self.tessdata_reset.clicked.connect(self.reset_tessdata_path)
-        tessdata_layout.addWidget(self.tessdata_path_input)
-        tessdata_layout.addWidget(self.tessdata_browse)
-        tessdata_layout.addWidget(self.tessdata_reset)
-        self._form_layout.addRow(self._tessdata_label, self._tessdata_widget)
-        self._developer_widgets.extend([self._tessdata_label, self._tessdata_widget])
-
         # Apply translations
         self.retranslate()
 
         # Connect to language change signal with cleanup
         self._language_callback = self._on_language_changed
         on_language_changed(self._language_callback)
-        self.destroyed.connect(lambda: off_language_changed(self._language_callback))
+        self.destroyed.connect(lambda cb=self._language_callback: off_language_changed(cb))
 
     def _on_language_changed(self, _language: str) -> None:
         """Handle language change event."""
@@ -213,18 +152,6 @@ class ScannerTab(QWidget):
         )
         self.screenshots_browse.setText(t("common.browse"))
 
-        # Advanced: Max NCC Candidates
-        self._ncc_label.setText(t("scanner_tab.max_ncc"))
-        self._ncc_label.setToolTip(t("scanner_tab.max_ncc_tooltip"))
-
-        # Advanced: pHash Threshold
-        self._phash_label.setText(t("scanner_tab.phash_threshold"))
-        self._phash_label.setToolTip(t("scanner_tab.phash_tooltip"))
-
-        # Advanced: NCC Tiebreaker Threshold
-        self._tiebreaker_label.setText(t("scanner_tab.tiebreaker_threshold"))
-        self._tiebreaker_label.setToolTip(t("scanner_tab.tiebreaker_tooltip"))
-
         # Advanced: Debug Mode
         self._debug_label.setText(t("scanner_tab.debug_mode"))
         self._debug_label.setToolTip(t("scanner_tab.debug_mode_tooltip"))
@@ -234,17 +161,6 @@ class ScannerTab(QWidget):
         self._extract_label.setText(t("scanner_tab.extract_icons"))
         self._extract_label.setToolTip(t("scanner_tab.extract_icons_tooltip"))
         self.extract_icons_input.setText(t("scanner_tab.extract_icons_checkbox"))
-
-        # Developer: Custom Model
-        self._custom_model_label.setText(t("scanner_tab.custom_model"))
-        self._custom_model_label.setToolTip(t("scanner_tab.custom_model_tooltip"))
-        self.custom_model_reset.setText(t("common.reset"))
-
-        # Developer: Tessdata Path
-        self._tessdata_label.setText(t("scanner_tab.tessdata_path"))
-        self._tessdata_label.setToolTip(t("scanner_tab.tessdata_tooltip"))
-        self.tessdata_browse.setText(t("common.browse"))
-        self.tessdata_reset.setText(t("common.reset"))
 
     def set_config_level(self, level: ConfigLevel) -> None:
         """Show or hide fields based on the configuration level.
@@ -271,16 +187,6 @@ class ScannerTab(QWidget):
         if filepath:
             self.database_path_input.setText(filepath)
 
-    def browse_tessdata(self) -> None:
-        """Open folder dialog for tessdata path."""
-        folder = QFileDialog.getExistingDirectory(
-            self,
-            t("scanner_tab.select_tessdata"),
-            "",
-        )
-        if folder:
-            self.tessdata_path_input.setText(folder)
-
     def browse_screenshots(self) -> None:
         """Open folder dialog for screenshots folder."""
         folder = QFileDialog.getExistingDirectory(
@@ -290,16 +196,6 @@ class ScannerTab(QWidget):
         )
         if folder:
             self.screenshots_folder_input.setText(folder)
-
-    def reset_custom_model(self) -> None:
-        """Reset custom OCR model to default value."""
-        defaults = ScannerSettings()
-        self.custom_model_input.setText(defaults.custom_model)
-
-    def reset_tessdata_path(self) -> None:
-        """Reset tessdata path to default value."""
-        defaults = ScannerSettings()
-        self.tessdata_path_input.setText(str(defaults.tessdata_path))
 
     def set_values(self, settings: ScannerSettings) -> None:
         """Set widget values from settings.
@@ -313,14 +209,9 @@ class ScannerTab(QWidget):
         self.cache_size_input.setValue(settings.template_cache_size)
         self.early_exit_input.setValue(settings.early_exit_threshold)
         self.confidence_gap_input.setValue(settings.confidence_gap)
-        self.custom_model_input.setText(settings.custom_model)
-        self.tessdata_path_input.setText(str(settings.tessdata_path))
         self.debug_mode_input.setChecked(settings.debug_mode)
         self.extract_icons_input.setChecked(settings.extract_icons)
         self.screenshots_folder_input.setText(settings.screenshots_folder or "")
-        self.max_ncc_input.setValue(settings.max_ncc_candidates)
-        self.phash_threshold_input.setValue(settings.phash_threshold)
-        self.tiebreaker_threshold_input.setValue(settings.ncc_tiebreaker_threshold)
 
     def get_values(self) -> ScannerSettings:
         """Get current values from widgets.
@@ -334,12 +225,7 @@ class ScannerTab(QWidget):
             template_cache_size=self.cache_size_input.value(),
             early_exit_threshold=self.early_exit_input.value(),
             confidence_gap=self.confidence_gap_input.value(),
-            custom_model=self.custom_model_input.text(),
-            tessdata_path=self.tessdata_path_input.text(),
             debug_mode=self.debug_mode_input.isChecked(),
             extract_icons=self.extract_icons_input.isChecked(),
             screenshots_folder=self.screenshots_folder_input.text() or "",
-            max_ncc_candidates=self.max_ncc_input.value(),
-            phash_threshold=self.phash_threshold_input.value(),
-            ncc_tiebreaker_threshold=self.tiebreaker_threshold_input.value(),
         )

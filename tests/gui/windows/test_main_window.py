@@ -4,7 +4,7 @@ from typing import Any
 from unittest.mock import patch
 
 import pytest
-from PyQt6.QtWidgets import QMenuBar
+from PySide6.QtWidgets import QMenuBar
 
 from foxhole_stockpiles.enums.config_level import ConfigLevel
 from foxhole_stockpiles.gui.windows.main_window import MainWindow
@@ -121,66 +121,6 @@ def test_window_show_about(qtbot: Any, window: MainWindow) -> None:
         assert t("about.app_name") in call_args[0][2]
 
 
-def test_window_show_icon_import(qtbot: Any, window: MainWindow) -> None:
-    """Test showing icon import window.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch("foxhole_stockpiles.gui.windows.main_window.IconImportWindow") as mock_import_class:
-        mock_import = mock_import_class.return_value
-
-        window.show_icon_import()
-
-        mock_import_class.assert_called_once_with(window)
-        mock_import.setWindowModality.assert_called_once()
-        mock_import.show.assert_called_once()
-
-
-def test_window_show_database_info_with_config(qtbot: Any, window: MainWindow) -> None:
-    """Test showing database info window with configured database.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch("foxhole_stockpiles.gui.windows.main_window.AppSettings") as mock_settings_class:
-        mock_settings = mock_settings_class.return_value
-        mock_settings.scanner.database_path = "/path/to/db.h5"
-
-        with patch(
-            "foxhole_stockpiles.gui.windows.main_window.DatabaseInfoWindow"
-        ) as mock_info_class:
-            mock_info = mock_info_class.return_value
-
-            window.show_database_info()
-
-            mock_info_class.assert_called_once_with(window, initial_db_path="/path/to/db.h5")
-            mock_info.exec.assert_called_once()
-
-
-def test_window_show_database_info_no_config(qtbot: Any, window: MainWindow) -> None:
-    """Test showing database info window without configured database.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch(
-        "foxhole_stockpiles.gui.windows.main_window.AppSettings", side_effect=OSError("No config")
-    ):
-        with patch(
-            "foxhole_stockpiles.gui.windows.main_window.DatabaseInfoWindow"
-        ) as mock_info_class:
-            mock_info = mock_info_class.return_value
-
-            window.show_database_info()
-
-            mock_info_class.assert_called_once_with(window, initial_db_path=None)
-            mock_info.exec.assert_called_once()
-
-
 def test_window_scan_screenshot(qtbot: Any, window: MainWindow) -> None:
     """Test scanning screenshot from menu.
 
@@ -201,7 +141,7 @@ def test_window_quit_application(qtbot: Any, window: MainWindow) -> None:
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     with patch.object(QApplication, "quit") as mock_quit:
         window.quit_application()
@@ -215,7 +155,7 @@ def test_tray_icon_creation_when_available(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     from foxhole_stockpiles.core.settings.sections.gui import GUISettings
 
@@ -241,7 +181,7 @@ def test_tray_icon_creation_when_not_available(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
         with patch.object(QSystemTrayIcon, "isSystemTrayAvailable", return_value=False):
@@ -258,7 +198,7 @@ def test_tray_icon_activated_double_click(qtbot: Any, window: MainWindow) -> Non
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     with patch.object(window, "show_from_tray") as mock_show:
         window.tray_icon_activated(QSystemTrayIcon.ActivationReason.DoubleClick)
@@ -273,7 +213,7 @@ def test_tray_icon_activated_single_click(qtbot: Any, window: MainWindow) -> Non
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     with patch.object(window, "show_from_tray") as mock_show:
         window.tray_icon_activated(QSystemTrayIcon.ActivationReason.Trigger)
@@ -302,7 +242,7 @@ def test_load_minimize_to_tray_from_config(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     from foxhole_stockpiles.core.settings.sections.gui import GUISettings
 
@@ -401,8 +341,8 @@ def test_close_event_minimize_to_tray_enabled(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtGui import QCloseEvent
-    from PyQt6.QtWidgets import QSystemTrayIcon
+    from PySide6.QtGui import QCloseEvent
+    from PySide6.QtWidgets import QSystemTrayIcon
 
     with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
         with patch.object(QSystemTrayIcon, "isSystemTrayAvailable", return_value=True):
@@ -426,8 +366,8 @@ def test_close_event_minimize_to_tray_disabled(qtbot: Any, window: MainWindow) -
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtGui import QCloseEvent
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtGui import QCloseEvent
+    from PySide6.QtWidgets import QApplication
 
     window.minimize_to_tray = False
     window.show()
@@ -446,8 +386,8 @@ def test_close_event_minimize_to_tray_enabled_no_tray_icon(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtGui import QCloseEvent
-    from PyQt6.QtWidgets import QApplication, QSystemTrayIcon
+    from PySide6.QtGui import QCloseEvent
+    from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
     with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
         with patch.object(QSystemTrayIcon, "isSystemTrayAvailable", return_value=False):
@@ -471,7 +411,7 @@ def test_quit_application_stops_server(qtbot: Any, window: MainWindow) -> None:
         qtbot: PyQt test fixture
         window (MainWindow): Window instance
     """
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     # Simulate running server
     window.server_panel.server_running = True
@@ -492,7 +432,7 @@ def test_quit_application_removes_qt_log_handlers(qtbot: Any, window: MainWindow
     """
     import logging
 
-    from PyQt6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
 
     from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 
@@ -514,7 +454,7 @@ def test_quit_application_hides_tray_icon(qtbot: Any) -> None:
     Args:
         qtbot: PyQt test fixture
     """
-    from PyQt6.QtWidgets import QApplication, QSystemTrayIcon
+    from PySide6.QtWidgets import QApplication, QSystemTrayIcon
 
     with patch("foxhole_stockpiles.gui.widgets.server_control_panel.ScannerClient"):
         with patch.object(QSystemTrayIcon, "isSystemTrayAvailable", return_value=True):
@@ -526,142 +466,3 @@ def test_quit_application_hides_tray_icon(qtbot: Any) -> None:
                     window.quit_application()
 
                     mock_hide.assert_called_once()
-
-
-def test_window_show_catalog_builder(qtbot: Any, window: MainWindow) -> None:
-    """Test showing catalog builder window.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch(
-        "foxhole_stockpiles.gui.windows.main_window.CatalogBuilderWindow"
-    ) as mock_catalog_class:
-        mock_catalog = mock_catalog_class.return_value
-
-        window.show_catalog_builder()
-
-        mock_catalog_class.assert_called_once_with(window)
-        mock_catalog.setWindowModality.assert_called_once()
-        mock_catalog.show.assert_called_once()
-
-
-def test_window_show_database_visualizer_with_config(qtbot: Any, window: MainWindow) -> None:
-    """Test showing database visualizer with configured database.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch("foxhole_stockpiles.gui.windows.main_window.AppSettings") as mock_settings_class:
-        mock_settings = mock_settings_class.return_value
-        mock_settings.scanner.database_path = "/path/to/db.h5"
-
-        with patch(
-            "foxhole_stockpiles.gui.windows.main_window.DatabaseVisualizerWindow"
-        ) as mock_visualizer_class:
-            mock_visualizer = mock_visualizer_class.return_value
-
-            window.show_database_visualizer()
-
-            mock_visualizer_class.assert_called_once_with(window, database_path="/path/to/db.h5")
-            mock_visualizer.exec.assert_called_once()
-
-
-def test_window_show_database_visualizer_no_database(qtbot: Any, window: MainWindow) -> None:
-    """Test showing database visualizer without configured database shows warning.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch("foxhole_stockpiles.gui.windows.main_window.AppSettings") as mock_settings_class:
-        mock_settings = mock_settings_class.return_value
-        mock_settings.scanner.database_path = None
-
-        with patch(
-            "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
-        ) as mock_warning:
-            window.show_database_visualizer()
-
-            mock_warning.assert_called_once()
-
-
-def test_window_show_database_visualizer_config_error(qtbot: Any, window: MainWindow) -> None:
-    """Test showing database visualizer with config error shows warning.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch(
-        "foxhole_stockpiles.gui.windows.main_window.AppSettings",
-        side_effect=OSError("Config error"),
-    ):
-        with patch(
-            "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
-        ) as mock_warning:
-            window.show_database_visualizer()
-
-            mock_warning.assert_called_once()
-
-
-def test_window_show_debug_viewer_with_config(qtbot: Any, window: MainWindow) -> None:
-    """Test showing debug viewer with configured database.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch("foxhole_stockpiles.gui.windows.main_window.AppSettings") as mock_settings_class:
-        mock_settings = mock_settings_class.return_value
-        mock_settings.scanner.database_path = "/path/to/db.h5"
-
-        with patch(
-            "foxhole_stockpiles.gui.windows.main_window.DebugImageWindow"
-        ) as mock_debug_class:
-            mock_debug = mock_debug_class.return_value
-
-            window.show_debug_viewer()
-
-            mock_debug_class.assert_called_once_with(window, database_path="/path/to/db.h5")
-            mock_debug.exec.assert_called_once()
-
-
-def test_window_show_debug_viewer_no_database(qtbot: Any, window: MainWindow) -> None:
-    """Test showing debug viewer without configured database shows warning.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch("foxhole_stockpiles.gui.windows.main_window.AppSettings") as mock_settings_class:
-        mock_settings = mock_settings_class.return_value
-        mock_settings.scanner.database_path = None
-
-        with patch(
-            "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
-        ) as mock_warning:
-            window.show_debug_viewer()
-
-            mock_warning.assert_called_once()
-
-
-def test_window_show_debug_viewer_config_error(qtbot: Any, window: MainWindow) -> None:
-    """Test showing debug viewer with config error shows warning.
-
-    Args:
-        qtbot: PyQt test fixture
-        window (MainWindow): Window instance
-    """
-    with patch(
-        "foxhole_stockpiles.gui.windows.main_window.AppSettings",
-        side_effect=OSError("Config error"),
-    ):
-        with patch(
-            "foxhole_stockpiles.gui.windows.main_window.QMessageBox.warning"
-        ) as mock_warning:
-            window.show_debug_viewer()
-
-            mock_warning.assert_called_once()

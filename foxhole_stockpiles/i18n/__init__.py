@@ -7,6 +7,7 @@ from foxhole_stockpiles.i18n.translator import (
     off_language_changed,
     on_language_changed,
     set_language,
+    set_translations_resource,
     t,
 )
 
@@ -17,5 +18,6 @@ __all__ = [
     "off_language_changed",
     "on_language_changed",
     "set_language",
+    "set_translations_resource",
     "t",
 ]

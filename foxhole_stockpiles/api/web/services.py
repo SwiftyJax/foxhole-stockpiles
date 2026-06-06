@@ -5,7 +5,7 @@ import logging
 import cv2
 
 from foxhole_stockpiles.enums.supported_resolution import SupportedResolution
-from foxhole_stockpiles.services.template_manager import TemplateManager
+from fs_ocr._impl.template_manager import TemplateManager
 
 logger = logging.getLogger(__name__)
 

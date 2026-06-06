@@ -7,13 +7,13 @@ from pathlib import Path
 import cv2
 import numpy as np
 from numpy.typing import NDArray
-from PyQt6.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.models.detected_icon_info import DetectedIconInfo
 from foxhole_stockpiles.models.scan_result import ScanResult
-from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
-from foxhole_stockpiles.services.stockpile_detector import StockpileDetector
+from fs_ocr._impl.coordinator import OCRCoordinator
+from fs_ocr._impl.detector import StockpileDetector
 
 logger = logging.getLogger(__name__)
 
@@ -25,8 +25,8 @@ class ImageScanWorker(QThread):
     information for each detected icon, suitable for the debug viewer.
     """
 
-    finished = pyqtSignal(object)  # ScanResult
-    error = pyqtSignal(str)
+    finished = Signal(object)  # ScanResult
+    error = Signal(str)
 
     def __init__(self, image_path: str, database_path: Path) -> None:
         """Initialize the image scan worker.

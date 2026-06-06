@@ -4,9 +4,9 @@ import logging
 from pathlib import Path
 
 from pydantic import ValidationError
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QBrush, QColor
-from PyQt6.QtWidgets import (
+from PySide6.QtCore import Qt, Signal
+from PySide6.QtGui import QBrush, QColor
+from PySide6.QtWidgets import (
     QAbstractItemView,
     QFileDialog,
     QGroupBox,
@@ -23,7 +23,7 @@ from PyQt6.QtWidgets import (
 
 from foxhole_stockpiles.api.dependencies import clear_dependency_caches
 from foxhole_stockpiles.core.settings.app_settings import AppSettings
-from foxhole_stockpiles.core.utils import auto_detect_savefile, get_uesave_path
+from foxhole_stockpiles.core.utils import auto_detect_savefile
 from foxhole_stockpiles.gui.utils.qt_log_handler import QtLogHandler
 from foxhole_stockpiles.gui.utils.sav_workers import SavMonitorWorker, SavScanWorker
 from foxhole_stockpiles.gui.utils.scan_worker import ScanWorker
@@ -31,7 +31,7 @@ from foxhole_stockpiles.gui.utils.scanner_client import ScannerClient
 from foxhole_stockpiles.gui.utils.server_thread import ServerThread
 from foxhole_stockpiles.i18n import off_language_changed, on_language_changed, t
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
-from foxhole_stockpiles.services.template_manager import TemplateManager
+from fs_ocr._impl.template_manager import TemplateManager
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +39,9 @@ logger = logging.getLogger(__name__)
 class ServerControlPanel(QWidget):
     """Panel for controlling the FastAPI server and scanning screenshots."""
 
-    server_started = pyqtSignal()
-    server_stopped = pyqtSignal()
-    screenshot_dropped = pyqtSignal(str)
+    server_started = Signal()
+    server_stopped = Signal()
+    screenshot_dropped = Signal(str)
 
     def __init__(self, parent: QWidget | None = None) -> None:
         """Initialize the server control panel.
@@ -346,7 +346,7 @@ class ServerControlPanel(QWidget):
             self,
             t("server_panel.select_screenshot"),
             "",
-            t("server_panel.image_filter"),
+            t("common.image_filter"),
         )
         if filepath:
             self.process_screenshot(filepath)
@@ -484,10 +484,10 @@ class ServerControlPanel(QWidget):
         # Log table headers
         self.log_display.setHorizontalHeaderLabels(
             [
-                t("server_panel.log_columns.time"),
-                t("server_panel.log_columns.level"),
-                t("server_panel.log_columns.module"),
-                t("server_panel.log_columns.message"),
+                t("common.log_columns.time"),
+                t("common.log_columns.level"),
+                t("common.log_columns.module"),
+                t("common.log_columns.message"),
             ]
         )
 
@@ -503,17 +503,17 @@ class ServerControlPanel(QWidget):
 
     # ==================== SAV Processing ====================
 
-    def _validate_sav_config(self) -> tuple[Path | None, Path | None, str | None]:
+    def _validate_sav_config(self) -> tuple[Path | None, str | None]:
         """Validate SAV processing configuration.
 
         Returns:
-            tuple: (sav_path, uesave_path, error_message)
-                   If error_message is not None, the other values are invalid.
+            tuple: (sav_path, error_message)
+                   If error_message is not None, the sav_path is invalid.
         """
         try:
             settings = AppSettings()
         except Exception as e:
-            return None, None, t("server_panel.sav.error_loading_settings", error=str(e))
+            return None, t("server_panel.sav.error_loading_settings", error=str(e))
 
         # Check SAV file path
         sav_path = settings.sav_processing.sav_file_path
@@ -522,22 +522,17 @@ class ServerControlPanel(QWidget):
             sav_path = auto_detect_savefile()
 
         if not sav_path:
-            return None, None, t("server_panel.sav.error_no_sav_file")
+            return None, t("server_panel.sav.error_no_sav_file")
 
         if not sav_path.exists():
-            return None, None, t("server_panel.sav.error_sav_not_found")
+            return None, t("server_panel.sav.error_sav_not_found")
 
-        # Check uesave path (configured or in PATH)
-        uesave_path = get_uesave_path(settings.external_tools.uesave)
-        if not uesave_path:
-            return None, None, t("server_panel.sav.error_no_uesave")
-
-        return sav_path, uesave_path, None
+        return sav_path, None
 
     def scan_sav_file(self) -> None:
         """Perform a one-time SAV file scan."""
         # Validate configuration
-        sav_path, uesave_path, error = self._validate_sav_config()
+        sav_path, error = self._validate_sav_config()
         if error:
             QMessageBox.warning(
                 self,
@@ -563,9 +558,8 @@ class ServerControlPanel(QWidget):
             )
             return
 
-        # At this point validation passed, so paths are guaranteed to be non-None
+        # At this point validation passed, so path is guaranteed to be non-None
         assert sav_path is not None
-        assert uesave_path is not None
 
         logger.info(f"Starting SAV scan: {sav_path}")
         self.sav_status_label.setText(t("server_panel.sav.status_scanning"))
@@ -573,7 +567,7 @@ class ServerControlPanel(QWidget):
         self.scan_sav_button.setEnabled(False)
 
         # Create and start worker
-        self._sav_scan_worker = SavScanWorker(sav_path, uesave_path, output_coordinator)
+        self._sav_scan_worker = SavScanWorker(sav_path, output_coordinator)
         self._sav_scan_worker.error.connect(self._on_sav_error)
         self._sav_scan_worker.finished.connect(self._on_sav_scan_finished)
         self._sav_scan_worker.start()
@@ -593,7 +587,7 @@ class ServerControlPanel(QWidget):
             return
 
         # Validate configuration
-        sav_path, uesave_path, error = self._validate_sav_config()
+        sav_path, error = self._validate_sav_config()
         if error:
             QMessageBox.warning(
                 self,
@@ -615,9 +609,8 @@ class ServerControlPanel(QWidget):
             )
             return
 
-        # At this point validation passed, so paths are guaranteed to be non-None
+        # At this point validation passed, so path is guaranteed to be non-None
         assert sav_path is not None
-        assert uesave_path is not None
 
         logger.info(f"Starting SAV monitor: {sav_path} (poll: {poll_interval}s)")
         self._sav_monitoring = True
@@ -626,9 +619,7 @@ class ServerControlPanel(QWidget):
         self.sav_status_label.setStyleSheet("QLabel { font-size: 11px; color: #4CAF50; }")
 
         # Create and start worker
-        self._sav_monitor_worker = SavMonitorWorker(
-            sav_path, uesave_path, output_coordinator, poll_interval
-        )
+        self._sav_monitor_worker = SavMonitorWorker(sav_path, output_coordinator, poll_interval)
         self._sav_monitor_worker.error.connect(self._on_sav_error)
         self._sav_monitor_worker.finished.connect(self._on_sav_monitor_finished)
         self._sav_monitor_worker.start()

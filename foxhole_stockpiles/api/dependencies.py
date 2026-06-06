@@ -9,8 +9,8 @@ from foxhole_stockpiles.core.events import get_event_bus
 from foxhole_stockpiles.core.settings import get_settings
 from foxhole_stockpiles.services.catalog_service import CatalogService
 from foxhole_stockpiles.services.notification_service import NotificationService
-from foxhole_stockpiles.services.ocr_coordinator import OCRCoordinator
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
+from fs_ocr._impl.coordinator import OCRCoordinator
 
 logger = logging.getLogger(__name__)
 

@@ -3,11 +3,12 @@
 import asyncio
 import logging
 from collections import defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 
 from foxhole_stockpiles.models.stockpile import Stockpile
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
-from foxhole_stockpiles.services.savefile_converter import SaveFileConverter
+from foxhole_stockpiles.services.sav_parser import parse_save
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +19,6 @@ class SaveFileProcessor:
     def __init__(
         self,
         file_path: Path,
-        converter: SaveFileConverter,
         output_coordinator: OutputCoordinator,
         poll_interval: float = 1.0,
         emit_all_on_start: bool = False,
@@ -27,21 +27,19 @@ class SaveFileProcessor:
 
         Args:
             file_path (Path): Path to the save file to monitor.
-            converter (SaveFileConverter): Converter instance.
             output_coordinator (OutputCoordinator): Output coordinator for handlers.
             poll_interval (float): Polling interval in seconds.
             emit_all_on_start (bool): Emit all stockpiles on first run.
         """
         self._file_path = file_path
-        self._converter = converter
         self._output_coordinator = output_coordinator
         self._poll_interval = poll_interval
         self._emit_all_on_start = emit_all_on_start
         self._last_mtime: float | None = None
         self._running = False
 
-        # Track stockpiles by key -> raw_timestamp
-        self._stockpile_cache: dict[str, int] = {}
+        # Track stockpiles by key -> timestamp string for change detection
+        self._stockpile_cache: dict[str, str] = {}
 
     @property
     def file_path(self) -> Path:
@@ -62,6 +60,24 @@ class SaveFileProcessor:
     def is_running(self) -> bool:
         """Check if processor is running in watch mode."""
         return self._running
+
+    @staticmethod
+    def _timestamp_key(timestamp: datetime) -> str:
+        """Normalize a timestamp to a stable UTC string for change detection.
+
+        Naive datetimes are assumed to be UTC; aware datetimes are converted to
+        UTC so the same instant always yields the same key regardless of the
+        original offset.
+
+        Args:
+            timestamp (datetime): The stockpile timestamp.
+
+        Returns:
+            str: A UTC ISO-8601 string usable as a cache key.
+        """
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        return timestamp.astimezone(UTC).isoformat()
 
     def _group_by_location(self, stockpiles: list[Stockpile]) -> dict[str, list[Stockpile]]:
         """Group stockpiles by their location (coords).
@@ -102,11 +118,15 @@ class SaveFileProcessor:
     ) -> tuple[list[Stockpile], list[Stockpile], list[str]]:
         """Detect which stockpiles have changed.
 
+        Uses timestamp string comparison for change detection since fs-sav
+        doesn't expose raw UE ticks.
+
         Args:
             stockpiles (list[Stockpile]): Current stockpiles.
 
         Returns:
-            tuple: (updated_stockpiles, new_stockpiles, removed_keys)
+            tuple[list[Stockpile], list[Stockpile], list[str]]: The
+                (updated_stockpiles, new_stockpiles, removed_keys) triple.
         """
         updated: list[Stockpile] = []
         new: list[Stockpile] = []
@@ -115,19 +135,17 @@ class SaveFileProcessor:
         for stockpile in stockpiles:
             key = stockpile.to_key()
             current_keys.add(key)
+            timestamp_str = self._timestamp_key(stockpile.timestamp)
             cached_timestamp = self._stockpile_cache.get(key)
 
             if cached_timestamp is None:
                 # New stockpile
                 new.append(stockpile)
-                if stockpile.raw_timestamp is not None:
-                    self._stockpile_cache[key] = stockpile.raw_timestamp
-            elif (
-                stockpile.raw_timestamp is not None and cached_timestamp != stockpile.raw_timestamp
-            ):
+                self._stockpile_cache[key] = timestamp_str
+            elif cached_timestamp != timestamp_str:
                 # Timestamp changed
                 updated.append(stockpile)
-                self._stockpile_cache[key] = stockpile.raw_timestamp
+                self._stockpile_cache[key] = timestamp_str
             # else: unchanged, skip
 
         # Find removed stockpiles
@@ -137,19 +155,27 @@ class SaveFileProcessor:
 
         return updated, new, removed_keys
 
-    async def _process_file(self, is_initial: bool = False) -> list[Stockpile]:
+    async def _process_file(
+        self, is_initial: bool = False, suppress_errors: bool = True
+    ) -> list[Stockpile]:
         """Process the save file and output changed stockpiles.
 
         Args:
             is_initial (bool): Whether this is the initial load.
+            suppress_errors (bool): If True, log and swallow processing errors
+                (watch mode keeps running). If False, re-raise so the caller can
+                surface the failure. Defaults to True.
 
         Returns:
             list[Stockpile]: List of changed stockpiles that were output.
+
+        Raises:
+            Exception: If processing fails and suppress_errors is False.
         """
         logger.info("Processing file...")
 
         try:
-            stockpiles = await asyncio.to_thread(self._converter.convert_file, self._file_path)
+            stockpiles = await asyncio.to_thread(parse_save, self._file_path)
 
             if not stockpiles:
                 logger.info("No stockpiles found in save file.")
@@ -159,8 +185,9 @@ class SaveFileProcessor:
             if is_initial and self._emit_all_on_start:
                 # Initialize cache
                 for stockpile in stockpiles:
-                    if stockpile.raw_timestamp is not None:
-                        self._stockpile_cache[stockpile.to_key()] = stockpile.raw_timestamp
+                    self._stockpile_cache[stockpile.to_key()] = self._timestamp_key(
+                        stockpile.timestamp
+                    )
 
                 logger.info("Initial load: %d stockpile(s)", len(stockpiles))
                 await self._output_results(stockpiles)
@@ -190,6 +217,8 @@ class SaveFileProcessor:
             return changed_stockpiles
 
         except Exception as e:
+            if not suppress_errors:
+                raise
             logger.error("Error processing file: %s", e)
             return []
 
@@ -198,8 +227,11 @@ class SaveFileProcessor:
 
         Returns:
             list[Stockpile]: List of stockpiles found.
+
+        Raises:
+            Exception: If processing the save file fails.
         """
-        return await self._process_file(is_initial=True)
+        return await self._process_file(is_initial=True, suppress_errors=False)
 
     async def run(self) -> None:
         """Run the file processor in watch mode."""

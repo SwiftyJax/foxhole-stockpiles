@@ -4,7 +4,7 @@ import logging
 import multiprocessing
 import sys
 
-from PyQt6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication
 
 from foxhole_stockpiles import __version__
 from foxhole_stockpiles.core.logging import setup_logging
@@ -30,7 +30,7 @@ def _load_language_from_settings() -> str:
 
 
 def launch_gui() -> None:
-    """Launch the PyQt6 GUI application."""
+    """Launch the PySide6 GUI application."""
     # Required for multiprocessing to work correctly in frozen executables (PyInstaller)
     # This must be called before any other multiprocessing code runs
     multiprocessing.freeze_support()

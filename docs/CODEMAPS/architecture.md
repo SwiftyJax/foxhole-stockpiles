@@ -1,373 +1,130 @@
+<!-- Generated: 2026-06-06 | Branch: refactor/01-pyside6 | Token estimate: ~900 -->
+
 # Architecture & Design Patterns
 
-**Last Updated:** 2026-03-19
+**Type:** multi-package Python workspace (flat layout), 3 installable packages.
+Config schema **v8**.
 
-## System Design Philosophy
-
-1. **Service Layer Pattern** - Business logic in focused service classes
-2. **Dependency Injection** - Constructor injection, no global state
-3. **Multi-handler Output** - Route results to multiple destinations simultaneously
-4. **Event-Driven Notifications** - Decoupled via EventBus
-5. **Configuration as Code** - Pydantic settings with environment overrides
-
-## Core Orchestration: OCRCoordinator
-
-**Location:** `/foxhole_stockpiles/services/ocr_coordinator.py`
-
-```python
-class OCRCoordinator:
-    def __init__(
-        self,
-        config: ScannerSettings,
-        event_bus: EventBus | None = None
-    ) -> None:
-        self._text_extractor = StockpileTextExtractor(...)
-        self._template_manager = TemplateManager(...)
-        self._stockpile_type_classifier = StockpileTypeClassifier()
-
-    async def scan_stockpile(
-        self,
-        image: NDArray[np.uint8],
-        faction: ItemFaction | None = None,
-        language: SupportedLanguage | None = None,
-        mods: list[str] | None = None,
-    ) -> Stockpile:
-        """Main entry point for image scanning."""
-        # 1. Detect stockpile type and components
-        # 2. Match icons to templates
-        # 3. Extract quantities via OCR
-        # 4. Resolve conflicts and duplicates
-        # 5. Return Stockpile model
-```
-
-**Key Methods:**
-- `scan_stockpile()` - Main pipeline orchestrator
-- `_detect_stockpile_type()` - NLP-based type classification
-- `_process_icon_candidate()` - Icon matching and conflict resolution
-- `_extract_icon_to_folder()` - Debug icon export
-
-## Component Responsibilities
-
-### 1. StockpileDetector (Visual Geometry)
-**File:** `/foxhole_stockpiles/services/stockpile_detector.py`
-
-**Responsibility:** Identify visual components in screenshots
-
-**Key Attributes:**
-```python
-class StockpileDetector:
-    scale_factor: float         # Resolution scaling (base 1920px)
-    box_width/height: int       # Icon dimensions
-    quantities: list[Coordinates]  # (x, y) of quantity boxes
-    groups: dict[int, list[...]]  # Grouped icon positions
-```
-
-**Algorithm:**
-1. Analyze image dimensions → calculate scale factor
-2. Detect binary threshold → find contours
-3. Identify quantity box patterns
-4. Group icons by proximity
-5. Extract region boundaries
-
-### 2. TemplateManager (Icon Matching)
-**File:** `/foxhole_stockpiles/services/template_manager.py`
-
-**Responsibility:** Match detected icons to known templates
-
-**Two-Phase Matching + Tiebreaker:**
-```python
-# Phase 1: Fast pHash filtering
-candidates = db.get_candidates(
-    faction=faction,
-    mod=mod,
-    category=category,
-    excluded_codes=excluded
-)
-
-# Phase 2: Precise NCC scoring
-matches = [
-    MatchResult(code, ncc_score, resolution, phash_distance)
-    for template in candidates
-    if phash_distance < threshold
-    if ncc_score > min_threshold
-]
-matches.sort(key=lambda m: m.ncc_score, reverse=True)
-
-# Phase 3 (optional): NCC Tiebreaker
-# When top matches are within ncc_tiebreaker_threshold (default 0.0015),
-# use mean pixel difference to distinguish similar items
-# (e.g., Assembly Materials V vs VIII)
-```
-
-**Conflict Resolution:**
-- Duplicate detection: Same item in multiple groups
-- Group-level resolution: Find optimal non-overlapping assignment
-- Confidence-based ranking: NCC score determines final selection
-
-### 3. StockpileTextExtractor (OCR)
-**File:** `/foxhole_stockpiles/services/stockpile_text_extractor.py`
-
-**Responsibility:** Extract and recognize quantities from images
-
-**Pipeline:**
-```python
-def extract_text(self, image: NDArray[np.uint8]) -> str:
-    # 1. Apply binary threshold (Otsu)
-    # 2. Noise reduction (morphological ops)
-    # 3. Tesseract OCR (custom model: renner_numbers.traineddata)
-    # 4. Regex parsing: extract numeric values
-    # 5. Return quantity string
-```
-
-**Configuration:**
-- `tessdata_path` - Path to Tesseract training data
-- `custom_model` - Enable custom number model
-- `binary_threshold` - 127 (hardcoded in OCRCoordinator)
-- `language` - Configurable (en, pt, fr, de, ru, zh, etc.)
-
-### 4. StockpileTypeClassifier (NLP)
-**File:** `/foxhole_stockpiles/services/stockpile_type_classifier.py`
-
-**Responsibility:** Identify stockpile type from screenshot text
-
-**Algorithm:** Text pattern matching against stockpile type strings
-
-**Input:** Stockpile name text extracted from UI
-**Output:** `StockpileType` enum
-
-### 5. OutputCoordinator (Multi-Handler Routing)
-**File:** `/foxhole_stockpiles/services/output_coordinator.py`
-
-**Responsibility:** Route results to multiple destinations
-
-**Handler Types:**
-- `ConsoleOutputHandler` - Print to stdout
-- `FileOutputHandler` - Write JSON/CSV/TSV
-- `WebhookOutputHandler` - POST to external HTTP endpoint
-- `ReturnOutputHandler` - Return in API response
-
-**Execution Model:**
-```python
-async def handle_output(self, stockpile: Stockpile) -> dict | None:
-    for handler_config in self.output_settings.handlers:
-        handler = self._create_handler(handler_config)
-        result = await handler.handle(
-            stockpile,
-            format=handler_config.format
-        )
-        if result is not None:
-            return result  # First non-None result wins
-```
-
-## Settings Architecture
-
-**Location:** `/foxhole_stockpiles/core/settings/`
-
-```python
-class AppSettings(BaseSettings):
-    config_version: int
-    api_server: APIServerSettings
-    api_auth: APIAuthSettings
-    external_tools: ExternalToolsSettings
-    logging: LoggingSettings
-    ocr: OCRSettings
-    output: OutputSettings
-    scanner: ScannerSettings
-    stockpile_types: StockpileTypesSettings
-    templates: TemplateSettings
-    database_builder: DatabaseBuilderSettings
-    notifications: NotificationsSettings
-    gui: GUISettings
-```
-
-**Configuration Sources (Priority):**
-1. Pydantic defaults
-2. JSON file (`~/.fs_config`)
-3. Environment variables (`FS_*`)
-
-**Example Environment Variable:**
-```bash
-FS_SCANNER__DATABASE_PATH=/path/to/db.h5
-FS_API_SERVER__HOST=0.0.0.0
-FS_API_SERVER__PORT=8000
-FS_NOTIFICATIONS__ENABLED=true
-```
-
-## Event System
-
-**Location:** `/foxhole_stockpiles/core/events.py`
-
-**Purpose:** Decouple notifications from processing pipeline
-
-```python
-class EventBus:
-    def emit(self, event_type: EventType, data: dict) -> None:
-        """Emit event to all subscribers."""
-
-    def subscribe(self, event_type: EventType, handler: Callable) -> None:
-        """Register event handler."""
-```
-
-**Event Types:**
-- `SERVER_STARTED` - Server initialization complete
-- `SERVER_STOPPED` - Server shutdown
-- `SCAN_STARTED` - Image processing begun
-- `SCAN_COMPLETED` - Results ready
-- `SCAN_FAILED` - Error during processing
-
-**Subscribers:**
-- NotificationService - Discord webhooks
-- Logging - Structured logs
-- Metrics - Memory monitoring
-
-## Template Database Format
-
-**Location:** `/foxhole_stockpiles/services/template_database.py`
-
-**HDF5 Structure (v2):**
-```
-database.h5
-├── resolution_664
-│   ├── images (N, 664, 664, 3) uint8
-│   ├── codes (N,) string
-│   ├── factions (N,) string
-│   ├── mods (N,) string
-│   ├── categories (N,) string
-│   ├── phashes (N,) uint64
-│   └── cratable (N,) bool
-├── resolution_1008
-│   └── [same structure]
-└── ... (14 more resolutions)
-```
-
-**Lookup Optimization:**
-- Faction lookup: `dict[str, set[int]]` - O(1) faction filtering
-- Mod lookup: `dict[str, set[int]]` - O(1) mod filtering
-- Category lookup: `dict[str, set[int]]` - O(1) category filtering
-- pHash array: Vectorized distance computation
-
-## API Response Pattern
-
-**Envelope Model:** `ScanResult`
-```python
-class ScanResult(BaseModel):
-    success: bool
-    data: Stockpile | None
-    error: str | None
-    processing_time_ms: float
-```
-
-**Example:**
-```json
-{
-  "success": true,
-  "data": {
-    "name": "Logi",
-    "type": "Seaport",
-    "items": [
-      {
-        "code": "8MASS",
-        "quantity": 450,
-        "name": "8mm Ammo",
-        "faction": "Wardens"
-      }
-    ],
-    "timestamp": "2026-03-19T10:30:00Z"
-  },
-  "error": null,
-  "processing_time_ms": 245.5
-}
-```
-
-## Error Handling Strategy
-
-**Validation at Boundaries:**
-- Input image validation (size, format)
-- Configuration validation (Pydantic)
-- Database existence checks
-
-**Error Propagation:**
-- Service layer raises specific exceptions
-- API converts to HTTP status codes
-- Detailed logs on server side
-- User-friendly messages in UI
-
-**Critical Errors:**
-- Tesseract not found → 503 Server Error
-- Database not accessible → 503 Server Error
-- Invalid auth → 401 Unauthorized
-- Rate limit exceeded → 429 Too Many Requests
-
-## Design Decisions
-
-### Why Two-Phase Template Matching + Tiebreaker?
-- **Phase 1 (pHash):** Fast similarity filter, eliminates 95%+ of candidates
-- **Phase 2 (NCC):** Precise scoring, expensive computation on small subset
-- **Phase 3 (Tiebreaker):** When NCC scores are within threshold, use pixel diff
-- **Result:** Sub-second matching for 5000+ templates per resolution
-
-### Why HDF5 over Pickle?
-- **Pickle:** Monolithic, version-specific, security issues
-- **HDF5:** Structured, queryable, language-agnostic, binary efficiency
-- **Trade-off:** Slightly larger file size, better portability
-
-### Why EventBus?
-- **Tight Coupling:** Direct method calls → testing nightmare
-- **EventBus:** Decoupled, multiple subscribers, async notifications
-- **Use Cases:** Discord webhooks, logging, metrics, monitoring
-
-### Why Multiple Output Handlers?
-- **Single Handler:** Hardcoded output format
-- **Multiple Handlers:** Same result → console + file + webhook
-- **Priority:** First non-None response returned to API client
-
----
-
-## Dataflow Diagram
+## Package boundaries
 
 ```
-USER/CLIENT
-    ↓
-┌──────────────────────────┐
-│ FastAPI Server           │
-│ POST /ocr/scan_image     │
-└──────────────────────────┘
-    ↓
-┌──────────────────────────┐
-│ Request Validation       │
-│ (Auth, Rate Limit)       │
-└──────────────────────────┘
-    ↓
-┌──────────────────────────┐
-│ OCRCoordinator.scan()    │
-├──────────────────────────┤
-│ 1. StockpileDetector     │ ← Detect visual components
-│ 2. TemplateManager       │ ← Match icons
-│ 3. TextExtractor         │ ← Extract quantities
-│ 4. TypeClassifier        │ ← Identify type
-│ 5. Conflict Resolution   │ ← Deduplicate items
-└──────────────────────────┘
-    ↓
-┌──────────────────────────┐
-│ OutputCoordinator        │
-├──────────────────────────┤
-│ ┌─ ConsoleHandler        │
-│ ├─ FileHandler           │
-│ └─ WebhookHandler        │
-└──────────────────────────┘
-    ↓
-┌──────────────────────────┐
-│ API Response             │
-│ ScanResult(Stockpile)    │
-└──────────────────────────┘
-    ↓
-CLIENT/USER
+foxhole_stockpiles ──depends──> fs_ocr ──reuses──> foxhole_stockpiles.models
+        │                          │
+        └── fs_tools (independent app: builds the data fs_ocr consumes)
 ```
 
-## Key Files for Understanding Architecture
+- **foxhole_stockpiles** — user-facing runtime: CLI, REST API, web UI, GUI, SAV.
+- **fs_ocr** — OCR engine as a standalone package. Public API in `fs_ocr/api.py`;
+  pure-Python impl in `fs_ocr/_impl/`. Re-exports `Stockpile`/`StockpileItem`
+  from the runtime so output models match. Being aligned to a Rust replacement
+  (`../fs-ocr`); `ScannerInfo.implementation` reports `"python"`/`"rust"`.
+- **fs_tools** — build-time tooling (catalog, template DB, asset extraction).
+  Self-contained: own `core/settings`, `models`, `gui`, `i18n`.
 
-1. `/foxhole_stockpiles/api/server.py` - FastAPI setup
-2. `/foxhole_stockpiles/services/ocr_coordinator.py` - Main orchestration
-3. `/foxhole_stockpiles/core/settings/app_settings.py` - Configuration
-4. `/foxhole_stockpiles/services/template_manager.py` - Icon matching
-5. `/foxhole_stockpiles/services/output_coordinator.py` - Output routing
+## Design philosophy
+
+1. **Service layer** — focused single-responsibility classes, constructor injection.
+2. **Pluggable OCR backend** — `OCRScanner` API hides `_impl`; schema-versioned seam for a Rust swap.
+3. **Multi-handler output** — one result fans out to console/file/webhook/response.
+4. **Event-driven notifications** — decoupled via `EventBus` (`core/events/bus.py`).
+5. **Config as code** — Pydantic settings, env overrides, versioned migration.
+
+## OCR scan pipeline (screenshot → structured data)
+
+Orchestrator: `fs_ocr/_impl/coordinator.py` → `OCRCoordinator.scan_stockpile()`.
+
+```
+image (NDArray)
+  │
+  ▼ _impl/detector.py  (StockpileDetector)
+    scale by resolution (1920px base) → detect icon boxes, quantity boxes, groups
+  │
+  ▼ _impl/classifier.py  (StockpileTypeClassifier)
+    text-pattern match → StockpileType
+  │
+  ▼ _impl/template_manager.py + template_database.py
+    Phase 1 pHash prefilter (O(1) faction/mod/category sets)
+    Phase 2 NCC scoring on survivors
+    Phase 3 tiebreaker: mean pixel diff when NCC within ~0.0015
+    → conflict resolution (dedupe across groups, confidence ranking)
+  │
+  ▼ _impl/extractor.py  (StockpileTextExtractor)
+    Otsu threshold → morphology → Tesseract (renner_numbers) → regex digits
+  │
+  ▼ Stockpile model
+  │
+  ▼ services/output_coordinator.py → handlers/* (first non-None result wins)
+```
+
+Public entry: `fs_ocr.api.OCRScanner(ScannerConfig).scan()/scan_sync()`.
+
+## SAV pipeline (new — `.sav` world file → stockpile data)
+
+```
+War.sav (+ map data)
+  ▼ services/savefile_processor.py (SaveFileProcessor)
+  ▼ services/sav_parser.py ──delegates──> fs-sav (Rust lib)
+  ▼ faction-tagged dicts {faction, items, Z/ns timestamp}
+  ▼ services/output_coordinator.py → handlers/*
+```
+
+SAV output is NOT validated through `Stockpile.model_validate`; `sav_parser`
+owns the dict shape.
+
+## Entry surfaces
+
+| Surface | Module | Notes |
+|---|---|---|
+| CLI `fs` | `cli/app.py` (Typer) | `scan` `serve` `gui` `sav` |
+| REST API | `api/server.py` (FastAPI) | see backend.md |
+| Web UI | `api/web/routes.py` (Jinja) | upload form |
+| Desktop GUI | `gui/app.py` (PySide6) | |
+| OCR CLI | `fs_ocr/cli.py` | engine-only |
+| Tooling | `fs_tools/cli.py`, `fs_tools/gui` | builders/extractors |
+
+## Settings architecture
+
+`core/settings/app_settings.py` → `AppSettings(BaseSettings)`, schema **v8**.
+Top-level sections: `api_server`, `api_auth`, `external_tools`, `logging`,
+`output`, `scanner`, `stockpile_types`, `database_builder`, `notifications`,
+`gui`, `sav_processing`. (`OCRSettings`/`TemplateSettings` are sub-models
+consumed by the engine/tooling, not top-level fields.)
+
+Source priority (highest→lowest): env (`FS_<SECTION>__<KEY>`) → JSON file in
+platform config dir → defaults. Stepwise migration via `ConfigMigrator`
+(`CURRENT_VERSION = 8`).
+
+## Event system
+
+`core/events/bus.py` — `EventBus.emit(EventType, data)` / `subscribe(...)`.
+Decouples NotificationService (Discord), logging, and memory metrics from the
+pipeline. Events: server started/stopped, scan started/completed/failed, mod imported.
+
+## Error handling
+
+- Validate at boundaries (image size/format, Pydantic config, DB existence).
+- Service layer raises specific exceptions; API maps to HTTP codes
+  (401 auth, 429 rate, 503 Tesseract/DB).
+- `ScanResult` envelope: `{success, data, error, processing_time_ms}`.
+
+## Design decisions (rationale)
+
+- **Two-phase + tiebreaker matching:** pHash kills 95%+ candidates cheaply; NCC
+  scores the rest; pixel-diff tiebreaker separates near-identical items
+  (e.g. Assembly Materials V vs VIII).
+- **HDF5 over pickle:** structured, queryable, language-agnostic, no exec risk.
+- **EventBus:** multiple async subscribers without tight coupling.
+- **fs_ocr split:** isolates the OCR engine so a Rust impl can replace `_impl`
+  behind the same `OCRScanner` API.
+
+> NOTE: CLAUDE.md describes a future "named pipelines" config
+> (`AppSettings.pipelines`, `general.mode`, migrator v11). That is NOT on this
+> branch — current config is flat sections at schema v8.
+
+## Key files
+
+1. `fs_ocr/api.py` — public `OCRScanner`/`ScannerConfig`
+2. `fs_ocr/_impl/coordinator.py` — pipeline orchestrator
+3. `fs_ocr/_impl/template_manager.py` — icon matching
+4. `foxhole_stockpiles/services/output_coordinator.py` — output routing
+5. `foxhole_stockpiles/core/settings/app_settings.py` — configuration

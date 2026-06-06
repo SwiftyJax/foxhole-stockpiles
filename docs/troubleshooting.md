@@ -82,7 +82,7 @@ FileNotFoundError: Database file not found: foxhole_templates.h5
 **Solution:**
 1. Build the database first:
    ```bash
-   fs database-builder \
+   fs-tools build-db \
      --catalog catalog.json \
      --templates processed_templates/ \
      --database foxhole_templates.h5
@@ -90,7 +90,7 @@ FileNotFoundError: Database file not found: foxhole_templates.h5
 
 2. Or specify the correct path:
    ```bash
-   fs scanner --database /path/to/database.h5 --image screenshot.png
+   fs scan --database /path/to/database.h5 --image screenshot.png
    ```
 
 3. Or set via environment variable:
@@ -107,7 +107,7 @@ Scanner completes but finds 0 items in the screenshot.
 
 1. **Wrong resolution database**
    - Verify your screenshot resolution matches the database
-   - Check database resolutions: `fs inspect --database templates.h5 --resolution 1080`
+   - Check database resolutions: `fs-tools inspect --database templates.h5 --resolution 1080`
    - Rebuild database with correct resolution
 
 2. **Screenshot quality**
@@ -120,22 +120,19 @@ Scanner completes but finds 0 items in the screenshot.
    - Screenshot must show the stockpile grid with items
    - Title bar must be visible
 
-4. **pHash threshold too strict**
-   - The default pHash threshold (12) may filter out valid matches
-   - Try increasing it to allow more candidates:
-     ```bash
-     export FS_SCANNER__PHASH_THRESHOLD=15
-     fs scanner --database templates.h5 --image screenshot.png
-     ```
-   - **Note:** Higher thresholds may slightly slow down matching
+4. **Resolution mismatch**
+   - Matching is most accurate when the screenshot resolution matches a template resolution
+   - Use a standard, unscaled screenshot (no display scaling / cropping)
+   - The pHash/NCC matching thresholds are fixed defaults as of config v8 and are no longer user-tunable
 
 5. **Debug the detection**
    ```bash
-   export FS_SCANNER__DEBUG_OUTPUT_PATH=/tmp/debug/
+   export FS_SCANNER__DEBUG_MODE=true
+   export FS_SCANNER__EXTRACT_ICONS=true
    export FS_LOGGING__LOG_LEVEL=DEBUG
-   fs scanner --database templates.h5 --image screenshot.png
+   fs scan --database templates.h5 --image screenshot.png
    ```
-   Check `/tmp/debug/` for intermediate detection images.
+   Debug images are written to the `icons/` folder for inspection.
 
 ### Some Items Not Detected
 
@@ -148,36 +145,29 @@ Scanner detects most items but misses some specific ones.
    - Look for warnings in debug logs about low-confidence detections
    - Check the `errors` field in the output for "No match found" messages
 
-2. **Increase pHash threshold**
+2. **Verify the item exists in database**
    ```bash
-   export FS_SCANNER__PHASH_THRESHOLD=15
-   ```
-   This allows more candidates to pass pre-filtering.
-
-3. **Verify the item exists in database**
-   ```bash
-   fs inspect --database templates.h5 --resolution 1080 --code ItemCode --print
+   fs-tools inspect --database templates.h5 --resolution 1080 --code ItemCode --print
    ```
 
-4. **Screenshot quality issues**
+3. **Screenshot quality issues**
    - Ensure the screenshot resolution matches a database resolution
    - Avoid screenshots with compression artifacts
    - Make sure items are fully visible (not cut off)
 
-5. **Resolution mismatch**
+4. **Resolution mismatch**
    - The scanner performs best when screenshot resolution exactly matches a database resolution
    - Supported resolutions: 720p, 1080p, 1440p, 2160p
    - Check what resolutions are in your database:
      ```bash
      # List database info with any valid resolution
-     fs inspect --database templates.h5 --resolution 1080
+     fs-tools inspect --database templates.h5 --resolution 1080
      ```
 
-**Finding the right pHash threshold:**
-1. Start with default (12)
-2. If items are missing, increase by 2-3 increments (14, 16, 18)
-3. Monitor for false positives
-4. Values above 20 may significantly slow down matching
+**Note:** The pHash and NCC matching thresholds are fixed defaults as of config v8 and
+are no longer user-tunable. If items are consistently missed, the most common fixes are
+using a screenshot at a supported resolution and rebuilding the database for the correct
+mod version.
 
 See [Configuration Guide](configuration.md) for details on scanner settings.
 
@@ -200,7 +190,7 @@ An item becomes "Unknown" when:
 
 1. **Check the errors field in the output**
    ```bash
-   fs scanner --image screenshot.png --output-destination return 2>&1 | grep -A5 '"errors"'
+   fs scan --image screenshot.png --output-destination return 2>&1 | grep -A5 '"errors"'
    ```
 
    Look for messages like:
@@ -217,21 +207,21 @@ An item becomes "Unknown" when:
 2. **Enable icon extraction for debugging**
    ```bash
    export FS_SCANNER__EXTRACT_ICONS=true
-   fs scanner --image screenshot.png
+   fs scan --image screenshot.png
    ```
 
    This saves detected icons to an `icons/` folder as `<index>_<code>.png` so you can visually inspect what was detected.
 
 3. **Use the candidate inspector**
    ```bash
-   fs inspect --database templates.h5 --resolution 1080 --icon icons/64_Unknown.png --top 10
+   fs-tools inspect --database templates.h5 --resolution 1080 --icon icons/64_Unknown.png --top 10
    ```
 
    This shows the top matching candidates with their confidence scores. Replace `1080` with your screenshot's vertical resolution.
 
 4. **Check if the item exists in the database**
    ```bash
-   fs inspect --database templates.h5 --resolution 1080 --code MGTW --print
+   fs-tools inspect --database templates.h5 --resolution 1080 --code MGTW --print
    ```
 
    Verify the item exists with the correct crated status and mod.
@@ -240,24 +230,24 @@ An item becomes "Unknown" when:
 
 | Cause | Symptom | Solution |
 |-------|---------|----------|
-| pHash threshold too strict | Best match has confidence > 0.5 but pHash distance > 12 | Increase `FS_SCANNER__PHASH_THRESHOLD` to 15-18 |
+| Resolution mismatch | Best match has confidence > 0.5 but item still Unknown | Use a screenshot whose resolution matches a database resolution (no display scaling) |
 | Mod version mismatch | Item exists but pixels differ | Rebuild database with current mod version |
-| Item not in database | No best match found | Add the item using `fs add-icon` or rebuild database |
+| Item not in database | No best match found | Add the item using `fs-tools add-icon` or rebuild database |
 | Wrong category detected | Match found but wrong category | Check if screenshot has UI artifacts |
 | Compression artifacts | Low confidence across all candidates | Use uncompressed PNG screenshots |
 
-**Example: Fixing pHash Threshold Issue**
+**Example: Inspecting a Low-Confidence Match**
 
 If the error shows a best match with decent confidence (e.g., 0.62) but the item is still Unknown:
 
 ```bash
 # Check matching candidates (use your screenshot's resolution)
-fs inspect --database templates.h5 --resolution 1080 --icon icons/64_Unknown.png --top 5
-
-# If the correct item appears with low confidence, increase pHash threshold
-export FS_SCANNER__PHASH_THRESHOLD=15
-fs scanner --image screenshot.png
+fs-tools inspect --database templates.h5 --resolution 1080 --icon icons/64_Unknown.png --top 5
 ```
+
+If the correct item appears only with low confidence, the screenshot likely doesn't match a
+database resolution, or the database is built for a different mod version — rebuild the database
+for the relevant mod rather than adjusting matching thresholds (which are fixed as of config v8).
 
 **Example: Mod Version Mismatch**
 
@@ -265,7 +255,7 @@ If you're using a mod (e.g., clean-icons) and items show as Unknown:
 
 ```bash
 # Verify mod templates exist
-fs inspect --database templates.h5 --resolution 1080 --code MGTW --mod clean-icons --print
+fs-tools inspect --database templates.h5 --resolution 1080 --code MGTW --mod clean-icons --print
 
 # If templates exist but don't match, rebuild with current mod files
 ./build_database.sh
@@ -289,7 +279,7 @@ Items detected but with low confidence scores.
 
 3. Check template quality:
    ```bash
-   fs inspect --database templates.h5 --resolution 1080 --code ItemCode --print
+   fs-tools inspect --database templates.h5 --resolution 1080 --code ItemCode --print
    ```
 
 4. Rebuild database if using different mod versions
@@ -475,7 +465,7 @@ FileNotFoundError: Asset not found: path/to/icon.png
 
 2. Re-run asset extraction:
    ```bash
-   fs extract-assets \
+   fs-tools extract-assets \
      --catalog catalog.json \
      --pak /path/to/game.pak \
      --output raw_assets/
@@ -497,7 +487,7 @@ Template generation completes but produces no templates.
 3. Check for errors in logs:
    ```bash
    export FS_LOGGING__LOG_LEVEL=DEBUG
-   fs generate-templates --catalog catalog.json --assets raw_assets/ --templates output/
+   fs-tools generate-templates --catalog catalog.json --assets raw_assets/ --templates output/
    ```
 
 ## Configuration Issues

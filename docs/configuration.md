@@ -15,7 +15,7 @@ export FS_API_AUTH__AUTH_TOKEN=your-secret-token
 
 # Scanner settings
 export FS_SCANNER__DATABASE_PATH=/path/to/database.h5
-export FS_SCANNER__PHASH_THRESHOLD=12
+export FS_SCANNER__TEMPLATE_CACHE_SIZE=16
 
 # Output handlers (JSON array)
 export FS_OUTPUT__HANDLERS='[{"name":"API Response","format":{"type":"json"},"handler":{"type":"return"}}]'
@@ -29,11 +29,11 @@ export FS_LOGGING__LOG_FILE=/var/log/foxhole-scanner.log
 
 Create a file at `~/.fs_config` with JSON configuration:
 
-**Note on Config Versioning:** The configuration includes a `config_version` field (current: **5**). Old configs are automatically migrated when loaded - no manual action required. V5 introduced a new `output.handlers` array structure supporting multiple output destinations.
+**Note on Config Versioning:** The configuration includes a `config_version` field (current: **8**). Old configs are automatically migrated when loaded via `ConfigMigrator` - no manual action required. V5 introduced the `output.handlers` array structure (multiple output destinations); later versions added the `sav_processing` section for Foxhole save-file processing.
 
 ```json
 {
-  "config_version": 5,
+  "config_version": 8,
   "api_server": {
     "cors_allow_origins": [],
     "enable_memory_monitoring": false,
@@ -63,29 +63,6 @@ Create a file at `~/.fs_config` with JSON configuration:
     "rotate_logs": false,
     "log_file": null,
     "loggers": {}
-  },
-  "ocr": {
-    "height": 2160,
-    "box_width": 84,
-    "box_height": 64,
-    "column_offset": 112,
-    "row_offset": 78,
-    "group_offset": 98,
-    "title_margin": 24,
-    "title_min_width": 600,
-    "title_height": 64,
-    "icon_to_quantity_offset": 88,
-    "gray_lower": 15,
-    "gray_upper": 98,
-    "pixel_diff_tolerance": 2
-  },
-  "templates": {
-    "crate_blue_multiplier": 145,
-    "crate_blue_offset": 82,
-    "crate_green_multiplier": 152,
-    "crate_green_offset": 87,
-    "crate_red_multiplier": 154,
-    "crate_red_offset": 89
   }
 }
 ```
@@ -145,14 +122,11 @@ Settings for the stockpile scanner.
 | `template_cache_size` | integer | `16` | Max resolution databases to cache in memory (0=no cache, 16=all resolutions) |
 | `early_exit_threshold` | float | `0.0` | Early exit threshold for icon matching (0.0-1.0). Set to 0.0 to disable early exit |
 | `confidence_gap` | float | `0.0` | Confidence gap for returning alternative candidates (0.0-1.0). Returns candidates within `(best_confidence - confidence_gap)` range that have the same category, crated status, and mod. Set to 0.0 to disable |
-| `custom_model` | string | `"renner_numbers"` | Tesseract custom OCR model name |
-| `tessdata_path` | string | `"./tessdata"` | Path to Tesseract data directory |
 | `debug_mode` | boolean | `false` | Enable debug mode to save debug images |
 | `extract_icons` | boolean | `false` | Extract detected icons to 'icons' folder for debugging |
 | `screenshots_folder` | string | `""` | Folder to save screenshots before processing. Empty string disables saving. Screenshots are saved in daily subfolders with format: `Date_HourWithSeconds_StorageType_Name_Resolution.png` |
-| `max_ncc_candidates` | integer | `25` | Maximum number of NCC candidates to consider for matching |
-| `phash_threshold` | integer | `12` | Maximum Hamming distance for pHash filtering |
-| `ncc_tiebreaker_threshold` | float | `0.0015` | When top NCC matches are within this confidence threshold, use mean pixel difference as tiebreaker. Helps distinguish visually similar items. Set to 0.0 to disable |
+
+> **Removed in config v8:** `custom_model`, `tessdata_path`, `max_ncc_candidates`, `phash_threshold`, and `ncc_tiebreaker_threshold` are no longer user-configurable — the OCR model name, tessdata path, and icon-matching thresholds now use fixed defaults. Stored values are dropped automatically on migration.
 
 ### Output (`output`)
 
@@ -268,28 +242,6 @@ Configure application logging behavior.
 | `log_file` | string\|null | `null` | Path to log file, or `null` for console only |
 | `loggers` | object | `{}` | Per-logger level overrides (e.g., `{"foxhole_stockpiles": "DEBUG"}`) |
 
-### OCR (`ocr`)
-
-Fine-tune OCR detection parameters (advanced users only).
-
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `height` | int | `2160` | Base resolution height for scaling |
-| `box_width` | int | `84` | Width of quantity detection box |
-| `box_height` | int | `64` | Height of quantity detection box |
-| `column_offset` | int | `112` | Horizontal spacing between icons |
-| `row_offset` | int | `78` | Vertical spacing between icons |
-| `group_offset` | int | `98` | Vertical spacing for new groups |
-| `title_margin` | int | `24` | Gap from icon to title |
-| `title_min_width` | int | `600` | Minimum title width |
-| `title_height` | int | `64` | Title height |
-| `icon_to_quantity_offset` | int | `88` | Gap between icon and quantity |
-| `gray_lower` | int | `15` | Lower bound for quantity box darkness |
-| `gray_upper` | int | `98` | Upper bound for quantity box brightness |
-| `pixel_diff_tolerance` | int | `2` | Pixel error tolerance |
-
-**Note:** Only modify these if you understand the OCR detection algorithm. Incorrect values may reduce accuracy.
-
 ### Stockpile Types (`stockpile_types`)
 
 Configure additional aliases for stockpile type recognition. The standard translations (English, French, German, Portuguese, Russian, Chinese) are hardcoded in the classifier. These settings allow adding **extra aliases** for OCR misreads or variations.
@@ -311,21 +263,6 @@ Configure additional aliases for stockpile type recognition. The standard transl
 | `aircraft_depot` | array[string] | `[]` | Additional aliases for Aircraft Depot |
 
 **Note:** Use these settings to handle OCR misreads. For example, if OCR detects "Seaport" as "seapon", add `["seapon"]` to the `seaport` setting.
-
-### Templates (`templates`)
-
-Configure crate color tint overlay generation.
-
-| Setting | Type | Default | Description |
-|---------|------|---------|-------------|
-| `crate_blue_multiplier` | int | `145` | Blue channel multiplier (0-255) |
-| `crate_blue_offset` | int | `82` | Blue channel offset (0-255) |
-| `crate_green_multiplier` | int | `152` | Green channel multiplier (0-255) |
-| `crate_green_offset` | int | `87` | Green channel offset (0-255) |
-| `crate_red_multiplier` | int | `154` | Red channel multiplier (0-255) |
-| `crate_red_offset` | int | `89` | Red channel offset (0-255) |
-
-These settings control how crate overlays are applied during template generation.
 
 ### External Tools (`external_tools`)
 
@@ -423,15 +360,32 @@ Settings for the graphical user interface.
 | `language` | string | `"en"` | Language code for the GUI (e.g., `"en"`, `"es"`, `"de"`) |
 
 **Configuration levels:**
-- `basic` - Essential settings only (recommended for most users)
-- `advanced` - Additional tuning options for power users
-- `developer` - Full access including OCR/Template settings (may break scanning)
+- `basic` - Essential tabs only (recommended for most users)
+- `advanced` - Adds Stockpile Types, Notifications, and SAV Processing tabs plus extra fields
+- `developer` - Same tabs as advanced, unlocking the remaining advanced fields for fine-tuning
 
 **Example:**
 ```bash
 export FS_GUI__CONFIG_LEVEL=advanced
 export FS_GUI__MINIMIZE_TO_TRAY=true
 export FS_GUI__LANGUAGE=es
+```
+
+### SAV Processing (`sav_processing`)
+
+Settings for processing Foxhole save files (`.sav`) via the `fs sav` command (backed by the `fs-sav` Rust parser).
+
+| Setting | Type | Default | Description |
+|---------|------|---------|-------------|
+| `sav_file_path` | string\|null | `null` | Path to the Foxhole save file (`.sav`) to process |
+| `poll_interval` | float | `1.0` | Polling interval in seconds for monitoring mode (0.1–60.0) |
+| `emit_all_on_start` | boolean | `true` | Emit all stockpiles on first read (single-scan mode) |
+
+**Example:**
+```bash
+export FS_SAV_PROCESSING__SAV_FILE_PATH="/path/to/User_MapData.sav"
+export FS_SAV_PROCESSING__POLL_INTERVAL=2.0
+export FS_SAV_PROCESSING__EMIT_ALL_ON_START=true
 ```
 
 ## Common Configurations
@@ -491,7 +445,7 @@ export FS_SCANNER__SCREENSHOTS_FOLDER=screenshots
 
 ```json
 {
-  "config_version": 5,
+  "config_version": 8,
   "api_server": {
     "cors_allow_origins": ["https://myapp.com", "https://app.myapp.com"],
     "enable_memory_monitoring": false,
@@ -549,7 +503,7 @@ This example shows all available settings with their default values:
 
 ```json
 {
-  "config_version": 5,
+  "config_version": 8,
   "api_server": {
     "cors_allow_origins": [],
     "host": "127.0.0.1",
@@ -573,21 +527,6 @@ This example shows all available settings with their default values:
     "rotate_logs": false,
     "log_file": null
   },
-  "ocr": {
-    "height": 2160,
-    "box_width": 84,
-    "box_height": 64,
-    "column_offset": 112,
-    "row_offset": 78,
-    "group_offset": 98,
-    "title_margin": 24,
-    "title_min_width": 600,
-    "title_height": 64,
-    "icon_to_quantity_offset": 88,
-    "gray_lower": 15,
-    "gray_upper": 98,
-    "pixel_diff_tolerance": 2
-  },
   "output": {
     "handlers": [
       {
@@ -602,14 +541,9 @@ This example shows all available settings with their default values:
     "template_cache_size": 16,
     "early_exit_threshold": 0.0,
     "confidence_gap": 0.0,
-    "custom_model": "renner_numbers",
-    "tessdata_path": "./tessdata",
     "debug_mode": false,
     "extract_icons": false,
-    "screenshots_folder": "",
-    "max_ncc_candidates": 25,
-    "phash_threshold": 12,
-    "ncc_tiebreaker_threshold": 0.0015
+    "screenshots_folder": ""
   },
   "stockpile_types": {
     "encampment": [],
@@ -624,14 +558,6 @@ This example shows all available settings with their default values:
     "storage_depot": [],
     "seaport": [],
     "aircraft_depot": []
-  },
-  "templates": {
-    "crate_blue_multiplier": 145,
-    "crate_blue_offset": 82,
-    "crate_green_multiplier": 152,
-    "crate_green_offset": 87,
-    "crate_red_multiplier": 154,
-    "crate_red_offset": 89
   },
   "external_tools": {
     "repak": null,
@@ -651,6 +577,11 @@ This example shows all available settings with their default values:
     "config_level": "basic",
     "minimize_to_tray": false,
     "language": "en"
+  },
+  "sav_processing": {
+    "sav_file_path": null,
+    "poll_interval": 1.0,
+    "emit_all_on_start": true
   }
 }
 ```
@@ -682,20 +613,6 @@ This table lists all available environment variables with their default values:
 | `FS_LOGGING__DATE_FORMAT` | string | `"%Y-%m-%d %H:%M:%S"` | Date format |
 | `FS_LOGGING__ROTATE_LOGS` | boolean | `false` | Enable log rotation |
 | `FS_LOGGING__LOG_FILE` | string\|null | `null` | Log file path |
-| **OCR Detection** | | | |
-| `FS_OCR__HEIGHT` | integer | `2160` | Base height for scaling |
-| `FS_OCR__BOX_WIDTH` | integer | `84` | Quantity box width |
-| `FS_OCR__BOX_HEIGHT` | integer | `64` | Quantity box height |
-| `FS_OCR__COLUMN_OFFSET` | integer | `112` | Horizontal icon spacing |
-| `FS_OCR__ROW_OFFSET` | integer | `78` | Vertical icon spacing |
-| `FS_OCR__GROUP_OFFSET` | integer | `98` | Group vertical spacing |
-| `FS_OCR__TITLE_MARGIN` | integer | `24` | Gap to title |
-| `FS_OCR__TITLE_MIN_WIDTH` | integer | `600` | Minimum title width |
-| `FS_OCR__TITLE_HEIGHT` | integer | `64` | Title height |
-| `FS_OCR__ICON_TO_QUANTITY_OFFSET` | integer | `88` | Icon to quantity gap |
-| `FS_OCR__GRAY_LOWER` | integer | `15` | Quantity box dark threshold |
-| `FS_OCR__GRAY_UPPER` | integer | `98` | Quantity box bright threshold |
-| `FS_OCR__PIXEL_DIFF_TOLERANCE` | integer | `2` | Pixel error tolerance |
 | **Output** | | | |
 | `FS_OUTPUT__HANDLERS` | JSON array | `[]` | List of output handler configurations (see examples below) |
 | **Scanner** | | | |
@@ -703,21 +620,9 @@ This table lists all available environment variables with their default values:
 | `FS_SCANNER__TEMPLATE_CACHE_SIZE` | integer | `16` | Max resolution databases to cache (0-16) |
 | `FS_SCANNER__EARLY_EXIT_THRESHOLD` | float | `0.0` | Early exit threshold |
 | `FS_SCANNER__CONFIDENCE_GAP` | float | `0.0` | Confidence gap for alternative candidates |
-| `FS_SCANNER__CUSTOM_MODEL` | string | `"renner_numbers"` | Tesseract custom model name |
-| `FS_SCANNER__TESSDATA_PATH` | string | `"./tessdata"` | Tesseract data directory |
 | `FS_SCANNER__DEBUG_MODE` | boolean | `false` | Enable debug image output |
 | `FS_SCANNER__EXTRACT_ICONS` | boolean | `false` | Extract icons to folder for debugging |
 | `FS_SCANNER__SCREENSHOTS_FOLDER` | string | `""` | Folder to save screenshots (empty to disable) |
-| `FS_SCANNER__MAX_NCC_CANDIDATES` | integer | `25` | Max NCC candidates |
-| `FS_SCANNER__PHASH_THRESHOLD` | integer | `12` | pHash Hamming distance threshold |
-| `FS_SCANNER__NCC_TIEBREAKER_THRESHOLD` | float | `0.002` | NCC tiebreaker threshold (0.0 to disable) |
-| **Templates** | | | |
-| `FS_TEMPLATES__CRATE_BLUE_MULTIPLIER` | integer | `145` | Crate blue channel multiplier |
-| `FS_TEMPLATES__CRATE_BLUE_OFFSET` | integer | `82` | Crate blue channel offset |
-| `FS_TEMPLATES__CRATE_GREEN_MULTIPLIER` | integer | `152` | Crate green channel multiplier |
-| `FS_TEMPLATES__CRATE_GREEN_OFFSET` | integer | `87` | Crate green channel offset |
-| `FS_TEMPLATES__CRATE_RED_MULTIPLIER` | integer | `154` | Crate red channel multiplier |
-| `FS_TEMPLATES__CRATE_RED_OFFSET` | integer | `89` | Crate red channel offset |
 | **External Tools** | | | |
 | `FS_EXTERNAL_TOOLS__REPAK` | string\|null | `null` | Path to repak executable |
 | `FS_EXTERNAL_TOOLS__UMODEL` | string\|null | `null` | Path to umodel executable |
@@ -733,6 +638,10 @@ This table lists all available environment variables with their default values:
 | `FS_GUI__CONFIG_LEVEL` | string | `"basic"` | Config level (basic/advanced/developer) |
 | `FS_GUI__MINIMIZE_TO_TRAY` | boolean | `false` | Minimize to tray on close |
 | `FS_GUI__LANGUAGE` | string | `"en"` | GUI language code |
+| **SAV Processing** | | | |
+| `FS_SAV_PROCESSING__SAV_FILE_PATH` | string\|null | `null` | Path to the Foxhole `.sav` file to process |
+| `FS_SAV_PROCESSING__POLL_INTERVAL` | float | `1.0` | Polling interval in seconds for monitoring mode (0.1–60.0) |
+| `FS_SAV_PROCESSING__EMIT_ALL_ON_START` | boolean | `true` | Emit all stockpiles on first read |
 
 **Note:** For JSON values (arrays/objects), use proper JSON syntax in the environment variable:
 ```bash

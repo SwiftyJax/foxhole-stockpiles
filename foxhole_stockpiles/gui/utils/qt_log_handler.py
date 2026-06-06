@@ -3,7 +3,7 @@
 import logging
 from datetime import datetime
 
-from PyQt6.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 
 class QtLogHandler(logging.Handler, QObject):
@@ -12,7 +12,7 @@ class QtLogHandler(logging.Handler, QObject):
     # Identifier to recognize this handler type in logging configuration
     HANDLER_NAME = "foxhole_qt_gui_handler"
 
-    log_message = pyqtSignal(dict)
+    log_message = Signal(dict)
 
     def __init__(self) -> None:
         """Initialize the Qt log handler."""
@@ -25,7 +25,7 @@ class QtLogHandler(logging.Handler, QObject):
         # since Qt may delete the C++ object before Python cleanup
         self.flushOnClose = False
 
-    def emit(self, record: logging.LogRecord) -> None:
+    def emit(self, record: logging.LogRecord) -> None:  # type: ignore[override]
         """Emit a log record.
 
         Args:

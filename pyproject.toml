@@ -44,12 +44,16 @@ dependencies = [
     # Memory profiling
     "psutil>=7.2.2",
     "memory-profiler>=0.61.0",
-    # PyQt6 for GUI
-    "PyQt6>=6.11.0",
     # Google API
     "google-api-python-client>=2.196.0",
     "google-auth-httplib2>=0.4.0",
     "google-auth-oauthlib>=1.4.0"
+    # PySide6 for GUI (LGPL, official Qt project)
+    "PySide6>=6.6",
+    # CLI framework for fs-ocr
+    "typer>=0.12.0",
+    # SAV file parsing (Rust implementation)
+    "fs-sav>=0.2.0",
 ]
 
 [project.optional-dependencies]
@@ -69,8 +73,6 @@ dev = [
     "types-psutil",
     "h5py-stubs",
 
-    # Developer Tools
-    "PyQt6>=6.11.0",
 ]
 
 [project.urls]
@@ -81,7 +83,8 @@ Repository = "https://github.com/xurxogr/foxhole-stockpiles"
 version = {attr = "foxhole_stockpiles.__version__"}
 
 [tool.setuptools.packages.find]
-include = ["foxhole_stockpiles*"]
+include = ["foxhole_stockpiles*", "fs_ocr*", "fs_tools*"]
+exclude = ["fs_tools.tests*"]
 
 # Remove package-dir since we're using flat layout
 [tool.mypy]
@@ -124,20 +127,26 @@ select = [
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.flake8-bugbear]
+# Typer relies on calling Option/Argument in parameter defaults; these are
+# effectively immutable sentinels, so B008 should not flag them.
+extend-immutable-calls = ["typer.Option", "typer.Argument"]
+
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "fs_ocr/tests", "fs_tools/tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
 asyncio_mode = "auto"
-# Use loadfile distribution for better coverage combining
-addopts = "-n auto --dist=loadfile --cov=foxhole_stockpiles --cov-report=term-missing"
+qt_api = "pyside6"
+addopts = "-n auto --dist=loadfile --cov=foxhole_stockpiles --cov=fs_ocr --cov-report=term-missing"
 filterwarnings = [
     "ignore::RuntimeWarning",
+    "ignore::DeprecationWarning:foxhole_stockpiles.gui",
 ]
 
 [tool.coverage.run]
-source = ["foxhole_stockpiles"]
+source = ["foxhole_stockpiles", "fs_ocr"]
 parallel = true
 branch = true
 
@@ -152,7 +161,10 @@ exclude_lines = [
 directory = "htmlcov"
 
 [project.scripts]
-fs = "foxhole_stockpiles.commands.fs.fs:main"
+fs = "foxhole_stockpiles.cli.app:main"
+fs-ocr = "fs_ocr.cli:main"
+fs-tools = "fs_tools.cli:main"
 
 [project.gui-scripts]
 fs-gui = "foxhole_stockpiles.gui.app:launch_gui"
+fs-tools-gui = "fs_tools.gui:run_gui"

@@ -4,7 +4,7 @@ import json
 from typing import Any
 
 import pytest
-from PyQt6.QtWidgets import QLineEdit
+from PySide6.QtWidgets import QLineEdit
 
 from foxhole_stockpiles.core.settings.sections.api import APIAuthSettings, APIServerSettings
 from foxhole_stockpiles.enums.auth_type import AuthType

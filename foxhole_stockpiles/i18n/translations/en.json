@@ -1,9 +1,7 @@
 {
   "language_name": "English",
   "language_code": "en",
-
   "common": {
-    "cancel": "Cancel",
     "save": "Save",
     "close": "Close",
     "browse": "Browse...",
@@ -11,29 +9,25 @@
     "edit": "Edit",
     "remove": "Remove",
     "clear": "Clear",
-    "clear_all": "Clear All",
-    "reset": "Reset",
     "name": "Name",
-    "all": "All",
-    "configure": "Configure...",
     "clear_logs": "Clear Logs",
-    "validation_error": "Validation Error"
+    "validation_error": "Validation Error",
+    "log_columns": {
+      "time": "Time",
+      "level": "Level",
+      "module": "Module",
+      "message": "Message"
+    },
+    "image_filter": "Images (*.png *.jpg *.jpeg);;All Files (*)"
   },
-
   "main_window": {
     "title": "FS (Foxhole Stockpiles) - v{version}",
     "menu": {
       "file": "&File",
-      "database": "&Database",
       "help": "&Help",
       "configuration": "&Configuration...",
       "scan_screenshot": "&Scan Screenshot...",
-      "build_catalog": "Build &Catalog...",
       "exit": "E&xit",
-      "build": "&Build...",
-      "information": "&Information...",
-      "visualizer": "&Visualizer...",
-      "debug_viewer": "&Debug Image Viewer...",
       "about": "&About"
     },
     "tray": {
@@ -42,12 +36,8 @@
       "quit": "Quit",
       "configuration": "Configuration..."
     },
-    "dialogs": {
-      "no_database_title": "No Database",
-      "no_database_message": "No database is configured. Please configure a database path in settings first."
-    }
+    "dialogs": {}
   },
-
   "about": {
     "title": "About FS",
     "app_name": "FS (Foxhole Stockpiles)",
@@ -60,10 +50,9 @@
     "links_title": "Links:",
     "github_link": "GitHub Repository",
     "client_link": "FS Client (Complementary Tool)",
-    "copyright": "Copyright \u00a9 2024 Xurxogr",
+    "copyright": "Copyright © 2024 Xurxogr",
     "license": "Licensed under the MIT License"
   },
-
   "server_panel": {
     "sav_group_title": "SAV Processing",
     "server_group_title": "Server",
@@ -71,23 +60,16 @@
     "stop_server": "Stop Server",
     "status_running": "Status: Running",
     "status_stopped": "Status: Stopped",
-    "log_columns": {
-      "time": "Time",
-      "level": "Level",
-      "module": "Module",
-      "message": "Message"
-    },
     "select_screenshot": "Select Screenshot to Scan",
-    "image_filter": "Images (*.png *.jpg *.jpeg);;All Files (*)",
     "errors": {
       "config_incomplete_title": "Configuration Incomplete",
-      "config_incomplete_message": "Please configure the database path in<br><b>File \u2192 Configuration</b>",
+      "config_incomplete_message": "Please configure the database path in<br><b>File → Configuration</b>",
       "database_not_found_title": "Database File Not Found",
-      "database_not_found_message": "Configure database path in <b>File \u2192 Configuration</b><br>or build one in <b>Database \u2192 Build</b>",
+      "database_not_found_message": "Configure database path in <b>File → Configuration</b><br>or build one in <b>Database → Build</b>",
       "database_error_title": "Database Error",
       "database_error_message": "Failed to load database",
       "no_config_title": "No Configuration Found",
-      "no_config_message": "Please set up your configuration in<br><b>File \u2192 Configuration</b>",
+      "no_config_message": "Please set up your configuration in<br><b>File → Configuration</b>",
       "cannot_scan": "Cannot scan: Server is not running!"
     },
     "scan_sav": "Scan SAV",
@@ -98,13 +80,11 @@
       "error_loading_settings": "Failed to load settings: {error}",
       "error_no_sav_file": "No SAV file configured. Please configure the SAV file path in File → Configuration → SAV Processing, or auto-detect will be attempted.",
       "error_sav_not_found": "The configured SAV file does not exist.",
-      "error_no_uesave": "uesave tool not found. Please configure the path in File → Configuration → External Tools, or install uesave and add it to your PATH.",
       "error_output": "Failed to create output coordinator: {error}",
       "status_scanning": "Scanning...",
       "status_monitoring": "Monitoring..."
     }
   },
-
   "config_window": {
     "title": "Configuration",
     "tip_hover": "Tip: Hover over labels for help",
@@ -112,12 +92,8 @@
       "api_server": "API Server",
       "scanner": "Scanner",
       "output": "Output",
-      "ocr": "OCR",
-      "templates": "Templates",
       "stockpile_types": "Stockpile Types",
       "notifications": "Notifications",
-      "external_tools": "External Tools",
-      "database_builder": "Database Builder",
       "sav_processing": "SAV Processing",
       "logging": "Logging",
       "gui": "GUI"
@@ -134,7 +110,6 @@
       "saved_successfully": "Configuration saved successfully!"
     }
   },
-
   "api_server_tab": {
     "server_settings": "Server Settings",
     "host": "Host:",
@@ -167,7 +142,6 @@
     "token": "Token:",
     "token_tooltip": "Secret token required for API authentication.\nThis token should be kept secure and sent in the Authorization header."
   },
-
   "scanner_tab": {
     "database_path": "Database Path:",
     "database_path_placeholder": "Path to template database (.h5 file)",
@@ -181,32 +155,20 @@
     "screenshots_folder": "Screenshots Folder:",
     "screenshots_folder_placeholder": "Optional: folder to save screenshots",
     "screenshots_folder_tooltip": "Optional folder to automatically save processed screenshots.\n\nWhen set, scanned images are saved to daily subfolders (YYYY-MM-DD)\nwith format: Date_Time_StorageType_Name_Resolution.png\n\nLeave empty to disable screenshot archiving.",
-    "max_ncc": "Max NCC Candidates:",
-    "max_ncc_tooltip": "Maximum number of template candidates to evaluate with NCC (Normalized Cross-Correlation).\n\nAfter perceptual hash pre-filtering, this limits detailed matching.\nHigher values are more accurate but slower. Recommended: 25.",
-    "phash_threshold": "pHash Threshold:",
-    "phash_tooltip": "Perceptual hash distance threshold for template pre-filtering.\n\nLower values (0-10) are stricter, higher values (10-20) are more lenient.\nToo low may miss valid items, too high slows down matching.\nRecommended: 12 for balanced speed and accuracy.",
-    "tiebreaker_threshold": "NCC Tiebreaker Threshold:",
-    "tiebreaker_tooltip": "When top NCC matches are within this confidence threshold, use mean pixel difference as a tiebreaker.\n\nHelps distinguish visually similar items (e.g., Assembly Materials V vs VIII).\nSet to 0.0 to disable tiebreaker.\nRecommended: 0.002.",
     "debug_mode": "Debug Mode:",
     "debug_mode_checkbox": "Save debug images during scanning",
     "debug_mode_tooltip": "Save debug images showing the detection process.\n\nSaves to current directory:\n- stockpile_detection_result.png - Original image with detection boxes\n- stockpile_quantities_result.png - Composite quantities image\n- stockpile_name_region.png - Extracted name region\n- stockpile_type_region.png - Extracted type region\n- stockpile_shard.png - Extracted shard region\n\nUseful for troubleshooting detection issues.",
     "extract_icons": "Extract Icons:",
     "extract_icons_checkbox": "Save detected icon images",
     "extract_icons_tooltip": "Save each detected item icon as a separate image file.\n\nIcons are saved to './icons/' folder with format: 'XXX_CODE.png'\nwhere XXX is the icon index (000, 001, etc.) and CODE is the detected item.\n\nDevelopment setting - useful for creating new templates or debugging detection.",
-    "custom_model": "Custom OCR Model:",
-    "custom_model_tooltip": "CRITICAL: Custom Tesseract OCR model for number recognition.\n\nDefault: 'renner_numbers' (optimized for Foxhole stockpile numbers).\nChanging this may cause number recognition to fail completely.",
-    "tessdata_path": "Tessdata Path:",
-    "tessdata_tooltip": "CRITICAL: Path to Tesseract OCR data files directory.\n\nDefault: './tessdata' (bundled with the application).\nIncorrect path will cause OCR text recognition to fail.",
     "select_database": "Select Template Database",
-    "select_tessdata": "Select Tessdata Directory",
     "select_screenshots": "Select Screenshots Directory"
   },
-
   "output_tab": {
     "description": "Configure output handlers for scan results.\nYou can add multiple handlers to send results to different destinations.",
     "handlers_group": "Output Handlers",
-    "move_up": "\u25b2 Up",
-    "move_down": "\u25bc Down",
+    "move_up": "▲ Up",
+    "move_down": "▼ Down",
     "move_up_tooltip": "Move selected handler up in priority",
     "move_down_tooltip": "Move selected handler down in priority",
     "order_info": "Handler order matters: The first handler that returns a response (return or webhook) will have its data passed back to the client.",
@@ -217,9 +179,9 @@
       "name_placeholder": "e.g., File Backup",
       "name_tooltip": "A friendly name to identify this output handler",
       "handler_type": "Handler Type:",
-      "handler_type_tooltip": "Where to send scan results:\n\n\u2022 return - Return data to caller (API mode)\n\u2022 file - Save to a file\n\u2022 webhook - POST to a webhook URL\n\u2022 console - Print to console output",
+      "handler_type_tooltip": "Where to send scan results:\n\n• return - Return data to caller (API mode)\n• file - Save to a file\n• webhook - POST to a webhook URL\n• console - Print to console output",
       "output_format": "Output Format:",
-      "output_format_tooltip": "Format for the output data:\n\n\u2022 json - Full JSON with all stockpile data\n\u2022 csv - Comma-separated values (one row per item)\n\u2022 tsv - Tab-separated values (one row per item)",
+      "output_format_tooltip": "Format for the output data:\n\n• json - Full JSON with all stockpile data\n• csv - Comma-separated values (one row per item)\n• tsv - Tab-separated values (one row per item)",
       "file_settings": "File Output Settings",
       "file_path": "File Path:",
       "file_path_placeholder": "{timestamp}_{stockpile_type}_{stockpile_name}_{resolution}.json",
@@ -229,10 +191,10 @@
       "webhook_url_placeholder": "https://example.com/webhook",
       "webhook_url_tooltip": "URL to POST scan results to.\n\nResults will be sent as JSON in the request body.\nThe webhook should accept POST requests with application/json content type.",
       "auth_type": "Auth Type:",
-      "auth_type_tooltip": "Authentication type for webhook requests:\n\n\u2022 null - No authentication\n\u2022 basic - HTTP Basic Auth (username:password)\n\u2022 bearer - Bearer token in Authorization header\n\u2022 forward - Forward client's Authorization header to webhook",
+      "auth_type_tooltip": "Authentication type for webhook requests:\n\n• null - No authentication\n• basic - HTTP Basic Auth (username:password)\n• bearer - Bearer token in Authorization header\n• forward - Forward client's Authorization header to webhook",
       "auth_token": "Auth Token:",
       "auth_token_placeholder": "Token or credentials",
-      "auth_token_tooltip": "Authentication credentials for webhook.\n\n\u2022 For basic auth: use format 'username:password'\n\u2022 For bearer auth: just the token value\n\nRequired when auth type is 'basic' or 'bearer'.",
+      "auth_token_tooltip": "Authentication credentials for webhook.\n\n• For basic auth: use format 'username:password'\n• For bearer auth: just the token value\n\nRequired when auth type is 'basic' or 'bearer'.",
       "client_auth_header": "Client Auth Header:",
       "client_auth_placeholder": "e.g., Authorization",
       "client_auth_tooltip": "Name of the Authorization header to forward from API client to webhook.\n\nUseful when the webhook needs to know who initiated the scan.\n\nRequired when auth type is 'forward'.",
@@ -262,7 +224,6 @@
     "remove_handler_title": "Remove Handler",
     "remove_handler_message": "Are you sure you want to remove '{name}'?"
   },
-
   "notifications_tab": {
     "description": "Configure Discord webhooks to receive notifications about stockpile scans\nand server events. You can add multiple notifiers with different settings.",
     "enable_notifications": "Enable Notifications",
@@ -303,7 +264,6 @@
     "remove_notifier_title": "Remove Notifier",
     "remove_notifier_message": "Are you sure you want to remove '{name}'?"
   },
-
   "gui_tab": {
     "config_level_group": "Configuration Level",
     "level": "Level:",
@@ -320,181 +280,6 @@
     "language": "Language:",
     "language_tooltip": "Select the language for the GUI."
   },
-
-  "database_info_window": {
-    "title": "Database Information",
-    "database_file": "Database File",
-    "select_placeholder": "Select a database file...",
-    "statistics_group": "Database Statistics",
-    "statistics_info": "Numbers represent total templates (crated + not crated) per mod and resolution",
-    "mod_column": "Mod",
-    "status_column": "Status",
-    "no_database": "No database loaded",
-    "click_browse": "Click 'Browse...' to select a database file",
-    "no_file_selected": "No file selected",
-    "select_first": "Please select a database file first",
-    "file_not_found": "File not found",
-    "file_not_exist": "Database file does not exist: {path}",
-    "error_loading": "Error loading database",
-    "select_database": "Select Database File",
-    "database_filter": "HDF5 Database (*.h5);;All Files (*)"
-  },
-
-  "database_visualizer": {
-    "title": "Template Database Visualizer",
-    "title_with_resolution": "Template Database Visualizer - {resolution}p",
-    "database_group": "Database",
-    "select_database": "Select Database File",
-    "database_filter": "HDF5 Database (*.h5);;All Files (*)",
-    "filters_group": "Filters",
-    "resolution": "Resolution:",
-    "code": "Code:",
-    "code_placeholder": "Enter item code...",
-    "faction": "Faction:",
-    "category": "Category:",
-    "mod": "Mod:",
-    "crated": "Crated:",
-    "crated_all": "All",
-    "crated_normal": "Normal",
-    "crated_crated": "Crated",
-    "clear_filters": "Clear Filters",
-    "loading_databases": "Loading all databases...",
-    "no_database_path": "No database path configured",
-    "error_loading": "Error loading database: {error}",
-    "showing_results": "Showing {filtered} of {total} templates",
-    "select_template": "Select a template to view details",
-    "template_comparison": "Template Comparison (Size Matched)",
-    "current_resolution": "Current Resolution",
-    "current_resolution_scale": "Current Resolution ({resolution}p - {scale}x)",
-    "highest_resolution": "Highest Resolution",
-    "highest_resolution_found": "Highest Resolution ({resolution}p - 4x)",
-    "highest_resolution_not_found": "Highest Resolution (Not Found)",
-    "no_image_selected": "No image selected",
-    "template_not_found": "Template not found\nin highest resolution",
-    "info": {
-      "code": "Code:",
-      "faction": "Faction:",
-      "category": "Category:",
-      "mod": "Mod:",
-      "crated": "Crated:",
-      "current_resolution": "Current Resolution:",
-      "current_shape": "Current Shape:",
-      "database_index": "Database Index:",
-      "highest_res_available": "Highest Res Available:",
-      "highest_res_not_found": "Highest Res: Not found in {resolution}px"
-    },
-    "save_icon": "Save Icon",
-    "save_icon_dialog": "Save Icon As",
-    "save_success_title": "Icon Saved",
-    "save_success_message": "Icon saved to: {path}",
-    "save_error_title": "Save Failed",
-    "save_error_message": "Failed to save icon: {error}",
-    "replace_icon": "Replace Icon",
-    "select_replacement_icon": "Select Replacement Icon",
-    "replace_success_title": "Icon Replaced",
-    "replace_success_message": "Successfully replaced icon for '{code}'",
-    "replace_error_title": "Replace Failed",
-    "replace_error_message": "Failed to replace icon: {error}",
-    "delete_icon": "Delete Icon",
-    "delete_confirm_title": "Confirm Delete",
-    "delete_confirm_message": "Are you sure you want to delete the icon for '{code}' at {resolution}p resolution?\n\nThis action cannot be undone.",
-    "delete_success_title": "Icon Deleted",
-    "delete_success_message": "Successfully deleted icon for '{code}'",
-    "delete_error_title": "Delete Failed",
-    "delete_error_message": "Failed to delete icon: {error}"
-  },
-
-  "database_builder": {
-    "title": "Build Database",
-    "vanilla_group": "Vanilla PAK File (Required)",
-    "vanilla_warning": "The selected mod PAK files are missing required assets (crate icon, subicons). Please select the vanilla game PAK file (War-WindowsNoEditor.pak).",
-    "vanilla_warning_missing": "The selected mod PAK files are missing required assets ({missing}). Please select the vanilla game PAK file (War-WindowsNoEditor.pak).",
-    "no_vanilla_selected": "No vanilla PAK selected",
-    "mod_pak_group": "Mod PAK Files",
-    "mod_pak_warning": "Select PAK files from ONE mod only. Do not mix PAK files from different mods (e.g., vanilla + another mod) - this will produce incorrect results.",
-    "add_pak_files": "Add PAK Files...",
-    "remove_selected": "Remove Selected",
-    "configuration_group": "Configuration",
-    "mod_name": "Mod Name:",
-    "mod_name_placeholder": "e.g., vanilla, mymod",
-    "overwrite": "Overwrite existing data",
-    "overwrite_tooltip": "If checked, existing templates with the same item-resolution will be overwritten",
-    "destination_database": "Destination Database:",
-    "destination_placeholder": "Select database file (.h5)",
-    "destination_tooltip": "Database file where templates will be saved",
-    "workers": "Workers:",
-    "workers_tooltip": "Number of parallel processes for database building.\nSet to 1 to disable multiprocessing.",
-    "cores_detected": "({cores} cores detected)",
-    "process_logs": "Process Logs",
-    "start_import": "Start Import",
-    "validation": {
-      "validating_pak": "Validating PAK files...",
-      "validating_vanilla": "Validating vanilla PAK...",
-      "all_assets_found": "All required assets found",
-      "missing_assets": "Missing required assets",
-      "invalid_vanilla": "Invalid vanilla PAK",
-      "wait_validation": "Please wait for mod PAK file validation to complete",
-      "wait_vanilla_validation": "Please wait for vanilla PAK file validation to complete",
-      "add_pak_file": "Please add at least one mod PAK file",
-      "enter_mod_name": "Please enter a mod name",
-      "select_database": "Please select a destination database file",
-      "mod_missing_assets": "The mod PAK files are missing required assets. Please select the vanilla game PAK file.",
-      "vanilla_invalid": "The selected vanilla PAK file does not contain the required assets. Please select the correct vanilla game PAK file (War-WindowsNoEditor.pak)."
-    },
-    "config_required_title": "Configuration Required",
-    "config_required_message": "The Database Builder is not properly configured.",
-    "config_required_intro": "To use the Database Builder feature, you need to configure:",
-    "config_required_extractor": "Extractor Tool (repak.exe) - for extracting PAK files",
-    "config_required_converter": "Converter Tool (umodel.exe) - for converting UAsset files",
-    "config_required_catalog": "Catalog File (catalog.json) - defines all game items",
-    "invalid_vanilla_title": "Invalid Vanilla PAK",
-    "invalid_vanilla_message": "The selected PAK file does not contain the required assets ({missing}).\n\nPlease select the correct vanilla game PAK file:\nWar-WindowsNoEditor.pak\n\nThis file is typically located in:\nSteam/steamapps/common/Foxhole/War/Content/Paks/",
-    "invalid_mod_name_title": "Invalid Mod Name",
-    "import_completed": "Import completed successfully!",
-    "import_cancelled": "Import was cancelled",
-    "import_error": "Import error: {error}",
-    "import_in_progress_title": "Import In Progress",
-    "import_in_progress_message": "An import is currently running. Are you sure you want to close?",
-    "select_vanilla_pak": "Select Vanilla PAK File",
-    "select_mod_pak": "Select Mod PAK Files",
-    "select_database": "Select Database File",
-    "pak_filter": "PAK Files (*.pak);;All Files (*)"
-  },
-
-  "catalog_builder": {
-    "title": "Build Catalog",
-    "pak_group": "PAK File",
-    "pak_info": "Select the Foxhole PAK file (War-WindowsNoEditor.pak) to build the catalog from.",
-    "no_pak_selected": "No PAK file selected",
-    "output_group": "Output",
-    "catalog_file": "Catalog File:",
-    "catalog_placeholder": "Path for output catalog.json",
-    "workers": "Workers:",
-    "workers_tooltip": "Number of parallel processes for uasset conversion.",
-    "cores_detected": "({cores} cores detected)",
-    "process_logs": "Process Logs",
-    "build_catalog": "Build Catalog",
-    "validation": {
-      "select_pak": "Please select a PAK file",
-      "pak_not_exist": "The selected PAK file does not exist",
-      "specify_output": "Please specify an output path for the catalog"
-    },
-    "config_required_title": "Configuration Required",
-    "config_required_message": "The Catalog Builder is not properly configured.",
-    "config_required_intro": "To use the Catalog Builder feature, you need to configure:",
-    "config_required_extractor": "Extractor Tool (repak) - for extracting PAK files",
-    "config_required_converter": "JSON Converter (UAssetGUI) - for converting UAsset files to JSON",
-    "build_completed": "Catalog build completed successfully!",
-    "build_cancelled": "Build was cancelled",
-    "build_error": "Build error: {error}",
-    "build_in_progress_title": "Build In Progress",
-    "build_in_progress_message": "A build is currently running. Are you sure you want to close?",
-    "select_pak": "Select PAK File",
-    "select_output": "Select Output Catalog File",
-    "pak_filter": "PAK Files (*.pak);;All Files (*)",
-    "json_filter": "JSON Files (*.json);;All Files (*)"
-  },
-
   "logging_tab": {
     "root_level": "Root Log Level:",
     "root_level_tooltip": "Global default log level for all loggers.\n\nMessages below this level are filtered out unless\na custom logger overrides it.",
@@ -513,131 +298,11 @@
     "logger_placeholder": "e.g., uvicorn.access",
     "select_log_file": "Select Log File"
   },
-
-  "external_tools_tab": {
-    "title": "External Tools",
-    "repak_label": "Extractor Tool (repak):",
-    "repak_tooltip": "Path to repak executable for extracting PAK files.\n\nRequired for extracting game assets from PAK files.\nDownload from: https://github.com/trumank/repak",
-    "repak_placeholder": "Path to repak executable",
-    "umodel_label": "Converter Tool (umodel):",
-    "umodel_tooltip": "Path to umodel executable for converting UAsset files to PNG.\n\nRequired for the 'Build Database' feature.\nDownload from: https://www.gildor.org/en/projects/umodel",
-    "umodel_placeholder": "Path to umodel executable",
-    "uassetgui_label": "JSON Converter (UAssetGUI):",
-    "uassetgui_tooltip": "Path to UAssetGUI executable for converting UAsset files to JSON.\n\nRequired for the 'Build Catalog' feature.\nDownload from: https://github.com/atenfyr/UAssetGUI",
-    "uassetgui_placeholder": "Path to UAssetGUI executable",
-    "uesave_label": "SAV Converter (uesave):",
-    "uesave_tooltip": "Path to uesave executable for converting save files to JSON.\n\nRequired for the 'SAV Processing' feature.\nDownload from: https://github.com/trumank/uesave-rs",
-    "uesave_placeholder": "Path to uesave executable",
-    "download": "Download",
-    "select_repak": "Select Extractor Tool (repak)",
-    "select_umodel": "Select Converter Tool (umodel)",
-    "select_uassetgui": "Select JSON Converter (UAssetGUI)",
-    "select_uesave": "Select SAV Converter (uesave)"
-  },
-
-  "ocr_tab": {
-    "warning_header": "⚠️ <b>Advanced Settings:</b> OCR settings define the layout dimensions for stockpile detection. These are scaled from 2160p base resolution. <b style='color: #d32f2f;'>Incorrect values will cause detection to fail completely.</b>",
-    "reset_all": "Reset All to Defaults",
-    "reset_title": "Reset OCR Settings",
-    "reset_message": "Reset all OCR settings to default values?\n\nThis will restore the factory defaults for layout detection.",
-    "base_height": "Base Height:",
-    "base_height_tooltip": "Base screen resolution height for layout calculations.\n\nAll layout dimensions are scaled from this base (2160p).\nDefault: 2160 (for 4K screenshots).",
-    "box_width": "Box Width:",
-    "box_width_tooltip": "Width of each quantity box in the stockpile grid.\n\nMeasured in pixels at base resolution.\nIncorrect values will cause detection to fail.",
-    "box_height": "Box Height:",
-    "box_height_tooltip": "Height of each quantity box in the stockpile grid.\n\nMeasured in pixels at base resolution.\nIncorrect values will cause detection to fail.",
-    "column_offset": "Column Offset:",
-    "column_offset_tooltip": "Horizontal spacing between columns in the stockpile grid.\n\nMeasured in pixels at base resolution.\nAffects how the scanner moves from one column to the next.",
-    "row_offset": "Row Offset:",
-    "row_offset_tooltip": "Vertical spacing between rows in the stockpile grid.\n\nMeasured in pixels at base resolution.\nAffects how the scanner moves from one row to the next.",
-    "group_offset": "Group Offset:",
-    "group_offset_tooltip": "Vertical spacing between stockpile groups.\n\nMeasured in pixels at base resolution.\nUsed when multiple stockpile sections are stacked vertically.",
-    "title_margin": "Title Margin:",
-    "title_margin_tooltip": "Margin around stockpile title text.\n\nUsed for detecting and extracting stockpile names.\nAffects title region boundary detection.",
-    "title_min_width": "Title Min Width:",
-    "title_min_width_tooltip": "Minimum width for a valid title region.\n\nHelps filter out false title detections.\nToo low may include noise, too high may skip short titles.",
-    "title_height": "Title Height:",
-    "title_height_tooltip": "Expected height of stockpile title text.\n\nUsed for title region extraction.\nShould match the game's title font size at base resolution.",
-    "icon_to_quantity_offset": "Icon to Quantity Offset:",
-    "icon_to_quantity_tooltip": "Horizontal offset from quantity box to item icon (icon is to the left).\n\nMeasured in pixels at base resolution.\nUsed to locate the item icon relative to its quantity box.",
-    "gray_lower": "Gray Lower Threshold:",
-    "gray_lower_tooltip": "Lower grayscale threshold for quantity box detection (0-255).\n\nDepends on user's screen gamma settings.\nTypical range: 15-98. Adjust if quantity boxes aren't detected properly.",
-    "gray_upper": "Gray Upper Threshold:",
-    "gray_upper_tooltip": "Upper grayscale threshold for quantity box detection (0-255).\n\nDepends on user's screen gamma settings.\nTypical range: 15-98. Adjust if quantity boxes aren't detected properly.",
-    "pixel_diff_tolerance": "Pixel Diff Tolerance:",
-    "pixel_diff_tooltip": "Allowed pixel variation for any detection calculation.\n\nAccounts for minor position shifts across different resolutions.\nExample: Icon column alignment may vary by 1-2 pixels depending on resolution."
-  },
-
-  "template_tab": {
-    "warning_header": "⚠️ <b>Advanced Settings:</b> Template settings configure crate overlay color transformation. These values are used when generating crated versions of item icons. <b style='color: #d32f2f;'>Incorrect values will break template generation.</b>",
-    "reset_all": "Reset All to Defaults",
-    "reset_title": "Reset Template Settings",
-    "reset_message": "Reset all template settings to default values?\n\nThis will restore the factory defaults for crate color transformation.",
-    "multipliers_group": "RGB Multipliers (0-255)",
-    "offsets_group": "RGB Offsets (0-255)",
-    "red_mult": "Red Multiplier:",
-    "red_mult_tooltip": "Red channel multiplier for crate overlay color transformation.\n\nValue 0-255, will be divided by 255 during processing.\nControls how much of the red channel is retained in crated item icons.",
-    "green_mult": "Green Multiplier:",
-    "green_mult_tooltip": "Green channel multiplier for crate overlay color transformation.\n\nValue 0-255, will be divided by 255 during processing.\nControls how much of the green channel is retained in crated item icons.",
-    "blue_mult": "Blue Multiplier:",
-    "blue_mult_tooltip": "Blue channel multiplier for crate overlay color transformation.\n\nValue 0-255, will be divided by 255 during processing.\nControls how much of the blue channel is retained in crated item icons.",
-    "red_offset": "Red Offset:",
-    "red_offset_tooltip": "Red channel offset added after multiplication.\n\nValue 0-255. Adjusts the base red level of crated item icons.\nUsed to match the brownish crate overlay color.",
-    "green_offset": "Green Offset:",
-    "green_offset_tooltip": "Green channel offset added after multiplication.\n\nValue 0-255. Adjusts the base green level of crated item icons.\nUsed to match the brownish crate overlay color.",
-    "blue_offset": "Blue Offset:",
-    "blue_offset_tooltip": "Blue channel offset added after multiplication.\n\nValue 0-255. Adjusts the base blue level of crated item icons.\nUsed to match the brownish crate overlay color."
-  },
-
   "stockpile_types_tab": {
     "description": "Add custom aliases for stockpile type names to handle OCR errors.\nEnter comma-separated values (e.g., 'seapon, Seapont, 5eaport').\nThe default translations are already built-in and don't need to be added here.",
     "aliases_group": "Additional Aliases",
     "alias_placeholder": "Enter comma-separated aliases..."
   },
-
-  "database_builder_settings": {
-    "title": "Database Builder Settings",
-    "info": "Configure the tools and settings required for building the template database."
-  },
-
-  "catalog_builder_settings": {
-    "title": "Catalog Builder Settings",
-    "info": "Configure the tools required for building the item catalog from PAK files."
-  },
-
-  "debug_viewer": {
-    "title": "Debug Image Viewer",
-    "select_screenshot": "Select a screenshot to analyze",
-    "detected_items": "Detected Items",
-    "screenshot": "Screenshot",
-    "icon_comparison": "Icon Comparison",
-    "icon_comparison_tooltip": "Shows detected icon and all DB candidates that pass pHash threshold, sorted by NCC score",
-    "detected": "Detected",
-    "scaled": "(scaled)",
-    "scan_error_title": "Scan Error",
-    "database_error_title": "Database Error",
-    "unknown": "Unknown",
-    "summary_type": "Type",
-    "summary_name": "Name",
-    "summary_shard": "Shard",
-    "summary_time": "Time"
-  },
-
-  "database_builder_tab": {
-    "settings_group": "Database Builder Settings",
-    "catalog_file": "Catalog File (catalog.json):",
-    "catalog_placeholder": "Path to catalog.json",
-    "catalog_tooltip": "Path to catalog.json file that defines all game items.\n\nRequired for the 'Build Database' feature.\nThis file maps item codes to their icon paths.\n\nDownload from: https://github.com/xurxogr/foxhole-stockpiles/tree/main/data",
-    "workers": "Workers:",
-    "workers_tooltip": "Number of parallel processes for database building.\n\nSet to 0 to auto-detect (uses CPU count).\nSet to 1 to disable multiprocessing.",
-    "workers_hint": "(0 = auto-detect, max {cores} cores)",
-    "resolutions_group": "Target Resolutions",
-    "resolutions_info": "Select which resolutions to generate when importing icons. Check 'All Resolutions' to generate all supported resolutions.",
-    "all_resolutions": "All Resolutions",
-    "status_note": "<b>Note:</b> The catalog file and external tools (repak, umodel) must be configured for the 'Build Database' feature to work.",
-    "select_catalog": "Select Catalog File (catalog.json)"
-  },
-
   "sav_processing_tab": {
     "sav_file_label": "SAV File Path:",
     "sav_file_tooltip": "Path to the Foxhole save file (.sav) to process.\n\nThis file is typically located at:\nWindows: %LOCALAPPDATA%/Foxhole/Saved/SaveGames/\nWSL: /mnt/c/Users/<user>/AppData/Local/Foxhole/Saved/SaveGames/\n\nLook for files named *_MapData.sav",

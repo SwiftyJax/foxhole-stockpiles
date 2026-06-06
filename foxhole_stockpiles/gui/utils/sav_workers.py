@@ -4,10 +4,10 @@ import asyncio
 import logging
 from pathlib import Path
 
-from PyQt6.QtCore import QThread, pyqtSignal
+from PySide6.QtCore import QThread, Signal
 
 from foxhole_stockpiles.services.output_coordinator import OutputCoordinator
-from foxhole_stockpiles.services.savefile_converter import SaveFileConverter
+from foxhole_stockpiles.services.sav_parser import parse_save
 from foxhole_stockpiles.services.savefile_processor import SaveFileProcessor
 
 logger = logging.getLogger(__name__)
@@ -16,43 +16,35 @@ logger = logging.getLogger(__name__)
 class SavScanWorker(QThread):
     """Worker thread for one-time SAV file scanning."""
 
-    finished = pyqtSignal(bool)  # True = success, False = failure
-    error = pyqtSignal(str)  # Error message
-    progress = pyqtSignal(str)  # Progress message
-    stockpiles_found = pyqtSignal(list)  # List of Stockpile objects
+    finished = Signal(bool)  # True = success, False = failure
+    error = Signal(str)  # Error message
+    progress = Signal(str)  # Progress message
+    stockpiles_found = Signal(list)  # List of Stockpile objects
 
     def __init__(
         self,
         sav_path: Path,
-        uesave_path: Path | None,
         output_coordinator: OutputCoordinator,
     ) -> None:
         """Initialize the SAV scan worker.
 
         Args:
             sav_path (Path): Path to the .sav file to scan.
-            uesave_path (Path | None): Path to uesave executable.
             output_coordinator (OutputCoordinator): Output coordinator for handlers.
         """
         super().__init__()
         self._sav_path = sav_path
-        self._uesave_path = uesave_path
         self._output_coordinator = output_coordinator
 
     def run(self) -> None:
         """Run the scan in background thread."""
         try:
-            logger.info("Initializing uesave converter...")
-
-            # Initialize converter
-            converter = SaveFileConverter(uesave_path=self._uesave_path)
-
             logger.info("Processing file: %s", self._sav_path)
+            self.progress.emit(f"Processing: {self._sav_path.name}")
 
             # Create processor and run once
             processor = SaveFileProcessor(
                 file_path=self._sav_path,
-                converter=converter,
                 output_coordinator=self._output_coordinator,
                 emit_all_on_start=True,
             )
@@ -63,7 +55,7 @@ class SavScanWorker(QThread):
             self.stockpiles_found.emit(stockpiles)
             self.finished.emit(True)
 
-        except FileNotFoundError as e:
+        except RuntimeError as e:
             self.error.emit(str(e))
             self.finished.emit(False)
         except Exception as e:
@@ -74,15 +66,14 @@ class SavScanWorker(QThread):
 class SavMonitorWorker(QThread):
     """Worker thread for continuous SAV file monitoring."""
 
-    finished = pyqtSignal(bool)  # True = stopped normally, False = error
-    error = pyqtSignal(str)  # Error message
-    progress = pyqtSignal(str)  # Progress/status message
-    stockpiles_changed = pyqtSignal(list)  # List of changed Stockpile objects
+    finished = Signal(bool)  # True = stopped normally, False = error
+    error = Signal(str)  # Error message
+    progress = Signal(str)  # Progress/status message
+    stockpiles_changed = Signal(list)  # List of changed Stockpile objects
 
     def __init__(
         self,
         sav_path: Path,
-        uesave_path: Path | None,
         output_coordinator: OutputCoordinator,
         poll_interval: float = 1.0,
     ) -> None:
@@ -90,13 +81,11 @@ class SavMonitorWorker(QThread):
 
         Args:
             sav_path (Path): Path to the .sav file to monitor.
-            uesave_path (Path | None): Path to uesave executable.
             output_coordinator (OutputCoordinator): Output coordinator for handlers.
             poll_interval (float): Polling interval in seconds.
         """
         super().__init__()
         self._sav_path = sav_path
-        self._uesave_path = uesave_path
         self._output_coordinator = output_coordinator
         self._poll_interval = poll_interval
         self._should_stop = False
@@ -111,18 +100,12 @@ class SavMonitorWorker(QThread):
     def run(self) -> None:
         """Run the monitor in background thread."""
         try:
-            logger.info("Initializing uesave converter...")
-
-            # Initialize converter
-            converter = SaveFileConverter(uesave_path=self._uesave_path)
-
             logger.info("Starting monitor for: %s", self._sav_path)
             logger.info("Poll interval: %ss", self._poll_interval)
 
             # Create processor
             self._processor = SaveFileProcessor(
                 file_path=self._sav_path,
-                converter=converter,
                 output_coordinator=self._output_coordinator,
                 poll_interval=self._poll_interval,
                 emit_all_on_start=False,  # Don't emit on first read for monitoring
@@ -134,7 +117,7 @@ class SavMonitorWorker(QThread):
             logger.info("Monitor stopped")
             self.finished.emit(True)
 
-        except FileNotFoundError as e:
+        except RuntimeError as e:
             self.error.emit(str(e))
             self.finished.emit(False)
         except Exception as e:
@@ -151,15 +134,13 @@ class SavMonitorWorker(QThread):
             self._processor._last_mtime = self._sav_path.stat().st_mtime
             # Process to populate cache without emitting
             try:
-                stockpiles = await asyncio.to_thread(
-                    self._processor._converter.convert_file, self._sav_path
-                )
+                stockpiles = parse_save(self._sav_path)
                 for stockpile in stockpiles:
-                    if stockpile.raw_timestamp is not None:
-                        self._processor._stockpile_cache[stockpile.to_key()] = (
-                            stockpile.raw_timestamp
-                        )
+                    self._processor._stockpile_cache[stockpile.to_key()] = (
+                        stockpile.timestamp.isoformat()
+                    )
                 logger.info("Cached %d stockpile(s). Monitoring for changes...", len(stockpiles))
+                self.progress.emit(f"Monitoring {len(stockpiles)} stockpile(s)...")
             except Exception as e:
                 logger.warning("Could not read initial state: %s", e)
 
