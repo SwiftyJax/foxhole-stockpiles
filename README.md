@@ -69,39 +69,53 @@ The project provides a comprehensive toolkit for Foxhole stockpile recognition:
 8. **Database Management** - Tools for adding icons and migrating database formats
 9. **Configuration Management** - Tools for updating configuration files
 
-For technical details on the system design and implementation decisions, see the [Architecture Documentation](docs/architecture.md).
+For technical details on the system design and implementation decisions, see the [Architecture Codemap](docs/CODEMAPS/architecture.md) (and the [Codemap Index](docs/CODEMAPS/INDEX.md) for an overview of all packages).
 
 ## Available Command-Line Tools
 
-### fs catalog
-Builds catalog.json from Foxhole PAK files by extracting game blueprints, converting them to JSON, and parsing item definitions. Generates the complete item catalog automatically without manual data entry. (Alias: `fs catalog-builder`)
+Commands are split between two binaries: **`fs`** (the runtime — scanning, serving, GUI, save files) and **`fs-tools`** (build-time asset and database tooling).
 
-### fs extract-assets
+### Runtime commands (`fs`)
+
+#### fs scan
+Analyzes Foxhole stockpile screenshots to detect items and quantities using the compiled database. Automatically detects item quantities using OCR with a custom-trained Tesseract model optimized for Foxhole's Renner font. (Alias: `fs scanner`)
+
+#### fs serve
+Starts the FastAPI server for processing screenshots via HTTP API. (Aliases: `fs server`, `fs api`)
+
+#### fs sav
+Processes Foxhole `.sav` world files (via the `fs-sav` Rust parser) into structured stockpile data. (Alias: `fs process-sav`)
+
+#### fs gui / fs-gui
+Launches the PySide6 graphical user interface for managing configurations and running scans. Provides a user-friendly interface for non-technical users. (Aliases: `fs ui`, `fs app`)
+
+### Tooling commands (`fs-tools`)
+
+#### fs-tools build-catalog
+Builds catalog.json from Foxhole PAK files by extracting game blueprints, converting them to JSON, and parsing item definitions. Generates the complete item catalog automatically without manual data entry.
+
+#### fs-tools extract-assets
 Extracts icon assets from Foxhole PAK files and converts them to PNG format.
 
-### fs generate-templates
+#### fs-tools generate-templates
 Generates resolution-specific template variants from extracted assets with proper scaling and crate overlays.
 
-### fs database-builder
+#### fs-tools build-db
 Compiles processed templates into optimized binary databases for fast runtime loading.
 
-### fs scanner
-Analyzes Foxhole stockpile screenshots to detect items and quantities using the compiled database. Automatically detects item quantities using OCR with a custom-trained Tesseract model optimized for Foxhole's Renner font.
-
-### fs inspect
+#### fs-tools inspect
 Debugging tool for inspecting database contents and testing icon recognition.
 
-### fs server
-Starts the FastAPI server for processing screenshots via HTTP API.
-
-### fs add-icon
+#### fs-tools add-icon
 Manually adds individual icons to existing template databases without rebuilding the entire database.
 
-### fs add-mod
+#### fs-tools add-mod
 Adds all icons from a mod's PAK file(s) to the template database in one command. Runs the complete pipeline: extracting assets, generating templates, and merging into the database.
 
-### fs gui / fs-gui
-Launches the PySide6 graphical user interface for managing configurations and running scans. Provides a user-friendly interface for non-technical users.
+#### fs-tools-gui
+Launches the PySide6 tooling GUI for catalog/database management.
+
+### GUI launch notes
 
 - `fs gui` - Launches GUI via CLI dispatcher
 - `fs-gui` - Direct GUI launcher (no console window on Windows, recommended for building standalone executables)
@@ -110,9 +124,9 @@ Launches the PySide6 graphical user interface for managing configurations and ru
 
 The GUI uses a tiered configuration system to avoid overwhelming users with advanced options:
 
-- **Basic** (default): Essential settings only - API Server, Scanner, Output, Logging, and GUI tabs. Suitable for most users.
-- **Advanced**: Adds Stockpile Types, External Tools, and Database Builder tabs, plus additional fields like CORS settings, debug mode, log file configuration, and custom loggers.
-- **Developer**: Full access including OCR and Templates tabs for fine-tuning recognition parameters. Only use this if you understand the impact of these settings.
+- **Basic** (default): Essential tabs only - API Server, Scanner, Output, Logging, and GUI. Suitable for most users.
+- **Advanced**: Adds the Stockpile Types, Notifications, and SAV Processing tabs, plus additional fields in existing tabs (CORS settings, debug mode, log file configuration, custom loggers, etc.).
+- **Developer**: Same tabs as Advanced, but unlocks the remaining advanced fields for fine-tuning. Only use this if you understand the impact of these settings.
 
 **Stockpile Types Tab (Advanced):**
 
@@ -307,7 +321,7 @@ A pre-built template database for vanilla Foxhole items is included in the repos
 Run the scanner:
 
 ```bash
-fs scanner \
+fs scan \
   --database data/fs_vanilla.h5 \
   --image your_screenshot.png
 ```
@@ -315,7 +329,7 @@ fs scanner \
 Optional filters:
 ```bash
 # Filter by faction
-fs scanner --database data/fs_vanilla.h5 --image screenshot.png --faction colonials
+fs scan --database data/fs_vanilla.h5 --image screenshot.png --faction colonials
 ```
 
 The scanner will automatically:
@@ -330,7 +344,7 @@ If you need to include custom mods or rebuild the database for a new game versio
 
 1. **Extract assets from game PAK files:**
 ```bash
-fs extract-assets \
+fs-tools extract-assets \
   --catalog data/catalog.json \
   --pak "C:/Program Files (x86)/Steam/steamapps/common/Foxhole/War/Content/Paks/War-WindowsNoEditor.pak" \
   --output raw_assets/
@@ -338,7 +352,7 @@ fs extract-assets \
 
 2. **Generate resolution-specific templates:**
 ```bash
-fs generate-templates \
+fs-tools generate-templates \
   --catalog data/catalog.json \
   --assets raw_assets/ \
   --templates processed_templates/
@@ -346,7 +360,7 @@ fs generate-templates \
 
 3. **Build optimized binary database:**
 ```bash
-fs database-builder \
+fs-tools build-db \
   --catalog data/catalog.json \
   --templates processed_templates/ \
   --database data/foxhole_templates.h5
@@ -354,7 +368,7 @@ fs database-builder \
 
 4. **Scan with your custom database:**
 ```bash
-fs scanner \
+fs scan \
   --database data/foxhole_templates.h5 \
   --image your_screenshot.png
 ```
@@ -373,16 +387,16 @@ The project includes a FastAPI server for processing stockpile screenshots via H
 **Usage:**
 ```bash
 # Start the API server (recommended)
-fs server
+fs serve
 
 # Start on custom port
-fs server --port 8080
+fs serve --port 8080
 
 # Start with multiple workers for production
-fs server --host 0.0.0.0 --port 8000 --workers 4
+fs serve --host 0.0.0.0 --port 8000 --workers 4
 
 # Development mode with auto-reload
-fs server --reload --log-level debug
+fs serve --reload --log-level debug
 ```
 
 The API exposes endpoints for:

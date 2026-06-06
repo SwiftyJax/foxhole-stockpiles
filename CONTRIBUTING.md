@@ -67,11 +67,14 @@ This project follows strict code quality guidelines:
 ### Running Quality Checks
 
 ```bash
-# Run linter
-ruff check foxhole_stockpiles/
+# Run linter (all packages)
+ruff check .
 
-# Run type checker
-mypy foxhole_stockpiles/
+# Run formatter check
+ruff format --check .
+
+# Run type checker (strict mode, all packages)
+mypy foxhole_stockpiles fs_ocr fs_tools
 
 # Run all pre-commit hooks
 pre-commit run --all-files
@@ -97,8 +100,8 @@ pytest --cov=foxhole_stockpiles --cov-report=html
 
 3. **Ensure all checks pass**:
    ```bash
-   ruff check foxhole_stockpiles/
-   mypy foxhole_stockpiles/
+   ruff check .
+   mypy foxhole_stockpiles fs_ocr fs_tools
    pytest
    ```
 

@@ -31,7 +31,7 @@ This directory contains example configuration files for different deployment sce
 **Example:**
 ```json
 {
-  "config_version": 2,
+  "config_version": 8,
   "scanner": {
     "database_path": "/app/data/foxhole_templates.h5"
   }

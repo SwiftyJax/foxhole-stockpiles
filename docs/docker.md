@@ -75,11 +75,8 @@ Configure the server using environment variables:
 ```bash
 -e FS_SCANNER__DATABASE_PATH=/app/data/foxhole_templates.h5
 -e FS_SCANNER__EARLY_EXIT_THRESHOLD=0.95
--e FS_SCANNER__MAX_NCC_CANDIDATES=25
--e FS_SCANNER__PHASH_THRESHOLD=12
+-e FS_SCANNER__TEMPLATE_CACHE_SIZE=16
 ```
-
-**Note:** Higher pHash thresholds allow more candidates but may slow down matching. Adjust based on your needs.
 
 See [Configuration Guide](configuration.md) for all available options.
 
@@ -111,7 +108,7 @@ FS_SCANNER__DATABASE_PATH=/app/data/foxhole_templates.h5
 
 # Scanner settings (optional)
 FS_SCANNER__EARLY_EXIT_THRESHOLD=0.95
-FS_SCANNER__PHASH_THRESHOLD=12
+FS_SCANNER__TEMPLATE_CACHE_SIZE=16
 
 # API authentication (optional, for production)
 API_TOKEN=your-secret-token-here
