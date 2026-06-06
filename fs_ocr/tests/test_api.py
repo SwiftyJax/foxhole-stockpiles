@@ -62,7 +62,7 @@ class TestOCRScannerInitialization:
         with pytest.raises(FileNotFoundError, match="Database not found"):
             OCRScanner(config)
 
-    @patch("fs_ocr._impl.coordinator.OCRCoordinator")
+    @patch("fs_ocr.api.OCRCoordinator")
     def test_init_success(self, mock_coordinator: MagicMock, tmp_path: Path) -> None:
         """Test successful scanner initialization."""
         db_path = tmp_path / "test.h5"
@@ -79,7 +79,7 @@ class TestOCRScannerInitialization:
 class TestOCRScannerContextManager:
     """Test suite for OCRScanner context manager."""
 
-    @patch("fs_ocr._impl.coordinator.OCRCoordinator")
+    @patch("fs_ocr.api.OCRCoordinator")
     def test_context_manager_closes_on_exit(
         self, mock_coordinator: MagicMock, tmp_path: Path
     ) -> None:
@@ -97,7 +97,7 @@ class TestOCRScannerContextManager:
 class TestOCRScannerScan:
     """Test suite for OCRScanner.scan method."""
 
-    @patch("fs_ocr._impl.coordinator.OCRCoordinator")
+    @patch("fs_ocr.api.OCRCoordinator")
     async def test_scan_raises_when_closed(
         self, mock_coordinator: MagicMock, tmp_path: Path
     ) -> None:
@@ -116,7 +116,7 @@ class TestOCRScannerScan:
 class TestOCRScannerInfo:
     """Test suite for OCRScanner.info method."""
 
-    @patch("fs_ocr._impl.coordinator.OCRCoordinator")
+    @patch("fs_ocr.api.OCRCoordinator")
     def test_info_returns_scanner_info(self, mock_coordinator: MagicMock, tmp_path: Path) -> None:
         """Test that info returns valid ScannerInfo."""
         db_path = tmp_path / "test.h5"

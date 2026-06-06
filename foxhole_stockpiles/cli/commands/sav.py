@@ -3,13 +3,12 @@
 import asyncio
 import os
 import sys
-from copy import copy
 from pathlib import Path
 
 import typer
 
+from foxhole_stockpiles.cli._settings import get_app_settings
 from foxhole_stockpiles.core.logging import setup_logging
-from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.core.settings.sections.output import (
     FileHandlerSettings,
     JsonFormatSettings,
@@ -194,17 +193,10 @@ def sav(
     save_file = _resolve_save_file(file, save_dir)
 
     # Setup logging and settings.
-    if config:
-        original_json_file = AppSettings.model_config.get("env_file")
-        AppSettings.model_config["env_file"] = config
-        settings = AppSettings()
-        AppSettings.model_config["env_file"] = original_json_file
-    else:
-        settings = copy(get_settings())
+    settings = get_app_settings(config)
 
-    logging_settings = settings.logging
-    if verbose:
-        logging_settings.log_level = "DEBUG"
+    log_level = "DEBUG" if verbose else settings.logging.log_level
+    logging_settings = settings.logging.model_copy(update={"log_level": log_level})
     setup_logging(logging_settings)
 
     # --output overrides config handlers.

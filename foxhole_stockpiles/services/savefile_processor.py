@@ -3,6 +3,7 @@
 import asyncio
 import logging
 from collections import defaultdict
+from datetime import UTC, datetime
 from pathlib import Path
 
 from foxhole_stockpiles.models.stockpile import Stockpile
@@ -60,6 +61,24 @@ class SaveFileProcessor:
         """Check if processor is running in watch mode."""
         return self._running
 
+    @staticmethod
+    def _timestamp_key(timestamp: datetime) -> str:
+        """Normalize a timestamp to a stable UTC string for change detection.
+
+        Naive datetimes are assumed to be UTC; aware datetimes are converted to
+        UTC so the same instant always yields the same key regardless of the
+        original offset.
+
+        Args:
+            timestamp (datetime): The stockpile timestamp.
+
+        Returns:
+            str: A UTC ISO-8601 string usable as a cache key.
+        """
+        if timestamp.tzinfo is None:
+            timestamp = timestamp.replace(tzinfo=UTC)
+        return timestamp.astimezone(UTC).isoformat()
+
     def _group_by_location(self, stockpiles: list[Stockpile]) -> dict[str, list[Stockpile]]:
         """Group stockpiles by their location (coords).
 
@@ -106,7 +125,8 @@ class SaveFileProcessor:
             stockpiles (list[Stockpile]): Current stockpiles.
 
         Returns:
-            tuple: (updated_stockpiles, new_stockpiles, removed_keys)
+            tuple[list[Stockpile], list[Stockpile], list[str]]: The
+                (updated_stockpiles, new_stockpiles, removed_keys) triple.
         """
         updated: list[Stockpile] = []
         new: list[Stockpile] = []
@@ -115,7 +135,7 @@ class SaveFileProcessor:
         for stockpile in stockpiles:
             key = stockpile.to_key()
             current_keys.add(key)
-            timestamp_str = stockpile.timestamp.isoformat()
+            timestamp_str = self._timestamp_key(stockpile.timestamp)
             cached_timestamp = self._stockpile_cache.get(key)
 
             if cached_timestamp is None:
@@ -135,14 +155,22 @@ class SaveFileProcessor:
 
         return updated, new, removed_keys
 
-    async def _process_file(self, is_initial: bool = False) -> list[Stockpile]:
+    async def _process_file(
+        self, is_initial: bool = False, suppress_errors: bool = True
+    ) -> list[Stockpile]:
         """Process the save file and output changed stockpiles.
 
         Args:
             is_initial (bool): Whether this is the initial load.
+            suppress_errors (bool): If True, log and swallow processing errors
+                (watch mode keeps running). If False, re-raise so the caller can
+                surface the failure. Defaults to True.
 
         Returns:
             list[Stockpile]: List of changed stockpiles that were output.
+
+        Raises:
+            Exception: If processing fails and suppress_errors is False.
         """
         logger.info("Processing file...")
 
@@ -157,7 +185,9 @@ class SaveFileProcessor:
             if is_initial and self._emit_all_on_start:
                 # Initialize cache
                 for stockpile in stockpiles:
-                    self._stockpile_cache[stockpile.to_key()] = stockpile.timestamp.isoformat()
+                    self._stockpile_cache[stockpile.to_key()] = self._timestamp_key(
+                        stockpile.timestamp
+                    )
 
                 logger.info("Initial load: %d stockpile(s)", len(stockpiles))
                 await self._output_results(stockpiles)
@@ -187,6 +217,8 @@ class SaveFileProcessor:
             return changed_stockpiles
 
         except Exception as e:
+            if not suppress_errors:
+                raise
             logger.error("Error processing file: %s", e)
             return []
 
@@ -195,8 +227,11 @@ class SaveFileProcessor:
 
         Returns:
             list[Stockpile]: List of stockpiles found.
+
+        Raises:
+            Exception: If processing the save file fails.
         """
-        return await self._process_file(is_initial=True)
+        return await self._process_file(is_initial=True, suppress_errors=False)
 
     async def run(self) -> None:
         """Run the file processor in watch mode."""

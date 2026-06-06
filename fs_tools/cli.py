@@ -15,6 +15,7 @@ import asyncio
 import importlib
 import multiprocessing
 import sys
+from pathlib import Path
 
 import typer
 
@@ -64,6 +65,8 @@ def _delegate(command: str, args: list[str]) -> None:
 def main_callback(ctx: typer.Context) -> None:
     """Launch the tools GUI when no subcommand is given."""
     if ctx.invoked_subcommand is None:
+        # Lazy import: fs_tools.gui pulls in PySide6, kept out of the CLI import
+        # path so non-GUI subcommands stay light.
         from fs_tools.gui import run_gui
 
         run_gui()
@@ -114,11 +117,10 @@ def inspect(ctx: typer.Context) -> None:
 
 @app.command()
 def visualize(
-    database: str = typer.Option(None, "--database", "-d", help="Template database to open"),
+    database: str | None = typer.Option(None, "--database", "-d", help="Template database to open"),
 ) -> None:
     """Open the database visualizer GUI."""
-    from pathlib import Path
-
+    # Lazy import: fs_tools.gui pulls in PySide6 (see main_callback).
     from fs_tools.gui import run_visualizer
 
     run_visualizer(Path(database) if database else None)
@@ -130,8 +132,7 @@ def debug(
     database: str = typer.Option(..., "--database", "-d", help="Template database to use"),
 ) -> None:
     """Open the debug image viewer for a screenshot."""
-    from pathlib import Path
-
+    # Lazy import: fs_tools.gui pulls in PySide6 (see main_callback).
     from fs_tools.gui import run_debug_viewer
 
     run_debug_viewer(Path(image), Path(database))

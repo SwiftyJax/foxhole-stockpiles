@@ -5,7 +5,7 @@ converting its output to internal Stockpile models.
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -53,6 +53,9 @@ def parse_save(
         with_items=with_items,
     )
 
+    if not isinstance(raw_stockpiles, list):
+        raise RuntimeError(f"fs_sav.parse_save returned unexpected type: {type(raw_stockpiles)}")
+
     return [_convert_to_stockpile(s) for s in raw_stockpiles]
 
 
@@ -89,6 +92,11 @@ def parse_save_bytes(
         stockpile_type=stockpile_type,
         with_items=with_items,
     )
+
+    if not isinstance(raw_stockpiles, list):
+        raise RuntimeError(
+            f"fs_sav.parse_save_bytes returned unexpected type: {type(raw_stockpiles)}"
+        )
 
     return [_convert_to_stockpile(s) for s in raw_stockpiles]
 
@@ -145,7 +153,7 @@ def _convert_to_stockpile(data: dict[str, Any]) -> Stockpile:
     try:
         timestamp = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
     except (ValueError, AttributeError):
-        timestamp = datetime.now()
+        timestamp = datetime.now(tz=UTC)
 
     return Stockpile(
         name=data.get("name", ""),

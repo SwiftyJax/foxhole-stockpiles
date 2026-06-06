@@ -14,12 +14,15 @@ from typing import Annotated
 
 import typer
 
+from foxhole_stockpiles import __version__
 from foxhole_stockpiles.models.stockpile import Stockpile
 from fs_ocr.api import (
     SCHEMA_VERSION,
     OCRScanner,
     ScannerConfig,
 )
+
+logger = logging.getLogger(__name__)
 
 app = typer.Typer(
     no_args_is_help=True,
@@ -90,7 +93,7 @@ def scan(
         )
 
         with OCRScanner(config) as scanner:
-            result = asyncio.get_event_loop().run_until_complete(scanner.scan(image_data))
+            result = asyncio.run(scanner.scan(image_data))
 
         # Output JSON
         indent = None if compact else 2
@@ -122,6 +125,7 @@ def info(
             info_obj = scanner.info()
         typer.echo(info_obj.model_dump_json(indent=2))
     except Exception as e:
+        logger.debug("info command failed", exc_info=True)
         typer.echo(f"Error: {e}", err=True)
         raise typer.Exit(1) from None
 
@@ -139,8 +143,6 @@ def schema() -> None:
 @app.command()
 def version() -> None:
     """Print version information."""
-    from foxhole_stockpiles import __version__
-
     typer.echo(f"fs-ocr {__version__} (schema {SCHEMA_VERSION})")
 
 

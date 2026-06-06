@@ -181,7 +181,7 @@ class ToolsMainWindow(QMainWindow):
             if settings.scanner.database_path:
                 return str(settings.scanner.database_path)
         except Exception as e:
-            logger.warning(f"Could not read configured database path: {e}")
+            logger.warning("Could not read configured database path: %s", e)
         return None
 
     def _require_database_path(self) -> str | None:

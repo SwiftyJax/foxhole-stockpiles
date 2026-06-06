@@ -107,9 +107,10 @@ def get_wsl_temp_dir() -> str | None:
             logger.info("Using Windows temp directory: %s", wsl_temp_path)
             return wsl_temp_path
         logger.warning("Windows temp path not accessible: %s", wsl_temp_path)
-    except Exception as e:
+    except (subprocess.SubprocessError, OSError, ValueError) as e:
         # PowerShell/wslpath can fail in many ways across environments; treat any
-        # failure as "no Windows temp dir available" and fall back to the default.
+        # expected failure as "no Windows temp dir available" and fall back to
+        # the default.
         logger.warning("Failed to get Windows temp directory: %s", e)
 
     return None

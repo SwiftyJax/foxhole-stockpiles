@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 from typer.testing import CliRunner
 
+from foxhole_stockpiles.cli._settings import get_app_settings
 from foxhole_stockpiles.cli.commands import scan
 from foxhole_stockpiles.core.settings.sections.output import FileHandlerSettings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
@@ -31,11 +32,11 @@ def mock_stockpile() -> MagicMock:
 
 
 class TestGetAppSettings:
-    """Test suite for the ``_get_app_settings`` helper."""
+    """Test suite for the ``get_app_settings`` helper."""
 
     def test_default_settings(self) -> None:
         """Returns default settings when no config file is given."""
-        settings = scan._get_app_settings(config_file=None)
+        settings = get_app_settings(config_file=None)
 
         assert settings is not None
         assert hasattr(settings, "scanner")
@@ -50,7 +51,7 @@ class TestGetAppSettings:
         config_file = tmp_path / "config.json"
         config_file.write_text("{}")
 
-        settings = scan._get_app_settings(config_file=str(config_file))
+        settings = get_app_settings(config_file=str(config_file))
 
         assert settings is not None
 
@@ -373,7 +374,7 @@ class TestScanDatabaseValidation:
         mock_settings.scanner.database_path = None
 
         with patch(
-            "foxhole_stockpiles.cli.commands.scan.get_settings",
+            "foxhole_stockpiles.cli._settings.get_settings",
             return_value=mock_settings,
         ):
             result = runner.invoke(scan.app, ["--image", str(image_path)])

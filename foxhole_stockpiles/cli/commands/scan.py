@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-from copy import copy
 from pathlib import Path
 from typing import Any
 
@@ -10,8 +9,8 @@ import cv2
 import numpy as np
 import typer
 
+from foxhole_stockpiles.cli._settings import get_app_settings
 from foxhole_stockpiles.core.logging import setup_logging
-from foxhole_stockpiles.core.settings import AppSettings, get_settings
 from foxhole_stockpiles.core.settings.sections.output import (
     ConsoleHandlerSettings,
     FileHandlerSettings,
@@ -70,27 +69,6 @@ def _create_handler_config_for_destination(
         )
 
 
-def _get_app_settings(config_file: str | None = None) -> AppSettings:
-    """Get application settings, optionally from a specified config file.
-
-    Args:
-        config_file (str | None): Path to the configuration file. If None, use the
-            default configuration.
-
-    Returns:
-        AppSettings: Application settings.
-    """
-    if config_file is None:
-        return get_settings()
-
-    original_json_file = AppSettings.model_config.get("env_file")
-    AppSettings.model_config["env_file"] = config_file
-    settings = AppSettings()
-    AppSettings.model_config["env_file"] = original_json_file
-
-    return settings
-
-
 async def _run(
     image: str,
     database: Path | None,
@@ -130,7 +108,7 @@ async def _run(
     Raises:
         typer.Exit: On missing inputs or pipeline failure.
     """
-    settings = copy(_get_app_settings(config))
+    settings = get_app_settings(config)
 
     database_path = database if database is not None else settings.scanner.database_path
     if database_path is None:
@@ -144,6 +122,11 @@ async def _run(
         raise typer.Exit(code=1)
     if not database_path.is_file():
         typer.echo(f"Error: Database path is not a file: {database_path}", err=True)
+        raise typer.Exit(code=1)
+
+    # Fail fast if the image is missing before the expensive imread.
+    if not Path(image).exists():
+        typer.echo(f"Error: File '{image}' does not exist", err=True)
         raise typer.Exit(code=1)
 
     # Load and preprocess the image.
@@ -164,27 +147,26 @@ async def _run(
     else:
         output_settings = settings.output
 
-    logging_settings = settings.logging
-    if quiet:
-        logging_settings.log_level = "WARNING"
-    elif verbose:
-        logging_settings.log_level = "DEBUG"
-    logging_settings.log_file = str(log_file) if log_file is not None else None
+    log_level = "WARNING" if quiet else "DEBUG" if verbose else settings.logging.log_level
+    logging_settings = settings.logging.model_copy(
+        update={
+            "log_level": log_level,
+            "log_file": str(log_file) if log_file is not None else None,
+        }
+    )
     setup_logging(logging_settings)
-
-    if not Path(image).exists():
-        typer.echo(f"Error: File '{image}' does not exist", err=True)
-        raise typer.Exit(code=1)
 
     faction_filter = ItemFaction.from_string(faction)
     language_filter: list[SupportedLanguage] | None = [language] if language else None
 
     try:
-        scanner_settings: ScannerSettings = settings.scanner
-        scanner_settings.database_path = database_path
-        scanner_settings.debug_mode = debug_image
+        scanner_update: dict[str, Any] = {
+            "database_path": database_path,
+            "debug_mode": debug_image,
+        }
         if early_exit:
-            scanner_settings.early_exit_threshold = early_exit
+            scanner_update["early_exit_threshold"] = early_exit
+        scanner_settings: ScannerSettings = settings.scanner.model_copy(update=scanner_update)
 
         coordinator = OCRCoordinator(scanner_settings)
         stockpile: Stockpile = await coordinator.analyze_stockpile(

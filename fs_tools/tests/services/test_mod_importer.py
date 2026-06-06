@@ -242,7 +242,8 @@ class TestWSLDetection:
         mock_proc_version.__exit__ = MagicMock(return_value=False)
 
         with patch("builtins.open", return_value=mock_proc_version):
-            with patch("subprocess.run", side_effect=Exception("PowerShell failed")):
+            # Realistic failure: powershell.exe missing raises OSError/FileNotFoundError.
+            with patch("subprocess.run", side_effect=OSError("PowerShell failed")):
                 result = ModImporter.get_wsl_temp_dir()
 
         assert result is None

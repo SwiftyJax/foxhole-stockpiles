@@ -6,6 +6,7 @@ All public types are re-exported from __init__.py.
 
 from __future__ import annotations
 
+import asyncio
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Literal
@@ -14,9 +15,13 @@ import cv2
 import numpy as np
 from pydantic import BaseModel, Field
 
+from foxhole_stockpiles import __version__
+from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
 from foxhole_stockpiles.enums.item_faction import ItemFaction
 from foxhole_stockpiles.enums.supported_language import SupportedLanguage
 from foxhole_stockpiles.models.stockpile import Stockpile
+from fs_ocr._impl.coordinator import OCRCoordinator
+from fs_ocr._impl.template_database import DATABASE_VERSION
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -73,9 +78,6 @@ class OCRScanner:
             FileNotFoundError: If database_path does not exist.
             ValueError: If configuration is invalid.
         """
-        from foxhole_stockpiles.core.settings.sections.scanner import ScannerSettings
-        from fs_ocr._impl.coordinator import OCRCoordinator
-
         if not config.database_path.exists():
             raise FileNotFoundError(f"Database not found: {config.database_path}")
 
@@ -145,6 +147,9 @@ class OCRScanner:
     ) -> Stockpile:
         """Synchronous version of scan.
 
+        This is a convenience wrapper for simple scripts. It cannot be called
+        from within a running event loop; use the async ``scan`` method instead.
+
         Args:
             image: Image data as bytes, file path, or numpy array (BGR format).
             languages: Languages for text detection. Defaults to all supported.
@@ -152,10 +157,11 @@ class OCRScanner:
 
         Returns:
             Stockpile: Detected stockpile with items and metadata.
-        """
-        import asyncio
 
-        return asyncio.get_event_loop().run_until_complete(self.scan(image, languages, faction))
+        Raises:
+            RuntimeError: If called from within a running event loop.
+        """
+        return asyncio.run(self.scan(image, languages, faction))
 
     def info(self) -> ScannerInfo:
         """Get scanner metadata.
@@ -163,9 +169,6 @@ class OCRScanner:
         Returns:
             ScannerInfo: Scanner version and implementation details.
         """
-        from foxhole_stockpiles import __version__
-        from fs_ocr._impl.template_database import DATABASE_VERSION
-
         return ScannerInfo(
             version=__version__,
             database_version=str(DATABASE_VERSION),
