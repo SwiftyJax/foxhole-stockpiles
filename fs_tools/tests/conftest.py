@@ -4,7 +4,7 @@ Re-exports the project-wide fixtures defined in ``tests/conftest.py`` so the
 moved fs_tools tests keep access to them.
 """
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from unittest.mock import patch
 
 import pytest
@@ -26,28 +26,67 @@ _MAIN_TRANSLATIONS = "foxhole_stockpiles/i18n/translations"
 _TOOLS_TRANSLATIONS = "fs_tools/i18n/translations"
 
 
+def _fail_on_dialog(name: str) -> Callable[..., object]:
+    """Build a stand-in that fails the test when a native dialog is invoked.
+
+    Args:
+        name (str): Qualified name of the dialog call being guarded.
+
+    Returns:
+        Callable[..., object]: A function that raises AssertionError when called.
+    """
+
+    def _raise(*_args: object, **_kwargs: object) -> object:
+        raise AssertionError(
+            f"Unexpected native dialog: {name} was called without being patched. "
+            "Patch it explicitly in the test, or fix the code path that triggers it."
+        )
+
+    return _raise
+
+
 @pytest.fixture(autouse=True)
-def block_native_dialogs() -> Iterator[None]:
-    """Stub out blocking native dialogs so tests never pop a real window.
+def fail_on_unpatched_dialogs() -> Iterator[None]:
+    """Make any unpatched native dialog call fail the test loudly.
 
     GUI code calls ``QMessageBox`` / ``QFileDialog`` static methods that open
-    modal, blocking dialogs. Without this, any test that exercises such a path
-    without explicitly patching the call would hang waiting for user input.
-    Defaults model a "cancelled / no" interaction; tests that need a specific
-    result patch the call locally, which overrides these stubs.
+    modal, blocking dialogs. A test that reaches such a call without patching it
+    would pop a real window (and hang) in a developer/CI run. Rather than
+    silently returning a default — which hides the unexpected interaction — we
+    raise so the test fails and the author either patches the dialog or fixes
+    the code path. Tests that legitimately exercise a dialog patch the specific
+    call locally, which overrides this guard.
 
     Yields:
-        None: Control to the test while the dialog stubs are active.
+        None: Control to the test while the dialog guards are active.
     """
     with (
-        patch.object(QMessageBox, "warning", return_value=QMessageBox.StandardButton.Ok),
-        patch.object(QMessageBox, "critical", return_value=QMessageBox.StandardButton.Ok),
-        patch.object(QMessageBox, "information", return_value=QMessageBox.StandardButton.Ok),
-        patch.object(QMessageBox, "question", return_value=QMessageBox.StandardButton.No),
-        patch.object(QFileDialog, "getOpenFileName", return_value=("", "")),
-        patch.object(QFileDialog, "getOpenFileNames", return_value=([], "")),
-        patch.object(QFileDialog, "getSaveFileName", return_value=("", "")),
-        patch.object(QFileDialog, "getExistingDirectory", return_value=""),
+        patch.object(QMessageBox, "warning", side_effect=_fail_on_dialog("QMessageBox.warning")),
+        patch.object(QMessageBox, "critical", side_effect=_fail_on_dialog("QMessageBox.critical")),
+        patch.object(
+            QMessageBox, "information", side_effect=_fail_on_dialog("QMessageBox.information")
+        ),
+        patch.object(QMessageBox, "question", side_effect=_fail_on_dialog("QMessageBox.question")),
+        patch.object(
+            QFileDialog,
+            "getOpenFileName",
+            side_effect=_fail_on_dialog("QFileDialog.getOpenFileName"),
+        ),
+        patch.object(
+            QFileDialog,
+            "getOpenFileNames",
+            side_effect=_fail_on_dialog("QFileDialog.getOpenFileNames"),
+        ),
+        patch.object(
+            QFileDialog,
+            "getSaveFileName",
+            side_effect=_fail_on_dialog("QFileDialog.getSaveFileName"),
+        ),
+        patch.object(
+            QFileDialog,
+            "getExistingDirectory",
+            side_effect=_fail_on_dialog("QFileDialog.getExistingDirectory"),
+        ),
     ):
         yield
 
