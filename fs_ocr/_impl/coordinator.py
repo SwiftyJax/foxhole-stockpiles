@@ -5,7 +5,7 @@ import logging
 import time
 from datetime import datetime
 from pathlib import Path
-from typing import Any, ClassVar
+from typing import Any
 
 import cv2
 import numpy as np
@@ -41,8 +41,6 @@ DEFAULT_TESSDATA_PATH = "./tessdata"
 
 class OCRCoordinator:
     """Coordinates the entire stockpile detection and analysis process."""
-
-    TESSERACT_BINARY_THRESHOLD: ClassVar[int] = 127
 
     def __init__(self, config: ScannerSettings, event_bus: EventBus | None = None) -> None:
         """Initialize the model.
