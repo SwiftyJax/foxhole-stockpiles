@@ -108,7 +108,11 @@ async def _run(
     Raises:
         typer.Exit: On missing inputs or pipeline failure.
     """
-    settings = get_app_settings(config)
+    try:
+        settings = get_app_settings(config)
+    except (FileNotFoundError, ValueError) as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=2) from e
 
     database_path = database if database is not None else settings.scanner.database_path
     if database_path is None:

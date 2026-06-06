@@ -43,17 +43,38 @@ class TestGetAppSettings:
         assert hasattr(settings, "logging")
 
     def test_settings_from_config_file(self, tmp_path: Path) -> None:
-        """Loads settings from a custom config file.
+        """Loads and applies values from a custom JSON config file.
 
         Args:
             tmp_path (Path): Temporary directory path from pytest fixture.
         """
         config_file = tmp_path / "config.json"
-        config_file.write_text("{}")
+        config_file.write_text('{"logging": {"log_level": "CRITICAL"}}')
 
         settings = get_app_settings(config_file=str(config_file))
 
-        assert settings is not None
+        assert settings.logging.log_level == "CRITICAL"
+
+    def test_missing_config_file_raises(self, tmp_path: Path) -> None:
+        """A missing config file raises FileNotFoundError.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        with pytest.raises(FileNotFoundError):
+            get_app_settings(config_file=str(tmp_path / "nope.json"))
+
+    def test_invalid_json_config_raises(self, tmp_path: Path) -> None:
+        """An invalid JSON config file raises ValueError.
+
+        Args:
+            tmp_path (Path): Temporary directory path from pytest fixture.
+        """
+        config_file = tmp_path / "bad.json"
+        config_file.write_text("{ not json")
+
+        with pytest.raises(ValueError):
+            get_app_settings(config_file=str(config_file))
 
 
 class TestCreateHandlerConfig:

@@ -193,7 +193,11 @@ def sav(
     save_file = _resolve_save_file(file, save_dir)
 
     # Setup logging and settings.
-    settings = get_app_settings(config)
+    try:
+        settings = get_app_settings(config)
+    except (FileNotFoundError, ValueError) as e:
+        typer.echo(f"Error: {e}", err=True)
+        raise typer.Exit(code=2) from e
 
     log_level = "DEBUG" if verbose else settings.logging.log_level
     logging_settings = settings.logging.model_copy(update={"log_level": log_level})
